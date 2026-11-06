@@ -64,7 +64,12 @@ export const useEventsWithStats = (opts: { from?: string; to?: string; ascending
       if (opts.limit) q = q.limit(opts.limit);
       const events = must(await q) as EventRow[];
       if (!events.length) return [];
-      const stats = must(await supabase.from('event_stats').select('*').in('event_id', events.map((e) => e.id))) as EventStats[];
+      // in chunks: a single in.(…) with hundreds of ids exceeds the gateway's URL limit
+      const ids = events.map((e) => e.id);
+      const stats: EventStats[] = [];
+      for (let i = 0; i < ids.length; i += 60) {
+        stats.push(...(must(await supabase.from('event_stats').select('*').in('event_id', ids.slice(i, i + 60))) as EventStats[]));
+      }
       const byId = new Map(stats.map((s) => [s.event_id, s]));
       return events.map((e) => ({ ...e, stats: byId.get(e.id) ?? null }));
     },
@@ -75,7 +80,8 @@ export const useEvent = (id: string | undefined) =>
     queryKey: ['event', id],
     enabled: !!id,
     queryFn: async (): Promise<EventWithStats> => {
-      const e = must(await supabase.from('events').select('*').eq('id', id!).single()) as EventRow;
+      const e = must(await supabase.from('events').select('*').eq('id', id!).maybeSingle()) as EventRow | null;
+      if (!e) throw { message: 'not_found' };
       const { data: stats } = await supabase.from('event_stats').select('*').eq('event_id', id!).maybeSingle();
       return { ...e, stats: (stats as EventStats) ?? null };
     },

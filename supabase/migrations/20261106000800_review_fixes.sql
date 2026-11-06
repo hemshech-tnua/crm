@@ -58,3 +58,30 @@ begin
 end $$;
 create trigger speakers_normalize before insert or update of phone, full_name on public.speakers
   for each row execute function private.speakers_normalize();
+
+-- 3) Promoting from the waitlist respects the event's state and capacity (an explicit override is still possible).
+drop function if exists public.staff_promote(uuid);
+create or replace function public.staff_promote(p_registration_id uuid, p_over_capacity boolean default false)
+returns jsonb language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_reg public.registrations;
+  v_event public.events;
+  v_count int;
+begin
+  perform private.assert_role('admin', 'coordinator');
+  select * into v_reg from public.registrations where id = p_registration_id for update;
+  if not found or v_reg.status <> 'waitlisted' then
+    raise exception 'not_waitlisted' using errcode = 'P0001';
+  end if;
+  select * into v_event from public.events where id = v_reg.event_id for update;
+  if v_event.status in ('cancelled', 'completed', 'draft') then
+    raise exception 'event_not_active' using errcode = 'P0001';
+  end if;
+  select count(*) into v_count from public.registrations where event_id = v_event.id and status = 'registered';
+  if v_event.capacity is not null and v_count >= v_event.capacity and not p_over_capacity then
+    raise exception 'event_full' using errcode = 'P0001';
+  end if;
+  update public.registrations set status = 'registered', promoted_at = now() where id = v_reg.id;
+  return jsonb_build_object('registration_id', v_reg.id, 'status', 'registered');
+end $$;
+grant execute on function public.staff_promote(uuid, boolean) to authenticated;

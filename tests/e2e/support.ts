@@ -22,7 +22,8 @@ export async function login(page: Page, email: string, password = PASSWORD) {
 
 export async function loginAs(page: Page, role: 'admin' | 'coord' | 'door') {
   await login(page, `${role}@example.test`);
-  await expect(page.getByRole('navigation', { name: 'ניווט ראשי' }).first()).toBeVisible();
+  // the door team has no navigation on a phone (one area only), so wait for the page heading instead
+  await expect(page.locator('main h1').first()).toBeVisible();
 }
 
 export async function logout(page: Page) {

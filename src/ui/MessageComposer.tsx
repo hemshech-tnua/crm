@@ -56,11 +56,14 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
   const tpl = list.find((t) => t.key === key);
   const firstName = recipient.full_name?.split(' ')[0] ?? '';
 
+  // every time the composer opens it starts from the template the caller asked for
+  useEffect(() => {
+    if (open) setKey(defaultKey ?? list[0]?.key ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultKey, list.length]);
   useEffect(() => {
     if (!open) return;
-    const k = key || defaultKey || list[0]?.key || '';
-    if (k !== key) setKey(k);
-    const t = list.find((x) => x.key === k);
+    const t = list.find((x) => x.key === key);
     setText(t ? renderTemplate(t.body, { ...context, firstName }) : '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, key, list.length]);

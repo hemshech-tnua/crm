@@ -450,3 +450,22 @@ describe('review fixes', () => {
     expect(data!.phone).toBe('+972527110099');
   });
 });
+
+describe('waitlist promotion guards', () => {
+  it('refuses to promote into a full or cancelled event unless overridden', async () => {
+    const ev = await makeEvent({ capacity: 1 });
+    const v = visitor();
+    await v.rpc('public_register', { p: registration(ev.public_code) });
+    await v.rpc('public_register', { p: registration(ev.public_code) });
+    const coord = await staff('coord');
+    const { data: w } = await coord.from('registrations').select('id').eq('event_id', ev.id).eq('status', 'waitlisted').single();
+    expect((await coord.rpc('staff_promote', { p_registration_id: w!.id })).error?.message).toBe('event_full');
+    expect((await coord.rpc('staff_promote', { p_registration_id: w!.id, p_over_capacity: true })).error).toBeNull();
+    const ev2 = await makeEvent({ capacity: 1 });
+    await v.rpc('public_register', { p: registration(ev2.public_code) });
+    await v.rpc('public_register', { p: registration(ev2.public_code) });
+    const { data: w2 } = await coord.from('registrations').select('id').eq('event_id', ev2.id).eq('status', 'waitlisted').single();
+    await coord.from('events').update({ status: 'cancelled' }).eq('id', ev2.id);
+    expect((await coord.rpc('staff_promote', { p_registration_id: w2!.id, p_over_capacity: true })).error?.message).toBe('event_not_active');
+  });
+});

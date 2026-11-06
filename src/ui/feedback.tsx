@@ -16,6 +16,18 @@ const ToastCtx = createContext<ToastApi | null>(null);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const seq = useRef(0);
+  // Toasts live in the browser's top layer (popover), re-shown on each change so they stay above an open modal dialog.
+  const layer = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = layer.current as (HTMLDivElement & { showPopover?: () => void; hidePopover?: () => void }) | null;
+    if (!el?.showPopover) return;
+    try {
+      if (el.matches(':popover-open')) el.hidePopover!();
+      if (toasts.length) el.showPopover();
+    } catch {
+      /* popover not supported: the fixed layer still shows outside dialogs */
+    }
+  }, [toasts]);
   const push = useCallback((tone: Toast['tone'], text: string, action?: Toast['action']) => {
     const id = ++seq.current;
     setToasts((t) => [...t.slice(-2), { id, tone, text, action }]);
@@ -29,7 +41,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={api.current}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4 sm:bottom-6" aria-live="polite" aria-atomic="false">
+      <div
+        ref={layer}
+        popover="manual"
+        className="pointer-events-none fixed inset-x-0 top-auto bottom-20 z-50 m-0 flex h-auto w-full flex-col items-center gap-2 overflow-visible border-0 bg-transparent p-0 px-4 sm:bottom-6"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
