@@ -149,16 +149,16 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
         {badges}
       </div>
       <p className="text-sm text-ink-soft">{fmtDayLong(ev.starts_at)}</p>
-      <dl className="mt-1 flex flex-col gap-0.5 text-sm text-muted">
-        {checkin && <div>{checkin}</div>}
-        {!r.is_walk_in && <div>נרשם/ה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (ע״י הצוות)' : ''}</div>}
-        {(r.how_heard || r.how_heard_detail) && <div>איך שמע/ה: {[r.how_heard?.label, r.how_heard_detail].filter(Boolean).join(': ')}</div>}
+      <ul className="mt-1 flex flex-col gap-0.5 text-sm text-muted">
+        {checkin && <li>{checkin}</li>}
+        {!r.is_walk_in && <li>נרשם/ה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (ע״י הצוות)' : ''}</li>}
+        {(r.how_heard || r.how_heard_detail) && <li>איך שמע/ה: {[r.how_heard?.label, r.how_heard_detail].filter(Boolean).join(': ')}</li>}
         {(r.referrer || r.referrer_name) && (
-          <div>הופנה/תה ע״י: {r.referrer ? <PersonLink id={r.referrer.id} name={r.referrer.full_name} className="font-medium" /> : r.referrer_name}</div>
+          <li>הופנה/תה ע״י: {r.referrer ? <PersonLink id={r.referrer.id} name={r.referrer.full_name} className="font-medium" /> : r.referrer_name}</li>
         )}
-        {r.link && <div>קישור הרשמה: {r.link.label} <span className="num">({r.link.code})</span></div>}
-        {utm && <div>UTM: <span className="num">{utm}</span></div>}
-      </dl>
+        {r.link && <li>קישור הרשמה: {r.link.label} <span className="num">({r.link.code})</span></li>}
+        {utm && <li>UTM: <span className="num">{utm}</span></li>}
+      </ul>
       {fb && <FeedbackItem f={fb} />}
     </div>
   );

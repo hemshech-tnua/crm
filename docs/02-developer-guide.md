@@ -56,6 +56,8 @@ tests/e2e/             בדיקות דפדפן (Playwright)
 | `public_feedback_context(p)` | `{token?}` או `{event}` | `{state: open/not_yet/closed, first_name, personal, has_activity, has_lecture, existing, event}` |
 | `public_submit_feedback(p)` | `{token? \| event + phone?, overall, activity?, lecture?, comment?, website}` | `{ok}` |
 | `public_propose(p)` | `{kind: speaker/instructor, full_name, phone, topic, bio_line?, social_url?, message?, website}` | `{ok}` |
+| `public_checkin_undo(p_token)` | טוקן מהצ׳ק־אין | `{ok}` ("זה לא אני", עד 10 דקות) |
+| `public_org_info()` | – | `{org_name, contact_phone}` |
 
 ### פונקציות צוות
 
@@ -73,6 +75,8 @@ tests/e2e/             בדיקות דפדפן (Playwright)
 | `staff_check_duplicate(p_full_name, p_phone)` | מנהל, רכז | `{phone_valid, by_phone, similar[]}` |
 | `staff_find_duplicates()` | מנהל, רכז | זוגות `{a, b, similarity}` |
 | `staff_merge_participants(p_keep, p_merge)` | מנהל, רכז | מיזוג |
+| `staff_dismiss_duplicate(p_a, p_b)` | מנהל, רכז | "אלה שני אנשים שונים" |
+| `staff_walkin_suggest(p_event_id, p_query)` / `staff_checkin_existing(p_event_id, p_participant_id)` | כולם (סביב זמן המפגש) | הצעת אדם מוכר בכניסה (שם + 4 ספרות) וסימון הגעה שלו |
 | `admin_anonymize_participant(p_id)` | מנהל | התממה |
 | `admin_retention_candidates()` | מנהל | לוחמים בלי פעילות מעבר לתקופת השמירה |
 | `log_export(p_kind, p_rows)` | מנהל, רכז (רשימות אישיות: מנהל) | רישום ייצוא ביומן |
@@ -80,6 +84,8 @@ tests/e2e/             בדיקות דפדפן (Playwright)
 | `report_events(...)`, `report_monthly(...)`, `report_sources(p_from,p_to)`, `report_links(...)`, `report_referrers(...)`, `report_presenters(...)`, `report_distribution(p_type,p_site)`, `report_drilldown(p_kind,...)`, `attention_items()` | מנהל, רכז | ראו supabase/migrations/…0600_reporting.sql |
 
 Edge Function `staff-admin` (דרך `staffAdmin()` ב-lib/auth): `change_password`, `create`, `reset_password`, `update`.
+
+**מיגרציות:** מיגרציה חדשה מקבלת מספר **לפני** `…9000_privilege_hardening.sql`, שנשארת אחרונה. פונקציה ציבורית חדשה צריכה `grant … to anon` שם, ועדכון ברשימה שב-tests/api/security.test.ts.
 
 ### קישורים ציבוריים (lib/links)
 `registerUrl(code, ref?)` ← `#/r/code`, `checkinUrl(checkinCode)` ← `#/c/…`, `feedbackUrl(code)` ← `#/f/…`, `manageUrl(token)` ← `#/m/…`, `proposeUrl()`.
