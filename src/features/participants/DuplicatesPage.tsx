@@ -137,7 +137,7 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
       <div className="flex flex-wrap items-center gap-3 border-t border-line-soft px-4 py-3 sm:px-5">
         <Button icon="merge" busy={merge.isPending} disabled={dismiss.isPending} onClick={ask}>מיזוג</Button>
         <Button variant="ghost" busy={dismiss.isPending} disabled={merge.isPending} onClick={() => dismiss.mutate()}>אלה שני אנשים שונים</Button>
-        <span className="text-sm text-muted">במיזוג, הכרטיס של {gone.full_name} יתמזג לתוך הכרטיס של {kept.full_name}.</span>
+        <span className="text-sm text-muted">במיזוג, הכרטיס של {gone.full_name} (<PhoneText phone={gone.phone} />) יתמזג לתוך הכרטיס של {kept.full_name} (<PhoneText phone={kept.phone} />).</span>
       </div>
     </li>
   );

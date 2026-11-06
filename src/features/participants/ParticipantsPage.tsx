@@ -19,7 +19,7 @@ import { cityCounts, engagementCounts, fetchRoster, fetchRosterAll, openTaskIds,
 const PAGE = 50;
 const SORT_LABEL: Record<RosterSort, string> = {
   last: 'ביקור אחרון',
-  fridays: 'מספר שישים',
+  fridays: 'מספר מפגשי שישי',
   name: 'שם (א–ת)',
   joined: 'הצטרפו לאחרונה',
 };
@@ -123,7 +123,7 @@ export function ParticipantsPage() {
         { header: 'עיר', value: (r) => r.city },
         { header: 'גיל', value: (r) => age(r.birth_year, r.birth_date) },
         { header: 'סטטוס', value: (r) => (r.stats ? ENGAGEMENT_LABEL[r.stats.engagement_status] : '') },
-        { header: 'שישים', value: (r) => r.stats?.friday_count ?? 0 },
+        { header: 'מפגשי שישי', value: (r) => r.stats?.friday_count ?? 0 },
         { header: 'כל הפעילויות', value: (r) => r.stats?.attended_count ?? 0 },
         { header: 'ביקור ראשון', value: (r) => (r.stats?.first_attended_at ? fmtDate(r.stats.first_attended_at) : '') },
         { header: 'ביקור אחרון', value: (r) => (r.stats?.last_attended_at ? fmtDate(r.stats.last_attended_at) : '') },
@@ -330,7 +330,7 @@ function RosterTable({ rows, sourceLabel, openSet, from }: ListProps) {
             <th className="px-3 py-2.5 font-semibold">טלפון</th>
             <th className="px-3 py-2.5 font-semibold">עיר</th>
             <th className="px-3 py-2.5 font-semibold">גיל</th>
-            <th className="px-3 py-2.5 font-semibold" title="מפגשי שישי שהגיע/ה אליהם">שישים</th>
+            <th className="px-3 py-2.5 font-semibold" title="מפגשי שישי שהגיע/ה אליהם">מפגשי שישי</th>
             <th className="px-3 py-2.5 font-semibold" title="כל הפעילויות, כולל ערבי מדורה">פעילויות</th>
             <th className="px-3 py-2.5 font-semibold">ביקור אחרון</th>
             <th className="px-3 py-2.5 font-semibold">מקור</th>
@@ -387,7 +387,7 @@ function RosterCards({ rows, sourceLabel, openSet, from }: ListProps) {
                 {a != null && <><span aria-hidden="true">·</span><span>גיל <span className="num">{a}</span></span></>}
               </span>
               <span className="flex flex-wrap items-center gap-x-2 text-sm text-ink-soft">
-                <span><span className="num font-semibold">{fridays}</span> {fridays === 1 ? 'שישי' : 'שישים'}</span>
+                <span><span className="num font-semibold">{fridays}</span> {fridays === 1 ? 'מפגש שישי' : 'מפגשי שישי'}</span>
                 {r.stats?.last_attended_at && <><span aria-hidden="true">·</span><span>ביקור אחרון <LastVisit at={r.stats.last_attended_at} /></span></>}
                 {r.first_source_id && <><span aria-hidden="true">·</span><span className="truncate">{sourceLabel.get(r.first_source_id)}</span></>}
               </span>

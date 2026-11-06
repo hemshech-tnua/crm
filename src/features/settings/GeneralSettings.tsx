@@ -84,7 +84,7 @@ export function GeneralSettings() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
-      <Panel title="היעדים לשנה (מהשאלון)">
+      <Panel title="היעדים לשנה">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Input label="ממוצע משתתפים למפגש" type="number" min={0} inputMode="numeric" {...bind('goal_avg_attendance')} />
           <Input label="שיעור הגעה מתוך הנרשמים (%)" type="number" min={0} max={100} {...bind('goal_show_rate')} />
@@ -97,8 +97,8 @@ export function GeneralSettings() {
       <Panel title="מתי לוחם נחשב קבוע, ומתי הפסיק להגיע">
         <div className="grid gap-4 sm:grid-cols-3">
           <Input label="מפגשי שישי לפחות" type="number" min={1} max={10} {...bind('regular_min_fridays')} />
-          <Input label="בתוך כמה ימים" type="number" min={7} max={120} {...bind('regular_window_days')} hint="ברירת מחדל: 2 שישים ב-30 יום" />
-          <Input label="התראה אחרי כמה שישים בלי הגעה" type="number" min={1} max={12} {...bind('lapsed_after_fridays')} />
+          <Input label="בתוך כמה ימים" type="number" min={7} max={120} {...bind('regular_window_days')} hint="ברירת מחדל: 2 מפגשי שישי ב-30 יום" />
+          <Input label="התראה אחרי כמה מפגשי שישי בלי הגעה" type="number" min={1} max={12} {...bind('lapsed_after_fridays')} />
         </div>
       </Panel>
 

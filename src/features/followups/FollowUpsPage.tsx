@@ -25,8 +25,10 @@ export function FollowUpsPage() {
   const me = useMe();
   const myId = me.data?.user_id;
   const [sp, setSp] = useSearchParams();
-  const tab = (sp.get('tab') as Tab | null) ?? 'mine';
-  const setTab = (t: Tab) => setSp(t === 'mine' ? {} : { tab: t }, { replace: true });
+  const requested = sp.get('tab') as Tab | null;
+  const typeFilter = sp.get('type') as TaskRow['type'] | null;
+  const setTab = (t: Tab) => setSp({ tab: t }, { replace: true });
+  const setType = (t: string | null) => { const n = new URLSearchParams(sp); if (t) n.set('type', t); else n.delete('type'); setSp(n, { replace: true }); };
   const [creating, setCreating] = useState(false);
 
   const open = useQuery({
@@ -36,7 +38,7 @@ export function FollowUpsPage() {
   });
   const done = useQuery({
     queryKey: ['followups', 'done'],
-    enabled: tab === 'done',
+    enabled: requested === 'done',
     queryFn: async () => must(await supabase.from('follow_ups').select(TASK_SELECT).in('status', ['done', 'cancelled'])
       .order('completed_at', { ascending: false }).limit(100)) as unknown as TaskRow[],
   });
@@ -46,8 +48,17 @@ export function FollowUpsPage() {
   });
   const next = useNextOpenEvent();
 
-  const all = useMemo(() => [...(open.data ?? [])].sort(byDue), [open.data]);
+  const allOpen = useMemo(() => [...(open.data ?? [])].sort(byDue), [open.data]);
+  const all = useMemo(() => (typeFilter ? allOpen.filter((t) => t.type === typeFilter) : allOpen), [allOpen, typeFilter]);
   const mine = useMemo(() => all.filter((t) => t.assignee_id === myId), [all, myId]);
+  // S5: without a chosen tab, open on "mine" only when there is something of mine; otherwise on all open tasks
+  const tab: Tab = requested && ['mine', 'open', 'done'].includes(requested) ? requested
+    : open.data && !allOpen.some((t) => t.assignee_id === myId) ? 'open' : 'mine';
+  const typeCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const t of allOpen) c[t.type] = (c[t.type] ?? 0) + 1;
+    return c;
+  }, [allOpen]);
   const lapsed = (attention.data?.lapsed ?? []).filter((l) => !l.has_open_task);
 
   return (
@@ -80,6 +91,17 @@ export function FollowUpsPage() {
           { value: 'done', label: 'הושלמו' },
         ]}
       />
+
+      {tab !== 'done' && Object.keys(typeCounts).length > 1 && (
+        <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="סינון לפי סוג משימה">
+          {[{ v: null, l: 'הכול', n: allOpen.length }, ...Object.entries(FOLLOWUP_TYPE_LABEL).filter(([k]) => typeCounts[k]).map(([k, l]) => ({ v: k, l, n: typeCounts[k] }))].map((o) => (
+            <button key={o.v ?? 'all'} type="button" aria-pressed={typeFilter === o.v} onClick={() => setType(o.v)}
+              className={`min-h-10 rounded-full border px-3.5 text-sm font-semibold ${typeFilter === o.v ? 'border-ink bg-ink text-mist' : 'border-line bg-paper text-ink-soft hover:border-tide'}`}>
+              {o.l} <span className="num">{o.n}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === 'done' ? (
         <DoneList q={done} />
@@ -260,7 +282,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
                 <div className="min-w-0">
                   <PersonLink id={l.participant_id} name={l.full_name} />
                   <p className="text-sm text-muted">
-                    <span className="num">{l.friday_count}</span> שישים · ביקור אחרון {l.last_attended_at ? <span title={fmtDate(l.last_attended_at)}>{ago(l.last_attended_at)}</span> : '—'} · מאז התקיימו <span className="num">{l.fridays_missed}</span> מפגשים
+                    <span className="num">{l.friday_count}</span> מפגשי שישי · ביקור אחרון {l.last_attended_at ? <span title={fmtDate(l.last_attended_at)}>{ago(l.last_attended_at)}</span> : '—'} · מאז התקיימו <span className="num">{l.fridays_missed}</span> מפגשים
                   </p>
                 </div>
                 <Button

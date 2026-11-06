@@ -54,7 +54,8 @@ export function DashboardPage() {
 
   const now = Date.now();
   const list = (events.data ?? []).filter((e) => e.status !== 'cancelled' && e.status !== 'draft' && (!filters.type || e.type === filters.type));
-  const past = list.filter((e) => new Date(e.starts_at).getTime() < now).slice(-9);
+  // the line shows closed meetings only: their attendance is final
+  const past = list.filter((e) => e.status === 'completed' && new Date(e.starts_at).getTime() < now).slice(-9);
   const upcoming = (events.data ?? []).filter((e) => e.status !== 'cancelled' && new Date(e.ends_at).getTime() > now);
   const next = upcoming[0];
   const nextOpen = upcoming.find((e) => e.status === 'open') ?? next;
@@ -176,6 +177,7 @@ export function DashboardPage() {
               בתקופה: <button type="button" className="font-semibold text-tide hover:underline" onClick={() => setDrill('new')}>{kpis.data.new_attendees} לוחמים חדשים</button>
               {' · '}{kpis.data.walk_ins} הגיעו בלי הרשמה · {kpis.data.cancelled} ביטולים
               {kpis.data.attendances > 0 && <> · {pct(d?.selfCheckinShare ?? null)} עשו צ׳ק־אין עצמי</>}
+              {(kpis.data.unclosed_events ?? 0) > 0 && <span className="font-semibold text-warn"> · {kpis.data.unclosed_events} מפגשים שהסתיימו ולא נסגרו לא נכללים במספרים</span>}
             </p>
           )}
 
@@ -216,7 +218,7 @@ function AttentionList({ a }: { a: Attention }) {
     (n) => ({ icon: 'alert', tone: 'bad', text: <><span className="num font-bold">{n}</span> מפגשים הסתיימו ולא נסגרו. בלי סגירה, מי שלא הגיע לא מקבל מעקב.</>, to: '/app/events?tab=past', action: 'לרשימה' }));
   if (a.followups_overdue) items.push({ icon: 'task', tone: 'bad', text: <><span className="num font-bold">{a.followups_overdue}</span> משימות מעקב באיחור</>, to: '/app/followups?tab=open', action: 'למשימות' });
   const lapsedNoTask = a.lapsed.filter((l) => !l.has_open_task);
-  if (lapsedNoTask.length) items.push({ icon: 'people', tone: 'warn', text: <><span className="num font-bold">{lapsedNoTask.length}</span> קבועים הפסיקו להגיע: {lapsedNoTask.slice(0, 3).map((l) => l.full_name).join(', ')}{lapsedNoTask.length > 3 ? ' ועוד' : ''}</>, to: '/app/followups?tab=lapsed', action: 'לבדיקה' });
+  if (lapsedNoTask.length) items.push({ icon: 'people', tone: 'warn', text: <><span className="num font-bold">{lapsedNoTask.length}</span> קבועים הפסיקו להגיע: {lapsedNoTask.slice(0, 3).map((l) => l.full_name).join(', ')}{lapsedNoTask.length > 3 ? ' ועוד' : ''}</>, to: '/app/followups?tab=open', action: 'לבדיקה' });
   capped(a.waitlist_with_space,
     (e) => ({ icon: 'userPlus', tone: 'warn', text: <>התפנו מקומות ב{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>) ויש <span className="num">{e.waitlisted}</span> בהמתנה</>, to: `/app/events/${e.id}?tab=registrations`, action: 'לקידום' }),
     (n) => ({ icon: 'userPlus', tone: 'warn', text: <>ב-<span className="num font-bold">{n}</span> מפגשים התפנו מקומות ויש ממתינים</>, to: '/app/events', action: 'למפגשים' }));

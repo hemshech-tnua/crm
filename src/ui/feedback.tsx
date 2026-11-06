@@ -30,7 +30,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [toasts]);
   const push = useCallback((tone: Toast['tone'], text: string, action?: Toast['action']) => {
     const id = ++seq.current;
-    setToasts((t) => [...t.slice(-2), { id, tone, text, action }]);
+    setToasts([{ id, tone, text, action }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === 'bad' ? 7000 : action ? 6000 : 3500);
   }, []);
   const api = useRef<ToastApi>({

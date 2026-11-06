@@ -1,6 +1,7 @@
 // Ratios shown on the dashboard. Definitions: docs/01-spec.md §6. Null means "no data" (shown as —), never 0%.
 export type Kpis = {
   events: number;
+  unclosed_events?: number;
   attendances: number;
   unique_attendees: number;
   preregistered: number;

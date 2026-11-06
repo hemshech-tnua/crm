@@ -1,10 +1,10 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { useSources } from '@/lib/data';
-import { errorCode, errorMessage } from '@/lib/errors';
+import { errorCode, errorMessage, must } from '@/lib/errors';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { normalizePhone } from '@/lib/phone';
 import { Badge, Button, EmptyState, ErrorBox, Input, Notice, Panel, Select, Skeleton, cx } from '@/ui/kit';
@@ -38,6 +38,12 @@ export function DoorPage() {
     refetchInterval: busy ? false : 15_000,
   });
   const [search, setSearch] = useState('');
+  // rows marked in the last few seconds stay in place, so a wrong tap is fixed right where it happened
+  const [justMarked, setJustMarked] = useState<Record<string, number>>({});
+  const remember = (id: string) => {
+    setJustMarked((m) => ({ ...m, [id]: Date.now() }));
+    setTimeout(() => setJustMarked((m) => { const n = { ...m }; delete n[id]; return n; }), 6000);
+  };
   const [walkin, setWalkin] = useState<string | null>(null);
   const [showCancelled, setShowCancelled] = useState(false);
 
@@ -49,6 +55,7 @@ export function DoorPage() {
       return v;
     },
     onMutate: async (v) => {
+      if (v.attendance === 'attended') remember(v.row.registration_id);
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<CheckinRow[]>(key);
       qc.setQueryData<CheckinRow[]>(key, (rows) =>
@@ -67,11 +74,10 @@ export function DoorPage() {
       toast.error(`${firstName(v.row.display_name)}: לא נשמר. ${errorMessage(err)}`);
     },
     onSuccess: (v) => {
-      const name = firstName(v.row.display_name);
       if (v.attendance === 'attended') {
-        toast.success(`${name} הגיע/ה`, { label: 'ביטול', run: () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }) });
+        toast.success(`${v.row.display_name} הגיע/ה`, { label: 'ביטול', run: () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }) });
       } else {
-        toast.success(`בוטל: ${name} לא מסומן/ת`, { label: 'החזרה', run: () => setAttendance.mutate({ row: v.row, attendance: 'attended' }) });
+        toast.success(`הסימון של ${v.row.display_name} הוסר`, { label: 'החזרה', run: () => setAttendance.mutate({ row: v.row, attendance: 'attended' }) });
       }
     },
     onSettled: () => {
@@ -112,8 +118,9 @@ export function DoorPage() {
   const match = (r: CheckinRow) =>
     !term || r.display_name.includes(term) || r.display_name.toLowerCase().includes(term.toLowerCase()) || (digits.length >= 2 && (r.phone_last4 ?? '').includes(digits));
   const shown = rows.filter(match);
-  const arrived = shown.filter((r) => r.attendance === 'attended').sort((a, b) => (b.checked_in_at ?? '').localeCompare(a.checked_in_at ?? ''));
-  const notYet = shown.filter((r) => r.status === 'registered' && r.attendance !== 'attended');
+  const stays = (r: CheckinRow) => r.attendance === 'attended' && !!justMarked[r.registration_id];
+  const arrived = shown.filter((r) => r.attendance === 'attended' && !stays(r)).sort((a, b) => (b.checked_in_at ?? '').localeCompare(a.checked_in_at ?? ''));
+  const notYet = shown.filter((r) => (r.status === 'registered' && r.attendance !== 'attended') || stays(r));
   const waiting = shown.filter((r) => r.status === 'waitlisted' && r.attendance !== 'attended').sort((a, b) => (a.waitlist_position ?? 0) - (b.waitlist_position ?? 0));
   const cancelled = shown.filter((r) => r.status === 'cancelled' && r.attendance !== 'attended');
 
@@ -299,7 +306,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
           on ? 'border-good bg-good text-white' : 'border-tide/50 bg-paper text-tide hover:bg-tide-wash',
         )}
       >
-        <Icon name="check" size={30} strokeWidth={on ? 3 : 2.4} />
+        {on ? <Icon name="check" size={30} strokeWidth={3} /> : <span aria-hidden="true" className="h-7 w-7 rounded-full border-[3px] border-current" />}
       </button>
       <div className="min-w-0 flex-1">
         <div className={cx('truncate text-[1.1rem] font-bold leading-snug', r.status === 'cancelled' && 'text-muted')}>{r.display_name}</div>
@@ -353,6 +360,33 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
   const [more, setMore] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; phone?: string; age?: string; form?: string }>({});
 
+  // S3: someone we already know, typed by name: suggest the existing card instead of creating a duplicate
+  const [q, setQ] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setQ(name.trim()), 300);
+    return () => clearTimeout(t);
+  }, [name]);
+  const suggestions = useQuery({
+    queryKey: ['walkin-suggest', eventId, q],
+    enabled: q.length >= 3,
+    queryFn: async () => must(await supabase.rpc('staff_walkin_suggest', { p_event_id: eventId, p_query: q })) as
+      { participant_id: string; full_name: string; phone_last4: string | null; city: string | null }[],
+  });
+  const pick = useMutation({
+    mutationFn: async (p: { participant_id: string; full_name: string }) => {
+      const { error } = await supabase.rpc('staff_checkin_existing', { p_event_id: eventId, p_participant_id: p.participant_id });
+      if (error) throw error;
+      return p;
+    },
+    onSuccess: async (p) => {
+      await invalidate(eventId);
+      toast.success(`${p.full_name} מוכר/ת ממפגשים קודמים, וסומן/ה שהגיע/ה`);
+      onDone();
+      onClose();
+    },
+    onError: (err) => setErrors({ form: errorMessage(err) }),
+  });
+
   const add = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc('staff_add_walkin', {
@@ -396,6 +430,22 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
       <Input label="שם מלא" required autoFocus={!initialName} value={name} onChange={(x) => setName(x.target.value)} error={errors.name} autoComplete="off" maxLength={80} />
+      {(suggestions.data?.length ?? 0) > 0 && !phone && (
+        <div className="rounded-[var(--radius-control)] border border-tide/30 bg-tide-wash p-3" aria-live="polite">
+          <p className="mb-2 text-sm font-semibold text-tide-deep">כבר מכירים? אם זה אחד מאלה, לוחצים עליו במקום להוסיף כרטיס חדש:</p>
+          <ul className="flex flex-col gap-1.5">
+            {suggestions.data!.map((p) => (
+              <li key={p.participant_id}>
+                <button type="button" disabled={pick.isPending} onClick={() => pick.mutate(p)}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] bg-paper px-3 text-right hover:ring-2 hover:ring-tide/40">
+                  <span className="font-semibold">{p.full_name}{p.city ? <span className="font-normal text-muted"> · {p.city}</span> : null}</span>
+                  {p.phone_last4 && <span className="num text-sm text-muted">••{p.phone_last4}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <Input label="טלפון" required type="tel" inputMode="tel" ltr autoFocus={!!initialName} value={phone} onChange={(x) => setPhone(x.target.value)} error={errors.phone} placeholder="050-1234567" autoComplete="off" />
       {more ? (
         <>

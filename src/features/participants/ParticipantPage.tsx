@@ -108,7 +108,7 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
       </div>
 
       <StatStrip loading={stats.isLoading} items={[
-        ['שישים', s?.friday_count ?? null, 'מפגשי שישי שהגיע/ה אליהם'],
+        ['מפגשי שישי', s?.friday_count ?? null, 'מפגשי שישי שהגיע/ה אליהם'],
         ['כל הפעילויות', s?.attended_count ?? null, 'כולל ערבי מדורה'],
         ['ביקור אחרון', s?.last_attended_at ? ago(s.last_attended_at) : null, s?.last_attended_at ? fmtDate(s.last_attended_at) : undefined],
         ['ביקור ראשון', s?.first_attended_at ? fmtDate(s.first_attended_at) : null],

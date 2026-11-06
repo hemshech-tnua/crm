@@ -1,14 +1,14 @@
 // Follow-up building blocks used by the work queue (FollowUpsPage) and by the participant card.
 import { useMemo, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
 import { useStaffList } from '@/lib/data';
 import { addDays, todayIl } from '@/lib/dates';
-import { errorCode, errorMessage } from '@/lib/errors';
+import { errorCode, errorMessage, must } from '@/lib/errors';
 import { CHANNEL_LABEL } from '@/lib/labels';
 import type { FollowUp } from '@/lib/types';
-import { Button, ChoiceGroup, Input, Select, Textarea } from '@/ui/kit';
+import { Button, Checkbox, ChoiceGroup, Input, Select, Textarea } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
 import { MessageComposer } from '@/ui/MessageComposer';
 import {
@@ -85,7 +85,7 @@ export function TaskComposer({ task, nextEvent, onClose }: { task: TaskRow; next
 
 // ───────────── complete a task ─────────────
 
-const QUICK_OUTCOMES = ['לא ענה/תה, ננסה שוב', 'הכול בסדר, יגיע/תגיע בשישי הבא', 'ביקש/ה לא לפנות שוב'];
+const QUICK_OUTCOMES = ['הכול בסדר, יגיע/תגיע בשישי הבא', 'עסוק/ה בתקופה הזו, נחזור בעוד חודש', 'ביקש/ה לא לפנות שוב'];
 
 export function CompleteTaskDialog({ task, onClose }: {
   task: Pick<FollowUp, 'id' | 'participant_id' | 'event_id' | 'title'> & { participantName?: string | null };
@@ -96,11 +96,41 @@ export function CompleteTaskDialog({ task, onClose }: {
   const [outcome, setOutcome] = useState('');
   const [channel, setChannel] = useState<Channel>('phone');
   const [err, setErr] = useState<string | null>(null);
+  // S4: other open tasks for the same person (one conversation usually answers all of them)
+  const others = useQuery({
+    queryKey: ['followups', 'others', task.participant_id, task.id],
+    queryFn: async () => must(await supabase.from('follow_ups').select('id, title').eq('participant_id', task.participant_id)
+      .eq('status', 'open').neq('id', task.id)) as { id: string; title: string }[],
+  });
+  const [closeOthers, setCloseOthers] = useState(true);
+  // S1: "didn't answer" keeps the task open, logs the attempt and moves the due date
+  const retry = useMutation({
+    mutationFn: async () => {
+      const due = addDays(todayIl(), 2);
+      const { error } = await supabase.from('follow_ups').update({ due_date: due }).eq('id', task.id);
+      if (error) throw error;
+      const { error: logErr } = await supabase.from('contact_log').insert({
+        participant_id: task.participant_id, channel, summary: 'ניסיון יצירת קשר: לא ענה/תה', follow_up_id: task.id, event_id: task.event_id,
+      });
+      if (logErr) throw logErr;
+    },
+    onSuccess: () => {
+      invalidate(task.participant_id);
+      toast.success('הניסיון נרשם. המשימה נשארת פתוחה ליומיים הקרובים.');
+      onClose();
+    },
+    onError: (e: unknown) => setErr(errorMessage(e)),
+  });
   const save = useMutation({
     mutationFn: async () => {
       const text = outcome.trim();
       const { error } = await supabase.from('follow_ups').update({ status: 'done', outcome: text }).eq('id', task.id);
       if (error) throw error;
+      if (closeOthers && others.data?.length) {
+        const { error: e2 } = await supabase.from('follow_ups').update({ status: 'done', outcome: `נסגר יחד עם "${task.title}": ${text}` })
+          .in('id', others.data.map((o) => o.id));
+        if (e2) throw e2;
+      }
       const { error: logErr } = await supabase.from('contact_log').insert({
         participant_id: task.participant_id, channel, summary: text, follow_up_id: task.id, event_id: task.event_id,
       });
@@ -130,7 +160,8 @@ export function CompleteTaskDialog({ task, onClose }: {
       onClose={onClose}
       title="סימון כבוצע"
       footer={<>
-        <Button icon="check" busy={save.isPending} onClick={submit}>שמירה</Button>
+        <Button icon="check" busy={save.isPending} disabled={retry.isPending} onClick={submit}>בוצע: שמירה</Button>
+        <Button variant="secondary" icon="undo" busy={retry.isPending} disabled={save.isPending} onClick={() => retry.mutate()}>לא ענה/תה: לנסות שוב בעוד יומיים</Button>
         <Button variant="ghost" onClick={onClose}>ביטול</Button>
       </>}
     >
@@ -154,6 +185,14 @@ export function CompleteTaskDialog({ task, onClose }: {
           </div>
           <FieldGuidance />
         </div>
+        {(others.data?.length ?? 0) > 0 && (
+          <Checkbox
+            checked={closeOthers}
+            onChange={setCloseOthers}
+            label={`לסגור גם ${others.data!.length === 1 ? 'את המשימה הפתוחה הנוספת' : `את ${others.data!.length} המשימות הפתוחות הנוספות`} של ${task.participantName ?? 'אותו אדם'}`}
+            hint={others.data!.map((o) => o.title).join(' · ')}
+          />
+        )}
       </div>
     </Dialog>
   );

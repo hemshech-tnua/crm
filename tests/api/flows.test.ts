@@ -525,3 +525,51 @@ describe('user simulation round 1 fixes', () => {
     expect(org.contact_phone).toBe('+972527110055');
   });
 });
+
+describe('user simulation round 1 fixes (staff side)', () => {
+  it('goal metrics count closed meetings only and report the unclosed ones', async () => {
+    const admin = await staff('admin');
+    const coord = await staff('coord');
+    const { data: site } = await admin.from('sites').insert({ name: `מתחם לא נסגר ${Date.now()}` }).select('id').single();
+    const closed = await makeEvent({ site_id: site!.id, startsInMinutes: -8 * 24 * 60 });
+    const open = await makeEvent({ site_id: site!.id, startsInMinutes: -1 * 24 * 60 });
+    for (const e of [closed, open]) {
+      const { data: p } = await coord.from('participants').insert({ full_name: name(), phone: phone() }).select('id').single();
+      const { data: r } = await coord.rpc('staff_register', { p_event_id: e.id, p_participant_id: p!.id });
+      if (e === closed) await coord.rpc('staff_set_attendance', { p_registration_id: r.registration_id, p_attendance: 'attended' });
+    }
+    await coord.rpc('staff_complete_event', { p_event_id: closed.id });
+    const { data: k } = await coord.rpc('report_kpis', { p_site: site!.id });
+    expect(k).toMatchObject({ events: 1, attendances: 1, preregistered: 1, unclosed_events: 1 });
+  });
+
+  it('closing a meeting does not open a second task for someone who already has an open one', async () => {
+    const coord = await staff('coord');
+    const ev = await makeEvent({ startsInMinutes: -60 });
+    const { data: p } = await coord.from('participants').insert({ full_name: name(), phone: phone() }).select('id').single();
+    await coord.from('follow_ups').insert({ participant_id: p!.id, type: 'general', title: 'לחזור אליו' });
+    await coord.rpc('staff_register', { p_event_id: ev.id, p_participant_id: p!.id });
+    await coord.rpc('staff_complete_event', { p_event_id: ev.id });
+    const { data: tasks } = await coord.from('follow_ups').select('type').eq('participant_id', p!.id).eq('status', 'open');
+    expect(tasks).toEqual([{ type: 'general' }]);
+  });
+
+  it('the door team finds an existing person by name (last 4 digits only) and checks them in without a duplicate', async () => {
+    const coord = await staff('coord');
+    const ev = await makeEvent({ startsInMinutes: 10 });
+    const n = `שירה בדיקתדלת ${Date.now().toString(36).replace(/\d/g, 'א')}`;
+    const ph = phone();
+    const { data: p } = await coord.from('participants').insert({ full_name: n, phone: ph }).select('id').single();
+    const door = await staff('door');
+    const { data: sug, error } = await door.rpc('staff_walkin_suggest', { p_event_id: ev.id, p_query: n.slice(0, 12) });
+    expect(error).toBeNull();
+    const hit = sug.find((x: any) => x.participant_id === p!.id);
+    expect(hit).toMatchObject({ full_name: n, phone_last4: e164(ph).slice(-4) });
+    expect(JSON.stringify(sug)).not.toContain(e164(ph));
+    expect((await door.rpc('staff_checkin_existing', { p_event_id: ev.id, p_participant_id: p!.id })).error).toBeNull();
+    const { count } = await coord.from('participants').select('id', { count: 'exact', head: true }).eq('full_name', n);
+    expect(count).toBe(1);
+    const far = await makeEvent({ startsInMinutes: 6 * 24 * 60 });
+    expect((await door.rpc('staff_walkin_suggest', { p_event_id: far.id, p_query: 'שירה' })).error?.message).toBe('forbidden');
+  });
+});

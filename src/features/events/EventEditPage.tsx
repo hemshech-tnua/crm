@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { useEvent, useSettings, useSites, useSpeakers } from '@/lib/data';
+import { useEvent, useSettings, useSites, useSpeakers, useEventsWithStats } from '@/lib/data';
 import { errorMessage } from '@/lib/errors';
 import { addDays, fmtDayLong, fromIl, ilParts, nextFriday, todayIl } from '@/lib/dates';
 import { EVENT_STATUS_LABEL, EVENT_TYPE_LABEL } from '@/lib/labels';
@@ -43,9 +43,11 @@ function defaultFriday(): string {
   return new Date(fromIl(d, DEFAULT_TIMES.friday[0])).getTime() > Date.now() ? d : addDays(d, 7);
 }
 
-function newForm(settings: Settings | undefined, sites: Site[]): Form {
+function newForm(settings: Settings | undefined, sites: Site[], taken: Set<string>): Form {
   const siteId = settings?.default_site_id ?? sites.find((s) => s.is_active)?.id ?? '';
-  const date = defaultFriday();
+  // S12: the first coming Friday that does not have a Friday meeting yet
+  let date = defaultFriday();
+  for (let i = 0; i < 12 && taken.has(date); i++) date = addDays(date, 7);
   return {
     type: 'friday',
     title: DEFAULT_TITLE.friday,
@@ -102,8 +104,11 @@ export function EventEditPage() {
   const settings = useSettings();
   const sites = useSites();
   const speakers = useSpeakers();
+  // a stable key (today's date): a key built from the current time would refetch forever
+  const upcoming = useEventsWithStats({ from: fromIl(todayIl(), '00:00'), ascending: true });
+  const takenFridays = new Set((upcoming.data ?? []).filter((e) => e.type === 'friday' && e.status !== 'cancelled').map((e) => ilParts(e.starts_at).date));
 
-  const loading = (id && event.isLoading) || settings.isLoading || sites.isLoading || speakers.isLoading;
+  const loading = (id && event.isLoading) || settings.isLoading || sites.isLoading || speakers.isLoading || (!id && upcoming.isLoading);
   const error = (id && event.error) || sites.error || speakers.error;
 
   return (
@@ -120,7 +125,7 @@ export function EventEditPage() {
         <EventForm
           key={id ?? 'new'}
           event={id ? event.data : undefined}
-          initial={id && event.data ? formFromEvent(event.data) : newForm(settings.data, sites.data ?? [])}
+          initial={id && event.data ? formFromEvent(event.data) : newForm(settings.data, sites.data ?? [], takenFridays)}
           sites={sites.data ?? []}
           speakers={speakers.data ?? []}
         />

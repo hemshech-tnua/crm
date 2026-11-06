@@ -26,7 +26,10 @@ const STATUS_TONE: Record<EventStatus, 'neutral' | 'good' | 'tide' | 'warn' | 'b
   cancelled: 'bad',
 };
 
-export function StatusBadge({ status }: { status: EventStatus }) {
+export function StatusBadge({ status, endsAt }: { status: EventStatus; endsAt?: string }) {
+  if (endsAt && (status === 'open' || status === 'closed') && new Date(endsAt).getTime() < Date.now()) {
+    return <Badge tone="warn" icon="alert">הסתיים, לא נסגר</Badge>;
+  }
   return <Badge tone={STATUS_TONE[status]} icon={status === 'completed' ? 'check' : undefined}>{EVENT_STATUS_LABEL[status]}</Badge>;
 }
 

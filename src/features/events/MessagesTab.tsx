@@ -10,6 +10,7 @@ import { MessageComposer, allowedFor, type Recipient } from '@/ui/MessageCompose
 import type { EventPeople } from './context';
 import { useConsentedRecent, useEventRegistrations, useSentForEvent } from './queries';
 import { hasStarted } from './shared';
+import { useCopy } from '@/ui/feedback';
 
 type Group = 'registered' | 'waitlisted' | 'attended' | 'no_show' | 'consented';
 const GROUPS: { value: Group; label: string }[] = [
@@ -96,6 +97,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   const next = ordered.find((p) => eligible(p) && !sentAt.has(p.id));
   const blocked = recipients.filter((p) => p.phone && !allowedFor(tpl, p)).length;
 
+  const copy = useCopy();
   const loading = templates.isLoading || regs.isLoading || (group === 'consented' && consented.isLoading);
   const error = templates.error || regs.error || sent.error || (group === 'consented' ? consented.error : null);
 
@@ -106,6 +108,8 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   }
 
   const preview = tpl ? renderTemplate(tpl.body, { ...people.ctx, firstName: '‹שם פרטי›' }) : '';
+  // S8: one generic text for a WhatsApp broadcast list or group (service templates only; marketing needs per-person consent)
+  const broadcast = tpl && !tpl.is_marketing ? renderTemplate(tpl.body, { ...people.ctx, firstName: 'כולם' }) : '';
 
   return (
     <div className="flex flex-col gap-5">
@@ -126,6 +130,12 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
               <div className="mb-1.5 text-sm font-semibold">כך זה ייראה</div>
               <div className="rounded-[var(--radius-control)] bg-[#e7f4ea] px-3.5 py-3 text-[0.95rem] leading-relaxed whitespace-pre-line text-ink">{preview || <span className="text-muted">התבנית ריקה.</span>}</div>
               <p className="mt-1.5 text-sm text-muted">שורה עם פרט שחסר במפגש (למשל מרצה) יורדת מההודעה. אפשר לערוך את הטקסט לפני כל שליחה.</p>
+              {broadcast && (
+                <div className="mt-3 rounded-[var(--radius-control)] border border-line-soft p-3">
+                  <p className="text-sm text-ink-soft">יש רשימת תפוצה בוואטסאפ לנרשמים? אפשר לשלוח לכולם בבת אחת עם נוסח כללי:</p>
+                  <Button size="sm" variant="secondary" icon="copy" className="mt-2" onClick={() => copy(broadcast, 'הנוסח הכללי הועתק')}>העתקת נוסח כללי לרשימת תפוצה</Button>
+                </div>
+              )}
             </div>
             <fieldset>
               <legend className="mb-1.5 text-sm font-semibold">למי</legend>
@@ -151,7 +161,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
         </Panel>
 
         <Panel
-          title={<span>נשלחו <span className="num">{doneCount}</span> מתוך <span className="num">{eligibleCount}</span></span>}
+          title={<span>נפתחו בוואטסאפ <span className="num">{doneCount}</span> מתוך <span className="num">{eligibleCount}</span></span>}
           actions={next ? <Button size="sm" icon="message" onClick={() => setComposer(next)}>שליחה ל{next.full_name?.split(' ')[0] ?? 'הבא/ה'}</Button> : undefined}
           padded={false}
         >
@@ -185,7 +195,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                     </div>
                     {at ? (
                       <div className="flex items-center gap-1.5">
-                        <Badge tone="good" icon="check">נשלח <span className="num">{fmtDateTime(at)}</span></Badge>
+                        <Badge tone="good" icon="check" title="נפתח בוואטסאפ. המערכת לא יודעת אם נלחץ שם 'שלח'.">נפתח בוואטסאפ <span className="num">{fmtDateTime(at)}</span></Badge>
                         <Button size="sm" variant="ghost" onClick={() => setComposer(p)}>שוב</Button>
                       </div>
                     ) : !p.phone ? (

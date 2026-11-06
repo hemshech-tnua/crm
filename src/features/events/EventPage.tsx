@@ -46,7 +46,7 @@ export function EventPage() {
         subtitle={
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <TypeBadge type={e.type} />
-            <StatusBadge status={e.status} />
+            <StatusBadge status={e.status} endsAt={e.ends_at} />
             <span className="font-medium text-ink-soft">{fmtDayLong(e.starts_at)}</span>
             <span className="num">{timeRange(e)}</span>
             {e.status !== 'completed' && e.status !== 'cancelled' && <span>· {relativeDays(e.starts_at)}</span>}

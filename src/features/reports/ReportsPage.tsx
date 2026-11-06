@@ -194,7 +194,7 @@ function MonthlyReport({ filters }: { filters: Filters }) {
 
 type SourceRow = { source_id: string | null; label: string; is_friend: boolean; participants: number; returned: number; avg_attended: number | null; with_referrer: number; registered_only: number };
 type LinkRow = { id: string; code: string; label: string; source_label: string | null; campaign: string | null; is_active: boolean; registrations: number; attended: number; new_people: number };
-type Referrers = { referrers: { id: string; full_name: string; friends: number; friends_attended: number; friends_returned: number }[]; unlinked_names: number };
+type Referrers = { referrers: { id: string; full_name: string; friends: number; friends_attended: number; friends_returned: number; friend_list?: { id: string; full_name: string; attended: number }[] }[]; unlinked_names: number };
 
 function SourcesReport({ filters }: { filters: Filters }) {
   const s = useQuery({ queryKey: ['report_sources', filters.from, filters.to], queryFn: async () => must(await supabase.rpc('report_sources', { p_from: filters.from, p_to: filters.to })) as SourceRow[] });
@@ -268,6 +268,14 @@ function SourcesReport({ filters }: { filters: Filters }) {
                     <span className="text-sm">הביא/ה <span className="num font-display text-lg">{x.friends}</span></span>
                     <span className="text-sm text-muted">הגיעו: <span className="num">{x.friends_attended}</span></span>
                     <span className="text-sm text-muted">חזרו: <span className="num">{x.friends_returned}</span></span>
+                    {x.friend_list?.length ? (
+                      <span className="w-full text-sm text-ink-soft">
+                        {x.friend_list.map((f, i) => (
+                          <span key={f.id}>{i > 0 && ' · '}<Link to={`/app/participants/${f.id}`} className="hover:text-tide hover:underline">{f.full_name}</Link>
+                            <span className="num text-muted"> ({f.attended})</span></span>
+                        ))}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -297,31 +305,44 @@ function PresentersReport({ filters }: { filters: Filters }) {
     { header: 'מפגשים', value: (x) => x.events },
     { header: 'ממוצע משתתפים', value: (x) => x.avg_attendance },
     { header: 'חדשים שהגיעו', value: (x) => x.new_attendees },
-    { header: 'דירוג ממוצע', value: (x) => x.avg_rating },
+    { header: 'דירוג (הרצאה למרצים, פעילות למדריכים)', value: (x) => x.avg_rating },
   ];
+  const table = (kind: 'speaker' | 'instructor') => {
+    const list = rows.filter((x) => x.kind === kind);
+    if (!list.length) return <p className="p-5 text-muted">אין עדיין מפגשים שנסגרו בתקופה.</p>;
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-[0.93rem]">
+          <thead className="border-b border-line-soft bg-mist/50"><tr>
+            <th className={th}>שם</th><th className={th}>{kind === 'speaker' ? 'נושאי ההרצאות' : 'פעילויות'}</th><th className={th}>מפגשים</th>
+            <th className={th}>ממוצע משתתפים</th><th className={th}>חדשים</th><th className={th}>{kind === 'speaker' ? 'דירוג ההרצאה' : 'דירוג הפעילות'}</th>
+          </tr></thead>
+          <tbody className="divide-y divide-line-soft">
+            {list.map((x) => (
+              <tr key={x.id}>
+                <td className={`${td} font-semibold`}>{x.full_name}</td>
+                <td className={`${td} max-w-72 truncate`} title={x.topics ?? ''}>{x.topics ?? x.topic ?? '—'}</td>
+                <td className={`${td} num`}>{x.events}</td>
+                <td className={`${td} num font-display text-lg`}>{num(x.avg_attendance, 1)}</td>
+                <td className={`${td} num`}>{x.new_attendees}</td>
+                <td className={`${td} num`}>{num(x.avg_rating, 1)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
   return (
     <State q={q} empty={!rows.length}>
-      <Panel padded={false} title="מי ואיזה נושא מביאים הכי הרבה לוחמים" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('presenters', 'martzim', rows, cols)}>ייצוא לאקסל</Button>}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[0.93rem]">
-            <thead className="border-b border-line-soft bg-mist/50"><tr>
-              <th className={th}>שם</th><th className={th}>נושאים</th><th className={th}>מפגשים</th><th className={th}>ממוצע משתתפים</th><th className={th}>חדשים</th><th className={th}>דירוג</th>
-            </tr></thead>
-            <tbody className="divide-y divide-line-soft">
-              {rows.map((x) => (
-                <tr key={x.id}>
-                  <td className={td}><span className="font-semibold">{x.full_name}</span> <Badge tone={x.kind === 'speaker' ? 'tide' : 'neutral'}>{x.kind === 'speaker' ? 'מרצה' : 'מדריך/ה'}</Badge></td>
-                  <td className={`${td} max-w-72 truncate`} title={x.topics ?? ''}>{x.topics ?? x.topic ?? '—'}</td>
-                  <td className={`${td} num`}>{x.events}</td>
-                  <td className={`${td} num font-display text-lg`}>{num(x.avg_attendance, 1)}</td>
-                  <td className={`${td} num`}>{x.new_attendees}</td>
-                  <td className={`${td} num`}>{num(x.avg_rating, 1)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+      <div className="flex flex-col gap-5">
+        <Panel padded={false} title="מרצים אורחים: מי ואיזה נושא מביאים הכי הרבה לוחמים" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('presenters', 'martzim', rows, cols)}>ייצוא לאקסל</Button>}>
+          {table('speaker')}
+        </Panel>
+        <Panel padded={false} title="מדריכים (יוגה ופילאטיס)">
+          {table('instructor')}
+        </Panel>
+      </div>
     </State>
   );
 }
@@ -374,7 +395,8 @@ function Definitions() {
     ['קבוע/ה', 'הגיע/ה ל-2 מפגשי שישי לפחות ב-30 הימים האחרונים (ניתן לשינוי בהגדרות).'],
     ['הפסיק/ה להגיע', 'מי שהיה קבוע בעבר, ומאז ביקורו האחרון התקיימו 3 מפגשי שישי במתחם שלו בלי שהגיע (ניתן לשינוי).'],
     ['שלושה סוגי מקור', 'מקור ההיכרות נשמר בכרטיס הלוחם בהרשמה הראשונה ולא משתנה. "מי הפנה" וקישור הערוץ/הקמפיין נשמרים בכל הרשמה בנפרד.'],
-    ['כשאין נתונים', 'מוצג "—" ולא 0%. מפגש שלא נסגר נספר לפי הנוכחות שסומנה עד עכשיו.'],
+    ['כשאין נתונים', 'מוצג "—" ולא 0%.'],
+    ['מפגש שלא נסגר', 'היעדים והדוחות סופרים רק מפגשים שנסגרו ("סגירת המפגש"), כי רק אז הנוכחות סופית. מפגש שהסתיים ולא נסגר מופיע ברשימות עם סימון, ובסקירה יש תזכורת לסגור אותו.'],
   ];
   return (
     <Panel>

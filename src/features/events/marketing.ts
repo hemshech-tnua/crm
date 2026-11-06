@@ -334,6 +334,9 @@ export function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
 
 // ───────────── captions ─────────────
 
+/** Keeps "9:00–11:30" in order inside Hebrew text when pasted into Instagram/WhatsApp (Unicode isolate). */
+const isolateLtr = (t: string) => (t ? `\u2066${t}\u2069` : t);
+
 export type CaptionInput = {
   type: 'friday' | 'bonfire' | 'other';
   org: string;
@@ -381,7 +384,7 @@ export function instagramCaption(c: CaptionInput, cta = 'ההרשמה בקישו
   const program = joinHe(programItems(c.type, c.activity, !!c.speakerName));
   return [
     `${c.title} | ${c.date}`,
-    [c.time, c.place].filter(Boolean).join(' · '),
+    [isolateLtr(c.time), c.place].filter(Boolean).join(' · '),
     '',
     program ? `${program}.` : '',
     speakerLine(c),
@@ -401,7 +404,7 @@ export function whatsappGroupMessage(c: CaptionInput, link: string): string {
   const program = joinHe(programItems(c.type, c.activity, !!c.speakerName));
   return [
     `*${c.title}* | ${c.date}`,
-    [c.time, c.place].filter(Boolean).join(' · '),
+    [isolateLtr(c.time), c.place].filter(Boolean).join(' · '),
     '',
     program ? `${program}.` : '',
     speakerLine(c),

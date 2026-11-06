@@ -7,6 +7,7 @@ const executablePath = process.env.PW_CHROMIUM ?? (existsSync('/opt/pw-browsers/
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: false,
   workers: 1,
   timeout: 90_000,
