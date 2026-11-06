@@ -1,7 +1,7 @@
 // Scenarios 2–6 at the API layer: create an event, register (new and returning), waitlist, cancel,
 // check in (QR, phone, walk-in, staff), close the event, feedback, and the numbers in the reports.
 import { describe, expect, it } from 'vitest';
-import { e164, makeEvent, name, phone, registration, staff, visitor, SITE_ID } from './helpers';
+import { e164, makeEvent, name, phone, registration, staff, visitor } from './helpers';
 
 describe('registration', () => {
   it('registers a new participant and keeps the source', async () => {
