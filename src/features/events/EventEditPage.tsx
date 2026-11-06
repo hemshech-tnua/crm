@@ -270,6 +270,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
   };
 
   const notFriday = f.type === 'friday' && /^\d{4}-\d{2}-\d{2}$/.test(f.date) && new Date(`${f.date}T12:00:00Z`).getUTCDay() !== 5;
+  const isPast = !event && /^\d{4}-\d{2}-\d{2}$/.test(f.date) && /^\d{2}:\d{2}$/.test(f.end) && new Date(fromIl(f.date, f.end)).getTime() < Date.now();
   const started = event && hasStarted(event);
 
   return (
@@ -297,7 +298,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               value={f.date}
               onChange={(e) => set('date', e.target.value)}
               error={errors.date}
-              hint={/^\d{4}-\d{2}-\d{2}$/.test(f.date) ? <span className={cx(notFriday && 'font-semibold text-warn')}>{fmtDayLong(fromIl(f.date, '12:00'))}{notFriday ? ' (לא יום שישי)' : ''}</span> : undefined}
+              hint={/^\d{4}-\d{2}-\d{2}$/.test(f.date) ? <span className={cx((notFriday || isPast) && 'font-semibold text-warn')}>{fmtDayLong(fromIl(f.date, '12:00'))}{notFriday ? ' (לא יום שישי)' : ''}{isPast ? ' · המועד כבר עבר (מתאים רק לתיעוד מפגש שהתקיים)' : ''}</span> : undefined}
             />
             <Input label="שעת התחלה" type="time" required ltr value={f.start} onChange={(e) => set('start', e.target.value)} error={errors.start} step={300} />
             <Input label="שעת סיום" type="time" required ltr value={f.end} onChange={(e) => set('end', e.target.value)} error={errors.end} step={300} />

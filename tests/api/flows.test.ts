@@ -62,7 +62,7 @@ describe('registration', () => {
     expect(regs!.find((r) => r.event_id === ev2.id)!.submitted_name).toBe('שם אחר לגמרי');
 
     // same event again: no second registration
-    const again = await visitor().rpc('public_register', { p: registration(ev2.public_code, { phone: local }) });
+    const again = await visitor().rpc('public_register', { p: registration(ev2.public_code, { phone: local, full_name: first.full_name }) });
     expect(again.data.status).toBe('already_registered');
     // a pure lookup by phone hands out nothing personal: no token, no invite code
     expect(again.data.token).toBeUndefined();
@@ -193,8 +193,11 @@ describe('check-in at the door', () => {
     const other = await makeEvent({ startsInMinutes: 15 * 24 * 60 });
     const known = registration(other.public_code);
     await v.rpc('public_register', { p: known });
+    // known phone, not registered for this meeting: no name is revealed; the walk-in form asks for their own name
     const k = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: known.phone } });
-    expect(k.data.result).toBe('checked_in');
+    expect(k.data).toEqual({ result: 'not_registered' });
+    const kw = await v.rpc('public_walkin', { p: { code: ev.checkin_code, full_name: known.full_name, phone: known.phone, city: 'מודיעין', age: '30', source: 'instagram' } });
+    expect(kw.data.result).toBe('checked_in');
 
     const coord = await staff('coord');
     const { data: list } = await coord.rpc('staff_checkin_list', { p_event_id: ev.id });
@@ -505,7 +508,7 @@ describe('user simulation round 1 fixes', () => {
     // a walk-in created by a mistaken check-in disappears entirely
     const known = registration((await makeEvent({ startsInMinutes: 20 * 24 * 60 })).public_code);
     await v.rpc('public_register', { p: known });
-    const w = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: known.phone } });
+    const w = await v.rpc('public_walkin', { p: { code: ev.checkin_code, full_name: known.full_name, phone: known.phone, city: 'לוד', age: '31', source: 'instagram' } });
     expect((await v.rpc('public_checkin_undo', { p_token: w.data.token })).error).toBeNull();
     const { data: after } = await coord.rpc('staff_checkin_list', { p_event_id: ev.id });
     expect(after).toHaveLength(1);
@@ -571,5 +574,75 @@ describe('user simulation round 1 fixes (staff side)', () => {
     expect(count).toBe(1);
     const far = await makeEvent({ startsInMinutes: 6 * 24 * 60 });
     expect((await door.rpc('staff_walkin_suggest', { p_event_id: far.id, p_query: 'שירה' })).error?.message).toBe('forbidden');
+  });
+});
+
+describe('user simulation round 2 fixes', () => {
+  it('a freed seat goes to the waitlist, not to a newcomer (R4)', async () => {
+    const ev = await makeEvent({ capacity: 1 });
+    const v = visitor();
+    const a = await v.rpc('public_register', { p: registration(ev.public_code) });
+    const b = await v.rpc('public_register', { p: registration(ev.public_code) });
+    expect(b.data.status).toBe('waitlisted');
+    await v.rpc('public_cancel', { p_token: a.data.token });
+    const info = await v.rpc('public_get_event', { p_code: ev.public_code });
+    expect(info.data).toMatchObject({ is_full: true, spots_left: 0 });
+    const c = await v.rpc('public_register', { p: registration(ev.public_code) });
+    expect(c.data.status).toBe('waitlisted');
+    const coord = await staff('coord');
+    const { data: first } = await coord.from('registrations').select('id').eq('event_id', ev.id).eq('status', 'waitlisted').order('registered_at').limit(1).single();
+    expect((await coord.rpc('staff_promote', { p_registration_id: first!.id })).error).toBeNull();
+  });
+
+  it('one phone, a clearly different name: an honest answer, nothing revealed (R5)', async () => {
+    const ev = await makeEvent();
+    const v = visitor();
+    const owner = registration(ev.public_code, { full_name: 'אורית בעלת מספר' });
+    await v.rpc('public_register', { p: owner });
+    const { data } = await v.rpc('public_register', { p: registration(ev.public_code, { full_name: 'יוסי אחר לגמרי', phone: owner.phone }) });
+    expect(data.status).toBe('phone_in_use');
+    expect(JSON.stringify(data)).not.toContain('אורית');
+  });
+
+  it('follow-ups follow attendance: coming back closes "missed you"; a first visit marked after closing gets a welcome call (R3)', async () => {
+    const coord = await staff('coord');
+    const { data: p } = await coord.from('participants').insert({ full_name: name(), phone: phone() }).select('id').single();
+    const missed = await makeEvent({ startsInMinutes: -8 * 24 * 60 });
+    const r1 = await coord.rpc('staff_register', { p_event_id: missed.id, p_participant_id: p!.id });
+    await coord.rpc('staff_complete_event', { p_event_id: missed.id });
+    const open1 = await coord.from('follow_ups').select('type').eq('participant_id', p!.id).eq('status', 'open');
+    expect(open1.data).toEqual([{ type: 'no_show' }]);
+    void r1;
+    const came = await makeEvent({ startsInMinutes: -60 });
+    const r2 = await coord.rpc('staff_register', { p_event_id: came.id, p_participant_id: p!.id });
+    await coord.rpc('staff_complete_event', { p_event_id: came.id });
+    // marked as arrived only after the meeting was closed
+    await coord.rpc('staff_set_attendance', { p_registration_id: r2.data.registration_id, p_attendance: 'attended' });
+    const { data: tasks } = await coord.from('follow_ups').select('type, status, event_id').eq('participant_id', p!.id).order('created_at');
+    expect(tasks!.find((t) => t.type === 'no_show' && t.event_id === missed.id)!.status).toBe('cancelled');
+    expect(tasks!.filter((t) => t.status === 'open')).toEqual([{ type: 'first_time', status: 'open', event_id: came.id }]);
+  });
+
+  it('a door walk-in with a known phone but another name is flagged for staff (R2)', async () => {
+    const coord = await staff('coord');
+    const ph = phone();
+    await coord.from('participants').insert({ full_name: 'עידו בעל המספר', phone: ph });
+    const ev = await makeEvent({ startsInMinutes: 5 });
+    const door = await staff('door');
+    const { data } = await door.rpc('staff_add_walkin', { p_event_id: ev.id, p: { full_name: 'דני מישהו אחר', phone: ph } });
+    expect(data.card_name).toBe('עידו בעל המספר');
+    const { data: att } = await coord.rpc('attention_items');
+    expect(att.name_mismatches.some((m: any) => m.typed_name === 'דני מישהו אחר')).toBe(true);
+  });
+
+  it('general-link feedback is attached by phone only to someone who attended (R10)', async () => {
+    const coord = await staff('coord');
+    const ev = await makeEvent({ startsInMinutes: -60 });
+    const ph = phone();
+    const { data: p } = await coord.from('participants').insert({ full_name: name(), phone: ph }).select('id').single();
+    await coord.rpc('staff_register', { p_event_id: ev.id, p_participant_id: p!.id }); // registered, did not come
+    await visitor().rpc('public_submit_feedback', { p: { event: ev.public_code, phone: ph, overall: 2 } });
+    const { data: fb } = await coord.from('feedback').select('participant_id').eq('event_id', ev.id);
+    expect(fb).toEqual([{ participant_id: null }]);
   });
 });

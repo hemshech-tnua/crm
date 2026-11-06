@@ -6,7 +6,7 @@ import type { Attendance, PublicEvent, RegStatus } from '@/lib/types';
 
 export type PublicSource = { key: string; label: string; is_friend: boolean; asks_detail: boolean };
 
-export type RegisterStatus = 'registered' | 'waitlisted' | 'already_registered' | 'already_waitlisted';
+export type RegisterStatus = 'registered' | 'waitlisted' | 'already_registered' | 'already_waitlisted' | 'phone_in_use';
 export type RegisterResult = {
   status: RegisterStatus;
   first_name: string | null;

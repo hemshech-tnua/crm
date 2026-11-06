@@ -159,7 +159,7 @@ export function DashboardPage() {
               {!kpis.data || !d || !g ? Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton h-40" />) : (
                 <>
                   <GoalStat label="ממוצע משתתפים למפגש" value={d.avgAttendance} display={num(d.avgAttendance, 1)} goal={g.avg_attendance} goalDisplay={num(g.avg_attendance)}
-                    hint={`${kpis.data.attendances} הגעות ב-${kpis.data.events} מפגשים`} onOpen={() => setDrill('attendees')} />
+                    hint={kpis.data.events === 1 ? `${kpis.data.attendances} הגעות במפגש אחד` : `${kpis.data.attendances} הגעות ב-${kpis.data.events} מפגשים`} onOpen={() => setDrill('attendees')} />
                   <GoalStat label="הגיעו מתוך מי שנרשם" value={d.showRate} display={pct(d.showRate)} goal={g.show_rate} goalDisplay={pct(g.show_rate)}
                     hint={`${kpis.data.preregistered_attended} מתוך ${kpis.data.preregistered} נרשמים`} />
                   <GoalStat label="הגיעו ליותר ממפגש אחד" value={d.returnRate} display={pct(d.returnRate)} goal={g.return_rate} goalDisplay={pct(g.return_rate)}
@@ -232,7 +232,7 @@ function AttentionList({ a }: { a: Attention }) {
   capped(mism,
     (m) => ({ icon: 'alert', tone: 'warn', text: <>נרשם/ה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
     (n) => ({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: '/app/events', action: 'למפגשים' }));
-  if (a.proposals_pending) items.push({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{a.proposals_pending}</span> הצעות להרצאה או הדרכה מחכות לאישור</>, to: '/app/speakers?tab=proposals', action: 'לצפייה' });
+  if (a.proposals_pending) items.push({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{a.proposals_pending}</span> הצעות להרצאה או הדרכה מחכות לאישור</>, to: '/app/speakers?tab=proposed', action: 'לצפייה' });
   if (a.followups_mine) items.push({ icon: 'task', tone: 'tide', text: <><span className="num font-bold">{a.followups_mine}</span> משימות פתוחות משויכות אליך</>, to: '/app/followups', action: 'למשימות שלי' });
 
   if (!items.length) {

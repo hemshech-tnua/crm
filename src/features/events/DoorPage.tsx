@@ -191,6 +191,7 @@ export function DoorPage() {
       <div className="pt-4">
         {e?.status === 'draft' && <div className="mb-3"><Notice tone="warn" icon="alert">המפגש עדיין טיוטה, ולכן אי אפשר לסמן הגעה.</Notice></div>}
         {e?.status === 'cancelled' && <div className="mb-3"><Notice tone="warn" icon="alert">המפגש בוטל.</Notice></div>}
+        {e?.status === 'completed' && <div className="mb-3"><Notice tone="light" icon="alert">המפגש כבר נסגר. סימון כאן מתקן את הנוכחות (גם בדוחות), ומשימות המעקב מתעדכנות בהתאם.</Notice></div>}
 
         {ev.isError ? (
           <ErrorBox error={errorMessage(ev.error)} onRetry={() => ev.refetch()} />
@@ -313,7 +314,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
           {r.phone_last4 && <span className="num" aria-label={`טלפון שמסתיים ב-${r.phone_last4}`}>••{r.phone_last4}</span>}
           {r.first_time && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
-          {friday && !r.first_time && isMilestone(nth) && <Badge tone="good" icon="star">שישי {nth}</Badge>}
+          {friday && !r.first_time && isMilestone(nth) && <Badge tone="good" icon="star" title={`מפגש השישי ה-${nth} שלו/ה. כדאי לברך!`}>מפגש שישי {nth}</Badge>}
           {r.photo_opt_out && (
             <span className="inline-flex items-center gap-1 font-semibold text-bad" title="לא מעוניין/ת להופיע בתמונות">
               <Icon name="noCamera" size={17} label="לא מצלמים" />
@@ -394,13 +395,14 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
         p: { full_name: name.trim(), phone: phone.trim(), city: city.trim() || null, age: age.trim() || null, source: source || null },
       });
       if (error) throw error;
-      return data as { registration_id: string; participant_is_new: boolean; already_registered: boolean };
+      return data as { registration_id: string; participant_is_new: boolean; already_registered: boolean; card_name?: string | null };
     },
     onSuccess: async (r) => {
       await invalidate(eventId);
       const first = firstName(name.trim());
       toast.success(
-        r.already_registered ? `${first} כבר היה/תה ברשימה, וסומן/ה שהגיע/ה`
+        r.card_name ? `המספר הזה שייך ל${r.card_name}. ההגעה נרשמה בכרטיס שלו/ה, והצוות יראה שנכתב שם אחר.`
+        : r.already_registered ? `${first} כבר היה/תה ברשימה, וסומן/ה שהגיע/ה`
           : r.participant_is_new ? `${first} נוסף/ה וסומן/ה שהגיע/ה. ברוך/ה הבא/ה!`
             : `${first} מוכר/ת ממפגשים קודמים, וסומן/ה שהגיע/ה`,
       );

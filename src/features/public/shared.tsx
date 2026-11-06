@@ -186,7 +186,7 @@ export function ContactLine({ inline = false }: { inline?: boolean }) {
   const phone = org.data?.contact_phone;
   if (!phone) return <>{inline ? 'פנו לצוות העמותה.' : <p className="text-sm text-muted">שאלות? פנו לצוות העמותה.</p>}</>;
   const link = (
-    <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="font-semibold text-tide underline underline-offset-2">
+    <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-tide underline underline-offset-2">
       כתבו לנו בוואטסאפ (<span className="num">{formatPhone(phone)}</span>)
     </a>
   );

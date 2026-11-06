@@ -127,6 +127,11 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
         ref: refCode,
         utm: Object.keys(utm).length ? utm : undefined,
       });
+      if (res.status === 'phone_in_use') {
+        setBusy(false);
+        setError('מספר הטלפון הזה כבר רשום למפגש בשם של מישהו אחר. אם זה טלפון משותף, אפשר להירשם עם מספר נייד אחר או לכתוב לנו בוואטסאפ (הקישור למטה).');
+        return;
+      }
       saveToken(res.event?.code ?? event.code, res.token, res.first_name);
       void qc.invalidateQueries({ queryKey: ['pub', 'events'] });
       onDone(res);
