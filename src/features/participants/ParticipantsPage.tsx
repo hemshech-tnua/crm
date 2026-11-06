@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
@@ -48,15 +48,29 @@ function toParams(f: RosterFilters): URLSearchParams {
 }
 
 /** Filters live in state (never stale between quick changes) and are mirrored to the URL, so "back" from a card restores the list. */
-function useFilters() {
+function useFilters(onExternalChange: (f: RosterFilters) => void) {
   const [sp, setSp] = useSearchParams();
   const [f, setState] = useState<RosterFilters>(() => fromParams(sp));
+  const written = useRef(sp.toString());
   const set = useCallback((patch: Partial<RosterFilters>) => setState((x) => ({ ...x, ...patch })), []);
   useEffect(() => {
-    const next = toParams(f);
-    if (next.toString() !== sp.toString()) setSp(next, { replace: true });
+    const next = toParams(f).toString();
+    if (next !== sp.toString()) {
+      written.current = next;
+      setSp(next, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [f]);
+  // the URL changed from outside (the nav link, browser history): follow it
+  const current = sp.toString();
+  useEffect(() => {
+    if (current === written.current) return;
+    written.current = current;
+    const next = fromParams(new URLSearchParams(current));
+    setState(next);
+    onExternalChange(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current]);
   return [f, set] as const;
 }
 
@@ -65,8 +79,8 @@ export function ParticipantsPage() {
   const toast = useToast();
   const location = useLocation();
   const sources = useSources();
-  const [f, setF] = useFilters();
-  const [term, setTerm] = useState(f.q);
+  const [term, setTerm] = useState(() => new URLSearchParams(location.search).get('q') ?? '');
+  const [f, setF] = useFilters((next) => setTerm(next.q));
   const q = useDebounced(term.trim(), 300);
   const [moreFilters, setMoreFilters] = useState(() => !!(f.source || f.city || f.task || f.consent));
   const [exporting, setExporting] = useState(false);
