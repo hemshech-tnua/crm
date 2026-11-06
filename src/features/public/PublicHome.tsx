@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router';
 import type { PublicEvent } from '@/lib/types';
-import { fmtDayLong } from '@/lib/dates';
+import {  } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import { EmptyState, ErrorBox, Skeleton, buttonClass } from '@/ui/kit';
 import { usePublicEvents } from './api';
@@ -40,7 +40,6 @@ export function PublicHome() {
               <li key={e.code}>
                 <Link
                   to={`/r/${e.code}${query}`}
-                  aria-label={`${cta(e)}: ${e.title}, ${fmtDayLong(e.starts_at)}`}
                   className="group block rounded-[var(--radius-panel)] transition-transform active:scale-[0.99]"
                 >
                   <EventTicket event={e} highlight={i === 0} showStatus="notable">

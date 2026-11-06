@@ -6,7 +6,7 @@ import { allEventsUrl, registerUrl } from '@/lib/links';
 import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Skeleton, Textarea } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
 import { cancelRegistration, useFeedbackContext, useRegistration, type RegistrationInfo } from './api';
-import { forgetToken, saveToken, savedToken } from './device';
+import { forgetToken, saveToken } from './device';
 import { EventTicket } from './EventTicket';
 import { FeedbackForm } from './FeedbackForm';
 import { Block, CalendarButtons, InviteBlock, inviteMessage } from './shared';
@@ -19,14 +19,15 @@ export function ManagePage() {
   // keep the token on this phone so check-in at the door is one tap (no name or phone is stored)
   const code = reg.data?.event.code;
   const status = reg.data?.status;
+  const firstName = reg.data?.first_name ?? null;
   useEffect(() => {
     if (!code || !status) return;
     if (status === 'cancelled') {
-      if (savedToken(code) === token) forgetToken(code);
+      forgetToken(code, token);
     } else {
-      saveToken(code, token);
+      saveToken(code, token, firstName);
     }
-  }, [code, status, token]);
+  }, [code, status, token, firstName]);
 
   if (reg.isPending) return <Skeleton lines={8} className="py-6" />;
   if (reg.isError) {
@@ -101,7 +102,7 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
     setBusy(true);
     try {
       await cancelRegistration(token, reason.current.trim() || null);
-      if (savedToken(e.code) === token) forgetToken(e.code);
+      forgetToken(e.code, token);
       toast.success(waitlisted ? 'יצאת מרשימת ההמתנה. תודה שעדכנת!' : 'ההרשמה בוטלה. תודה שעדכנת!');
       await qc.invalidateQueries({ queryKey: ['pub'] });
     } catch (err) {

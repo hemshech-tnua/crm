@@ -84,7 +84,7 @@ export function Spinner({ size = 18 }: { size?: number }) {
 // ───────────── form fields ─────────────
 
 const controlBase =
-  'w-full rounded-[var(--radius-control)] border border-line bg-paper px-3.5 text-ink placeholder:text-faint transition-colors hover:border-ink-soft/50 focus:border-tide focus:outline-none focus:ring-2 focus:ring-tide/20 disabled:bg-mist disabled:text-muted aria-[invalid=true]:border-bad';
+  'w-full rounded-[var(--radius-control)] border border-line bg-paper px-3.5 text-ink placeholder:text-faint transition-colors hover:border-ink-soft/50 focus:border-tide focus:outline-none focus:ring-3 focus:ring-tide/40 disabled:bg-mist disabled:text-muted aria-[invalid=true]:border-bad';
 
 export function Field({ label, hint, error, children, htmlFor, required, className = '' }: {
   label: ReactNode; hint?: ReactNode; error?: string | null; children: ReactNode; htmlFor?: string; required?: boolean; className?: string;
@@ -96,8 +96,8 @@ export function Field({ label, hint, error, children, htmlFor, required, classNa
         {required && <span className="text-bad" aria-hidden="true"> *</span>}
       </label>
       {children}
-      {hint && !error && <p className="text-sm text-muted">{hint}</p>}
-      {error && <p className="flex items-center gap-1 text-sm font-medium text-bad" role="alert"><Icon name="alert" size={15} />{error}</p>}
+      {hint && !error && <p id={htmlFor ? `${htmlFor}-hint` : undefined} className="text-sm text-muted">{hint}</p>}
+      {error && <p id={htmlFor ? `${htmlFor}-err` : undefined} className="flex items-center gap-1 text-sm font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
     </div>
   );
 }
@@ -112,6 +112,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ l
       id={fid}
       required={required}
       aria-invalid={error ? true : undefined}
+      aria-describedby={label ? (error ? `${fid}-err` : hint ? `${fid}-hint` : undefined) : undefined}
       dir={ltr ? 'ltr' : undefined}
       className={cx(controlBase, 'h-12', ltr && 'text-left', className)}
       {...rest}
@@ -125,7 +126,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   const auto = useId();
   const fid = id ?? auto;
   const el = (
-    <select ref={ref} id={fid} required={required} aria-invalid={error ? true : undefined} className={cx(controlBase, 'h-12 pl-8', className)} {...rest}>
+    <select ref={ref} id={fid} required={required} aria-invalid={error ? true : undefined}
+      aria-describedby={label ? (error ? `${fid}-err` : hint ? `${fid}-hint` : undefined) : undefined} className={cx(controlBase, 'h-12 pl-8', className)} {...rest}>
       {children}
     </select>
   );
@@ -137,7 +139,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const auto = useId();
   const fid = id ?? auto;
   const el = (
-    <textarea ref={ref} id={fid} required={required} aria-invalid={error ? true : undefined} className={cx(controlBase, 'min-h-24 py-2.5 leading-relaxed', className)} {...rest} />
+    <textarea ref={ref} id={fid} required={required} aria-invalid={error ? true : undefined}
+      aria-describedby={label ? (error ? `${fid}-err` : hint ? `${fid}-hint` : undefined) : undefined} className={cx(controlBase, 'min-h-24 py-2.5 leading-relaxed', className)} {...rest} />
   );
   return label ? <Field label={label} hint={hint} error={error} htmlFor={fid} required={required}>{el}</Field> : el;
 });
@@ -170,8 +173,9 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
   legend: ReactNode; options: { value: T; label: ReactNode }[]; value: T | ''; onChange: (v: T) => void; error?: string | null; columns?: 1 | 2 | 3; required?: boolean;
 }) {
   const name = useId();
+  const errId = `${name}-err`;
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset className="flex flex-col gap-2" aria-describedby={error ? errId : undefined}>
       <legend className="mb-1.5 text-sm font-semibold">
         {legend}
         {required && <span className="text-bad" aria-hidden="true"> *</span>}
@@ -187,13 +191,13 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
                 on ? 'border-tide bg-tide-wash text-tide-deep' : 'border-line bg-paper hover:border-ink-soft/40',
               )}
             >
-              <input type="radio" name={name} value={o.value} checked={on} onChange={() => onChange(o.value)} className="h-5 w-5 accent-tide" />
+              <input type="radio" name={name} value={o.value} checked={on} onChange={() => onChange(o.value)} aria-invalid={error ? true : undefined} className="h-5 w-5 accent-tide" />
               <span className="font-medium leading-snug">{o.label}</span>
             </label>
           );
         })}
       </div>
-      {error && <p className="flex items-center gap-1 text-sm font-medium text-bad" role="alert"><Icon name="alert" size={15} />{error}</p>}
+      {error && <p id={errId} className="flex items-center gap-1 text-sm font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
     </fieldset>
   );
 }
@@ -298,7 +302,7 @@ export function EmptyState({ icon = 'sun', title, children, action }: { icon?: I
 
 export function Skeleton({ lines = 3, className = '' }: { lines?: number; className?: string }) {
   return (
-    <div className={cx('flex flex-col gap-3', className)} aria-busy="true" aria-label="טוען">
+    <div className={cx('flex flex-col gap-3', className)} role="status" aria-busy="true" aria-label="טוען">
       {Array.from({ length: lines }).map((_, i) => (
         <div key={i} className="skeleton h-5" style={{ width: `${92 - ((i * 17) % 40)}%` }} />
       ))}

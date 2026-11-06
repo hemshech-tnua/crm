@@ -64,7 +64,7 @@ export function QrImage({ value, size = 220, className = '', label }: { value: s
   return src ? (
     <img src={src} width={size} height={size} alt={label} className={cx('block bg-white', className)} style={{ width: size, height: size }} />
   ) : (
-    <div className={cx('skeleton', className)} style={{ width: size, height: size }} aria-label="טוען" />
+    <div className={cx('skeleton', className)} style={{ width: size, height: size }} role="status" aria-label="טוען" />
   );
 }
 

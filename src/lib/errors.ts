@@ -1,8 +1,8 @@
 // Server error codes → Hebrew messages. The server raises short codes; the UI never shows raw database text.
 const MESSAGES: Record<string, string> = {
-  invalid_name: 'צריך לכתוב שם מלא (אותיות בלבד).',
+  invalid_name: 'צריך שם פרטי ושם משפחה, באותיות בלבד.',
   invalid_phone: 'מספר הטלפון לא נראה תקין. כותבים כמו 050-1234567.',
-  invalid_city: 'צריך לכתוב עיר מגורים.',
+  invalid_city: 'צריך לכתוב את שם העיר (לפחות 2 אותיות, בלי ספרות).',
   invalid_age: 'צריך לכתוב גיל בין 16 ל-99.',
   invalid_source: 'צריך לבחור איך שמעת עלינו.',
   invalid_topic: 'צריך לכתוב נושא.',
@@ -14,6 +14,7 @@ const MESSAGES: Record<string, string> = {
   event_not_found: 'לא מצאנו את המפגש. ייתכן שהקישור ישן.',
   event_cancelled: 'המפגש בוטל.',
   registration_closed: 'ההרשמה למפגש הזה נסגרה.',
+  registration_not_open: 'ההרשמה למפגש הזה עוד לא נפתחה. נסו שוב בקרוב.',
   event_full: 'אין יותר מקומות במפגש.',
   rate_limited: 'יותר מדי ניסיונות בזמן קצר. נסו שוב בעוד כמה דקות.',
   token_invalid: 'הקישור האישי לא תקין או שפג תוקפו.',

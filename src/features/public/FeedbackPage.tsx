@@ -17,10 +17,29 @@ export function FeedbackPage() {
   return <Feedback key={`${code}|${token ?? ''}`} code={code} token={token} />;
 }
 
+// an anonymous event-link feedback cannot be looked up later, so this phone remembers it was sent (convenience only)
+const SENT_KEY = 'hemshech-feedback-sent';
+function sentHere(code: string): boolean {
+  try {
+    return (JSON.parse(localStorage.getItem(SENT_KEY) ?? '[]') as string[]).includes(code);
+  } catch {
+    return false;
+  }
+}
+function markSent(code: string) {
+  try {
+    const list = (JSON.parse(localStorage.getItem(SENT_KEY) ?? '[]') as string[]).filter((c) => c !== code).slice(-30);
+    localStorage.setItem(SENT_KEY, JSON.stringify([...list, code]));
+  } catch {
+    /* storage blocked */
+  }
+}
+
 function Feedback({ code, token }: { code: string; token: string | null }) {
   const qc = useQueryClient();
   const ctx = useFeedbackContext(token ? { token } : { event: code });
   const [done, setDone] = useState(false);
+  const [again, setAgain] = useState(false);
 
   if (done) return <Thanks token={ctx.data?.personal ? token : null} />;
   if (ctx.isPending) return <Skeleton lines={8} className="py-6" />;
@@ -44,6 +63,20 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
   }
 
   const c = ctx.data;
+  if (c.state === 'open' && !c.personal && !again && sentHere(code)) {
+    return (
+      <div className="flex flex-col gap-5">
+        <h1 className="font-display text-[1.9rem] leading-tight">משוב על המפגש</h1>
+        <EventTicket event={c.event} showStatus={false} />
+        <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
+          <h2 className="text-lg font-bold">כבר שלחת מהטלפון הזה משוב על המפגש. תודה!</h2>
+          <button type="button" onClick={() => setAgain(true)} className="mt-3 min-h-11 px-3 font-semibold text-tide underline underline-offset-4">
+            משוב של מישהו אחר מאותו טלפון
+          </button>
+        </section>
+      </div>
+    );
+  }
   if (c.state !== 'open') {
     return (
       <div className="flex flex-col gap-5">
@@ -73,6 +106,7 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
         token={c.personal ? token : null}
         submitLabel={c.existing ? 'עדכון המשוב' : 'שליחת המשוב'}
         onDone={() => {
+          if (!c.personal) markSent(code);
           setDone(true);
           void qc.invalidateQueries({ queryKey: ['pub', 'feedback'] });
           void qc.invalidateQueries({ queryKey: ['pub', 'registration'] });

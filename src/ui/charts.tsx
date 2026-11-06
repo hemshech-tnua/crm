@@ -41,7 +41,7 @@ export function FridayLine({ stations, next, goal }: { stations: LineStation[]; 
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" style={{ minWidth: Math.max(n * 62, 320) }} role="img"
+      <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" style={{ minWidth: Math.max(n * 62, 320) }} role="group"
         aria-label={`נוכחות ב-${stations.length} המפגשים האחרונים${next ? ' והנרשמים למפגש הבא' : ''}`}>
         {goal ? (
           <g>
@@ -62,14 +62,14 @@ export function FridayLine({ stations, next, goal }: { stations: LineStation[]; 
         })}
         <path d={path} fill="none" stroke="var(--color-tide)" strokeWidth="3" strokeLinecap="round" className="friday-line-path" style={{ ['--len' as string]: len }} />
         {pts.map(({ x: px, y: py, s }) => (
-          <Link key={s.id} to={`/app/events/${s.id}?tab=summary`} aria-label={`מפגש ${fmtShortDate(s.starts_at)}: ${s.attended} הגיעו`}>
+          <Link key={s.id} to={`/app/events/${s.id}?tab=summary`} aria-description={`מפגש ${fmtShortDate(s.starts_at)}: הגיעו ${s.attended}, מתוכם ${s.new_count} חדשים`}>
             <circle cx={px} cy={py} r="7" fill="var(--color-paper)" stroke="var(--color-tide)" strokeWidth="3" />
             <text x={px} y={py - 14} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--color-ink)" style={{ fontFamily: 'var(--font-display)' }}>{s.attended}</text>
             <text x={px} y={base + 22} textAnchor="middle" fontSize="12.5" fill="var(--color-muted)">{fmtShortDate(s.starts_at)}</text>
           </Link>
         ))}
         {next && nextPt && (
-          <Link to={`/app/events/${next.id}`} aria-label={`המפגש הבא: ${next.registered} נרשמו`}>
+          <Link to={`/app/events/${next.id}`} aria-description={`המפגש הבא, ${fmtShortDate(next.starts_at)}: ${next.registered} נרשמו`}>
             <circle cx={nextPt.x} cy={nextPt.y} r="10" fill="var(--color-light-wash)" stroke="var(--color-light)" strokeWidth="3" strokeDasharray="3 3" />
             <text x={nextPt.x} y={nextPt.y - 17} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--color-light-deep)" style={{ fontFamily: 'var(--font-display)' }}>{next.registered}</text>
             <text x={nextPt.x} y={base + 22} textAnchor="middle" fontSize="12.5" fontWeight="700" fill="var(--color-light-deep)">{fmtShortDate(next.starts_at)}</text>

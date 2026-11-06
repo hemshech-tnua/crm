@@ -53,7 +53,7 @@ export function StaffLayout() {
                 to={i.to}
                 className={({ isActive }) => cx(
                   'flex h-11 items-center gap-3 rounded-[var(--radius-control)] px-3 font-medium transition-colors',
-                  isActive ? 'bg-mist text-ink' : 'text-mist/80 hover:bg-white/10 hover:text-mist',
+                  isActive ? 'bg-mist text-ink' : 'text-mist hover:bg-white/10',
                 )}
               >
                 <Icon name={i.icon} />

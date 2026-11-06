@@ -6,6 +6,8 @@ import { useCopy } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { downloadIcs, googleCalendarUrl } from './calendar';
 import { Glyph } from './marks';
+import { useOrgInfo } from './api';
+import { formatPhone, whatsappLink } from '@/lib/phone';
 
 /** The one saffron moment of a screen: a check that draws itself (static when reduced motion is on). */
 export function SuccessMark({ size = 'md' }: { size?: 'md' | 'lg' }) {
@@ -100,7 +102,7 @@ export function InviteBlock({ url, message, title = 'הזמינו חבר/ה' }: 
   return (
     <Block title={title}>
       <p className="text-[0.95rem] text-ink-soft">
-        מכירים עוד חברים מהמילואים? שלחו להם את הקישור האישי שלך, כך נדע שהגיעו דרכך.
+        מכירים עוד חברים מהמילואים? שלחו להם את קישור ההזמנה שלך, כך נדע שהגיעו דרכך.
       </p>
       <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (
@@ -113,7 +115,7 @@ export function InviteBlock({ url, message, title = 'הזמינו חבר/ה' }: 
             שליחה בוואטסאפ
           </ExternalButton>
         )}
-        <Button variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור הועתק')}>העתקת הקישור</Button>
+        <Button variant="secondary" icon="copy" onClick={() => copy(url, 'קישור ההזמנה הועתק')}>העתקת קישור ההזמנה</Button>
       </div>
     </Block>
   );
@@ -123,15 +125,15 @@ export function InviteBlock({ url, message, title = 'הזמינו חבר/ה' }: 
 export function PersonalLink({ url, token, waitlist }: { url: string; token: string; waitlist?: boolean }) {
   const copy = useCopy();
   return (
-    <Block title="הקישור האישי שלך">
+    <Block title="הקישור לניהול ההרשמה שלך">
       <p className="text-[0.95rem] text-ink-soft">
         {waitlist
-          ? 'שמרו את הקישור כדי לבדוק את המקום שלכם בתור או לצאת מרשימת ההמתנה.'
-          : 'שמרו את הקישור כדי לבטל או לתת משוב אחרי המפגש.'}
+          ? 'שמרו את הקישור כדי לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה. הוא אישי: לא לשתף אותו.'
+          : 'שמרו את הקישור כדי לבטל או לתת משוב אחרי המפגש. הוא אישי: לא לשתף אותו.'}
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור הועתק. כדאי לשמור אותו.')}>העתקת הקישור</Button>
+        <Button variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור הועתק. כדאי לשמור אותו.')}>העתקת קישור הניהול</Button>
         <ButtonLink to={`/m/${token}`} variant="ghost">לעמוד ההרשמה שלי</ButtonLink>
       </div>
     </Block>
@@ -176,4 +178,17 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
       </p>
     </div>
   );
+}
+
+/** How to reach the team (WhatsApp/phone from Settings). Used where a participant may get stuck. */
+export function ContactLine({ inline = false }: { inline?: boolean }) {
+  const org = useOrgInfo();
+  const phone = org.data?.contact_phone;
+  if (!phone) return <>{inline ? 'פנו לצוות העמותה.' : <p className="text-sm text-muted">שאלות? פנו לצוות העמותה.</p>}</>;
+  const link = (
+    <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="font-semibold text-tide underline underline-offset-2">
+      כתבו לנו בוואטסאפ (<span className="num">{formatPhone(phone)}</span>)
+    </a>
+  );
+  return inline ? link : <p className="text-sm text-muted">שאלות או בקשות? {link}</p>;
 }

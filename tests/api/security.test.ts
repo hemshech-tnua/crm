@@ -67,8 +67,10 @@ describe('anonymous visitor (no login)', () => {
 
   it('draft events are invisible to the public', async () => {
     const ev = await makeEvent({ status: 'draft' });
-    const { error } = await visitor().rpc('public_get_event', { p_code: ev.public_code });
-    expect(error?.message).toBe('event_not_found');
+    const { data, error } = await visitor().rpc('public_get_event', { p_code: ev.public_code });
+    // the visitor learns only that registration has not opened yet: no title, date or any other detail
+    expect(error?.message).toBe('registration_not_open');
+    expect(data).toBeNull();
     const { error: e2 } = await visitor().rpc('public_register', { p: registration(ev.public_code) });
     expect(e2?.message).toBe('event_not_found');
   });
@@ -256,11 +258,12 @@ describe('input validation and injection', () => {
 
 describe('privilege surface (defense in depth)', () => {
   const sql = (q: string) => execSync(`psql "${DB_URL}" -Atc "${q}"`).toString().trim();
-  it('anonymous visitors can execute exactly the twelve public endpoints and read no table or view', () => {
+  it('anonymous visitors can execute exactly the public endpoints and read no table or view', () => {
     const fns = sql("select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('public','private') and has_function_privilege('anon', p.oid, 'execute')");
     expect(fns.split(',')).toEqual([
-      'public_cancel', 'public_checkin', 'public_checkin_info', 'public_feedback_context', 'public_get_event', 'public_list_events',
-      'public_propose', 'public_register', 'public_registration', 'public_sources', 'public_submit_feedback', 'public_walkin',
+      'public_cancel', 'public_checkin', 'public_checkin_info', 'public_checkin_undo', 'public_feedback_context', 'public_get_event',
+      'public_list_events', 'public_org_info', 'public_propose', 'public_register', 'public_registration', 'public_sources',
+      'public_submit_feedback', 'public_walkin',
     ]);
     expect(sql("select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','v') and has_table_privilege('anon', c.oid, 'select')")).toBe('0');
   });

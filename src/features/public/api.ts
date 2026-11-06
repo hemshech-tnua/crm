@@ -48,6 +48,7 @@ export type CheckinResult = {
   photo_opt_out?: boolean;
   invite_code?: string | null;
   opens_at?: string;
+  can_undo?: boolean;
   event?: PublicEvent;
 };
 
@@ -131,6 +132,31 @@ export const cancelRegistration = (token: string, reason: string | null) =>
 export const checkIn = (p: { code: string; token?: string; phone?: string }) => rpc<CheckinResult>('public_checkin', { p });
 
 export const walkIn = (p: PersonPayload & { code: string }) => rpc<CheckinResult>('public_walkin', { p });
+
+/** "That's not me": undo a self check-in made in the last 10 minutes. */
+export const undoCheckin = (token: string) => rpc<{ ok: boolean }>('public_checkin_undo', { p_token: token });
+
+export type OrgInfo = { org_name: string; contact_phone: string | null };
+export const useOrgInfo = () =>
+  useQuery({ queryKey: ['pub', 'org'], staleTime: 10 * 60_000, queryFn: () => rpc<OrgInfo>('public_org_info') });
+
+/** Status of several registrations saved on this phone (to show who already checked in). */
+export const useSavedStatuses = (tokens: string[]) =>
+  useQuery({
+    queryKey: ['pub', 'saved-status', tokens],
+    enabled: tokens.length > 0,
+    queryFn: async () => {
+      const out: Record<string, string> = {};
+      for (const t of tokens) {
+        try {
+          out[t] = (await rpc<RegistrationInfo>('public_registration', { p_token: t })).attendance;
+        } catch {
+          out[t] = 'invalid';
+        }
+      }
+      return out;
+    },
+  });
 
 export const submitFeedback = (p: {
   token?: string;

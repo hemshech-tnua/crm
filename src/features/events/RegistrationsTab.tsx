@@ -208,7 +208,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
               )}
             >
               {f.label}
-              <span className={cx('num text-xs', filter === f.value ? 'text-white/80' : 'text-muted')}>{counts[f.value]}</span>
+              <span className={cx('num text-xs', filter === f.value ? 'text-white' : 'text-muted')}>{counts[f.value]}</span>
             </button>
           ))}
         </div>
@@ -332,6 +332,11 @@ function NameCell({ r }: { r: RegRow }) {
       <div className="mt-1 flex flex-wrap gap-1">
         {r.first_time && r.status !== 'cancelled' && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
         {r.is_walk_in && <Badge tone="neutral">הגיע/ה בלי הרשמה</Badge>}
+        {r.submitted_name && (
+          <Badge tone="warn" icon="alert" title="השם שהוקלד בהרשמה שונה מהשם בכרטיס. ייתכן שהוקלד טלפון של מישהו אחר: כדאי לברר.">
+            נרשם/ה בשם: {r.submitted_name}
+          </Badge>
+        )}
         {p?.photo_opt_out && <Badge tone="neutral" icon="noCamera" title="לא מעוניין/ת להופיע בתמונות">בלי צילום</Badge>}
       </div>
     </div>

@@ -227,6 +227,7 @@ export type Settings = {
   feedback_days: number;
   retention_months: number;
   consent_text_version: string;
+  contact_phone: string | null;
 };
 
 /** What a visitor sees about an event (public_get_event). */
@@ -250,4 +251,5 @@ export type PublicEvent = {
   spots_left: number | null;
   waitlist_enabled: boolean;
   invited_by?: string | null;
+  ref_source?: string | null;
 };

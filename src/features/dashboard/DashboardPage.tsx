@@ -25,6 +25,7 @@ type Attention = {
   waitlist_with_space: { id: string; title: string; starts_at: string; waitlisted: number; free: number | null }[];
   drafts_soon: { id: string; title: string; starts_at: string }[];
   proposals_pending: number;
+  name_mismatches?: { registration_id: string; event_id: string; event_title: string; starts_at: string; participant_id: string; card_name: string; typed_name: string }[];
 };
 
 type SourceRow = { source_id: string | null; label: string; is_friend: boolean; participants: number; returned: number; registered_only: number };
@@ -116,7 +117,7 @@ export function DashboardPage() {
                     <ButtonLink to={`/app/events/${next.id}`} variant="light">ניהול המפגש</ButtonLink>
                     {ilParts(next.starts_at).date === todayIl() && <ButtonLink to={`/app/events/${next.id}/door`} variant="secondary" icon="door">מצב כניסה</ButtonLink>}
                     {nextOpen?.status === 'open' && (
-                      <Button variant="ghost" className="text-mist hover:bg-white/10" icon="copy" onClick={() => copy(registerUrl(nextOpen.public_code), 'קישור ההרשמה הועתק')}>קישור הרשמה</Button>
+                      <Button variant="ghost" className="text-mist! hover:bg-white/10" icon="copy" onClick={() => copy(registerUrl(nextOpen.public_code), 'קישור ההרשמה הועתק')}>קישור הרשמה</Button>
                     )}
                   </div>
                 </div>
@@ -225,6 +226,10 @@ function AttentionList({ a }: { a: Attention }) {
   capped(a.drafts_soon,
     (e) => ({ icon: 'calendar', tone: 'tide', text: <>{e.title} ב-<span className="num">{fmtDate(e.starts_at)}</span> עדיין טיוטה</>, to: `/app/events/${e.id}`, action: 'לפתיחה' }),
     (n) => ({ icon: 'calendar', tone: 'tide', text: <><span className="num font-bold">{n}</span> מפגשים בשבוע הקרוב עדיין טיוטה, וההרשמה אליהם סגורה</>, to: '/app/events', action: 'למפגשים' }));
+  const mism = a.name_mismatches ?? [];
+  capped(mism,
+    (m) => ({ icon: 'alert', tone: 'warn', text: <>נרשם/ה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
+    (n) => ({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: '/app/events', action: 'למפגשים' }));
   if (a.proposals_pending) items.push({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{a.proposals_pending}</span> הצעות להרצאה או הדרכה מחכות לאישור</>, to: '/app/speakers?tab=proposals', action: 'לצפייה' });
   if (a.followups_mine) items.push({ icon: 'task', tone: 'tide', text: <><span className="num font-bold">{a.followups_mine}</span> משימות פתוחות משויכות אליך</>, to: '/app/followups', action: 'למשימות שלי' });
 

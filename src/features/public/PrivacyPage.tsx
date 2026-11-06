@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { ContactLine } from './shared';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -85,7 +86,7 @@ export function PrivacyPage() {
         />
         <p>
           אנחנו לא מוכרים את המידע ולא מעבירים אותו לגורמים אחרים. ספק האחסון שלנו שומר אותו עבורנו בלבד. שינויים בפרטים
-          וייצוא רשימות נרשמים ביומן פעולות.
+          וייצוא של רשימות נרשמים מתועדים ביומן פעולות.
         </p>
       </Section>
 
@@ -131,14 +132,13 @@ export function PrivacyPage() {
           ]}
         />
         <p>
-          כדי לממש זכות, פונים לצוות העמותה בוואטסאפ או לרכז/ת המפגשים. את ההרשמה למפגש אפשר לבטל לבד בקישור האישי שמקבלים
+          כדי לממש זכות: <ContactLine inline /> את ההרשמה למפגש אפשר לבטל לבד בקישור לניהול ההרשמה שמקבלים
           אחרי ההרשמה.
         </p>
       </Section>
 
       <footer className="border-t border-line pt-5 text-sm text-muted">
         <p>עדכון אחרון: נובמבר 2026.</p>
-        <p className="mt-1">נוסח לבדיקה משפטית לפני פרסום.</p>
         <Link to="/" className="mt-4 inline-flex min-h-11 items-center font-semibold text-tide hover:underline">למפגשים הקרובים</Link>
       </footer>
     </article>

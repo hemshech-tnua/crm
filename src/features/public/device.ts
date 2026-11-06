@@ -1,21 +1,31 @@
-// The only thing kept on the participant's phone: the registration token per event, so check-in at the door
-// is one tap. No name or phone is stored. Storage can be blocked (private mode, settings), so every access is guarded.
+// What is kept on the participant's own phone: for each event, the registrations made from this phone
+// (token + the first name typed in the form), so check-in at the door is one tap and asks "who arrived?" when
+// one phone registered several people. Storage can be blocked (private mode, settings), so every access is guarded.
 const KEY = 'hemshech-reg-tokens';
 const KEEP_DAYS = 120;
+const MAX_PER_EVENT = 6;
 
-type Entry = { t: string; at: number };
+export type SavedRegistration = { token: string; name: string | null };
+type Entry = { t: string; at: number; n?: string | null };
 
-function readAll(): Record<string, Entry> {
+function readAll(): Record<string, Entry[]> {
   try {
     const raw = window.localStorage.getItem(KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, Entry>) : {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<string, Entry[]> = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      // older format kept one entry per event
+      const list = Array.isArray(v) ? v : [v];
+      out[k] = list.filter((e): e is Entry => !!e && typeof (e as Entry).t === 'string' && (e as Entry).t.length >= 20 && typeof (e as Entry).at === 'number');
+    }
+    return out;
   } catch {
     return {};
   }
 }
 
-function writeAll(all: Record<string, Entry>) {
+function writeAll(all: Record<string, Entry[]>) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(all));
   } catch {
@@ -23,25 +33,40 @@ function writeAll(all: Record<string, Entry>) {
   }
 }
 
-export function savedToken(eventCode: string | null | undefined): string | null {
-  if (!eventCode) return null;
-  const e = readAll()[eventCode];
-  return e && typeof e.t === 'string' && e.t.length >= 20 ? e.t : null;
+/** Registrations made from this phone for an event, most recent first. */
+export function savedRegistrations(eventCode: string | null | undefined): SavedRegistration[] {
+  if (!eventCode) return [];
+  return (readAll()[eventCode] ?? []).slice().sort((a, b) => b.at - a.at).map((e) => ({ token: e.t, name: e.n ?? null }));
 }
 
-export function saveToken(eventCode: string | null | undefined, token: string | null | undefined) {
+export function savedToken(eventCode: string | null | undefined): string | null {
+  return savedRegistrations(eventCode)[0]?.token ?? null;
+}
+
+export function hasToken(eventCode: string | null | undefined, token: string): boolean {
+  return savedRegistrations(eventCode).some((r) => r.token === token);
+}
+
+export function saveToken(eventCode: string | null | undefined, token: string | null | undefined, name?: string | null) {
   if (!eventCode || !token) return;
   const all = readAll();
   const cutoff = Date.now() - KEEP_DAYS * 864e5;
-  for (const [k, v] of Object.entries(all)) if (!v || typeof v.at !== 'number' || v.at < cutoff) delete all[k];
-  all[eventCode] = { t: token, at: Date.now() };
+  for (const k of Object.keys(all)) {
+    all[k] = all[k].filter((e) => e.at >= cutoff);
+    if (!all[k].length) delete all[k];
+  }
+  const list = (all[eventCode] ?? []).filter((e) => e.t !== token && (!name || e.n !== name));
+  list.push({ t: token, at: Date.now(), n: name ?? (all[eventCode] ?? []).find((e) => e.t === token)?.n ?? null });
+  all[eventCode] = list.slice(-MAX_PER_EVENT);
   writeAll(all);
 }
 
-export function forgetToken(eventCode: string | null | undefined) {
+/** Forget one registration (or all of an event's when no token is given). */
+export function forgetToken(eventCode: string | null | undefined, token?: string) {
   if (!eventCode) return;
   const all = readAll();
   if (!(eventCode in all)) return;
-  delete all[eventCode];
+  all[eventCode] = token ? all[eventCode].filter((e) => e.t !== token) : [];
+  if (!all[eventCode].length) delete all[eventCode];
   writeAll(all);
 }

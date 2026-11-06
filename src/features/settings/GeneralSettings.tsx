@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorMessage } from '@/lib/errors';
+import { normalizePhone } from '@/lib/phone';
 import { useSettings, useSites, useStaffList } from '@/lib/data';
 import type { Settings } from '@/lib/types';
 import { Button, Checkbox, ErrorBox, Input, Panel, Select, Skeleton } from '@/ui/kit';
@@ -72,10 +73,12 @@ export function GeneralSettings() {
       checkin_closes_minutes: int('checkin_closes_minutes'),
       feedback_days: int('feedback_days'),
       retention_months: int('retention_months'),
+      contact_phone: str('contact_phone').trim() || null,
     };
     const pcts = [patch.goal_show_rate, patch.goal_return_rate, patch.goal_friend_share];
     if (pcts.some((p) => p == null || Number.isNaN(p) || p < 0 || p > 1)) return setError('יעדי האחוזים צריכים להיות בין 0 ל-100.');
     if (!(patch.goal_avg_rating! >= 1 && patch.goal_avg_rating! <= 5)) return setError('יעד הדירוג צריך להיות בין 1 ל-5.');
+    if (patch.contact_phone && !normalizePhone(patch.contact_phone)) return setError('מספר הטלפון של הצוות לא תקין.');
     save.mutate(patch);
   };
 
@@ -114,6 +117,7 @@ export function GeneralSettings() {
       <Panel title="מפגשים והרשמה">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Input label="שם העמותה" {...bind('org_name')} />
+          <Input label="טלפון/וואטסאפ של הצוות (מוצג ללוחמים)" type="tel" ltr {...bind('contact_phone')} hint="לפניות, ביטול בלי הקישור ובקשות פרטיות" />
           <Select label="מתחם ברירת מחדל" {...bind('default_site_id')}>
             {(sites.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>

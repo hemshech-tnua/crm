@@ -7,6 +7,7 @@ import { allEventsUrl, manageUrl, registerUrl } from '@/lib/links';
 import { Button, ButtonLink, EmptyState, ErrorBox, Notice, Skeleton } from '@/ui/kit';
 import { registerFor, usePublicEvent, usePublicSources, type PublicSource, type RegisterResult } from './api';
 import { saveToken } from './device';
+import { ContactLine } from './shared';
 import { EventTicket } from './EventTicket';
 import { Glyph } from './marks';
 import { trackingQuery } from './tracking';
@@ -34,11 +35,19 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const [done, setDone] = useState<RegisterResult | null>(null);
   const home = `/${trackingQuery(params)}`;
 
-  if (done && event.data) return <Registered result={done} event={done.event ?? event.data} />;
+  if (done && event.data) return <Registered result={done} event={done.event ?? event.data} onAnother={() => { setDone(null); window.scrollTo(0, 0); }} />;
 
   if (event.isPending) return <Skeleton lines={8} className="py-6" />;
   if (event.isError) {
-    return errorCode(event.error) === 'event_not_found' ? (
+    const code = errorCode(event.error);
+    if (code === 'registration_not_open') {
+      return (
+        <EmptyState icon="calendar" title="ההרשמה עוד לא נפתחה" action={<ButtonLink to={home}>למפגשים הפתוחים עכשיו</ButtonLink>}>
+          המפגש הזה עוד בהכנה. נסו שוב בקרוב, או עקבו אחרינו בקבוצות ובאינסטגרם.
+        </EmptyState>
+      );
+    }
+    return code === 'event_not_found' ? (
       <EmptyState icon="calendar" title="לא מצאנו את המפגש" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
         ייתכן שהקישור ישן או שהוקלד לא נכון.
       </EmptyState>
@@ -98,7 +107,9 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
 }) {
   // arriving through a friend's personal link: "a friend brought me" is already chosen
   const friendKey = refCode?.startsWith('f-') ? (sources.find((s) => s.is_friend)?.key ?? '') : '';
-  const form = usePersonForm({ source: friendKey });
+  // a channel link (e.g. ?ref=ig-bio) already says where they heard about us
+  const linkKey = event.ref_source && sources.some((s) => s.key === event.ref_source) ? event.ref_source : '';
+  const form = usePersonForm({ source: friendKey || linkKey });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const qc = useQueryClient();
@@ -116,7 +127,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
         ref: refCode,
         utm: Object.keys(utm).length ? utm : undefined,
       });
-      saveToken(res.event?.code ?? event.code, res.token);
+      saveToken(res.event?.code ?? event.code, res.token, res.first_name);
       void qc.invalidateQueries({ queryKey: ['pub', 'events'] });
       onDone(res);
     } catch (err) {
@@ -147,7 +158,12 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
   );
 }
 
-function Registered({ result: r, event }: { result: RegisterResult; event: PublicEvent }) {
+function Registered({ result: r, event, onAnother }: { result: RegisterResult; event: PublicEvent; onAnother: () => void }) {
+  const another = (
+    <button type="button" onClick={onAnother} className="min-h-11 self-center px-3 font-semibold text-tide underline underline-offset-4">
+      רישום של מישהו נוסף מהטלפון הזה
+    </button>
+  );
   const name = r.first_name ? `${r.first_name}, ` : '';
   // while registration is open the invite points at this event; otherwise at the list of upcoming ones
   const invite = r.invite_code
@@ -173,6 +189,7 @@ function Registered({ result: r, event }: { result: RegisterResult; event: Publi
         </div>
         <EventTicket event={event} showStatus={false} />
         {r.token && <PersonalLink url={manageUrl(r.token)} token={r.token} waitlist />}
+        {another}
       </div>
     );
   }
@@ -187,7 +204,7 @@ function Registered({ result: r, event }: { result: RegisterResult; event: Publi
           {again ? `${name}ההרשמה שלך בתוקף, אין צורך להירשם שוב.` : `${name}שמרנו לך מקום. מחכים לך!`}
         </p>
         {again && (
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">צריך לבטל? אפשר דרך הקישור האישי שקיבלת כשנרשמת.</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">צריך לבטל? דרך הקישור לניהול ההרשמה שקיבלת כשנרשמת. אין אותו? <ContactLine inline /></p>
         )}
       </div>
       <EventTicket event={event} showStatus={false}>
@@ -197,6 +214,7 @@ function Registered({ result: r, event }: { result: RegisterResult; event: Publi
       </EventTicket>
       {invite && <InviteBlock url={invite.url} message={invite.message} />}
       {r.token && <PersonalLink url={manageUrl(r.token)} token={r.token} />}
+      {another}
     </div>
   );
 }

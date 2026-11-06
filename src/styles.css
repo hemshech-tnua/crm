@@ -12,6 +12,7 @@
   ink      #12343B  text and the brand (deep pine)
   tide     #1F6F6B  actions and links
   light    #F2A93B  "first light": only for today / the next Friday / the Friday line
+  text colours are checked against WCAG AA (4.5:1) on paper and mist; see docs/07-qa-report.md
   line     #D5DEDC  borders
 */
 @theme {
@@ -21,20 +22,20 @@
   --color-ink: #12343b;
   --color-ink-soft: #3c5559;
   --color-muted: #5b6e6f;
-  --color-faint: #8a9b9b;
+  --color-faint: #5e7070;
   --color-line: #d5dedc;
   --color-line-soft: #e6ecea;
   --color-tide: #1f6f6b;
   --color-tide-deep: #165552;
   --color-tide-wash: #e3f0ee;
   --color-light: #f2a93b;
-  --color-light-deep: #b8731a;
+  --color-light-deep: #875411;
   --color-light-wash: #fdf1dd;
-  --color-good: #2e7d4f;
+  --color-good: #276b43;
   --color-good-wash: #e4f2e9;
   --color-bad: #b4382f;
   --color-bad-wash: #f9e5e3;
-  --color-warn: #9a6200;
+  --color-warn: #8a5700;
   --color-warn-wash: #fbefd6;
 
   --font-sans: 'IBM Plex Sans Hebrew', system-ui, 'Segoe UI', Arial, sans-serif;
@@ -65,10 +66,16 @@
     line-height: 1.2;
     text-wrap: balance;
   }
+  /* focus: deep teal on light surfaces, first light (saffron) on the dark ones */
   :focus-visible {
-    outline: 3px solid var(--color-light);
+    outline: 3px solid var(--color-tide-deep);
     outline-offset: 2px;
     border-radius: 6px;
+  }
+  .bg-ink :focus-visible,
+  .bg-tide:focus-visible,
+  .bg-ink:focus-visible {
+    outline-color: var(--color-light);
   }
   ::selection {
     background: var(--color-light-wash);

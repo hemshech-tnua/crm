@@ -4,8 +4,8 @@ import type { PublicEvent } from '@/lib/types';
 import { fmtDayLong, fmtTime, relativeDays } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { Button, ButtonLink, EmptyState, ErrorBox, Input, Notice, Skeleton } from '@/ui/kit';
-import { checkIn, usePublicSources, useCheckinInfo, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
-import { forgetToken, saveToken, savedToken } from './device';
+import { checkIn, undoCheckin, usePublicSources, useCheckinInfo, useSavedStatuses, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
+import { forgetToken, saveToken, savedRegistrations, type SavedRegistration } from './device';
 import { EventTicket } from './EventTicket';
 import { timeRange } from './eventText';
 import { ConsentFields, PersonFields, phoneError, usePersonForm } from './PersonForm';
@@ -20,8 +20,18 @@ export function CheckinPage() {
 function Checkin({ code }: { code: string }) {
   const info = useCheckinInfo(code);
   const [welcome, setWelcome] = useState<CheckinResult | null>(null);
+  const [undone, setUndone] = useState(false);
 
-  if (welcome) return <Welcome result={welcome} fallback={info.data?.event ?? null} />;
+  if (welcome) {
+    return (
+      <Welcome
+        result={welcome}
+        fallback={info.data?.event ?? null}
+        onUndone={() => { setWelcome(null); setUndone(true); }}
+        onAnother={() => { setWelcome(null); setUndone(false); }}
+      />
+    );
+  }
   if (info.isPending) return <Skeleton lines={6} className="py-6" />;
   if (info.isError) {
     return errorCode(info.error) === 'checkin_not_found' ? (
@@ -36,7 +46,7 @@ function Checkin({ code }: { code: string }) {
   const i = info.data;
   if (i.window === 'not_open') return <NotOpen info={i} onRefresh={() => info.refetch()} refreshing={info.isFetching} />;
   if (i.window !== 'open') return <NoCheckin info={i} />;
-  return <CheckinFlow code={code} event={i.event} onWelcome={setWelcome} onWindowChanged={() => info.refetch()} />;
+  return <CheckinFlow code={code} event={i.event} undone={undone} onWelcome={(r) => { setUndone(false); setWelcome(r); }} onWindowChanged={() => info.refetch()} />;
 }
 
 function EventLine({ event }: { event: PublicEvent }) {
@@ -50,17 +60,18 @@ function EventLine({ event }: { event: PublicEvent }) {
 
 type Mode = 'token' | 'phone' | 'walkin';
 
-function CheckinFlow({ code, event, onWelcome, onWindowChanged }: {
+function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
   code: string;
   event: PublicEvent;
+  undone: boolean;
   onWelcome: (r: CheckinResult) => void;
   onWindowChanged: () => void;
 }) {
-  const [mode, setMode] = useState<Mode>(() => (savedToken(event.code) ? 'token' : 'phone'));
+  const [mode, setMode] = useState<Mode>(() => (!undone && savedRegistrations(event.code).length ? 'token' : 'phone'));
   const [switched, setSwitched] = useState(false);
   const [phone, setPhone] = useState('');
   const [phoneErr, setPhoneErr] = useState<string | undefined>();
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(undone ? 'הצ׳ק־אין בוטל. אפשר להקליד שוב את המספר הנכון.' : null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -74,14 +85,14 @@ function CheckinFlow({ code, event, onWelcome, onWindowChanged }: {
     switch (res.result) {
       case 'checked_in':
       case 'already_checked_in':
-        saveToken(res.event?.code ?? event.code, res.token);
+        saveToken(res.event?.code ?? event.code, res.token, res.first_name);
         onWelcome(res);
         return;
       case 'not_registered':
         go('walkin');
         return;
       case 'token_invalid':
-        forgetToken(event.code);
+        if (lastToken) forgetToken(event.code, lastToken);
         setNotice('לא הצלחנו לזהות את ההרשמה מהטלפון הזה. אפשר להיכנס עם מספר הטלפון.');
         go('phone');
         return;
@@ -91,8 +102,10 @@ function CheckinFlow({ code, event, onWelcome, onWindowChanged }: {
     }
   };
 
+  const [lastToken, setLastToken] = useState<string | null>(null);
   const run = async (p: { token?: string; phone?: string }) => {
     setError(null);
+    setLastToken(p.token ?? null);
     setBusy(true);
     try {
       handle(await checkIn({ code, ...p }));
@@ -124,29 +137,9 @@ function CheckinFlow({ code, event, onWelcome, onWindowChanged }: {
     );
   }
 
-  const token = savedToken(event.code);
-  if (mode === 'token' && token) {
-    return (
-      <div className="flex flex-col gap-5 pt-1">
-        <div>
-          <h1 className="font-display text-[2.1rem] leading-tight">צ׳ק־אין</h1>
-          <EventLine event={event} />
-        </div>
-        <p className="text-lg">נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.</p>
-        {error && <ErrorBox error={error} />}
-        <Button
-          size="lg"
-          busy={busy}
-          onClick={() => run({ token })}
-          className="h-24! w-full rounded-[var(--radius-panel)]! font-display text-[2.2rem]! font-normal!"
-        >
-          הגעתי
-        </Button>
-        <button type="button" onClick={() => go('phone')} className="min-h-11 self-center px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
-          זה לא הטלפון שלי? צ׳ק־אין עם מספר טלפון
-        </button>
-      </div>
-    );
+  const saved = savedRegistrations(event.code);
+  if (mode === 'token' && saved.length) {
+    return <SavedOnPhone event={event} saved={saved} busy={busy} error={error} onPick={(t) => run({ token: t })} onOther={() => go('phone')} />;
   }
 
   return (
@@ -189,7 +182,7 @@ function Walkin({ code, phone, onBack, onResult }: {
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
-        <h1 className="font-display text-[1.9rem] leading-tight">ברוכים הבאים!</h1>
+        <h1 className="font-display text-[1.9rem] leading-tight">ברוך/ה הבא/ה!</h1>
         <p className="mt-1 text-lg text-ink-soft">לא מצאנו הרשמה עם המספר הזה. אין בעיה: ממלאים כמה פרטים ונכנסים.</p>
       </div>
       {sources.isPending ? (
@@ -240,10 +233,62 @@ function WalkinForm({ code, phone, sources, onResult }: {
   );
 }
 
+/** Registrations made from this phone. One: a single big button with the name. Several: "who arrived?". */
+function SavedOnPhone({ event, saved, busy, error, onPick, onOther }: {
+  event: PublicEvent; saved: SavedRegistration[]; busy: boolean; error: string | null; onPick: (token: string) => void; onOther: () => void;
+}) {
+  const status = useSavedStatuses(saved.map((r) => r.token));
+  const big = 'h-24! w-full rounded-[var(--radius-panel)]! font-display text-[2.2rem]! font-normal!';
+  return (
+    <div className="flex flex-col gap-5 pt-1">
+      <div>
+        <h1 className="font-display text-[2.1rem] leading-tight">צ׳ק־אין</h1>
+        <EventLine event={event} />
+      </div>
+      {saved.length === 1 ? (
+        <p className="text-lg">{saved[0].name ? `נרשמת מהטלפון הזה בשם ${saved[0].name}, אז מספיקה לחיצה אחת.` : 'נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.'}</p>
+      ) : (
+        <p className="text-lg">מהטלפון הזה נרשמו כמה אנשים. מי הגיע/ה?</p>
+      )}
+      {error && <ErrorBox error={error} />}
+      <div className="flex flex-col gap-3">
+        {saved.map((r) => {
+          const inside = status.data?.[r.token] === 'attended';
+          return (
+            <Button key={r.token} size="lg" busy={busy} variant={inside ? 'secondary' : 'primary'} onClick={() => onPick(r.token)}
+              className={saved.length === 1 ? big : 'h-16! w-full text-xl!'}>
+              {inside ? `${r.name ?? 'את/ה'} כבר בפנים ✓` : saved.length === 1 ? 'הגעתי' : `${r.name ?? 'הרשמה'} הגיע/ה`}
+            </Button>
+          );
+        })}
+      </div>
+      <button type="button" onClick={onOther} className="min-h-11 self-center px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
+        {saved.length === 1 ? `לא ${saved[0].name ?? 'את/ה'}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
+      </button>
+    </div>
+  );
+}
+
 const MILESTONES: Record<number, string> = { 5: 'זה השישי החמישי שלך!', 10: 'זה השישי העשירי שלך!' };
 
-function Welcome({ result: r, fallback }: { result: CheckinResult; fallback: PublicEvent | null }) {
+function Welcome({ result: r, fallback, onUndone, onAnother }: { result: CheckinResult; fallback: PublicEvent | null; onUndone: () => void; onAnother: () => void }) {
   const event = r.event ?? fallback;
+  const [undoing, setUndoing] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const notMe = async () => {
+    if (!r.token) return;
+    setUndoing(true);
+    setUndoError(null);
+    try {
+      await undoCheckin(r.token);
+      if (event) forgetToken(event.code, r.token);
+      onUndone();
+    } catch (err) {
+      setUndoError(errorMessage(err));
+    } finally {
+      setUndoing(false);
+    }
+  };
   const milestone = event?.type === 'friday' ? MILESTONES[r.friday_count ?? 0] : undefined;
   const firstTime = r.result === 'checked_in' && r.attended_count === 1;
   return (
@@ -266,6 +311,17 @@ function Welcome({ result: r, fallback }: { result: CheckinResult; fallback: Pub
         <p className="rounded-full bg-light-wash px-5 py-2.5 font-display text-[1.4rem] text-ink">{milestone}</p>
       )}
       {!milestone && firstTime && <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>}
+      {r.can_undo && r.result === 'checked_in' && (
+        <div className="mt-1 flex flex-col items-center gap-2">
+          <button type="button" onClick={notMe} disabled={undoing} className="min-h-11 px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
+            {undoing ? 'מבטל…' : r.first_name ? `זה לא אני, אני לא ${r.first_name}` : 'זה לא אני'}
+          </button>
+          {undoError && <ErrorBox error={undoError} />}
+        </div>
+      )}
+      <button type="button" onClick={onAnother} className="min-h-11 px-3 text-[0.95rem] font-semibold text-muted underline underline-offset-4">
+        צ׳ק־אין של מישהו נוסף מהטלפון הזה
+      </button>
       {r.photo_opt_out && (
         <div className="mt-2 w-full text-start">
           <Notice icon="noCamera">רשמנו שאת/ה מעדיף/ה לא להופיע בתמונות. הצוות בכניסה רואה את זה.</Notice>
@@ -299,7 +355,7 @@ function NoCheckin({ info }: { info: CheckinInfo }) {
   return (
     <div className="flex flex-col gap-5">
       <h1 className="font-display text-[1.9rem] leading-tight">{cancelled ? 'אין צ׳ק־אין למפגש הזה' : 'הצ׳ק־אין נסגר'}</h1>
-      <EventTicket event={e} showStatus={cancelled} />
+      <EventTicket event={e} showStatus={e.status === 'cancelled'} />
       <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
         {cancelled ? (
           <>

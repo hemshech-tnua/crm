@@ -469,3 +469,59 @@ describe('waitlist promotion guards', () => {
     expect((await coord.rpc('staff_promote', { p_registration_id: w2!.id, p_over_capacity: true })).error?.message).toBe('event_not_active');
   });
 });
+
+describe('user simulation round 1 fixes', () => {
+  it('a registration with someone else\'s phone never shows the stored name, and staff see the mismatch', async () => {
+    const ev = await makeEvent();
+    const v = visitor();
+    const owner = registration(ev.public_code, { full_name: 'בעל המספר אמיתי' });
+    await v.rpc('public_register', { p: owner });
+    const ev2 = await makeEvent({ startsInMinutes: 6 * 24 * 60 });
+    const other = registration(ev2.public_code, { full_name: 'מישהי אחרת לגמרי', phone: owner.phone });
+    const { data } = await v.rpc('public_register', { p: other });
+    expect(data.first_name).toBe('מישהי');
+    const page = await v.rpc('public_registration', { p_token: data.token });
+    expect(page.data.first_name).toBe('מישהי');
+    expect(JSON.stringify(page.data)).not.toContain('בעל');
+    const coord = await staff('coord');
+    const { data: att } = await coord.rpc('attention_items');
+    expect(att.name_mismatches.some((m: any) => m.typed_name === 'מישהי אחרת לגמרי' && m.card_name === 'בעל המספר אמיתי')).toBe(true);
+  });
+
+  it('"that\'s not me" undoes a mistaken self check-in; an arrived person cannot cancel', async () => {
+    const ev = await makeEvent({ startsInMinutes: 15 });
+    const v = visitor();
+    const a = registration(ev.public_code);
+    const r = await v.rpc('public_register', { p: a });
+    const c = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: a.phone } });
+    expect(c.data.can_undo).toBe(true);
+    expect((await v.rpc('public_registration', { p_token: c.data.token })).data.can_cancel).toBe(false);
+    expect((await v.rpc('public_cancel', { p_token: c.data.token })).error?.message).toBe('too_late');
+    expect((await v.rpc('public_checkin_undo', { p_token: c.data.token })).error).toBeNull();
+    const coord = await staff('coord');
+    const { data: list } = await coord.rpc('staff_checkin_list', { p_event_id: ev.id });
+    expect(list[0].attendance).toBe('unknown');
+    void r;
+    // a walk-in created by a mistaken check-in disappears entirely
+    const known = registration((await makeEvent({ startsInMinutes: 20 * 24 * 60 })).public_code);
+    await v.rpc('public_register', { p: known });
+    const w = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: known.phone } });
+    expect((await v.rpc('public_checkin_undo', { p_token: w.data.token })).error).toBeNull();
+    const { data: after } = await coord.rpc('staff_checkin_list', { p_event_id: ev.id });
+    expect(after).toHaveLength(1);
+  });
+
+  it('a channel link preselects its source, and the team contact is public', async () => {
+    const coord = await staff('coord');
+    const { data: src } = await coord.from('acquisition_sources').select('id').eq('key', 'instagram').single();
+    const code = `ig-sim-${Date.now().toString(36)}`;
+    await coord.from('referral_links').insert({ code, label: 'בדיקה', source_id: src!.id });
+    const ev = await makeEvent();
+    const { data } = await visitor().rpc('public_get_event', { p_code: ev.public_code, p_ref: code });
+    expect(data.ref_source).toBe('instagram');
+    const admin = await staff('admin');
+    await admin.from('settings').update({ contact_phone: '052-711-0055' }).eq('id', true);
+    const { data: org } = await visitor().rpc('public_org_info');
+    expect(org.contact_phone).toBe('+972527110055');
+  });
+});
