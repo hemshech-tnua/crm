@@ -17,7 +17,12 @@ const UTM_KEYS = ['source', 'medium', 'campaign'] as const;
 
 export function RegisterPage() {
   const { code = '' } = useParams();
+  // a new event (or invite) is a new page: never carry the previous form or success screen over
   const [params] = useSearchParams();
+  return <Register key={`${code}|${params.get('ref') ?? ''}`} code={code} params={params} />;
+}
+
+function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const ref = params.get('ref')?.trim().toLowerCase() || null;
   const utm: Record<string, string> = {};
   for (const k of UTM_KEYS) {

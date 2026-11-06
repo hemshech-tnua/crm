@@ -39,7 +39,7 @@ export function ManagePage() {
     );
   }
 
-  return <Manage info={reg.data} token={token} />;
+  return <Manage key={token} info={reg.data} token={token} />;
 }
 
 function statusLine(r: RegistrationInfo): { badge: ReactNode; text: string } {
@@ -112,7 +112,7 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
     }
   };
 
-  const invite = r.invite_code && e.status !== 'cancelled'
+  const invite = r.invite_code && active
     ? e.registration_open
       ? { url: registerUrl(e.code, r.invite_code), message: inviteMessage(e) }
       : { url: allEventsUrl(r.invite_code), message: inviteMessage(null) }
@@ -174,7 +174,7 @@ function ManageFeedback({ token, given }: { token: string; given: boolean }) {
   }
 
   return (
-    <Block title="איך היה המפגש?">
+    <Block title="משוב על המפגש">
       <p className="mb-4 text-[0.95rem] text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
       <FeedbackForm
         ctx={ctx.data}

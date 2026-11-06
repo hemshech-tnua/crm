@@ -102,7 +102,7 @@ export function InviteBlock({ url, message, title = 'הזמינו חבר/ה' }: 
       <p className="text-[0.95rem] text-ink-soft">
         מכירים עוד חברים מהמילואים? שלחו להם את הקישור האישי שלך, כך נדע שהגיעו דרכך.
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (
           <Button onClick={share}>
             <Glyph name="share" />

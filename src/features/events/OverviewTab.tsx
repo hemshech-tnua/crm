@@ -26,7 +26,7 @@ export function OverviewTab({ event: e, people, onTab }: Props) {
     <div className="flex flex-col gap-5">
       <Actions e={e} onTab={onTab} />
       <Counters e={e} />
-      <div className="grid items-start gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
         <Facts e={e} people={people} />
         <div className="flex flex-col gap-5">
           <LinksPanel e={e} />
@@ -78,7 +78,7 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
     <Panel title="פרטי המפגש" actions={<ButtonLink to={`/app/events/${e.id}/edit`} variant="ghost" size="sm" icon="edit">עריכה</ButtonLink>}>
       <KeyValue
         items={[
-          ['מתי', <span key="w">{fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span></span>],
+          ['מתי', <span key="w">{fmtDayLong(e.starts_at)} · <span className="num whitespace-nowrap">{timeRange(e)}</span></span>],
           ['מקום', people.place ? <span key="p">{people.place}{people.site && people.site.name !== people.place ? <span className="text-muted"> · {people.site.name}</span> : null}</span> : null],
           ['פעילות', e.activity_name || people.instructor ? <span key="a">{e.activity_name ?? 'פעילות'}{people.instructor ? <span className="text-muted"> עם {people.instructor.full_name}</span> : null}</span> : null],
           ['מרצה', sp ? (

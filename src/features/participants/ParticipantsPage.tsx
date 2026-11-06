@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
@@ -24,9 +24,8 @@ const SORT_LABEL: Record<RosterSort, string> = {
   joined: 'הצטרפו לאחרונה',
 };
 
-function useFilters() {
-  const [sp, setSp] = useSearchParams();
-  const f: RosterFilters = {
+function fromParams(sp: URLSearchParams): RosterFilters {
+  return {
     q: sp.get('q') ?? '',
     status: (sp.get('status') as Engagement | null) ?? '',
     source: sp.get('source') ?? '',
@@ -35,18 +34,29 @@ function useFilters() {
     consent: (sp.get('consent') as RosterFilters['consent'] | null) ?? '',
     sort: (sp.get('sort') as RosterSort | null) ?? 'last',
   };
-  const set = (patch: Partial<RosterFilters>) => {
-    const next = { ...f, ...patch };
-    const out = new URLSearchParams();
-    if (next.q) out.set('q', next.q);
-    if (next.status) out.set('status', next.status);
-    if (next.source) out.set('source', next.source);
-    if (next.city) out.set('city', next.city);
-    if (next.task) out.set('task', '1');
-    if (next.consent) out.set('consent', next.consent);
-    if (next.sort !== 'last') out.set('sort', next.sort);
-    setSp(out, { replace: true });
-  };
+}
+function toParams(f: RosterFilters): URLSearchParams {
+  const out = new URLSearchParams();
+  if (f.q) out.set('q', f.q);
+  if (f.status) out.set('status', f.status);
+  if (f.source) out.set('source', f.source);
+  if (f.city) out.set('city', f.city);
+  if (f.task) out.set('task', '1');
+  if (f.consent) out.set('consent', f.consent);
+  if (f.sort !== 'last') out.set('sort', f.sort);
+  return out;
+}
+
+/** Filters live in state (never stale between quick changes) and are mirrored to the URL, so "back" from a card restores the list. */
+function useFilters() {
+  const [sp, setSp] = useSearchParams();
+  const [f, setState] = useState<RosterFilters>(() => fromParams(sp));
+  const set = useCallback((patch: Partial<RosterFilters>) => setState((x) => ({ ...x, ...patch })), []);
+  useEffect(() => {
+    const next = toParams(f);
+    if (next.toString() !== sp.toString()) setSp(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f]);
   return [f, set] as const;
 }
 
@@ -61,12 +71,9 @@ export function ParticipantsPage() {
   const [moreFilters, setMoreFilters] = useState(() => !!(f.source || f.city || f.task || f.consent));
   const [exporting, setExporting] = useState(false);
 
-  // the debounced search goes to the URL (so "back" from a card returns to the same list)
-  useEffect(() => {
-    if (q !== f.q) setF({ q });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
-  const filters = useMemo(() => ({ ...f, q }), [f, q]);
+  // the debounced search term joins the filters (and the URL)
+  useEffect(() => setF({ q }), [q, setF]);
+  const filters = f;
   // "show more" grows the page; any change of search/filter/sort starts again from the first page
   const filterKey = JSON.stringify(filters);
   const [paging, setPaging] = useState({ key: filterKey, limit: PAGE });

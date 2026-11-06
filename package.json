@@ -4,16 +4,19 @@
   "private": true,
   "description": "CRM and activity management for the Hemshech Tnua nonprofit",
   "scripts": {
-    "dev": "next dev -p 3100",
-    "build": "next build",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint",
+    "lint": "eslint src tests",
     "test": "vitest run",
-    "test:db": "bash scripts/test-db.sh",
+    "test:unit": "vitest run --project unit",
+    "test:api": "vitest run --project api",
     "test:e2e": "playwright test --trace off",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local > src/lib/database.types.ts"
+    "db:demo": "psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -q -f supabase/demo-data.sql",
+    "backup": "bash scripts/backup.sh"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans-hebrew": "^5.3.0",

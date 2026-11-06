@@ -146,7 +146,7 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   if (f.lecture_topic.length > 160) errors.lecture_topic = 'עד 160 תווים.';
   if (f.description.length > 2000) errors.description = 'עד 2000 תווים.';
   if (f.internal_notes.length > 2000) errors.internal_notes = 'עד 2000 תווים.';
-  if (Object.keys(errors).length) return { errors };
+  if (errors.date || errors.start || errors.end) return { errors };
 
   const starts = fromIl(f.date, f.start);
   const ends = fromIl(f.date, f.end);
@@ -160,7 +160,7 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
       if (new Date(closes) > new Date(ends)) errors.closes_date = 'ההרשמה צריכה להיסגר לפני שהמפגש נגמר.';
     }
   }
-  return { errors, starts, ends, closes };
+  return Object.keys(errors).length ? { errors } : { errors, starts, ends, closes };
 }
 
 function EventForm({ event, initial, sites, speakers }: { event?: EventRow; initial: Form; sites: Site[]; speakers: Speaker[] }) {

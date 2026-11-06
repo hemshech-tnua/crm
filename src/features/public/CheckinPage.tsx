@@ -14,6 +14,10 @@ import { ResultTitle, SuccessMark } from './shared';
 /** #/c/:checkinCode — scanned from the QR sign at the entrance, on the participant's own phone. */
 export function CheckinPage() {
   const { code = '' } = useParams();
+  return <Checkin key={code} code={code} />;
+}
+
+function Checkin({ code }: { code: string }) {
   const info = useCheckinInfo(code);
   const [welcome, setWelcome] = useState<CheckinResult | null>(null);
 
@@ -116,13 +120,7 @@ function CheckinFlow({ code, event, onWelcome, onWindowChanged }: {
 
   if (mode === 'walkin') {
     return (
-      <Walkin
-        code={code}
-        event={event}
-        phone={phone}
-        onBack={() => go('phone')}
-        onResult={handle}
-      />
+      <Walkin code={code} phone={phone} onBack={() => go('phone')} onResult={handle} />
     );
   }
 
@@ -181,9 +179,8 @@ function CheckinFlow({ code, event, onWelcome, onWindowChanged }: {
   );
 }
 
-function Walkin({ code, event, phone, onBack, onResult }: {
+function Walkin({ code, phone, onBack, onResult }: {
   code: string;
-  event: PublicEvent;
   phone: string;
   onBack: () => void;
   onResult: (r: CheckinResult) => void;
@@ -200,7 +197,7 @@ function Walkin({ code, event, phone, onBack, onResult }: {
       ) : sources.isError ? (
         <ErrorBox error={errorMessage(sources.error)} onRetry={() => sources.refetch()} />
       ) : (
-        <WalkinForm code={code} event={event} phone={phone} sources={sources.data} onResult={onResult} />
+        <WalkinForm code={code} phone={phone} sources={sources.data} onResult={onResult} />
       )}
       <button type="button" onClick={onBack} className="min-h-11 self-center px-3 font-semibold text-tide underline underline-offset-4">
         טעיתי במספר, חזרה
@@ -211,7 +208,6 @@ function Walkin({ code, event, phone, onBack, onResult }: {
 
 function WalkinForm({ code, phone, sources, onResult }: {
   code: string;
-  event: PublicEvent;
   phone: string;
   sources: PublicSource[];
   onResult: (r: CheckinResult) => void;
@@ -253,7 +249,16 @@ function Welcome({ result: r, fallback }: { result: CheckinResult; fallback: Pub
   return (
     <div className="flex flex-col items-center gap-4 pt-6 text-center">
       <SuccessMark size="lg" />
-      <ResultTitle size="xl" className="mt-2">ברוך/ה הבא/ה{r.first_name ? `, ${r.first_name}` : ''}!</ResultTitle>
+      <ResultTitle size="xl" className="mt-2">
+        {r.first_name ? (
+          <>
+            <span className="block text-[2rem] sm:text-[2.25rem]">ברוך/ה הבא/ה,</span>{' '}
+            <span className="block text-[3.25rem] leading-none sm:text-[3.75rem]">{r.first_name}!</span>
+          </>
+        ) : (
+          'ברוך/ה הבא/ה!'
+        )}
+      </ResultTitle>
       <p className="text-xl text-ink-soft">
         {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה!'}
       </p>

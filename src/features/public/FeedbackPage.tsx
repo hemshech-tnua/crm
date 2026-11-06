@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { allEventsUrl } from '@/lib/links';
 import { ButtonLink, EmptyState, ErrorBox, Skeleton } from '@/ui/kit';
@@ -13,6 +14,11 @@ export function FeedbackPage() {
   const { code = '' } = useParams();
   const [params] = useSearchParams();
   const token = params.get('t')?.trim() || null;
+  return <Feedback key={`${code}|${token ?? ''}`} code={code} token={token} />;
+}
+
+function Feedback({ code, token }: { code: string; token: string | null }) {
+  const qc = useQueryClient();
   const ctx = useFeedbackContext(token ? { token } : { event: code });
   const [done, setDone] = useState(false);
 
@@ -62,7 +68,16 @@ export function FeedbackPage() {
       </div>
       <EventTicket event={c.event} showStatus={false} />
       {c.existing && <p className="text-sm text-muted">כבר שלחת משוב על המפגש הזה. אפשר לעדכן אותו כאן.</p>}
-      <FeedbackForm ctx={c} token={c.personal ? token : null} onDone={() => setDone(true)} submitLabel={c.existing ? 'עדכון המשוב' : 'שליחת המשוב'} />
+      <FeedbackForm
+        ctx={c}
+        token={c.personal ? token : null}
+        submitLabel={c.existing ? 'עדכון המשוב' : 'שליחת המשוב'}
+        onDone={() => {
+          setDone(true);
+          void qc.invalidateQueries({ queryKey: ['pub', 'feedback'] });
+          void qc.invalidateQueries({ queryKey: ['pub', 'registration'] });
+        }}
+      />
     </div>
   );
 }

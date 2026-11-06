@@ -42,7 +42,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   const regs = useEventRegistrations(e);
   const sent = useSentForEvent(e.id);
   const started = hasStarted(e);
-  const list = templates.data ?? [];
+  const list = useMemo(() => templates.data ?? [], [templates.data]);
 
   const firstKey = useMemo(() => {
     if (!list.length) return '';
@@ -113,7 +113,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
         שום הודעה לא נשלחת לבד. "שליחה" פותחת וואטסאפ בטלפון או במחשב שלך עם הטקסט מוכן, ואת/ה לוחץ/ת "שלח" בוואטסאפ. כל פתיחה נרשמת בהיסטוריית הקשר של הלוחם/ת.
       </Notice>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <Panel title="מה שולחים">
           <div className="flex flex-col gap-4">
             <Select label="תבנית" value={key} onChange={(x) => { setPickedKey(x.target.value); setPickedGroup(null); }}>
@@ -159,7 +159,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
             <div className="h-2 overflow-hidden rounded-full bg-mist-deep" role="progressbar" aria-valuemin={0} aria-valuemax={eligibleCount} aria-valuenow={doneCount} aria-label="התקדמות השליחה">
               <div className="h-full rounded-full bg-tide transition-[width]" style={{ width: eligibleCount ? `${(doneCount / eligibleCount) * 100}%` : '0%' }} />
             </div>
-            {blocked > 0 && <p className="mt-2 text-sm text-warn">{blocked} לא אישרו לקבל עדכונים, ולכן לא נשלח להם את ההודעה הזו.</p>}
+            {blocked > 0 && <p className="mt-2 text-sm text-warn">{blocked === 1 ? 'נמען/ת אחד/ת לא אישר/ה' : `${blocked} נמענים לא אישרו`} לקבל עדכונים, ולכן ההודעה הזו לא נשלחת {blocked === 1 ? 'אליו/ה' : 'אליהם'}.</p>}
           </div>
           {loading ? (
             <div className="p-5"><Skeleton lines={5} /></div>

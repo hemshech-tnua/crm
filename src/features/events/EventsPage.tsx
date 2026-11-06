@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useEventsWithStats, useSpeakers, type EventWithStats } from '@/lib/data';
 import { errorMessage } from '@/lib/errors';
@@ -234,7 +234,7 @@ function pastNumbers(e: EventWithStats) {
   const held = e.status !== 'cancelled' && e.status !== 'draft';
   return {
     attended: held ? num(s?.attended_count) : '—',
-    newRet: held && s && s.attended_count > 0 ? `${s.new_count} / ${s.returning_count}` : '—',
+    newRet: held && s && s.attended_count > 0 ? <NewReturning n={s.new_count} r={s.returning_count} /> : '—',
     show: held ? pct(ratio(s?.attended_registered_count ?? 0, s?.registered_count ?? 0)) : '—',
     rating: s?.avg_overall != null ? num(s.avg_overall, 1) : '—',
     feedback: s?.feedback_count ?? 0,
@@ -305,7 +305,7 @@ function PastList({ events, now }: { events: EventWithStats[]; now: number }) {
                     </div>
                   </td>
                   <td className="num px-3 py-3 text-right font-semibold">{n.attended}</td>
-                  <td className="num px-3 py-3 text-right">{n.newRet}</td>
+                  <td className="px-3 py-3">{n.newRet}</td>
                   <td className="num px-3 py-3 text-right">{n.show}</td>
                   <td className="px-3 py-3">
                     <span className="num">{n.rating}</span>
@@ -322,11 +322,16 @@ function PastList({ events, now }: { events: EventWithStats[]; now: number }) {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+/** "new / returning" in reading order (RTL): new on the right, like the column header. */
+function NewReturning({ n, r }: { n: number; r: number }) {
+  return <span dir="rtl"><span className="num">{n}</span> / <span className="num">{r}</span></span>;
+}
+
+function MiniStat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col-reverse rounded-lg bg-mist px-1 py-1.5">
       <dt className="text-[0.72rem] leading-tight text-muted">{label}</dt>
-      <dd className="num font-display text-lg leading-tight">{value}</dd>
+      <dd className="font-display text-lg leading-tight tabular-nums">{value}</dd>
     </div>
   );
 }

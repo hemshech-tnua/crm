@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
 import { ENGAGEMENT_HINT, ENGAGEMENT_LABEL } from '@/lib/labels';
-import { formatPhone } from '@/lib/phone';
+import { formatPhone, normalizePhone } from '@/lib/phone';
 import { allEventsUrl, feedbackUrl, registerUrl } from '@/lib/links';
 import { todayIl, ilParts } from '@/lib/dates';
 import type { TemplateContext } from '@/lib/templates';
@@ -208,4 +208,30 @@ export function FieldGuidance() {
       <span>{NOTES_GUIDANCE}</span>
     </p>
   );
+}
+
+// ───────────── validation (mirrors the server; the server stays the source of truth) ─────────────
+
+export function nameError(v: string): string | null {
+  const t = v.trim();
+  if (t.length < 2) return 'צריך לכתוב שם מלא.';
+  if (t.length > 80) return 'השם ארוך מדי (עד 80 תווים).';
+  if (/[0-9<>@/\\{}=;]/.test(t)) return 'שם יכול לכלול אותיות בלבד.';
+  return null;
+}
+
+export function phoneError(v: string): string | null {
+  if (!v.trim()) return 'צריך מספר טלפון.';
+  return normalizePhone(v) ? null : 'מספר הטלפון לא נראה תקין. כותבים כמו 050-1234567.';
+}
+
+export function birthDateError(v: string): string | null {
+  if (!v) return null;
+  return v >= '1920-01-01' && v <= '2015-12-31' ? null : 'תאריך הלידה לא נראה תקין.';
+}
+
+export function cityError(v: string): string | null {
+  const t = v.trim();
+  if (!t) return null;
+  return t.length >= 2 && t.length <= 60 && !/[0-9<>@/\\{}=;]/.test(t) ? null : 'שם העיר לא נראה תקין.';
 }
