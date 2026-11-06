@@ -1,6 +1,8 @@
 // Scenario 7 (security) at the API layer: what each role can and cannot do, enforced by the database.
 import { describe, expect, it } from 'vitest';
+import { execSync } from 'node:child_process';
 import { makeEvent, registration, staff, visitor, SITE_ID } from './helpers';
+import { DB_URL } from './env';
 
 const TABLES = ['participants', 'registrations', 'events', 'staff', 'audit_log', 'settings', 'feedback', 'follow_ups',
   'contact_log', 'consents', 'speakers', 'message_templates', 'referral_links', 'acquisition_sources', 'sites'];
@@ -249,5 +251,21 @@ describe('input validation and injection', () => {
       const { error: e2 } = await v.rpc('public_cancel', { p_token: t });
       expect(e2?.message).toBe('token_invalid');
     }
+  });
+});
+
+describe('privilege surface (defense in depth)', () => {
+  const sql = (q: string) => execSync(`psql "${DB_URL}" -Atc "${q}"`).toString().trim();
+  it('anonymous visitors can execute exactly the twelve public endpoints and read no table or view', () => {
+    const fns = sql("select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('public','private') and has_function_privilege('anon', p.oid, 'execute')");
+    expect(fns.split(',')).toEqual([
+      'public_cancel', 'public_checkin', 'public_checkin_info', 'public_feedback_context', 'public_get_event', 'public_list_events',
+      'public_propose', 'public_register', 'public_registration', 'public_sources', 'public_submit_feedback', 'public_walkin',
+    ]);
+    expect(sql("select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','v') and has_table_privilege('anon', c.oid, 'select')")).toBe('0');
+  });
+  it('every table in public has row level security, and every security definer function pins its search_path', () => {
+    expect(sql("select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity")).toBe('0');
+    expect(sql("select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('public','private') and p.prosecdef and not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%')")).toBe('0');
   });
 });
