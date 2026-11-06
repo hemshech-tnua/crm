@@ -6,13 +6,10 @@ import { fmtDayLong, fmtTime, ilParts, todayIl } from '@/lib/dates';
 import { Badge, ButtonLink, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { eventKeys, fetchCheckinList, useDoorEvents, type DoorEvent } from './queries';
-import { StatusBadge, TypeBadge, timeRange } from './shared';
+import { StatusBadge, TypeBadge, inDoorWindow, timeRange } from './shared';
 
 const WINDOW = 12 * 3600_000;
-
-/** Volunteers may open an event's list from 12h before it starts until 12h after it ends (server rule). */
-const inWindow = (e: DoorEvent, now: number) =>
-  now >= new Date(e.starts_at).getTime() - WINDOW && now <= new Date(e.ends_at).getTime() + WINDOW;
+const inWindow = (e: DoorEvent, now: number) => inDoorWindow(e, now);
 
 export function DoorHome() {
   const role = useRole();

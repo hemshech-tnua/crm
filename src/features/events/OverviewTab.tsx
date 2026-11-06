@@ -46,7 +46,7 @@ function Counters({ e }: { e: EventWithStats }) {
   const free = e.capacity != null ? Math.max(0, e.capacity - reg) : null;
   if (e.status === 'cancelled' && !reg && !s?.waitlisted_count) return null;
   return (
-    <section aria-label="מספרים" className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+    <section aria-label="מספרים" className={cx('grid gap-3', started && e.status !== 'cancelled' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 sm:max-w-2xl')}>
       {started && e.status !== 'cancelled' && (
         <BigStat highlight label="הגיעו" value={s?.attended_count ?? 0} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : undefined} />
       )}
@@ -108,6 +108,7 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
   const confirm = useConfirm();
   const toast = useToast();
   const invalidate = useInvalidateEvent();
+  const qc = useQueryClient();
   const settings = useSettings();
   const [dupOpen, setDupOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -162,10 +163,15 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
       if (error) throw error;
       if (!data?.length) throw { message: 'forbidden' };
     },
-    onSuccess: async () => {
-      await invalidate(e.id);
-      toast.success('המפגש נמחק');
+    onSuccess: () => {
+      // leave first: refetching the deleted event would fail
       navigate('/app/events', { replace: true });
+      toast.success('המפגש נמחק');
+      setTimeout(() => {
+        qc.removeQueries({ queryKey: ['event', e.id] });
+        qc.removeQueries({ queryKey: ['event-registrations', e.id] });
+        qc.invalidateQueries({ queryKey: ['events'] });
+      }, 0);
     },
     onError: (err) => toast.error((err as { code?: string }).code === '23503' ? 'יש למפגש הרשמות, ולכן אי אפשר למחוק אותו. אפשר לבטל אותו.' : errorMessage(err)),
   });

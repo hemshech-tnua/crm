@@ -43,7 +43,7 @@ export function PublicHome() {
                   aria-label={`${cta(e)}: ${e.title}, ${fmtDayLong(e.starts_at)}`}
                   className="group block rounded-[var(--radius-panel)] transition-transform active:scale-[0.99]"
                 >
-                  <EventTicket event={e} highlight={i === 0}>
+                  <EventTicket event={e} highlight={i === 0} showStatus="notable">
                     <span className={buttonClass(i === 0 ? 'primary' : 'secondary', 'md', 'mt-4 w-full sm:w-auto group-hover:bg-tide-deep group-hover:text-white')}>
                       {cta(e)}
                     </span>

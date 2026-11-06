@@ -54,6 +54,15 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
   const save = useMutation({
     mutationFn: async () => {
       const phone = normalizePhone(f.phone)!;
+      if (phone !== card.phone) {
+        // ask first, so a taken number gets a link to the other card instead of a failed save
+        const { data } = await supabase.rpc('staff_check_duplicate', { p_full_name: '', p_phone: phone });
+        const other = (data as { by_phone: { id: string; full_name: string | null } | null } | null)?.by_phone;
+        if (other && other.id !== card.id) {
+          setDupe(other);
+          throw { message: 'duplicate_phone' };
+        }
+      }
       const { error } = await supabase.from('participants').update({
         full_name: f.full_name.trim(),
         phone,

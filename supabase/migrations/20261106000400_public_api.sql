@@ -325,14 +325,15 @@ begin
 
   select * into v_existing from public.registrations where event_id = v_event.id and participant_id = v_part.id for update;
   v_has_existing := found;
+  -- answers echo only what the visitor typed: knowing a phone number must not reveal the stored name
   if v_has_existing and v_existing.status = 'registered' then
-    return jsonb_build_object('status', 'already_registered', 'first_name', private.first_name(v_part.full_name),
-                              'invite_code', v_part.referral_code, 'event', private.event_public(v_event.id));
+    return jsonb_build_object('status', 'already_registered', 'first_name', private.first_name(r.full_name),
+                              'event', private.event_public(v_event.id));
   end if;
   if v_has_existing and v_existing.status = 'waitlisted' then
-    return jsonb_build_object('status', 'already_waitlisted', 'first_name', private.first_name(v_part.full_name),
+    return jsonb_build_object('status', 'already_waitlisted', 'first_name', private.first_name(r.full_name),
                               'waitlist_position', private.waitlist_position(v_existing.id),
-                              'invite_code', v_part.referral_code, 'event', private.event_public(v_event.id));
+                              'event', private.event_public(v_event.id));
   end if;
 
   select count(*) into v_registered from public.registrations where event_id = v_event.id and status = 'registered';
@@ -377,7 +378,7 @@ begin
 
   return jsonb_build_object(
     'status', v_status,
-    'first_name', private.first_name(v_part.full_name),
+    'first_name', private.first_name(r.full_name),
     'token', v_token,
     'invite_code', v_part.referral_code,
     'waitlist_position', case when v_status = 'waitlisted' then private.waitlist_position(v_reg_id) end,

@@ -213,7 +213,7 @@ export function Rating({ legend, value, onChange, required }: { legend: ReactNod
           const on = value === n;
           return (
             <label key={n} className={cx(
-              'flex h-14 cursor-pointer flex-col items-center justify-center rounded-[var(--radius-control)] border transition-colors',
+              'flex h-14 cursor-pointer flex-col items-center justify-center rounded-[var(--radius-control)] border transition-colors has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-light',
               on ? 'border-light-deep bg-light text-ink' : 'border-line bg-paper hover:border-light-deep/60',
             )}>
               <input type="radio" name={name} value={n} checked={on} onChange={() => onChange(n)} className="sr-only" aria-label={`${n} – ${words[n]}`} />

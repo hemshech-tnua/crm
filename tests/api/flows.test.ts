@@ -48,7 +48,9 @@ describe('registration', () => {
     });
     expect(error).toBeNull();
     expect(data.status).toBe('registered');
-    expect(data.first_name).toBe(first.full_name.split(' ')[0]);
+    // the answer echoes what was typed; it never reveals the name stored for that phone
+    expect(data.first_name).toBe('שם');
+    expect(JSON.stringify(data)).not.toContain(first.full_name.split(' ')[0]);
 
     const coord = await staff('coord');
     const { data: people } = await coord.from('participants').select('id, full_name, city').eq('phone', e164(local));
@@ -62,7 +64,9 @@ describe('registration', () => {
     // same event again: no second registration
     const again = await visitor().rpc('public_register', { p: registration(ev2.public_code, { phone: local }) });
     expect(again.data.status).toBe('already_registered');
+    // a pure lookup by phone hands out nothing personal: no token, no invite code
     expect(again.data.token).toBeUndefined();
+    expect(again.data.invite_code).toBeUndefined();
   });
 
   it('fills capacity, then waitlists, and re-registers after cancelling', async () => {

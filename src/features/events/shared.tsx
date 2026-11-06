@@ -37,6 +37,10 @@ export const shortWhen = (e: Pick<EventRow, 'starts_at'>) => `${fmtDay(e.starts_
 
 export const hasStarted = (e: Pick<EventRow, 'starts_at'>, now = Date.now()) => new Date(e.starts_at).getTime() <= now;
 export const hasEnded = (e: Pick<EventRow, 'ends_at'>, now = Date.now()) => new Date(e.ends_at).getTime() < now;
+/** The door team may open an event's attendance list from 12h before it starts until 12h after it ends (server rule). */
+export const inDoorWindow = (e: Pick<EventRow, 'starts_at' | 'ends_at'>, now = Date.now()) =>
+  now >= new Date(e.starts_at).getTime() - 12 * 3600_000 && now <= new Date(e.ends_at).getTime() + 12 * 3600_000;
+
 /** The meeting is over but nobody pressed "סגירת המפגש" (no-shows and tasks are still missing). */
 export const isUnclosed = (e: Pick<EventRow, 'ends_at' | 'status'>, now = Date.now()) =>
   (e.status === 'open' || e.status === 'closed') && hasEnded(e, now);
@@ -46,7 +50,7 @@ export function BigStat({ label, value, sub, highlight, className = '' }: {
   label: ReactNode; value: ReactNode; sub?: ReactNode; highlight?: boolean; className?: string;
 }) {
   return (
-    <div className={cx('rounded-[var(--radius-control)] px-4 py-3', highlight ? 'bg-light-wash' : 'bg-mist', className)}>
+    <div className={cx('rounded-[var(--radius-control)] border px-4 py-3', highlight ? 'border-light/50 bg-light-wash' : 'border-line-soft bg-paper', className)}>
       <div className="text-sm font-medium text-muted">{label}</div>
       <div className="num mt-0.5 text-right font-display text-[2rem] leading-tight text-ink">{value}</div>
       {sub && <div className="mt-0.5 text-sm text-muted">{sub}</div>}

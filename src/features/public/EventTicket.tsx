@@ -12,7 +12,7 @@ const monthName = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, month: 'long'
 type Tone = 'good' | 'warn' | 'bad' | 'neutral' | 'tide';
 
 /** Where registration stands, in words a visitor understands. */
-export function availability(e: PublicEvent): { tone: Tone; text: ReactNode } {
+export function availability(e: PublicEvent): { tone: Tone; text: ReactNode; plain?: boolean } {
   if (e.status === 'cancelled') return { tone: 'bad', text: 'המפגש בוטל' };
   if (!e.registration_open) return { tone: 'neutral', text: 'ההרשמה נסגרה' };
   if (e.is_full) return e.waitlist_enabled ? { tone: 'warn', text: 'מלא · יש רשימת המתנה' } : { tone: 'bad', text: 'המפגש מלא' };
@@ -22,7 +22,7 @@ export function availability(e: PublicEvent): { tone: Tone; text: ReactNode } {
       text: e.spots_left === 1 ? 'נשאר מקום אחד' : <>נשארו <span className="num">{e.spots_left}</span> מקומות</>,
     };
   }
-  return { tone: 'good', text: 'הרשמה פתוחה' };
+  return { tone: 'good', text: 'הרשמה פתוחה', plain: true };
 }
 
 // Two half-circle notches cut where the stub meets the ticket (RTL: the stub is on the right).
@@ -59,7 +59,8 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
   level?: 2 | 3;
   /** speaker line and description (the registration page) */
   detailed?: boolean;
-  showStatus?: boolean;
+  /** 'notable': only when it says something beyond "open" (few spots, waitlist, full) */
+  showStatus?: boolean | 'notable';
   children?: ReactNode;
 }) {
   const H = level === 3 ? 'h3' : 'h2';
@@ -98,7 +99,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
           {detailed && event.description && (
             <p className="mt-3 whitespace-pre-line text-[0.95rem] leading-relaxed text-ink-soft">{event.description}</p>
           )}
-          {showStatus && (
+          {(showStatus === true || (showStatus === 'notable' && !status.plain)) && (
             <div className="mt-3">
               <Badge tone={status.tone}>{status.text}</Badge>
             </div>

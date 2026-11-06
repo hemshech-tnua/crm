@@ -11,7 +11,7 @@ import { Badge, Button, EmptyState, ErrorBox, Input, Notice, Panel, Select, Skel
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { eventKeys, fetchCheckinList, useDoorEvent, useInvalidateEvent, type CheckinRow } from './queries';
-import { RowMenu, timeRange } from './shared';
+import { RowMenu, inDoorWindow, timeRange } from './shared';
 
 const firstName = (n: string) => n.split(' ')[0];
 /** The 5th, 10th, 20th… Friday is a milestone worth greeting at the door. */
@@ -27,9 +27,12 @@ export function DoorPage() {
   const ev = useDoorEvent(id);
   const key = eventKeys.checkin(id);
   const busy = useIsMutating({ mutationKey: ['door', id] });
+  // the door team gets the list only around the event's time; don't ask the server outside it
+  const outside = role === 'volunteer' && !!ev.data && !inDoorWindow(ev.data);
   const list = useQuery({
     queryKey: key,
-    enabled: !!id,
+    enabled: !!id && !!ev.data && !outside,
+    retry: (n, err) => errorCode(err) !== 'forbidden' && n < 1,
     queryFn: () => fetchCheckinList(id),
     // self check-ins via the QR sign show up without reloading; paused while a tap is being saved
     refetchInterval: busy ? false : 15_000,
@@ -119,7 +122,7 @@ export function DoorPage() {
   const walkIns = rows.filter((r) => r.is_walk_in && r.attendance === 'attended').length;
   const e = ev.data;
   const inactive = e && (e.status === 'draft' || e.status === 'cancelled');
-  const forbidden = list.isError && errorCode(list.error) === 'forbidden';
+  const forbidden = outside || (list.isError && errorCode(list.error) === 'forbidden');
 
   const rowProps = (r: CheckinRow) => ({
     r,
@@ -158,7 +161,7 @@ export function DoorPage() {
               type="search"
               inputMode="search"
               aria-label="חיפוש לפי שם או 4 ספרות אחרונות"
-              placeholder="שם או 4 ספרות אחרונות"
+              placeholder="שם או 4 ספרות"
               value={search}
               onChange={(x) => setSearch(x.target.value)}
               className="h-14 w-full rounded-[var(--radius-control)] border border-line bg-paper pr-11 pl-3 text-[1.05rem] placeholder:text-faint focus:border-tide focus:ring-2 focus:ring-tide/20 focus:outline-none"
@@ -180,14 +183,16 @@ export function DoorPage() {
         {e?.status === 'draft' && <div className="mb-3"><Notice tone="warn" icon="alert">המפגש עדיין טיוטה, ולכן אי אפשר לסמן הגעה.</Notice></div>}
         {e?.status === 'cancelled' && <div className="mb-3"><Notice tone="warn" icon="alert">המפגש בוטל.</Notice></div>}
 
-        {list.isLoading || ev.isLoading ? (
-          <Panel><Skeleton lines={8} /></Panel>
+        {ev.isError ? (
+          <ErrorBox error={errorMessage(ev.error)} onRetry={() => ev.refetch()} />
         ) : forbidden ? (
           <Panel>
             <EmptyState icon="door" title="הרשימה עוד לא פתוחה">
               לצוות הכניסה רשימת הנוכחות נפתחת 12 שעות לפני המפגש ונסגרת 12 שעות אחריו.
             </EmptyState>
           </Panel>
+        ) : list.isLoading || ev.isLoading ? (
+          <Panel><Skeleton lines={8} /></Panel>
         ) : list.isError ? (
           <ErrorBox error={errorMessage(list.error)} onRetry={() => list.refetch()} />
         ) : rows.length === 0 ? (
@@ -299,7 +304,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
           {r.phone_last4 && <span className="num" aria-label={`טלפון שמסתיים ב-${r.phone_last4}`}>••{r.phone_last4}</span>}
           {r.first_time && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
-          {friday && !r.first_time && isMilestone(nth) && <Badge tone="light" icon="star">שישי {nth}</Badge>}
+          {friday && !r.first_time && isMilestone(nth) && <Badge tone="good" icon="star">שישי {nth}</Badge>}
           {r.photo_opt_out && (
             <span className="inline-flex items-center gap-1 font-semibold text-bad" title="לא מעוניין/ת להופיע בתמונות">
               <Icon name="noCamera" size={17} label="לא מצלמים" />
