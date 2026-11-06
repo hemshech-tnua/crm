@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { useEventsWithStats, useSpeakers, type EventWithStats } from '@/lib/data';
+import { useSpeakers, type EventWithStats } from '@/lib/data';
 import { errorMessage } from '@/lib/errors';
 import { fmtDay, fmtShortDate, fmtTime, ilParts, relativeDays, todayIl } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
@@ -8,6 +8,7 @@ import type { Speaker } from '@/lib/types';
 import { Badge, ButtonLink, Button, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { StatusBadge, TypeBadge, isUnclosed, timeRange } from './shared';
+import { useEventList } from './queries';
 
 type Show = 'upcoming' | 'past';
 const PAST_PAGE = 30;
@@ -22,8 +23,8 @@ export function EventsPage() {
   const dayAgo = useMemo(() => new Date(now - 24 * 3600_000).toISOString(), [now]);
   const nowIso = useMemo(() => new Date(now).toISOString(), [now]);
 
-  const upcomingQ = useEventsWithStats({ from: dayAgo, ascending: true });
-  const pastQ = useEventsWithStats({ to: nowIso, ascending: false, limit: pastLimit });
+  const upcomingQ = useEventList({ from: dayAgo, ascending: true });
+  const pastQ = useEventList({ to: nowIso, ascending: false, limit: pastLimit });
   const speakers = useSpeakers();
   const byId = useMemo(() => new Map((speakers.data ?? []).map((s) => [s.id, s])), [speakers.data]);
 

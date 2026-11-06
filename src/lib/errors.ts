@@ -37,6 +37,7 @@ const MESSAGES: Record<string, string> = {
   last_admin: 'חייב להישאר לפחות מנהל/ת פעיל/ה אחד/ת.',
   unauthenticated: 'פג תוקף ההתחברות. צריך להתחבר שוב.',
   duplicate_phone: 'כבר יש כרטיס עם מספר הטלפון הזה.',
+  duplicate: 'הרשומה הזו כבר קיימת.',
   network: 'אין חיבור לשרת. בודקים את האינטרנט ומנסים שוב.',
 };
 
@@ -45,7 +46,7 @@ export type AppError = { message?: string; code?: string; details?: string | nul
 export function errorCode(err: unknown): string {
   const e = err as AppError;
   if (!e) return 'unknown';
-  if (e.code === '23505') return 'duplicate_phone';
+  if (e.code === '23505') return /phone/.test(`${e.message ?? ''} ${e.details ?? ''}`) ? 'duplicate_phone' : 'duplicate';
   if (e.code === '42501' && !e.message?.match(/^[a-z_]+$/)) return 'forbidden';
   if (e.message && /^[a-z_]+$/.test(e.message)) return e.message;
   if (e.message && /fetch|network|Failed to fetch|NetworkError/i.test(e.message)) return 'network';

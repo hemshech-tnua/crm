@@ -43,7 +43,8 @@ function Counters({ e }: { e: EventWithStats }) {
   const s = e.stats;
   const started = hasStarted(e);
   const reg = s?.registered_count ?? 0;
-  const free = e.capacity != null ? Math.max(0, e.capacity - reg) : null;
+  // the server counts walk-ins against capacity too
+  const free = e.capacity != null ? Math.max(0, e.capacity - reg - (s?.walk_in_count ?? 0)) : null;
   if (e.status === 'cancelled' && !reg && !s?.waitlisted_count) return null;
   return (
     <section aria-label="מספרים" className={cx('grid gap-3', started && e.status !== 'cancelled' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 sm:max-w-2xl')}>
@@ -54,7 +55,7 @@ function Counters({ e }: { e: EventWithStats }) {
         highlight={!started && e.status === 'open'}
         label="נרשמו"
         value={<>{reg}<span className="text-xl text-muted">/{e.capacity ?? '∞'}</span></>}
-        sub={free != null ? (free ? `${free} מקומות פנויים` : 'אין מקומות פנויים') : 'בלי הגבלת מקומות'}
+        sub={free != null ? (free === 1 ? 'מקום פנוי אחד' : free ? `${free} מקומות פנויים` : 'אין מקומות פנויים') : 'בלי הגבלת מקומות'}
       />
       <BigStat label="בהמתנה" value={s?.waitlisted_count ?? 0} />
       <BigStat label="ביטלו" value={s?.cancelled_count ?? 0} />

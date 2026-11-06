@@ -145,11 +145,12 @@ export function DoorPage() {
             <h1 className="truncate font-display text-[1.45rem] leading-tight">{e?.title ?? 'רשימת נוכחות'}</h1>
             {e && <div className="text-sm text-muted">{fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span></div>}
           </div>
-          <div className="shrink-0 rounded-[var(--radius-control)] bg-light px-3.5 py-1.5 text-center text-ink" aria-live="polite">
+          {!forbidden && <div className="shrink-0 rounded-[var(--radius-control)] bg-light px-3.5 py-1.5 text-center text-ink" aria-live="polite">
             <div className="num font-display text-[2rem] leading-none">{totalArrived}</div>
             <div className="text-xs font-semibold">הגיעו</div>
-          </div>
+          </div>}
         </div>
+        {!forbidden && <>
         <div className="mt-1.5 text-[0.95rem] font-medium text-ink-soft">
           הגיעו <span className="num font-bold text-ink">{totalArrived}</span> · רשומים <span className="num font-bold text-ink">{totalRegistered}</span>
           {walkIns > 0 && <> · בלי הרשמה <span className="num font-bold text-ink">{walkIns}</span></>}
@@ -174,9 +175,10 @@ export function DoorPage() {
             className="flex h-14 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] bg-tide px-3.5 font-semibold text-white hover:bg-tide-deep disabled:bg-faint"
           >
             <Icon name="userPlus" size={20} />
-            <span className="leading-tight">בלי הרשמה</span>
+            <span className="text-right text-[0.9rem] leading-tight">הגיע/ה<br />בלי הרשמה</span>
           </button>
         </div>
+        </>}
       </div>
 
       <div className="pt-4">
@@ -187,7 +189,7 @@ export function DoorPage() {
           <ErrorBox error={errorMessage(ev.error)} onRetry={() => ev.refetch()} />
         ) : forbidden ? (
           <Panel>
-            <EmptyState icon="door" title="הרשימה עוד לא פתוחה">
+            <EmptyState icon="door" title={e && new Date(e.ends_at).getTime() < Date.now() ? 'הרשימה כבר נסגרה' : 'הרשימה עוד לא פתוחה'}>
               לצוות הכניסה רשימת הנוכחות נפתחת 12 שעות לפני המפגש ונסגרת 12 שעות אחריו.
             </EmptyState>
           </Panel>

@@ -429,3 +429,24 @@ describe('reports (scenario 6): numbers match the source data', () => {
     expect(tasks).toHaveLength(1);
   });
 });
+
+describe('review fixes', () => {
+  it('a pair marked "two different people" stops appearing as a duplicate', async () => {
+    const coord = await staff('coord');
+    const { data: a } = await coord.from('participants').insert({ full_name: 'שני אנשים שונים', phone: phone() }).select('id').single();
+    const { data: b } = await coord.from('participants').insert({ full_name: 'שני אנשים שונים', phone: phone() }).select('id').single();
+    const has = (rows: any[]) => rows.some((d) => [d.a.id, d.b.id].includes(a!.id) && [d.a.id, d.b.id].includes(b!.id));
+    expect(has((await coord.rpc('staff_find_duplicates')).data)).toBe(true);
+    expect((await coord.rpc('staff_dismiss_duplicate', { p_a: b!.id, p_b: a!.id })).error).toBeNull();
+    expect(has((await coord.rpc('staff_find_duplicates')).data)).toBe(false);
+    const door = await staff('door');
+    expect((await door.rpc('staff_dismiss_duplicate', { p_a: a!.id, p_b: b!.id })).error?.message).toBe('forbidden');
+  });
+
+  it('speaker phones in local format are normalized', async () => {
+    const coord = await staff('coord');
+    const { data, error } = await coord.from('speakers').insert({ full_name: 'מרצה טלפון מקומי', topic: 'נושא', phone: '052-711-0099' }).select('phone').single();
+    expect(error).toBeNull();
+    expect(data!.phone).toBe('+972527110099');
+  });
+});

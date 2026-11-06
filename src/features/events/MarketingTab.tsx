@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useReferralLinks, useSettings, useSources, type EventWithStats } from '@/lib/data';
 import { fmtDayLong, fmtTime, ilParts } from '@/lib/dates';
 import { registerUrl } from '@/lib/links';
 import { downloadFile } from '@/lib/csv';
+import type { ReferralLink } from '@/lib/types';
 import { Button, ButtonLink, Checkbox, Input, Notice, Panel, Select, cx } from '@/ui/kit';
 import { useCopy, useToast } from '@/ui/feedback';
 import type { EventPeople } from './context';
@@ -40,13 +41,19 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
   const [withLink, setWithLink] = useState(false);
   const content: PostContent = { ...defaults, ...edits };
 
-  // channel links: one for Instagram (bio), one for the WhatsApp groups, when they exist
-  const channelLink = (key: string) => {
-    const src = sources.data?.find((s) => s.key === key);
-    return src ? (links.data ?? []).find((l) => l.is_active && l.source_id === src.id) : undefined;
+  // channel links (so the reports know where registrations came from): suggested per channel, changeable
+  const active = useMemo(() => [...(links.data ?? [])].filter((l) => l.is_active).sort((a, b) => a.created_at.localeCompare(b.created_at)), [links.data]);
+  const suggest = (key: string, code: string, label: RegExp) => {
+    const src = sources.data?.find((x) => x.key === key);
+    const mine = active.filter((l) => src && l.source_id === src.id);
+    return (mine.find((l) => l.code === code) ?? mine.find((l) => label.test(l.label)) ?? mine[0])?.id ?? '';
   };
-  const igLink = channelLink('instagram');
-  const waLink = channelLink('whatsapp_group');
+  const [igPick, setIgPick] = useState<string | null>(null);
+  const [waPick, setWaPick] = useState<string | null>(null);
+  const igId = igPick ?? suggest('instagram', 'ig-bio', /ביו/);
+  const waId = waPick ?? suggest('whatsapp_group', 'wa-group', /קבוצ/);
+  const igLink = active.find((l) => l.id === igId);
+  const waLink = active.find((l) => l.id === waId);
   const publicUrl = registerUrl(e.public_code, igLink?.code);
   const waUrl = registerUrl(e.public_code, waLink?.code);
   const shownLink = publicUrl.replace(/^https?:\/\//, '');
@@ -188,18 +195,46 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
       </div>
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-        <CaptionPanel title="טקסט לאינסטגרם" text={igText} onCopy={() => copy(igText, 'הטקסט לאינסטגרם הועתק')} note={igLink ? `בביו: קישור "${igLink.label}"` : undefined} />
-        <CaptionPanel title="הודעה לקבוצות וואטסאפ" text={waText} onCopy={() => copy(waText, 'ההודעה הועתקה')} note={waLink ? `עם קישור "${waLink.label}", כדי לספור הרשמות מוואטסאפ` : 'אפשר ליצור קישור לערוץ וואטסאפ בלשונית "סקירה", כדי לדעת כמה נרשמו משם.'} />
+        <CaptionPanel
+          title="טקסט לאינסטגרם"
+          text={igText}
+          onCopy={() => copy(igText, 'הטקסט לאינסטגרם הועתק')}
+          link={<LinkPick label="קישור לאינסטגרם (לביו ולתמונה)" value={igId} onChange={setIgPick} links={active} url={publicUrl} onCopy={() => copy(publicUrl, 'הקישור הועתק')} />}
+        />
+        <CaptionPanel
+          title="הודעה לקבוצות וואטסאפ"
+          text={waText}
+          onCopy={() => copy(waText, 'ההודעה הועתקה')}
+          link={<LinkPick label="קישור בהודעה" value={waId} onChange={setWaPick} links={active} url={waUrl} onCopy={() => copy(waUrl, 'הקישור הועתק')} />}
+        />
       </div>
     </div>
   );
 }
 
-function CaptionPanel({ title, text, onCopy, note }: { title: string; text: string; onCopy: () => void; note?: string }) {
+function CaptionPanel({ title, text, onCopy, link }: { title: string; text: string; onCopy: () => void; link: ReactNode }) {
   return (
     <Panel title={title} actions={<Button size="sm" icon="copy" onClick={onCopy}>העתקה</Button>}>
       <div className="max-h-80 overflow-y-auto rounded-[var(--radius-control)] bg-mist px-3.5 py-3 text-[0.95rem] leading-relaxed whitespace-pre-line select-all">{text}</div>
-      {note && <p className="mt-2 text-sm text-muted">{note}</p>}
+      <div className="mt-4">{link}</div>
     </Panel>
+  );
+}
+
+/** Which registration link a channel uses: the general one or a channel link, so registrations are counted per channel. */
+function LinkPick({ label, value, onChange, links, url, onCopy }: {
+  label: string; value: string; onChange: (v: string) => void; links: ReferralLink[]; url: string; onCopy: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Select label={label} value={value} onChange={(x) => onChange(x.target.value)} hint={links.length ? undefined : 'אפשר ליצור קישור לכל ערוץ בלשונית "סקירה", כדי לדעת כמה נרשמו מכל ערוץ.'}>
+        <option value="">הקישור הכללי</option>
+        {links.map((l) => <option key={l.id} value={l.id}>{l.label} ({l.code})</option>)}
+      </Select>
+      <div className="flex items-center gap-2">
+        <span dir="ltr" className="min-w-0 flex-1 truncate text-left text-sm text-muted">{url}</span>
+        <Button size="sm" variant="ghost" icon="copy" onClick={onCopy}>העתקת הקישור</Button>
+      </div>
+    </div>
   );
 }

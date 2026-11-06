@@ -2,7 +2,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
-import type { Attendance, ContactLog, EventRow, EventType, Feedback, RegStatus, Registration } from '@/lib/types';
+import type { EventWithStats } from '@/lib/data';
+import type { Attendance, ContactLog, EventRow, EventStats, EventType, Feedback, RegStatus, Registration } from '@/lib/types';
 
 export const eventKeys = {
   registrations: (id: string) => ['event-registrations', id] as const,
@@ -29,6 +30,37 @@ export function useInvalidateEvent() {
       qc.invalidateQueries({ queryKey: ['participants'] }),
       qc.invalidateQueries({ queryKey: ['attention'] }),
     ]);
+}
+
+/** Splits ids for `in.(…)` filters: a long list makes the URL too long for the API gateway (about 8 KB). */
+export function chunk<T>(xs: T[], size = 60): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < xs.length; i += size) out.push(xs.slice(i, i + size));
+  return out;
+}
+
+// ───────────── events list ─────────────
+
+/**
+ * Events with their stats, like lib/data useEventsWithStats, but the stats are fetched in chunks:
+ * one `in.(…)` filter with hundreds of ids makes the URL too long for the API gateway.
+ */
+export function useEventList(opts: { from?: string; to?: string; ascending: boolean; limit?: number }) {
+  return useQuery({
+    queryKey: ['events', 'list', opts],
+    queryFn: async (): Promise<EventWithStats[]> => {
+      let q = supabase.from('events').select('*').order('starts_at', { ascending: opts.ascending });
+      if (opts.from) q = q.gte('starts_at', opts.from);
+      if (opts.to) q = q.lt('starts_at', opts.to);
+      if (opts.limit) q = q.limit(opts.limit);
+      const events = must(await q) as EventRow[];
+      const stats = (
+        await Promise.all(chunk(events.map((e) => e.id)).map(async (c) => must(await supabase.from('event_stats').select('*').in('event_id', c)) as EventStats[]))
+      ).flat();
+      const byId = new Map(stats.map((x) => [x.event_id, x]));
+      return events.map((e) => ({ ...e, stats: byId.get(e.id) ?? null }));
+    },
+  });
 }
 
 // ───────────── registrations (office view) ─────────────
@@ -67,11 +99,11 @@ export function useEventRegistrations(event: Pick<EventRow, 'id' | 'starts_at'> 
         await supabase.from('registrations').select(REG_SELECT).eq('event_id', event!.id).order('registered_at'),
       ) as unknown as Omit<RegRow, 'first_time' | 'attended_total'>[];
       const ids = rows.map((r) => r.participant_id);
-      const stats = ids.length
-        ? (must(
-            await supabase.from('participant_stats').select('participant_id, attended_count, first_attended_at').in('participant_id', ids),
-          ) as { participant_id: string; attended_count: number; first_attended_at: string | null }[])
-        : [];
+      type S = { participant_id: string; attended_count: number; first_attended_at: string | null };
+      const stats = (
+        await Promise.all(chunk(ids).map(async (c) =>
+          must(await supabase.from('participant_stats').select('participant_id, attended_count, first_attended_at').in('participant_id', c)) as S[]))
+      ).flat();
       const byId = new Map(stats.map((s) => [s.participant_id, s]));
       const start = new Date(event!.starts_at).getTime();
       return rows.map((r) => {
@@ -181,15 +213,11 @@ export function useConsentedRecent(eventId: string, excludeIds: string[], enable
       ) as { participant_id: string; last_attended_at: string }[];
       if (!stats.length) return [];
       const last = new Map(stats.map((s) => [s.participant_id, s.last_attended_at]));
-      const people: AudiencePerson[] = [];
-      const ids = stats.map((s) => s.participant_id);
-      for (let i = 0; i < ids.length; i += 200) {
-        const chunk = must(
-          await supabase.from('participants').select('id, full_name, phone, consent_updates')
-            .in('id', ids.slice(i, i + 200)).eq('consent_updates', true).is('anonymized_at', null),
-        ) as AudiencePerson[];
-        people.push(...chunk);
-      }
+      const people = (
+        await Promise.all(chunk(stats.map((x) => x.participant_id)).map(async (c) =>
+          must(await supabase.from('participants').select('id, full_name, phone, consent_updates')
+            .in('id', c).eq('consent_updates', true).is('anonymized_at', null)) as AudiencePerson[]))
+      ).flat();
       const skip = new Set(excludeIds);
       return people
         .filter((p) => !skip.has(p.id))

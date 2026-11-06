@@ -150,9 +150,14 @@ function ProposeLink() {
 
 // ───────────── who brings the most fighters ─────────────
 
+const TOP = 5;
+const meetings = (n: number) => (n === 1 ? 'מפגש אחד' : <><span className="num">{n}</span> מפגשים</>);
+
 function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStats[]; isLoading: boolean; isError: boolean; error: unknown; refetch: () => unknown } }) {
-  const rows = (q.data ?? []).filter((r) => r.kind === kind && r.events > 0)
+  const [all, setAll] = useState(false);
+  const ranked = (q.data ?? []).filter((r) => r.kind === kind && r.events > 0)
     .sort((a, b) => (Number(b.avg_attendance) || 0) - (Number(a.avg_attendance) || 0));
+  const rows = all ? ranked : ranked.slice(0, TOP);
   if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   if (q.isLoading) return <Panel><Skeleton lines={3} /></Panel>;
   if (!rows.length) return null;
@@ -190,7 +195,7 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
               <p className="font-semibold">{r.full_name}</p>
               {(r.topics || r.topic) && <p className="text-sm text-ink-soft">{r.topics || r.topic}</p>}
               <p className="mt-0.5 text-sm text-muted">
-                <span className="num">{r.events}</span> מפגשים · <span className="num">{num(r.new_attendees)}</span> חדשים · דירוג <span className="num">{r.avg_rating == null ? '—' : num(r.avg_rating, 1)}</span>
+                {meetings(r.events)} · <span className="num">{num(r.new_attendees)}</span> חדשים · דירוג <span className="num">{r.avg_rating == null ? '—' : num(r.avg_rating, 1)}</span>
               </p>
             </div>
             <div className="text-center">
@@ -200,7 +205,12 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
           </li>
         ))}
       </ol>
-      <p className="border-t border-line-soft px-4 py-2.5 text-sm text-muted sm:px-5">לפי המפגשים שכבר התקיימו. ממוצע משתתפים = מי שסומן/ה "הגיע/ה".</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-soft px-4 py-2 sm:px-5">
+        <p className="text-sm text-muted">לפי המפגשים שכבר התקיימו. ממוצע משתתפים = מי שסומן/ה "הגיע/ה".</p>
+        {ranked.length > TOP && (
+          <Button size="sm" variant="ghost" onClick={() => setAll((v) => !v)}>{all ? 'רק 5 הראשונים' : <>כל ה-{ranked.length}</>}</Button>
+        )}
+      </div>
     </Panel>
   );
 }
@@ -283,7 +293,7 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
 
           {stats && stats.events > 0 && (
             <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-ink-soft">
-              <span><span className="num font-semibold text-ink">{stats.events}</span> מפגשים</span>
+              <span className="font-semibold text-ink">{meetings(stats.events)}</span>
               <span>ממוצע <span className="num font-semibold text-ink">{num(stats.avg_attendance, 1)}</span> משתתפים</span>
               <span><span className="num font-semibold text-ink">{num(stats.new_attendees)}</span> חדשים</span>
               <span>דירוג <span className="num font-semibold text-ink">{stats.avg_rating == null ? '—' : `${num(stats.avg_rating, 1)}/5`}</span></span>

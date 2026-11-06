@@ -88,6 +88,18 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
     onError: (e) => toast.error(errorMessage(e)),
   });
 
+  const dismiss = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('staff_dismiss_duplicate', { p_a: pair.a.id, p_b: pair.b.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['participants', 'duplicates'] });
+      toast.success('סומן: שני אנשים שונים. הזוג לא יוצג שוב.');
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+
   const ask = async () => {
     const ok = await confirm({
       title: 'למזג את שני הכרטיסים?',
@@ -123,8 +135,9 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
         ))}
       </fieldset>
       <div className="flex flex-wrap items-center gap-3 border-t border-line-soft px-4 py-3 sm:px-5">
-        <Button icon="merge" busy={merge.isPending} onClick={ask}>מיזוג</Button>
-        <span className="text-sm text-muted">הכרטיס של {gone.full_name} יתמזג לתוך הכרטיס של {kept.full_name}.</span>
+        <Button icon="merge" busy={merge.isPending} disabled={dismiss.isPending} onClick={ask}>מיזוג</Button>
+        <Button variant="ghost" busy={dismiss.isPending} disabled={merge.isPending} onClick={() => dismiss.mutate()}>אלה שני אנשים שונים</Button>
+        <span className="text-sm text-muted">במיזוג, הכרטיס של {gone.full_name} יתמזג לתוך הכרטיס של {kept.full_name}.</span>
       </div>
     </li>
   );
