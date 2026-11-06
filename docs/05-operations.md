@@ -32,7 +32,8 @@ npx supabase secrets set ALLOWED_ORIGINS=https://<כתובת האתר>
 SUPABASE_URL=https://<REF>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<...> \
   node scripts/create-admin.mjs itai@example.org "איתי ארנון"
 
-# 4) בניית האתר עם כתובת הפרויקט והמפתח הציבורי
+# 4) אחרי הכניסה הראשונה: הגדרות ← יעדים וכללים ← "טלפון/וואטסאפ של הצוות" (מוצג ללוחמים לביטול ולפניות פרטיות)
+# 5) בניית האתר עם כתובת הפרויקט והמפתח הציבורי
 VITE_SUPABASE_URL=https://<REF>.supabase.co VITE_SUPABASE_ANON_KEY=<anon/publishable key> npm run build
 # מעלים את התיקייה dist/ לאחסון סטטי
 ```
@@ -77,7 +78,7 @@ scripts/restore.sh ~/hemshech-backups/hemshech-<תאריך>.sql.enc --replace-al
 | כל שבוע | שכפול השישי הבא, פתיחת הרשמה, שיווק (לשונית "שיווק"), תזכורת ביום חמישי, סגירת המפגש אחרי שישי |
 | כל חודש | סקירת הדשבורד מול היעדים; גיבוי מוצפן; מעבר על "קבועים שהפסיקו להגיע" |
 | כל רבעון | הגדרות ← פרטיות: מועמדים למחיקה לפי תקופת השמירה; מעבר על משתמשים פעילים; יומן פעולות |
-| בכל עדכון קוד | `npm run typecheck && npm run lint && npm test && npm run test:e2e` מקומית, ואז `supabase db push` ופריסה |
+| בכל עדכון קוד | `npm run typecheck && npm run lint && npm test && npm run test:e2e` מקומית, ואז `supabase db push` ופריסה. מיגרציה חדשה נכנסת **לפני** `…9000_privilege_hardening.sql` (שנשארת אחרונה), ופונקציה ציבורית חדשה צריכה גם עדכון בבדיקת משטח הגישה |
 
 ## 6. ניטור ותקלות
 
