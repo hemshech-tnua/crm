@@ -25,7 +25,13 @@ npm run dev               # http://127.0.0.1:3100
 כניסה מקומית: `admin@example.test` / `coord@example.test` / `door@example.test`, סיסמה `Local-Test-2026` (רק בסביבה המקומית).
 
 ### הדגמה (בלי ענן)
-כדי לראות את המערכת עם נתונים בדויים, בלי להתחבר לשום שרת אמיתי:
+כדי לראות את המערכת עם נתונים בדויים, בלי להתחבר לשום שרת אמיתי, פקודה אחת:
+```bash
+bash scripts/demo-up.sh   # מקים הכול (כ-80 שניות), כולל מפגש הדגמה פתוח לצ׳ק־אין, ומדפיס את הקישורים
+```
+צילומי מסך מההדגמה: [docs/screens](docs/screens).
+
+או צעד אחר צעד:
 ```bash
 npx supabase start && npx supabase db reset && npm run db:demo
 printf "VITE_SUPABASE_URL=/sb\nVITE_SUPABASE_ANON_KEY=%s\n" "$(npx supabase status -o env | grep ^ANON_KEY= | cut -d'"' -f2)" > .env.local
