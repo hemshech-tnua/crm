@@ -10,7 +10,8 @@
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SECRET_KEY')!;
-const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') ?? 'http://127.0.0.1:3100,http://localhost:3100,http://127.0.0.1:4173,http://localhost:4173')
+// Default: the GitHub Pages site plus local development. A custom domain is added with the ALLOWED_ORIGINS secret.
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') ?? 'https://hanochgo7-gif.github.io,http://127.0.0.1:3100,http://localhost:3100,http://127.0.0.1:4173,http://localhost:4173')
   .split(',').map((s) => s.trim()).filter(Boolean);
 
 const ROLES = ['admin', 'coordinator', 'volunteer'] as const;

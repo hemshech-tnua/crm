@@ -15,6 +15,18 @@ const queryClient = new QueryClient({
   },
 });
 
+/** Set VITE_ENV_LABEL on demo/staging builds so nobody mistakes fictitious data for the real thing. Empty in production. */
+const envLabel = (import.meta.env.VITE_ENV_LABEL as string | undefined)?.trim();
+
+function EnvBanner() {
+  if (!envLabel) return null;
+  return (
+    <div role="note" className="border-b border-warn/25 bg-warn-wash px-4 py-1.5 text-center text-sm font-semibold text-warn">
+      {envLabel}
+    </div>
+  );
+}
+
 function Misconfigured() {
   return (
     <div className="mx-auto max-w-lg p-8 text-center">
@@ -26,6 +38,7 @@ function Misconfigured() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <EnvBanner />
     {configured ? (
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
