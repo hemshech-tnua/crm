@@ -24,6 +24,15 @@ npm run dev               # http://127.0.0.1:3100
 ```
 כניסה מקומית: `admin@example.test` / `coord@example.test` / `door@example.test`, סיסמה `Local-Test-2026` (רק בסביבה המקומית).
 
+### הדגמה (בלי ענן)
+כדי לראות את המערכת עם נתונים בדויים, בלי להתחבר לשום שרת אמיתי:
+```bash
+npx supabase start && npx supabase db reset && npm run db:demo
+printf "VITE_SUPABASE_URL=/sb\nVITE_SUPABASE_ANON_KEY=%s\n" "$(npx supabase status -o env | grep ^ANON_KEY= | cut -d'"' -f2)" > .env.local
+npm run build && npx vite preview      # http://127.0.0.1:4173
+```
+`/sb` מועבר לשרת המקומי, כך שהאתר עובד גם כשפותחים אותו דרך תצוגה מקדימה או מכשיר אחר ברשת.
+
 ## בדיקות
 
 ```bash

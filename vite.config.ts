@@ -33,14 +33,19 @@ function csp(supabaseUrl: string): Plugin {
   };
 }
 
+const localSupabase = {
+  '/sb': { target: 'http://127.0.0.1:54321', changeOrigin: true, rewrite: (p: string) => p.replace(/^\/sb/, '') },
+};
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
     base: './',
     plugins: [react(), tailwindcss(), csp(env.VITE_SUPABASE_URL ?? '')],
     resolve: { alias: { '@': new URL('./src', import.meta.url).pathname } },
-    server: { port: 3100, host: '127.0.0.1', strictPort: true },
-    preview: { port: 4173, host: '127.0.0.1', strictPort: true },
+    // Local demo: "/sb" is forwarded to the local Supabase stack, so the app works when opened through a preview proxy.
+    server: { port: 3100, host: '127.0.0.1', strictPort: true, proxy: localSupabase, allowedHosts: true },
+    preview: { port: 4173, host: '127.0.0.1', strictPort: true, proxy: localSupabase, allowedHosts: true },
     build: {
       sourcemap: false,
       target: 'es2022',
