@@ -1,5 +1,6 @@
--- LOCAL DEMO DATA ONLY. Fictitious people and meetings for development, screenshots and user simulations.
--- Never run against the hosted project. Run:  psql "$LOCAL_DB_URL" -f supabase/demo-data.sql
+-- DEMO DATA ONLY. Fictitious people and meetings for development, screenshots, user simulations and the
+-- separate hosted demo project (hemshech-tnua-demo). Never run against the production project.
+-- Run:  psql "$LOCAL_DB_URL" -f supabase/demo-data.sql
 -- Every name here is invented. Phones are in the 050-000xxxx range.
 do $$
 declare

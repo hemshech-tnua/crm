@@ -1,4 +1,4 @@
--- LOCAL DEMO ONLY (run after demo-data.sql). Adds what makes the demo "live" whatever day it is run:
+-- DEMO ONLY: local demo and the hosted demo project, never production (run after demo-data.sql). Adds what makes the demo "live" whatever day it is run:
 -- a demo meeting starting in an hour (to try QR check-in and the door list now), and this week's Friday as an
 -- ended, not-yet-closed meeting (to try "סגירת המפגש") when that Friday has passed and is missing.
 do $$
@@ -10,8 +10,6 @@ declare
   p record;
   n int := 0;
 begin
-  update public.settings set contact_phone = '+972527110055';
-
   insert into public.events (site_id, type, title, starts_at, ends_at, location, capacity, status, activity_name, description)
   values (site, 'other', 'מפגש הדגמה (לניסוי צ׳ק־אין)', now() + interval '1 hour', now() + interval '3 hours',
           'הולמס פלייס מודיעין', 30, 'open', 'יוגה', 'מפגש בדוי לניסוי: צ׳ק־אין בכניסה ורשימת נוכחות.')
