@@ -12,6 +12,7 @@ import { Badge, Button, ButtonLink, EmptyState, ErrorBox, PageHeader, Panel, Ske
 import { useCopy } from '@/ui/feedback';
 import { Icon, type IconName } from '@/ui/Icon';
 import { FridayLine, GoalStat, SplitBars } from '@/ui/charts';
+import { EllipsePattern } from '@/ui/Ellipse';
 import { FilterBar, rpcArgs, useFilters } from '@/features/reports/period';
 import { Drilldown, type DrillKind } from '@/features/reports/Drilldown';
 
@@ -86,10 +87,11 @@ export function DashboardPage() {
         </Panel>
       ) : (
         <>
-          {/* the next meeting: the one saffron moment on the page */}
+          {/* the next meeting: an earth-brown panel, the orange (community) date as the one highlight on the page */}
           {events.isLoading ? <Skeleton lines={3} className="mb-6" /> : next ? (
-            <section className="mb-6 overflow-hidden rounded-[var(--radius-panel)] bg-ink text-mist">
-              <div className="flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6">
+            <section className="relative mb-6 overflow-hidden rounded-[var(--radius-panel)] bg-ink text-mist">
+              <EllipsePattern className="absolute -top-28 -left-24 h-80 w-80 text-mist/12" rings={4} />
+              <div className="relative flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6">
                 <div className="flex items-center gap-4">
                   <div className="rounded-[var(--radius-control)] bg-light px-3.5 py-2 text-center text-ink">
                     <div className="text-xs font-bold">{relativeDays(next.starts_at)}</div>

@@ -37,7 +37,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
   }), [org, e, people.place, people.speaker]);
 
   const [edits, setEdits] = useState<Partial<PostContent>>({});
-  const [theme, setTheme] = useState<PostTheme>('ink');
+  const [theme, setTheme] = useState<PostTheme>('orange');
   const [withLink, setWithLink] = useState(false);
   const content: PostContent = { ...defaults, ...edits };
 
@@ -143,16 +143,16 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
             <fieldset>
               <legend className="mb-1.5 text-sm font-semibold">רקע</legend>
               <div className="flex gap-2">
-                {(['ink', 'mist'] as PostTheme[]).map((t) => (
+                {(['orange', 'sky'] as PostTheme[]).map((t) => (
                   <button
                     key={t}
                     type="button"
                     aria-pressed={theme === t}
                     onClick={() => setTheme(t)}
-                    className={cx('flex h-11 items-center gap-2 rounded-[var(--radius-control)] border px-3.5 font-semibold', theme === t ? 'border-tide bg-tide-wash text-tide-deep' : 'border-line bg-paper')}
+                    className={cx('flex h-11 items-center gap-2 rounded-full border px-3.5 font-semibold', theme === t ? 'border-ink bg-sky-wash text-ink' : 'border-line bg-paper')}
                   >
-                    <span className={cx('h-5 w-5 rounded-full border border-line', t === 'ink' ? 'bg-ink' : 'bg-mist')} aria-hidden="true" />
-                    {t === 'ink' ? 'כהה' : 'בהיר'}
+                    <span className={cx('h-5 w-5 rounded-full border border-line', t === 'orange' ? 'bg-light' : 'bg-sky')} aria-hidden="true" />
+                    {t === 'orange' ? 'כתום (קהילה)' : 'תכלת'}
                   </button>
                 ))}
               </div>

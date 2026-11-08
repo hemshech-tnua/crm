@@ -75,7 +75,7 @@ export function useQrDataUrl(value: string, size: number) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    QRCode.toDataURL(value, { width: size * 2, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#12343B', light: '#FFFFFF' } })
+    QRCode.toDataURL(value, { width: size * 2, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#402223', light: '#FFFFFF' } })
       .then((url) => { if (alive) setSrc(url); })
       .catch(() => { if (alive) setSrc(null); });
     return () => { alive = false; };

@@ -3,7 +3,9 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useMe, useRole, signOut } from '@/lib/auth';
 import { ROLE_LABEL } from '@/lib/labels';
 import type { Role } from '@/lib/types';
-import { Icon, Logo, type IconName } from '@/ui/Icon';
+import { Icon, type IconName } from '@/ui/Icon';
+import { Logo } from '@/ui/Logo';
+import { EllipseRing } from '@/ui/Ellipse';
 import { cx } from '@/ui/kit';
 import { Dialog } from '@/ui/feedback';
 
@@ -41,33 +43,38 @@ export function StaffLayout() {
       </a>
 
       {/* desktop rail (right side in RTL) */}
-      <nav aria-label="ניווט ראשי" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col bg-ink px-3 py-5 text-mist md:flex">
-        <Link to="/app" className="mb-7 flex items-center gap-2.5 px-2">
-          <Logo size={38} tone="light" />
-          <span className="font-display text-xl leading-none">המשך תנועה</span>
+      <nav aria-label="ניווט ראשי" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col bg-sky px-3 py-6 text-ink md:flex">
+        <Link to="/app" className="mb-9 flex items-center px-2" aria-label="המשך תנועה: סקירה">
+          <Logo variant="lockup" height={54} />
         </Link>
-        <ul className="flex flex-1 flex-col gap-1">
+        <ul className="flex flex-1 flex-col gap-1.5">
           {items.map((i) => (
             <li key={i.to}>
               <NavLink
                 to={i.to}
                 className={({ isActive }) => cx(
-                  'flex h-11 items-center gap-3 rounded-[var(--radius-control)] px-3 font-medium transition-colors',
-                  isActive ? 'bg-mist text-ink' : 'text-mist hover:bg-white/10',
+                  'relative flex h-11 items-center gap-3 px-4 transition-colors',
+                  isActive ? 'font-bold text-ink' : 'font-medium text-ink-soft hover:text-ink',
                 )}
               >
-                <Icon name={i.icon} />
-                {i.label}
+                {({ isActive }) => (
+                  // the brand ellipse hugs the active item's label, as in the brand book's navigation
+                  <span className="relative inline-flex items-center gap-3">
+                    {isActive && <EllipseRing className="absolute -top-3 -right-4 h-[calc(100%+1.5rem)] w-[calc(100%+2rem)] text-ink" weight={1.1} tilt={-5} />}
+                    <Icon name={i.icon} />
+                    {i.label}
+                  </span>
+                )}
               </NavLink>
             </li>
           ))}
         </ul>
-        <div className="border-t border-white/15 pt-4">
+        <div className="border-t border-ink/15 pt-4">
           <div className="px-2 text-sm">
             <div className="font-semibold">{me.data?.full_name}</div>
-            <div className="text-mist/60">{role ? ROLE_LABEL[role] : ''}</div>
+            <div className="text-muted">{role ? ROLE_LABEL[role] : ''}</div>
           </div>
-          <button type="button" onClick={out} className="mt-2 flex h-10 w-full items-center gap-3 rounded-[var(--radius-control)] px-3 text-mist/80 hover:bg-white/10 hover:text-mist">
+          <button type="button" onClick={out} className="mt-2 flex h-10 w-full items-center gap-3 rounded-full px-3 text-ink-soft hover:bg-white/55 hover:text-ink">
             <Icon name="logout" />
             יציאה
           </button>
@@ -75,10 +82,9 @@ export function StaffLayout() {
       </nav>
 
       {/* mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line-soft bg-mist/95 px-4 backdrop-blur md:hidden">
-        <Link to="/app" className="flex items-center gap-2">
-          <Logo size={30} />
-          <span className="font-display text-lg leading-none">המשך תנועה</span>
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-sky-deep/60 bg-sky/95 px-4 backdrop-blur md:hidden">
+        <Link to="/app" className="flex items-center" aria-label="המשך תנועה: ראשי">
+          <Logo variant="lockup" height={34} />
         </Link>
         {role === 'volunteer' && (
           <button type="button" onClick={out} className="flex items-center gap-1.5 text-sm font-medium text-muted"><Icon name="logout" size={18} />יציאה</button>
@@ -97,10 +103,10 @@ export function StaffLayout() {
           <ul className="grid grid-cols-5">
             {mobileItems.map((i) => (
               <li key={i.to}>
-                <NavLink to={i.to} className={({ isActive }) => cx('flex h-16 flex-col items-center justify-center gap-1 text-[0.72rem] font-semibold', isActive ? 'text-tide' : 'text-muted')}>
+                <NavLink to={i.to} className={({ isActive }) => cx('flex h-16 flex-col items-center justify-center gap-1 text-[0.72rem]', isActive ? 'font-bold text-ink' : 'font-semibold text-muted')}>
                   {({ isActive }) => (
                     <>
-                      <span className={cx('flex h-7 w-12 items-center justify-center rounded-full', isActive && 'bg-tide-wash')}><Icon name={i.icon} size={21} /></span>
+                      <span className={cx('flex h-7 w-12 items-center justify-center rounded-full', isActive && 'bg-sky')}><Icon name={i.icon} size={21} /></span>
                       {i.label}
                     </>
                   )}

@@ -1,48 +1,51 @@
 @import 'tailwindcss';
-@import '@fontsource/ibm-plex-sans-hebrew/400.css';
-@import '@fontsource/ibm-plex-sans-hebrew/500.css';
-@import '@fontsource/ibm-plex-sans-hebrew/600.css';
-@import '@fontsource/ibm-plex-sans-hebrew/700.css';
-@import '@fontsource/secular-one/400.css';
+@import '@fontsource-variable/heebo/index.css';
 
 /*
-  Hemshech Tnua design tokens
-  mist     #EEF2F1  page background (cool morning mist, not cream)
-  paper    #FFFFFF  surfaces
-  ink      #12343B  text and the brand (deep pine)
-  tide     #1F6F6B  actions and links
-  light    #F2A93B  "first light": only for today / the next Friday / the Friday line
-  text colours are checked against WCAG AA (4.5:1) on paper and mist; see docs/07-qa-report.md
-  line     #D5DEDC  borders
+  Hemshech Tnua design tokens, from the brand book (Alef / Hemshech Tnua, September 2026).
+  Brand base colours:  cream (שמנת) #F5F5EE · sky blue (תכלת שמיים) #CDE7F4 · earth brown (חום אדמה) #402223.
+  Domain colour: community orange (כתום, "קהילה") #F68867, the one domain colour of this system (meetings and community);
+  the book allows a single domain colour per application.
+  mist   cream      page background
+  paper  white      surfaces (cards, inputs)
+  sky    sky blue   navigation, selection, calm panels
+  ink    earth brown text, the brand, primary actions (brown pill buttons)
+  tide   = earth brown for actions and links (kept as its own token so actions can be re-tuned in one place)
+  light  orange     only for today / the next meeting / the Friday line / highlights
+  Text colours are checked against WCAG AA (4.5:1) on paper, mist and sky; see docs/07-qa-report.md.
+  Typeface: the book's typeface is "Polin" (פולין). Until its licensed web files are added, Heebo stands in (see docs/02).
 */
 @theme {
-  --color-mist: #eef2f1;
-  --color-mist-deep: #e2e9e7;
+  --color-mist: #f5f5ee;
+  --color-mist-deep: #eae7de;
   --color-paper: #ffffff;
-  --color-ink: #12343b;
-  --color-ink-soft: #3c5559;
-  --color-muted: #5b6e6f;
-  --color-faint: #5e7070;
-  --color-line: #d5dedc;
-  --color-line-soft: #e6ecea;
-  --color-tide: #1f6f6b;
-  --color-tide-deep: #165552;
-  --color-tide-wash: #e3f0ee;
-  --color-light: #f2a93b;
-  --color-light-deep: #875411;
-  --color-light-wash: #fdf1dd;
-  --color-good: #276b43;
-  --color-good-wash: #e4f2e9;
-  --color-bad: #b4382f;
-  --color-bad-wash: #f9e5e3;
-  --color-warn: #8a5700;
-  --color-warn-wash: #fbefd6;
+  --color-sky: #cde7f4;
+  --color-sky-deep: #a8d2e9;
+  --color-sky-wash: #e6f3fa;
+  --color-ink: #402223;
+  --color-ink-soft: #5a3b3c;
+  --color-muted: #6b4f50;
+  --color-faint: #765a5b;
+  --color-line: #ddd4cd;
+  --color-line-soft: #ebe6df;
+  --color-tide: #402223;
+  --color-tide-deep: #2a1516;
+  --color-tide-wash: #e6f3fa;
+  --color-light: #f68867;
+  --color-light-deep: #8c3a1d;
+  --color-light-wash: #fde5dc;
+  --color-good: #2f6a2c;
+  --color-good-wash: #e8f1d6;
+  --color-bad: #a8322a;
+  --color-bad-wash: #fbe3de;
+  --color-warn: #7a5200;
+  --color-warn-wash: #fcf2cc;
 
-  --font-sans: 'IBM Plex Sans Hebrew', system-ui, 'Segoe UI', Arial, sans-serif;
-  --font-display: 'Secular One', 'IBM Plex Sans Hebrew', system-ui, sans-serif;
+  --font-sans: 'Heebo Variable', 'Heebo', system-ui, 'Segoe UI', Arial, sans-serif;
+  --font-display: 'Heebo Variable', 'Heebo', system-ui, sans-serif;
 
-  --radius-control: 10px;
-  --radius-panel: 16px;
+  --radius-control: 12px;
+  --radius-panel: 14px;
 
   --text-display: 2rem;
   --text-display--line-height: 1.15;
@@ -66,9 +69,9 @@
     line-height: 1.2;
     text-wrap: balance;
   }
-  /* focus: deep teal on light surfaces, first light (saffron) on the dark ones */
+  /* focus: earth brown on light surfaces, community orange on the dark ones */
   :focus-visible {
-    outline: 3px solid var(--color-tide-deep);
+    outline: 3px solid var(--color-ink);
     outline-offset: 2px;
     border-radius: 6px;
   }
@@ -102,10 +105,11 @@
     direction: ltr;
     unicode-bidi: isolate;
   }
+  /* headline weight, as the book's "Polin" headlines: heavy and tight */
   .font-display {
     font-family: var(--font-display);
-    font-weight: 400;
-    letter-spacing: 0;
+    font-weight: 800;
+    letter-spacing: -0.012em;
   }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);

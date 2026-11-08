@@ -1,8 +1,12 @@
 // Marketing post (1080×1080) and story (1080×1920) drawn locally on a <canvas> in the brand: no AI, no cost,
 // no external service. Text is drawn right-to-left with the app's own fonts (bundled, so the CSP allows them).
+// Brand book ("פוסט תחום"): the domain colour fills the frame (community = orange), the official logo top right,
+// heavy earth-brown headline, the brand ellipse as the graphic element, a brown pill for the call to action.
+import { LOGO_PATHS } from '@/ui/Logo';
 
 export type PostFormat = 'square' | 'story';
-export type PostTheme = 'ink' | 'mist';
+/** orange: the community domain colour (default for meetings) · sky: the calm brand base colour */
+export type PostTheme = 'orange' | 'sky';
 
 export type PostContent = {
   org: string;
@@ -26,8 +30,8 @@ export const POST_SIZE: Record<PostFormat, { w: number; h: number }> = {
   story: { w: 1080, h: 1920 },
 };
 
-const DISPLAY = '"Secular One", "IBM Plex Sans Hebrew", sans-serif';
-const SANS = '"IBM Plex Sans Hebrew", system-ui, sans-serif';
+const DISPLAY = '"Heebo Variable", "Heebo", sans-serif';
+const SANS = '"Heebo Variable", "Heebo", system-ui, sans-serif';
 const font = (weight: number, size: number, family = SANS) => `${weight} ${Math.round(size)}px ${family}`;
 
 /** Fonts must be loaded before drawing, or the canvas silently falls back to a system font. */
@@ -36,7 +40,7 @@ export async function loadPostFonts(timeoutMs = 4000): Promise<boolean> {
   const he = 'מפגש שישי יום הרשמה בקישור בביו אבגדהוזחטיכלמנסעפצקרשתךםןףץ';
   const latin = '0123456789:–·-/.,abcdefghijklmnopqrstuvwxyz';
   const loads = Promise.all([
-    document.fonts.load(font(400, 100, DISPLAY), he + latin),
+    document.fonts.load(font(800, 100, DISPLAY), he + latin),
     document.fonts.load(font(400, 40), he + latin),
     document.fonts.load(font(600, 40), he + latin),
     document.fonts.load(font(700, 40), he + latin),
@@ -45,15 +49,17 @@ export async function loadPostFonts(timeoutMs = 4000): Promise<boolean> {
   return Promise.race([loads, timeout]);
 }
 
-type Palette = { bg: string; fg: string; soft: string; accent: string; accentText: string; logoBg: string; logoDot: string; pillText: string; faint: string };
+type Palette = { bg: string; fg: string; soft: string; accent: string; accentText: string; logo: string; pillText: string; rings: string; marker: string };
+const BROWN = '#402223';
+const CREAM = '#F5F5EE';
 const PALETTE: Record<PostTheme, Palette> = {
-  ink: {
-    bg: '#12343B', fg: '#EEF2F1', soft: 'rgba(238,242,241,0.80)', accent: '#F2A93B', accentText: '#F2A93B',
-    logoBg: '#EEF2F1', logoDot: '#12343B', pillText: '#12343B', faint: 'rgba(238,242,241,0.07)',
+  orange: {
+    bg: '#F68867', fg: BROWN, soft: 'rgba(64,34,35,0.86)', accent: BROWN, accentText: BROWN,
+    logo: BROWN, pillText: CREAM, rings: 'rgba(245,245,238,0.62)', marker: BROWN,
   },
-  mist: {
-    bg: '#EEF2F1', fg: '#12343B', soft: '#3C5559', accent: '#F2A93B', accentText: '#A8650F',
-    logoBg: '#12343B', logoDot: '#EEF2F1', pillText: '#12343B', faint: 'rgba(18,52,59,0.06)',
+  sky: {
+    bg: '#CDE7F4', fg: BROWN, soft: '#5A3B3C', accent: BROWN, accentText: BROWN,
+    logo: BROWN, pillText: CREAM, rings: CREAM, marker: '#F68867',
   },
 };
 
@@ -121,55 +127,37 @@ function ltr(ctx: CanvasRenderingContext2D, align: CanvasTextAlign = 'right') {
   ctx.textAlign = align;
 }
 
-/** The brand mark: a rounded square with the continuing line. */
-function drawLogo(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, p: Palette) {
-  const k = size / 64;
+/** The official logo (figure + name), from the same vector paths as the app. `h` is the drawn height. Returns width. */
+function drawLogo(ctx: CanvasRenderingContext2D, right: number, top: number, h: number, color: string) {
+  const v = LOGO_PATHS.VARIANTS.lockup;
+  const [vx, vy, vw, vh] = v.viewBox.split(' ').map(Number);
+  const k = h / vh;
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(right - vw * k, top);
   ctx.scale(k, k);
-  ctx.fillStyle = p.logoBg;
-  ctx.beginPath();
-  ctx.roundRect(0, 0, 64, 64, 16);
-  ctx.fill();
-  ctx.strokeStyle = p.accent;
-  ctx.lineWidth = 6;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(50, 40);
-  ctx.bezierCurveTo(44, 40, 42, 28, 35, 28);
-  ctx.bezierCurveTo(28, 28, 26, 40, 19, 40);
-  ctx.stroke();
-  ctx.fillStyle = p.logoDot;
-  ctx.beginPath();
-  ctx.arc(14, 40, 5, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.translate(-vx, -vy);
+  ctx.fillStyle = color;
+  for (const part of v.parts) for (const [rule, d] of part) ctx.fill(new Path2D(d), rule);
+  ctx.restore();
+  return vw * k;
+}
+
+/** One brand ellipse: an outline whose weight changes smoothly (outer ellipse minus a slightly offset inner one). */
+function ring(ctx: CanvasRenderingContext2D, cx0: number, cy0: number, rx: number, ry: number, weight: number, tilt: number, color: string) {
+  ctx.save();
+  ctx.translate(cx0, cy0);
+  ctx.rotate(tilt);
+  const path = new Path2D();
+  path.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+  path.ellipse(weight * 0.6, weight * 0.45, rx - weight * 1.6, ry - weight * 1.25, 0, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill(path, 'evenodd');
   ctx.restore();
 }
 
-/**
- * The line that keeps moving (the PublicLayout wave): enters from the right edge and ends in a dot on the left,
- * like Hebrew reading direction.
- */
-function drawWave(ctx: CanvasRenderingContext2D, W: number, endX: number, y: number, amp: number, width: number, color: string, dot: string | null) {
-  const X = (px: number) => endX + (px / 400) * (W - endX);
-  const Y = (py: number) => y + ((py - 12) / 12) * amp;
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(W + width, Y(18));
-  ctx.bezierCurveTo(X(330), Y(18), X(300), Y(6), X(230), Y(6));
-  ctx.bezierCurveTo(X(160), Y(6), X(120), Y(20), X(60), Y(14));
-  ctx.bezierCurveTo(X(0), Y(8), X(10), Y(8), X(0), Y(10));
-  ctx.stroke();
-  if (dot) {
-    ctx.fillStyle = dot;
-    ctx.beginPath();
-    ctx.arc(X(0) - width * 1.6, Y(10), width * 1.25, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
+/** The elliptical pattern (concentric rings around one centre), placed off-canvas so it never sits under the text. */
+function drawRings(ctx: CanvasRenderingContext2D, cx0: number, cy0: number, base: number, color: string) {
+  for (let i = 0; i < 4; i++) ring(ctx, cx0 + i * 10, cy0 + i * 7, base + i * base * 0.42, (base + i * base * 0.42) * 0.62, 7 + i * 2.5, -0.5, color);
 }
 
 type Block = { lines: string[]; weight: number; size: number; color: string; gap: number; lineHeight: number; family?: string; marker?: boolean };
@@ -193,31 +181,26 @@ export function drawPost(canvas: HTMLCanvasElement, c: PostContent, format: Post
 
   ctx.fillStyle = p.bg;
   ctx.fillRect(0, 0, W, H);
-  // a faint echo of the line along the bottom edge, away from the text
-  drawWave(ctx, W, -80, story ? H - 150 : H - 36, story ? 70 : 50, story ? 64 : 48, p.faint, null);
+  // the brand's elliptical pattern, bleeding off the top-left corner, away from the logo and the text
+  drawRings(ctx, story ? 40 : 10, story ? 120 : 40, story ? 300 : 230, p.rings);
 
   ctx.textBaseline = 'alphabetic';
 
-  // header: logo + organization name (top right)
-  const top = story ? 210 : M;
-  const logo = story ? 92 : 76;
-  drawLogo(ctx, right - logo, top, logo, p);
-  rtl(ctx);
-  ctx.fillStyle = p.fg;
-  ctx.font = font(400, story ? 50 : 42, DISPLAY);
-  ctx.fillText(c.org, right - logo - (story ? 26 : 22), top + logo * 0.68);
+  // header: the official logo, top right (c.org is the organization's own name; the logo already carries it)
+  const top = story ? 200 : M;
+  drawLogo(ctx, right, top, story ? 118 : 96, p.logo);
 
   // title, date, time
-  let y = story ? 590 : 272;
-  const titleSize = fitSize(ctx, c.title, 400, story ? 156 : 116, 64, maxW, DISPLAY);
-  ctx.font = font(400, titleSize, DISPLAY);
+  let y = story ? 640 : 312;
+  const titleSize = fitSize(ctx, c.title, 800, story ? 160 : 120, 64, maxW, DISPLAY);
+  ctx.font = font(800, titleSize, DISPLAY);
   ctx.fillStyle = p.fg;
   rtl(ctx);
   ctx.fillText(c.title, right, y);
 
   y += story ? 118 : 88;
-  const dateSize = fitSize(ctx, c.date, 400, story ? 84 : 64, 40, maxW, DISPLAY);
-  ctx.font = font(400, dateSize, DISPLAY);
+  const dateSize = fitSize(ctx, c.date, 700, story ? 80 : 60, 40, maxW, DISPLAY);
+  ctx.font = font(700, dateSize, DISPLAY);
   ctx.fillStyle = p.accentText;
   rtl(ctx);
   ctx.fillText(c.date, right, y);
@@ -230,10 +213,10 @@ export function drawPost(canvas: HTMLCanvasElement, c: PostContent, format: Post
     ctx.fillText(c.time, right, y);
   }
 
-  // the line
-  y += story ? 100 : 60;
-  drawWave(ctx, W, M + 22, y, story ? 30 : 22, story ? 11 : 9, p.accent, p.fg);
-  const detailsTop = y + (story ? 100 : 66);
+  // the brand ellipse as a short accent under the date block
+  y += story ? 70 : 44;
+  ring(ctx, right - (story ? 110 : 84), y, story ? 110 : 84, story ? 26 : 20, story ? 6 : 5, -0.08, p.fg);
+  const detailsTop = y + (story ? 80 : 52);
 
   // call to action area (bottom)
   const ctaSize = story ? 50 : 40;
@@ -286,9 +269,9 @@ export function drawPost(canvas: HTMLCanvasElement, c: PostContent, format: Post
     b.lines.forEach((line, li) => {
       const base = y + b.size * (li + 1) * b.lineHeight - b.size * (b.lineHeight - 1) * 0.5;
       if (b.marker && li === 0) {
-        // a small saffron marker before the place
+        // a small marker before the place
         ctx.save();
-        ctx.fillStyle = p.accent;
+        ctx.fillStyle = p.marker;
         ctx.beginPath();
         ctx.arc(right - b.size * 0.25, base - b.size * 0.34, b.size * 0.2, 0, Math.PI * 2);
         ctx.fill();

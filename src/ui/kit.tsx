@@ -1,6 +1,7 @@
 import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Link, type LinkProps } from 'react-router';
 import { Icon, type IconName } from './Icon';
+import { EllipseRing } from './Ellipse';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -10,11 +11,12 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'light';
 type Size = 'sm' | 'md' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
-  primary: 'bg-tide text-white hover:bg-tide-deep active:bg-tide-deep disabled:bg-faint',
-  secondary: 'bg-paper text-ink border border-line hover:border-tide hover:text-tide disabled:text-faint',
-  ghost: 'text-tide hover:bg-tide-wash disabled:text-faint',
+  // brand book: earth-brown pill with cream type; outlined pill; orange (community) pill for the one highlighted call
+  primary: 'bg-tide text-mist hover:bg-tide-deep active:bg-tide-deep disabled:bg-faint',
+  secondary: 'bg-paper text-ink border border-ink/30 hover:border-ink hover:bg-sky-wash disabled:text-faint disabled:border-line',
+  ghost: 'text-ink hover:bg-sky-wash disabled:text-faint',
   danger: 'bg-paper text-bad border border-bad/40 hover:bg-bad-wash disabled:text-faint',
-  light: 'bg-light text-ink hover:bg-[#e89d2c] disabled:bg-faint',
+  light: 'bg-light text-ink hover:bg-[#f0744f] disabled:bg-faint',
 };
 const SIZE: Record<Size, string> = {
   sm: 'h-9 px-3 text-sm gap-1.5',
@@ -24,7 +26,7 @@ const SIZE: Record<Size, string> = {
 
 export function buttonClass(variant: Variant = 'primary', size: Size = 'md', extra = '') {
   return cx(
-    'inline-flex items-center justify-center rounded-[var(--radius-control)] font-semibold transition-colors select-none whitespace-nowrap',
+    'inline-flex items-center justify-center rounded-full font-semibold transition-colors select-none whitespace-nowrap',
     VARIANT[variant], SIZE[size], extra,
   );
 }
@@ -290,7 +292,8 @@ export function PageHeader({ title, subtitle, actions, back }: { title: ReactNod
 export function EmptyState({ icon = 'sun', title, children, action }: { icon?: IconName; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center px-4 py-10 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-light-wash text-light-deep">
+      <div className="relative mb-4 flex h-14 w-20 items-center justify-center text-ink">
+        <EllipseRing className="absolute inset-0 h-full w-full text-light" weight={1.5} />
         <Icon name={icon} size={24} />
       </div>
       <p className="text-lg font-bold">{title}</p>

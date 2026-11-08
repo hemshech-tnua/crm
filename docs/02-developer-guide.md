@@ -28,8 +28,13 @@ tests/e2e/             בדיקות דפדפן (Playwright)
 
 ## עיצוב
 
-- צבעים (Tailwind): `mist` רקע, `paper` משטחים, `ink` טקסט, `tide` פעולות וקישורים, `light` (זעפרן) **רק** להדגשת "היום"/"המפגש הבא"/קו השישי, `good/bad/warn` לסטטוסים.
-- גופנים: IBM Plex Sans Hebrew לכל הממשק; `font-display` (Secular One) לכותרות דפים ולמספרים גדולים בלבד.
+העיצוב לפי **ספר המותג** (אלף / המשך תנועה, ספטמבר 2026):
+- **צבעי בסיס:** שמנת `#F5F5EE` (`mist`, רקע), תכלת שמיים `#CDE7F4` (`sky`, ניווט ופסי כותרת), חום אדמה `#402223` (`ink`/`tide`, טקסט, מותג וכפתורים ראשיים).
+- **צבע תחום אחד:** כתום "קהילה" `#F68867` (`light`), **רק** להדגשת "היום"/"המפגש הבא"/קו השישי ולפוסטים. הספר אוסר לערבב צבעי תחום, לכן אין כאן צהוב, ירוק או ורוד. `good/bad/warn` נשארים לסטטוסים פונקציונליים בלבד.
+- **לוגו:** `src/ui/Logo.tsx` (`symbol` / `lockup` / `full`), ההעתק הווקטורי המדויק של הלוגו הרשמי מעמוד 5 בספר. לא מציירים אותו מחדש ולא צובעים אותו בצבע תחום. אם יוצאת גרסה חדשה של הספר: `python3 scripts/extract-logo.py <PDF>` מחדש את `Logo.tsx` ואת `public/favicon.svg`.
+- **האליפסה:** `src/ui/Ellipse.tsx`. `EllipseRing` הוא קו בעובי משתנה (סימון הפריט הפעיל בניווט, ריקים, שלט הכניסה), ו-`EllipsePattern` הוא פאטרן אליפטי לרקעים. לא משתמשים בקו אחיד, במעברים חדים או בקו עבה.
+- **כפתורים:** "גלולה" (`rounded-full`): ראשי בחום עם טקסט בשמנת, משני במסגרת חומה, ו-`light` בכתום לקריאה אחת מודגשת.
+- **גופן:** הספר קובע את "פולין" (Polin). עד שיתווספו קובצי הרשת המורשים שלו, Heebo (משתנה, מארח עצמית) משמש במקומו: 400 לגוף ו-800 ל-`font-display` (כותרות ומספרים גדולים). כדי להחליף, מוסיפים `@font-face` של פולין ב-`src/styles.css` ומעדכנים את `--font-sans`/`--font-display` ואת `DISPLAY`/`SANS` ב-`features/events/marketing.ts`.
 - מספרים, טלפונים ותאריכים מספריים: מחלקה `num` (LTR, ספרות טבלאיות). טלפון מוצג עם `formatPhone`.
 - רכיבים: `Button`, `ButtonLink`, `ExternalButton`, `IconButton`, `Input`, `Select`, `Textarea`, `Checkbox`, `ChoiceGroup`, `Rating`, `Badge`, `Panel`, `PageHeader`, `EmptyState`, `Skeleton`, `ErrorBox`, `Notice`, `Tabs`, `KeyValue`, `SearchInput` (src/ui/kit.tsx); `Dialog`, `useConfirm`, `useToast`, `useCopy` (src/ui/feedback.tsx).
 - מובייל: יעד מגע לפחות 44px, טפסים בעמודה אחת, טבלאות הופכות לרשימת שורות בטלפון.

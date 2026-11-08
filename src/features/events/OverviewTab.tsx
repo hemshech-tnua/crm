@@ -13,7 +13,9 @@ import { downloadFile } from '@/lib/csv';
 import { pct, ratio } from '@/lib/metrics';
 import { Badge, Button, ButtonLink, Input, KeyValue, Notice, Panel, Select, Textarea, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
-import { Icon, Logo } from '@/ui/Icon';
+import { Icon } from '@/ui/Icon';
+import { Logo } from '@/ui/Logo';
+import { EllipseRing } from '@/ui/Ellipse';
 import type { EventTab } from './EventPage';
 import { dataUrlToBlob, type EventPeople } from './context';
 import { useInvalidateEvent } from './queries';
@@ -463,7 +465,7 @@ function QrBlock({ value, label, filename, size }: { value: string; label: strin
   const toast = useToast();
   const download = async () => {
     try {
-      const url = await QRCode.toDataURL(value, { width: 1024, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#12343B', light: '#FFFFFF' } });
+      const url = await QRCode.toDataURL(value, { width: 1024, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#402223', light: '#FFFFFF' } });
       downloadFile(filename, dataUrlToBlob(url));
     } catch {
       toast.error('לא הצלחנו ליצור את הקוד. נסו שוב.');
@@ -580,13 +582,10 @@ function EntrancePanel({ e }: { e: EventWithStats }) {
 function EntranceSign({ e, url, qrSize }: { e: EventWithStats; url: string; qrSize: string }) {
   return (
     <div className="flex flex-col items-center gap-[0.6em] text-center text-ink">
-      <div className="flex items-center gap-[0.4em]">
-        <Logo size={44} />
-        <span className="font-display text-[1.6em] leading-none">המשך תנועה</span>
-      </div>
+      <Logo variant="full" height="4.2em" label="המשך תנועה" />
       <div className="font-display text-[2.4em] leading-tight">ברוכים הבאים!</div>
       <div className="text-[1.15em] font-semibold">{e.title} · {fmtDayLong(e.starts_at)}</div>
-      <div className="h-[0.25em] w-[5em] rounded-full bg-light" aria-hidden="true" />
+      <EllipseRing className="h-[0.9em] w-[6em] text-light" weight={1.6} />
       <div className="text-[1.5em] font-bold">הגעתם? סורקים ומסמנים הגעה</div>
       <SignQr url={url} size={qrSize} />
       <div className="max-w-[26em] text-[1em] leading-relaxed text-ink-soft">
@@ -602,7 +601,7 @@ function SignQr({ url, size }: { url: string; size: string }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    QRCode.toDataURL(url, { width: 1200, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#12343B', light: '#FFFFFF' } })
+    QRCode.toDataURL(url, { width: 1200, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#402223', light: '#FFFFFF' } })
       .then((u) => { if (alive) setSrc(u); })
       .catch(() => undefined);
     return () => { alive = false; };

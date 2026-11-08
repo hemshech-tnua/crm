@@ -66,15 +66,3 @@ export function Icon({ name, size = 20, className = '', strokeWidth = 1.8, label
   );
 }
 
-/** The mark: a path that keeps moving (המשך תנועה). Movement runs right-to-left, like the Hebrew line. */
-export function Logo({ size = 36, tone = 'dark' }: { size?: number; tone?: 'dark' | 'light' }) {
-  const bg = tone === 'dark' ? '#12343B' : '#EEF2F1';
-  const dot = tone === 'dark' ? '#EEF2F1' : '#12343B';
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      <rect width="64" height="64" rx="16" fill={bg} />
-      <path d="M50 40c-6 0-8-12-15-12s-9 12-16 12" fill="none" stroke="#F2A93B" strokeWidth="6" strokeLinecap="round" />
-      <circle cx="14" cy="40" r="5" fill={dot} />
-    </svg>
-  );
-}
