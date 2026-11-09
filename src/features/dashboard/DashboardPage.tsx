@@ -27,6 +27,8 @@ type Attention = {
   drafts_soon: { id: string; title: string; starts_at: string }[];
   proposals_pending: number;
   name_mismatches?: { registration_id: string; event_id: string; event_title: string; starts_at: string; participant_id: string; card_name: string; typed_name: string }[];
+  /** Meetings that ended 24 hours ago (up to a week), with thank-you messages not sent yet. */
+  aftercare?: { id: string; title: string; starts_at: string; pending: number; join_invites: number }[];
 };
 
 type SourceRow = { source_id: string | null; label: string; is_friend: boolean; participants: number; returned: number; registered_only: number };
@@ -218,6 +220,9 @@ function AttentionList({ a }: { a: Attention }) {
   capped(a.events_unclosed,
     (e) => ({ icon: 'alert', tone: 'bad', text: <>המפגש מ-<span className="num">{fmtDate(e.starts_at)}</span> הסתיים ולא נסגר. בלי סגירה, מי שלא הגיע לא מקבל מעקב.</>, to: `/app/events/${e.id}`, action: 'לסגירה' }),
     (n) => ({ icon: 'alert', tone: 'bad', text: <><span className="num font-bold">{n}</span> מפגשים הסתיימו ולא נסגרו. בלי סגירה, מי שלא הגיע לא מקבל מעקב.</>, to: '/app/events?tab=past', action: 'לרשימה' }));
+  capped(a.aftercare ?? [],
+    (e) => ({ icon: 'message', tone: 'warn', text: <>עברו 24 שעות מ{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>): <span className="num font-bold">{e.pending}</span> הודעות תודה מחכות{e.join_invites > 0 && <>, מהן <span className="num">{e.join_invites}</span> עם הזמנה להצטרף לעמותה</>}</>, to: `/app/events/${e.id}?tab=messages&group=aftercare`, action: 'לשליחה' }),
+    (n) => ({ icon: 'message', tone: 'warn', text: <>ב-<span className="num font-bold">{n}</span> מפגשים מהשבוע האחרון עוד לא נשלחו הודעות תודה</>, to: '/app/events?tab=past', action: 'למפגשים' }));
   if (a.followups_overdue) items.push({ icon: 'task', tone: 'bad', text: <><span className="num font-bold">{a.followups_overdue}</span> משימות מעקב באיחור</>, to: '/app/followups?tab=open', action: 'למשימות' });
   const lapsedNoTask = a.lapsed.filter((l) => !l.has_open_task);
   if (lapsedNoTask.length) items.push({ icon: 'people', tone: 'warn', text: <><span className="num font-bold">{lapsedNoTask.length}</span> קבועים הפסיקו להגיע: {lapsedNoTask.slice(0, 3).map((l) => l.full_name).join(', ')}{lapsedNoTask.length > 3 ? ' ועוד' : ''}</>, to: '/app/followups?tab=open', action: 'לבדיקה' });

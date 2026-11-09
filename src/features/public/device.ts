@@ -70,3 +70,51 @@ export function forgetToken(eventCode: string | null | undefined, token?: string
   if (!all[eventCode].length) delete all[eventCode];
   writeAll(all);
 }
+
+// People who checked in from this phone before (device token + first name). The token lets the next check-in be
+// one tap, also for a meeting they did not register for, and recognises them on the "join the association" page.
+// The server keeps only a hash, forgets it after 180 days without use, and "that's not me" removes it.
+const PEOPLE_KEY = 'hemshech-people';
+const MAX_PEOPLE = 4;
+
+export type KnownPerson = { device: string; name: string | null };
+type PersonEntry = { d: string; n?: string | null; at: number };
+
+function readPeople(): PersonEntry[] {
+  try {
+    const raw = window.localStorage.getItem(PEOPLE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    const cutoff = Date.now() - 180 * 864e5;
+    return parsed.filter((e): e is PersonEntry => !!e && typeof (e as PersonEntry).d === 'string' && (e as PersonEntry).d.length >= 20
+      && typeof (e as PersonEntry).at === 'number' && (e as PersonEntry).at >= cutoff);
+  } catch {
+    return [];
+  }
+}
+
+function writePeople(list: PersonEntry[]) {
+  try {
+    window.localStorage.setItem(PEOPLE_KEY, JSON.stringify(list));
+  } catch {
+    // storage unavailable: the phone number still works
+  }
+}
+
+/** People remembered on this phone, most recent first. */
+export function knownPeople(): KnownPerson[] {
+  return readPeople().sort((a, b) => b.at - a.at).map((e) => ({ device: e.d, name: e.n ?? null }));
+}
+
+/** Remember (or refresh) a person after a successful check-in. One entry per name: a new token replaces the old one. */
+export function rememberPerson(device: string | null | undefined, name: string | null | undefined) {
+  if (!device) return;
+  const list = readPeople().filter((e) => e.d !== device && (!name || e.n !== name));
+  list.push({ d: device, n: name ?? null, at: Date.now() });
+  writePeople(list.sort((a, b) => b.at - a.at).slice(0, MAX_PEOPLE));
+}
+
+export function forgetPerson(device: string | null | undefined) {
+  if (!device) return;
+  writePeople(readPeople().filter((e) => e.d !== device));
+}

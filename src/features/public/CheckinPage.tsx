@@ -5,7 +5,7 @@ import { fmtDayLong, fmtTime, relativeDays } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { Button, ButtonLink, EmptyState, ErrorBox, Input, Notice, Skeleton } from '@/ui/kit';
 import { checkIn, undoCheckin, usePublicSources, useCheckinInfo, useSavedStatuses, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
-import { forgetToken, saveToken, savedRegistrations, type SavedRegistration } from './device';
+import { forgetPerson, forgetToken, knownPeople, rememberPerson, saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { timeRange } from './eventText';
 import { ConsentFields, PersonFields, phoneError, usePersonForm } from './PersonForm';
@@ -67,7 +67,7 @@ function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
   onWelcome: (r: CheckinResult) => void;
   onWindowChanged: () => void;
 }) {
-  const [mode, setMode] = useState<Mode>(() => (!undone && savedRegistrations(event.code).length ? 'token' : 'phone'));
+  const [mode, setMode] = useState<Mode>(() => (!undone && onPhone(event.code).length ? 'token' : 'phone'));
   const [switched, setSwitched] = useState(false);
   const [phone, setPhone] = useState('');
   const [phoneErr, setPhoneErr] = useState<string | undefined>();
@@ -86,14 +86,21 @@ function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
       case 'checked_in':
       case 'already_checked_in':
         saveToken(res.event?.code ?? event.code, res.token, res.first_name);
+        // the phone remembers the person: next meeting, "I'm here" is one tap even without registering
+        rememberPerson(res.device, res.first_name);
         onWelcome(res);
         return;
       case 'not_registered':
         go('walkin');
         return;
       case 'token_invalid':
-        if (lastToken) forgetToken(event.code, lastToken);
+        if (last?.token) forgetToken(event.code, last.token);
         setNotice('לא הצלחנו לזהות את ההרשמה מהטלפון הזה. אפשר להיכנס עם מספר הטלפון.');
+        go('phone');
+        return;
+      case 'device_invalid':
+        forgetPerson(last?.device);
+        setNotice('הטלפון כבר לא זוכר אותך (עבר הרבה זמן מאז הביקור האחרון). אפשר להיכנס עם מספר הטלפון.');
         go('phone');
         return;
       default:
@@ -102,10 +109,10 @@ function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
     }
   };
 
-  const [lastToken, setLastToken] = useState<string | null>(null);
-  const run = async (p: { token?: string; phone?: string }) => {
+  const [last, setLast] = useState<{ token?: string; device?: string } | null>(null);
+  const run = async (p: { token?: string; device?: string; phone?: string }) => {
     setError(null);
-    setLastToken(p.token ?? null);
+    setLast(p);
     setBusy(true);
     try {
       handle(await checkIn({ code, ...p }));
@@ -137,9 +144,9 @@ function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
     );
   }
 
-  const saved = savedRegistrations(event.code);
+  const saved = onPhone(event.code);
   if (mode === 'token' && saved.length) {
-    return <SavedOnPhone event={event} saved={saved} busy={busy} error={error} onPick={(t) => run({ token: t })} onOther={() => go('phone')} />;
+    return <SavedOnPhone event={event} saved={saved} busy={busy} error={error} onPick={(o) => run(o.kind === 'device' ? { device: o.value } : { token: o.value })} onOther={() => go('phone')} />;
   }
 
   return (
@@ -233,37 +240,55 @@ function WalkinForm({ code, phone, sources, onResult }: {
   );
 }
 
-/** Registrations made from this phone. One: a single big button with the name. Several: "who arrived?". */
+/**
+ * Who this phone can check in with one tap: registrations made from it for this meeting, and people who checked in
+ * from it before (remembered across meetings). A remembered person whose name already has a registration here is
+ * shown once.
+ */
+type PhoneOption = { kind: 'token' | 'device'; value: string; name: string | null };
+function onPhone(eventCode: string): PhoneOption[] {
+  const regs: PhoneOption[] = savedRegistrations(eventCode).map((r) => ({ kind: 'token', value: r.token, name: r.name }));
+  const names = new Set(regs.map((r) => r.name).filter(Boolean));
+  const people: PhoneOption[] = knownPeople().filter((p) => !p.name || !names.has(p.name)).map((p) => ({ kind: 'device', value: p.device, name: p.name }));
+  return [...regs, ...people];
+}
+
+/** One option: a single big button with the name. Several: "who arrived?". */
 function SavedOnPhone({ event, saved, busy, error, onPick, onOther }: {
-  event: PublicEvent; saved: SavedRegistration[]; busy: boolean; error: string | null; onPick: (token: string) => void; onOther: () => void;
+  event: PublicEvent; saved: PhoneOption[]; busy: boolean; error: string | null; onPick: (o: PhoneOption) => void; onOther: () => void;
 }) {
-  const status = useSavedStatuses(saved.map((r) => r.token));
+  const status = useSavedStatuses(saved.filter((o) => o.kind === 'token').map((o) => o.value));
   const big = 'h-24! w-full rounded-[var(--radius-panel)]! font-display text-[2.2rem]! font-normal!';
+  const one = saved.length === 1 ? saved[0] : null;
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
         <h1 className="font-display text-[2.1rem] leading-tight">צ׳ק־אין</h1>
         <EventLine event={event} />
       </div>
-      {saved.length === 1 ? (
-        <p className="text-lg">{saved[0].name ? `נרשמת מהטלפון הזה בשם ${saved[0].name}, אז מספיקה לחיצה אחת.` : 'נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.'}</p>
+      {one ? (
+        <p className="text-lg">
+          {one.kind === 'device'
+            ? (one.name ? `${one.name}, הטלפון זוכר אותך מהביקור הקודם, אז מספיקה לחיצה אחת.` : 'הטלפון זוכר אותך מהביקור הקודם, אז מספיקה לחיצה אחת.')
+            : (one.name ? `נרשמת מהטלפון הזה בשם ${one.name}, אז מספיקה לחיצה אחת.` : 'נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.')}
+        </p>
       ) : (
-        <p className="text-lg">מהטלפון הזה נרשמו כמה אנשים. מי הגיע/ה?</p>
+        <p className="text-lg">{saved.every((o) => o.kind === 'token') ? 'מהטלפון הזה נרשמו כמה אנשים. מי הגיע/ה?' : 'מהטלפון הזה נכנסו או נרשמו כמה אנשים. מי הגיע/ה?'}</p>
       )}
       {error && <ErrorBox error={error} />}
       <div className="flex flex-col gap-3">
-        {saved.map((r) => {
-          const inside = status.data?.[r.token] === 'attended';
+        {saved.map((o) => {
+          const inside = o.kind === 'token' && status.data?.[o.value] === 'attended';
           return (
-            <Button key={r.token} size="lg" busy={busy} variant={inside ? 'secondary' : 'primary'} onClick={() => onPick(r.token)}
-              className={saved.length === 1 ? big : 'h-16! w-full text-xl!'}>
-              {inside ? `${r.name ?? 'את/ה'} כבר בפנים ✓` : saved.length === 1 ? 'הגעתי' : `${r.name ?? 'הרשמה'} הגיע/ה`}
+            <Button key={o.value} size="lg" busy={busy} variant={inside ? 'secondary' : 'primary'} onClick={() => onPick(o)}
+              className={one ? big : 'h-16! w-full text-xl!'}>
+              {inside ? `${o.name ?? 'את/ה'} כבר בפנים ✓` : one ? 'הגעתי' : `${o.name ?? 'הרשמה'} הגיע/ה`}
             </Button>
           );
         })}
       </div>
       <button type="button" onClick={onOther} className="min-h-11 self-center px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
-        {saved.length === 1 ? `לא ${saved[0].name ?? 'את/ה'}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
+        {one ? `לא ${one.name ?? 'את/ה'}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
       </button>
     </div>
   );
@@ -282,6 +307,7 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
     try {
       await undoCheckin(r.token);
       if (event) forgetToken(event.code, r.token);
+      forgetPerson(r.device);
       onUndone();
     } catch (err) {
       setUndoError(errorMessage(err));
@@ -311,6 +337,7 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
         <p className="rounded-full bg-light-wash px-5 py-2.5 font-display text-[1.4rem] text-ink">{milestone}</p>
       )}
       {!milestone && firstTime && <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>}
+      {r.membership === 'member' && <p className="rounded-full bg-sky-wash px-5 py-2 text-[1.05rem] font-semibold text-ink">חבר/ת עמותה. תודה שאת/ה איתנו!</p>}
       {r.can_undo && r.result === 'checked_in' && (
         <div className="mt-1 flex flex-col items-center gap-2">
           <button type="button" onClick={notMe} disabled={undoing} className="min-h-11 px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">

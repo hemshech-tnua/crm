@@ -122,7 +122,8 @@ test('scenario 8 @phone: register, check in, and the door list on a phone', asyn
   // at the entrance, the same phone scans the QR: one tap (the device remembers the registration)
   await page.goto(`#/c/${ev.checkin_code}`);
   await page.getByRole('button', { name: /הגעתי/ }).click();
-  await expect(page.getByText(new RegExp(me.name.split(' ')[0])).first()).toBeVisible();
+  // wait for the welcome screen itself (the name is already on the page before the tap)
+  await expect(page.getByRole('heading', { name: new RegExp(me.name.split(' ')[0]) })).toBeVisible();
   const coord = await staff('coord');
   const { data: mine } = await coord.from('participants').select('id').eq('phone', e164(me.phone)).single();
   const { data: r } = await coord.from('registrations').select('attendance, checkin_method').eq('event_id', ev.id).eq('participant_id', mine!.id).single();

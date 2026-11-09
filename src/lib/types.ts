@@ -78,6 +78,9 @@ export type EventStats = {
   avg_lecture: number | null;
 };
 
+/** Membership in the association: not a member, asked to join, member. */
+export type Membership = 'none' | 'requested' | 'member';
+
 export type Participant = {
   id: string;
   full_name: string | null;
@@ -94,6 +97,9 @@ export type Participant = {
   consent_updates: boolean;
   consent_updates_at: string | null;
   photo_opt_out: boolean;
+  membership: Membership;
+  membership_requested_at: string | null;
+  member_since: string | null;
   notes: string | null;
   created_via: string;
   anonymized_at: string | null;
@@ -151,7 +157,7 @@ export type FollowUp = {
   id: string;
   participant_id: string;
   event_id: string | null;
-  type: 'no_show' | 'first_time' | 'lapsed' | 'waitlist' | 'general';
+  type: 'no_show' | 'first_time' | 'lapsed' | 'waitlist' | 'general' | 'membership';
   title: string;
   notes: string | null;
   due_date: string | null;

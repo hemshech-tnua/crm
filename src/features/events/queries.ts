@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
 import type { EventWithStats } from '@/lib/data';
-import type { Attendance, ContactLog, EventRow, EventStats, EventType, Feedback, RegStatus, Registration } from '@/lib/types';
+import type { Attendance, ContactLog, EventRow, EventStats, EventType, Feedback, Membership, RegStatus, Registration } from '@/lib/types';
 
 export const eventKeys = {
   registrations: (id: string) => ['event-registrations', id] as const,
@@ -72,6 +72,7 @@ export type RegParticipant = {
   city: string | null;
   consent_updates: boolean;
   photo_opt_out: boolean;
+  membership: Membership;
   anonymized_at: string | null;
 };
 
@@ -86,7 +87,7 @@ export type RegRow = Registration & {
 };
 
 const REG_SELECT =
-  '*, participant:participants!registrations_participant_id_fkey(id, full_name, phone, city, consent_updates, photo_opt_out, anonymized_at),' +
+  '*, participant:participants!registrations_participant_id_fkey(id, full_name, phone, city, consent_updates, photo_opt_out, membership, anonymized_at),' +
   ' referrer:participants!registrations_referrer_participant_id_fkey(id, full_name),' +
   ' link:referral_links(label, code), source:acquisition_sources(label)';
 
@@ -130,6 +131,9 @@ export type CheckinRow = {
   checkin_method: 'self_qr' | 'staff' | null;
   registered_at: string;
   photo_opt_out: boolean;
+  is_member: boolean;
+  /** First name of whoever invited them (registration referrer, else the card's). */
+  invited_by: string | null;
   prior_attended: number;
   prior_fridays: number;
   first_time: boolean;

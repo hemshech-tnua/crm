@@ -4,7 +4,7 @@ import { errorMessage } from '@/lib/errors';
 import { fmtDateTime } from '@/lib/dates';
 import { formatPhone } from '@/lib/phone';
 import { renderTemplate } from '@/lib/templates';
-import type { Template } from '@/lib/types';
+import type { Membership, Template } from '@/lib/types';
 import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, Panel, Select, Skeleton, cx } from '@/ui/kit';
 import { MessageComposer, allowedFor, type Recipient } from '@/ui/MessageComposer';
 import type { EventPeople } from './context';
@@ -12,8 +12,9 @@ import { useConsentedRecent, useEventRegistrations, useSentForEvent } from './qu
 import { hasStarted } from './shared';
 import { useCopy } from '@/ui/feedback';
 
-type Group = 'registered' | 'waitlisted' | 'attended' | 'no_show' | 'consented';
+type Group = 'aftercare' | 'registered' | 'waitlisted' | 'attended' | 'no_show' | 'consented';
 const GROUPS: { value: Group; label: string }[] = [
+  { value: 'aftercare', label: 'תודה אחרי המפגש' },
   { value: 'registered', label: 'רשומים' },
   { value: 'waitlisted', label: 'בהמתנה' },
   { value: 'attended', label: 'הגיעו' },
@@ -29,6 +30,7 @@ const AUDIENCE_GROUP: Record<Template['audience'], Group> = {
   participant: 'consented',
 };
 const GROUP_HINT: Record<Group, string> = {
+  aftercare: 'כל מי שהגיע/ה, עם הנוסח המתאים לכל אחד/ת: מי שעוד לא חבר/ת עמותה ואישר/ה עדכונים מקבל/ת תודה עם הזמנה להצטרף לעמותה. כל השאר מקבלים תודה ובקשה למשוב.',
   registered: 'כל מי שרשום/ה למפגש (לא כולל בהמתנה ומבטלים).',
   waitlisted: 'מי שממתין/ה למקום.',
   attended: 'מי שסומן/ה כהגעה.',
@@ -36,7 +38,14 @@ const GROUP_HINT: Record<Group, string> = {
   consented: 'אישרו לקבל עדכונים בוואטסאפ, הגיעו לפעילות כלשהי ב-90 הימים האחרונים, ועדיין לא רשומים למפגש הזה.',
 };
 
-type Person = Recipient & { note?: string };
+type Person = Recipient & { note?: string; membership?: Membership };
+
+// The thank-you 24 hours after the meeting: the invitation to join is a marketing message (Communications Law
+// §30A), so it goes only to non-members who agreed to updates; everyone else gets the plain thank-you.
+const AFTERCARE_KEYS = ['thanks', 'join_invite'];
+const AFTERCARE_DELAY_MS = 24 * 3600_000;
+const aftercareKey = (p: Person, templates: Template[]) =>
+  p.membership === 'none' && p.consent_updates && templates.some((t) => t.key === 'join_invite') ? 'join_invite' : 'thanks';
 
 export function MessagesTab({ event: e, people, initialGroup }: { event: EventWithStats; people: EventPeople; initialGroup: string | null }) {
   const templates = useTemplates();
@@ -55,8 +64,13 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   const [pickedKey, setPickedKey] = useState<string | null>(null);
   const key = pickedKey ?? firstKey;
   const tpl = list.find((t) => t.key === key);
-  const [pickedGroup, setPickedGroup] = useState<Group | null>(initialGroup && GROUPS.some((g) => g.value === initialGroup) ? (initialGroup as Group) : null);
+  const ended = new Date(e.ends_at).getTime() < Date.now();
+  const [pickedGroup, setPickedGroup] = useState<Group | null>(
+    initialGroup && GROUPS.some((g) => g.value === initialGroup) ? (initialGroup as Group) : ended && e.status !== 'cancelled' ? 'aftercare' : null,
+  );
   const group: Group = pickedGroup ?? (tpl ? AUDIENCE_GROUP[tpl.audience] : 'registered');
+  const aftercare = group === 'aftercare';
+  const readyAt = new Date(new Date(e.ends_at).getTime() + AFTERCARE_DELAY_MS);
   const [composer, setComposer] = useState<Person | null>(null);
 
   const activeIds = useMemo(() => (regs.data ?? []).filter((r) => r.status !== 'cancelled').map((r) => r.participant_id), [regs.data]);
@@ -69,7 +83,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
       .filter((r) =>
         group === 'registered' ? r.status === 'registered'
           : group === 'waitlisted' ? r.status === 'waitlisted'
-            : group === 'attended' ? r.attendance === 'attended'
+            : group === 'attended' || group === 'aftercare' ? r.attendance === 'attended'
               : r.attendance === 'no_show',
       )
       .map((r) => ({
@@ -77,17 +91,21 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
         full_name: r.participant!.full_name,
         phone: r.participant!.phone,
         consent_updates: r.participant!.consent_updates,
-        note: r.first_time && group === 'attended' ? 'פעם ראשונה' : undefined,
+        membership: r.participant!.membership,
+        note: r.first_time && (group === 'attended' || group === 'aftercare') ? 'פעם ראשונה' : undefined,
       }));
   }, [group, regs.data, consented.data]);
 
   const sentAt = useMemo(() => {
     const m = new Map<string, string>();
-    for (const row of sent.data ?? []) if (row.template_key === key && !m.has(row.participant_id)) m.set(row.participant_id, row.created_at);
+    for (const row of sent.data ?? []) {
+      const match = aftercare ? AFTERCARE_KEYS.includes(row.template_key ?? '') : row.template_key === key;
+      if (match && !m.has(row.participant_id)) m.set(row.participant_id, row.created_at);
+    }
     return m;
-  }, [sent.data, key]);
+  }, [sent.data, key, aftercare]);
 
-  const eligible = (p: Person) => !!p.phone && allowedFor(tpl, p);
+  const eligible = (p: Person) => !!p.phone && (aftercare || allowedFor(tpl, p));
   const ordered = [...recipients].sort((a, b) => {
     const rank = (p: Person) => (sentAt.has(p.id) ? 2 : eligible(p) ? 0 : 1);
     return rank(a) - rank(b) || (a.full_name ?? '').localeCompare(b.full_name ?? '', 'he');
@@ -95,7 +113,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   const eligibleCount = recipients.filter(eligible).length;
   const doneCount = recipients.filter((p) => eligible(p) && sentAt.has(p.id)).length;
   const next = ordered.find((p) => eligible(p) && !sentAt.has(p.id));
-  const blocked = recipients.filter((p) => p.phone && !allowedFor(tpl, p)).length;
+  const blocked = aftercare ? 0 : recipients.filter((p) => p.phone && !allowedFor(tpl, p)).length;
 
   const copy = useCopy();
   const loading = templates.isLoading || regs.isLoading || (group === 'consented' && consented.isLoading);
@@ -108,6 +126,11 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   }
 
   const preview = tpl ? renderTemplate(tpl.body, { ...people.ctx, firstName: '‹שם פרטי›' }) : '';
+  const previewOf = (k: string) => {
+    const t = list.find((x) => x.key === k);
+    return t ? renderTemplate(t.body, { ...people.ctx, firstName: '‹שם פרטי›' }) : '';
+  };
+  const joinCount = aftercare ? recipients.filter((p) => p.phone && aftercareKey(p, list) === 'join_invite').length : 0;
   // S8: one generic text for a WhatsApp broadcast list or group (service templates only; marketing needs per-person consent)
   const broadcast = tpl && !tpl.is_marketing ? renderTemplate(tpl.body, { ...people.ctx, firstName: 'כולם' }) : '';
 
@@ -120,6 +143,14 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <Panel title="מה שולחים">
           <div className="flex flex-col gap-4">
+            {aftercare ? (
+              <AftercareInfo
+                readyAt={readyAt}
+                joinCount={joinCount}
+                thanks={previewOf('thanks')}
+                join={previewOf('join_invite')}
+              />
+            ) : (<>
             <Select label="תבנית" value={key} onChange={(x) => { setPickedKey(x.target.value); setPickedGroup(null); }}>
               {list.map((t) => <option key={t.key} value={t.key}>{t.label}{t.is_marketing ? ' (דורש הסכמה)' : ''}</option>)}
             </Select>
@@ -137,6 +168,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                 </div>
               )}
             </div>
+            </>)}
             <fieldset>
               <legend className="mb-1.5 text-sm font-semibold">למי</legend>
               <div className="flex flex-wrap gap-1.5">
@@ -177,7 +209,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
             <div className="p-4"><ErrorBox error={errorMessage(error)} /></div>
           ) : ordered.length === 0 ? (
             <EmptyState icon="people" title="אין נמענים בקבוצה הזו">
-              {group === 'no_show' && e.status !== 'completed' ? 'מי שלא הגיע/ה מסומן/ת בסגירת המפגש.' : group === 'consented' ? 'אין כרגע מי שאישר/ה עדכונים, הגיע/ה לאחרונה ולא רשום/ה.' : 'אפשר לבחור קבוצה אחרת.'}
+              {aftercare ? 'עוד אין מי שסומן/ה כהגעה למפגש הזה.' : group === 'no_show' && e.status !== 'completed' ? 'מי שלא הגיע/ה מסומן/ת בסגירת המפגש.' : group === 'consented' ? 'אין כרגע מי שאישר/ה עדכונים, הגיע/ה לאחרונה ולא רשום/ה.' : 'אפשר לבחור קבוצה אחרת.'}
             </EmptyState>
           ) : (
             <ul className="mt-2 divide-y divide-line-soft">
@@ -190,6 +222,8 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                       <div className="flex flex-wrap items-center gap-1.5 font-semibold">
                         {p.full_name}
                         {p.note && <Badge tone="tide">{p.note}</Badge>}
+                        {aftercare && p.membership === 'member' && <Badge tone="good">חבר/ת עמותה</Badge>}
+                        {aftercare && p.phone && aftercareKey(p, list) === 'join_invite' && <Badge tone="light">+ הזמנה להצטרף</Badge>}
                       </div>
                       <div className="num text-right text-sm text-muted">{formatPhone(p.phone) || 'אין טלפון'}</div>
                     </div>
@@ -216,7 +250,19 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
         </Panel>
       </div>
 
-      {composer && tpl && (
+      {composer && aftercare && (
+        <MessageComposer
+          key={`${composer.id}-aftercare`}
+          open
+          onClose={() => setComposer(null)}
+          recipient={composer}
+          context={people.ctx}
+          templateKeys={AFTERCARE_KEYS}
+          defaultKey={aftercareKey(composer, list)}
+          eventId={e.id}
+        />
+      )}
+      {composer && !aftercare && tpl && (
         <MessageComposer
           key={`${composer.id}-${tpl.key}`}
           open
@@ -229,5 +275,31 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
         />
       )}
     </div>
+  );
+}
+
+/** What the after-meeting thank-you does, when it is ready, and the two texts. */
+function AftercareInfo({ readyAt, joinCount, thanks, join }: { readyAt: Date; joinCount: number; thanks: string; join: string }) {
+  const ready = readyAt.getTime() <= Date.now();
+  const bubble = 'rounded-[var(--radius-control)] bg-[#e7f4ea] px-3.5 py-3 text-[0.95rem] leading-relaxed whitespace-pre-line text-ink';
+  return (
+    <>
+      {ready ? (
+        <Notice tone="light" icon="checkCircle">עברו 24 שעות מסוף המפגש: זה הזמן לשלוח תודה. כל שליחה נרשמת, כך שרואים מי כבר קיבל/ה.</Notice>
+      ) : (
+        <Notice tone="tide" icon="calendar">ההודעות יהיו מוכנות ב-<span className="num">{fmtDateTime(readyAt.toISOString())}</span>, 24 שעות אחרי סוף המפגש. אז המפגש יופיע גם בלוח הבקרה. אפשר לשלוח כבר עכשיו.</Notice>
+      )}
+      <div>
+        <div className="mb-1.5 text-sm font-semibold">תודה (לכל מי שהגיע/ה)</div>
+        <div className={bubble}>{thanks || <span className="text-muted">אין תבנית "תודה". אפשר להוסיף בהגדרות.</span>}</div>
+      </div>
+      <div>
+        <div className="mb-1.5 text-sm font-semibold">
+          תודה + הזמנה להצטרף לעמותה {joinCount > 0 && <span className="font-normal text-muted">(<span className="num">{joinCount}</span> נמענים)</span>}
+        </div>
+        <div className={bubble}>{join || <span className="text-muted">אין תבנית "הזמנה להצטרף". אפשר להוסיף בהגדרות.</span>}</div>
+        <p className="mt-1.5 text-sm text-muted">רק למי שעוד לא חבר/ת עמותה ואישר/ה לקבל עדכונים והזמנות (חוק התקשורת). אפשר לערוך את הטקסט לפני כל שליחה.</p>
+      </div>
+    </>
   );
 }

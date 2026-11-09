@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useSites, useSpeakers } from '@/lib/data';
-import { feedbackUrl, registerUrl } from '@/lib/links';
+import { feedbackUrl, memberUrl, registerUrl } from '@/lib/links';
 import type { TemplateContext } from '@/lib/templates';
 import type { EventRow, Site, Speaker } from '@/lib/types';
 
@@ -33,6 +33,7 @@ export function useEventPeople(e: EventRow | undefined): EventPeople {
           topic: e.lecture_topic,
           registerLink: registerUrl(e.public_code),
           feedbackLink: feedbackUrl(e.public_code),
+          joinLink: memberUrl(),
         }
       : {};
     return { speaker, instructor, site, place, ctx };

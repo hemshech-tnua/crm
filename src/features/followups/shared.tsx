@@ -61,6 +61,8 @@ export function taskTemplates(type: FollowUp['type']): { keys: string[]; default
     case 'first_time': return { keys: ['thanks'], defaultKey: 'thanks', ctx: 'task' };
     case 'waitlist': return { keys: ['waitlist_promoted'], defaultKey: 'waitlist_promoted', ctx: 'task' };
     case 'lapsed': return { keys: ['lapsed', 'invite_next'], defaultKey: 'lapsed', ctx: 'next' };
+    // they asked to be contacted, so the reply is a service message (no consent needed)
+    case 'membership': return { keys: ['membership_reply'], defaultKey: 'membership_reply', ctx: 'next' };
     default: return { keys: ['invite_next', 'lapsed'], defaultKey: 'invite_next', ctx: 'next' };
   }
 }

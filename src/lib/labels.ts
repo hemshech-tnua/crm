@@ -1,4 +1,4 @@
-import type { Attendance, Engagement, EventStatus, EventType, RegStatus, Role } from './types';
+import type { Attendance, Engagement, EventStatus, EventType, Membership, RegStatus, Role } from './types';
 
 export const ROLE_LABEL: Record<Role, string> = { admin: 'מנהל/ת', coordinator: 'רכז/ת', volunteer: 'צוות כניסה' };
 export const ROLE_HINT: Record<Role, string> = {
@@ -35,6 +35,9 @@ export const FOLLOWUP_TYPE_LABEL = {
   lapsed: 'הפסיק/ה להגיע',
   waitlist: 'רשימת המתנה',
   general: 'כללי',
+  membership: 'הצטרפות לעמותה',
 } as const;
+
+export const MEMBERSHIP_LABEL: Record<Membership, string> = { none: 'לא חבר/ה בעמותה', requested: 'ביקש/ה להצטרף לעמותה', member: 'חבר/ת עמותה' };
 
 export const CHANNEL_LABEL = { whatsapp: 'וואטסאפ', phone: 'שיחת טלפון', in_person: 'פנים אל פנים', other: 'אחר' } as const;

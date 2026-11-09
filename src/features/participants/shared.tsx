@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
 import { ENGAGEMENT_HINT, ENGAGEMENT_LABEL } from '@/lib/labels';
 import { formatPhone, normalizePhone } from '@/lib/phone';
-import { allEventsUrl, feedbackUrl, registerUrl } from '@/lib/links';
+import { allEventsUrl, feedbackUrl, memberUrl, registerUrl } from '@/lib/links';
 import { todayIl, ilParts } from '@/lib/dates';
 import type { TemplateContext } from '@/lib/templates';
 import type { Engagement } from '@/lib/types';
@@ -21,6 +21,7 @@ export const CREATED_VIA_LABEL: Record<string, string> = {
   checkin: 'נרשם/ה בכניסה למפגש',
   staff: 'נוסף/ה על ידי הצוות',
   import: 'יובא/ה מרשימה',
+  membership_form: 'ביקש/ה להצטרף לעמותה בטופס',
 };
 
 // Saffron (`light`) stays reserved for "today / the next meeting" (docs/02); statuses use the semantic tones.
@@ -115,7 +116,7 @@ export function useNextOpenEvent() {
 
 /** Message placeholders for one meeting. Without a meeting, the registration link points to the list of open meetings. */
 export function eventContext(ev: EventForMessage | null | undefined): TemplateContext {
-  if (!ev) return { registerLink: allEventsUrl() };
+  if (!ev) return { registerLink: allEventsUrl(), joinLink: memberUrl() };
   return {
     eventTitle: ev.title,
     startsAt: ev.starts_at,
@@ -125,6 +126,7 @@ export function eventContext(ev: EventForMessage | null | undefined): TemplateCo
     topic: ev.lecture_topic ?? ev.speaker?.topic ?? null,
     registerLink: registerUrl(ev.public_code),
     feedbackLink: feedbackUrl(ev.public_code),
+    joinLink: memberUrl(),
   };
 }
 

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { age, fmtDate, fmtLongDate } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
-import { FOLLOWUP_TYPE_LABEL } from '@/lib/labels';
+import { FOLLOWUP_TYPE_LABEL, MEMBERSHIP_LABEL } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
 import { Badge, Button, ButtonLink, EmptyState, ErrorBox, KeyValue, Notice, PageHeader, Panel, Skeleton, buttonClass, cx } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
@@ -90,6 +90,8 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             <EngagementBadge status={s?.engagement_status} />
+            {card.membership === 'member' && <Badge tone="good" icon="star">חבר/ת עמותה</Badge>}
+            {card.membership === 'requested' && <Badge tone="warn">ביקש/ה להצטרף לעמותה</Badge>}
             {card.photo_opt_out && <Badge icon="noCamera" tone="warn">לא להצטלם</Badge>}
             <span>במערכת מאז <span className="num">{fmtDate(card.created_at)}</span></span>
           </span>
@@ -153,6 +155,7 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
               ['עדכונים בוואטסאפ', card.consent_updates
                 ? <span className="text-good">מסכים/ה{card.consent_updates_at && <span className="text-muted"> מ-<span className="num">{fmtDate(card.consent_updates_at)}</span></span>}</span>
                 : <span className="text-ink-soft">לא אישר/ה (אפשר להתקשר)</span>],
+              ['עמותה', <MembershipText key="m" card={card} />],
               ['צילום', card.photo_opt_out ? <span className="text-warn">לא מעוניין/ת להופיע בתמונות</span> : 'אין הגבלה'],
               ['הצטרפות', <span key="j"><span className="num">{fmtDate(card.created_at)}</span> · {CREATED_VIA_LABEL[card.created_via] ?? card.created_via}</span>],
             ]} />
@@ -219,6 +222,16 @@ function Referrer({ card, onLink }: { card: Card; onLink: () => void }) {
   return (
     <button type="button" onClick={onLink} className="text-sm font-medium text-tide hover:underline">הוספה</button>
   );
+}
+
+function MembershipText({ card }: { card: Card }) {
+  if (card.membership === 'member') {
+    return <span className="text-good">{MEMBERSHIP_LABEL.member}{card.member_since && <span className="text-muted"> מ-<span className="num">{fmtDate(card.member_since)}</span></span>}</span>;
+  }
+  if (card.membership === 'requested') {
+    return <span className="text-warn">{MEMBERSHIP_LABEL.requested}{card.membership_requested_at && <span className="text-muted"> ב-<span className="num">{fmtDate(card.membership_requested_at)}</span></span>}</span>;
+  }
+  return <span className="text-ink-soft">{MEMBERSHIP_LABEL.none}</span>;
 }
 
 function AgeText({ card }: { card: Card }) {

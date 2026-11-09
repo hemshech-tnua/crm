@@ -23,6 +23,7 @@ grant execute on function public.public_submit_feedback(jsonb) to anon;
 grant execute on function public.public_propose(jsonb) to anon;
 grant execute on function public.public_org_info() to anon;
 grant execute on function public.public_checkin_undo(text) to anon;
+grant execute on function public.public_membership(jsonb) to anon;
 
 -- the stats views are for signed-in staff only
 revoke all on public.participant_stats, public.event_stats from anon, public;

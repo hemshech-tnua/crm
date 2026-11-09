@@ -321,6 +321,8 @@ function Row({ r, friday, disabled, onToggle, menu }: {
               בלי צילום
             </span>
           )}
+          {r.is_member && <Badge tone="good" title="חבר/ת עמותה">חבר/ת עמותה</Badge>}
+          {r.invited_by && <span title="מי הזמין/ה">בהזמנת {r.invited_by}</span>}
           {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
           {r.status === 'waitlisted' && r.waitlist_position && <span>בהמתנה <span className="num">#{r.waitlist_position}</span></span>}
           {r.attendance === 'no_show' && <Badge tone="bad">סומן/ה לא הגיע/ה</Badge>}

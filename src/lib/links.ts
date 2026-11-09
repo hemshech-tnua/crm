@@ -9,3 +9,5 @@ export const checkinUrl = (checkinCode: string) => `${appBase()}#/c/${checkinCod
 export const feedbackUrl = (eventCode: string) => `${appBase()}#/f/${eventCode}`;
 export const manageUrl = (token: string) => `${appBase()}#/m/${token}`;
 export const proposeUrl = () => `${appBase()}#/join`;
+/** The "join the association" page. Generic: the phone that checked in is recognised there, nothing personal in the link. */
+export const memberUrl = () => `${appBase()}#/member`;

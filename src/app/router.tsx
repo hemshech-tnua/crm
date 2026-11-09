@@ -16,6 +16,7 @@ const ManagePage = page(() => import('@/features/public/ManagePage'), 'ManagePag
 const CheckinPage = page(() => import('@/features/public/CheckinPage'), 'CheckinPage');
 const FeedbackPage = page(() => import('@/features/public/FeedbackPage'), 'FeedbackPage');
 const ProposePage = page(() => import('@/features/public/ProposePage'), 'ProposePage');
+const MemberPage = page(() => import('@/features/public/MemberPage'), 'MemberPage');
 const PrivacyPage = page(() => import('@/features/public/PrivacyPage'), 'PrivacyPage');
 // auth
 const LoginPage = page(() => import('@/features/auth/LoginPage'), 'LoginPage');
@@ -57,6 +58,7 @@ export const router = createHashRouter([
       { path: '/c/:code', element: wait(<CheckinPage />) },
       { path: '/f/:code', element: wait(<FeedbackPage />) },
       { path: '/join', element: wait(<ProposePage />) },
+      { path: '/member', element: wait(<MemberPage />) },
       { path: '/privacy', element: wait(<PrivacyPage />) },
       { path: '/login', element: wait(<LoginPage />) },
       { path: '/password', element: wait(<PasswordPage />) },

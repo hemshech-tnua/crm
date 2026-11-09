@@ -20,7 +20,7 @@ const AUDIENCE: Record<Template['audience'], string> = {
 
 const SAMPLE = {
   firstName: 'נועה', eventTitle: 'מפגש שישי', startsAt: fromIl(nextFriday(addDays(todayIl(), 1)), '09:00'), location: 'הולמס פלייס מודיעין',
-  activity: 'יוגה', speaker: 'רונן לוי', topic: 'חוסן בחזרה לשגרה', registerLink: 'https://…/#/r/abc', feedbackLink: 'https://…/#/f/abc',
+  activity: 'יוגה', speaker: 'רונן לוי', topic: 'חוסן בחזרה לשגרה', registerLink: 'https://…/#/r/abc', feedbackLink: 'https://…/#/f/abc', joinLink: 'https://…/#/member',
 };
 
 export function TemplatesSettings() {

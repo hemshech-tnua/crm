@@ -10,6 +10,7 @@ export type TemplateContext = {
   topic?: string | null;
   registerLink?: string | null;
   feedbackLink?: string | null;
+  joinLink?: string | null;
 };
 
 export const PLACEHOLDERS: { key: string; label: string }[] = [
@@ -23,6 +24,7 @@ export const PLACEHOLDERS: { key: string; label: string }[] = [
   { key: 'נושא', label: 'נושא ההרצאה' },
   { key: 'קישור_הרשמה', label: 'קישור להרשמה למפגש' },
   { key: 'קישור_משוב', label: 'קישור למשוב על המפגש' },
+  { key: 'קישור_הצטרפות', label: 'קישור להצטרפות לעמותה' },
 ];
 
 /** Fills {placeholders}. Lines whose placeholders have no value are dropped instead of sending "הרצאה של {מרצה}". */
@@ -38,6 +40,7 @@ export function renderTemplate(body: string, ctx: TemplateContext): string {
     'נושא': ctx.topic,
     'קישור_הרשמה': ctx.registerLink,
     'קישור_משוב': ctx.feedbackLink,
+    'קישור_הצטרפות': ctx.joinLink,
   };
   return body
     .split('\n')

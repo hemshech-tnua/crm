@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorCode, must } from '@/lib/errors';
-import type { Attendance, PublicEvent, RegStatus } from '@/lib/types';
+import type { Attendance, Membership, PublicEvent, RegStatus } from '@/lib/types';
 
 export type PublicSource = { key: string; label: string; is_friend: boolean; asks_detail: boolean };
 
@@ -36,6 +36,7 @@ export type CheckinOutcome =
   | 'already_checked_in'
   | 'not_registered'
   | 'token_invalid'
+  | 'device_invalid'
   | 'window_not_open'
   | 'window_closed'
   | 'window_unavailable';
@@ -43,6 +44,9 @@ export type CheckinResult = {
   result: CheckinOutcome;
   first_name?: string | null;
   token?: string | null;
+  /** Device token: this phone remembers the person for the next check-in. */
+  device?: string | null;
+  membership?: Membership;
   friday_count?: number;
   attended_count?: number;
   photo_opt_out?: boolean;
@@ -129,12 +133,17 @@ export const registerFor = (p: PersonPayload & { event: string; ref?: string | n
 export const cancelRegistration = (token: string, reason: string | null) =>
   rpc<{ status: 'cancelled' }>('public_cancel', { p_token: token, p_reason: reason });
 
-export const checkIn = (p: { code: string; token?: string; phone?: string }) => rpc<CheckinResult>('public_checkin', { p });
+export const checkIn = (p: { code: string; device?: string; token?: string; phone?: string }) => rpc<CheckinResult>('public_checkin', { p });
 
 export const walkIn = (p: PersonPayload & { code: string }) => rpc<CheckinResult>('public_walkin', { p });
 
 /** "That's not me": undo a self check-in made in the last 10 minutes. */
 export const undoCheckin = (token: string) => rpc<{ ok: boolean }>('public_checkin_undo', { p_token: token });
+
+export type MembershipResult = { result: 'requested' | 'already_requested' | 'already_member' | 'device_invalid'; first_name?: string | null };
+/** "I want to join the association": by the phone's device token, or by name and phone. */
+export const requestMembership = (p: { device: string } | { full_name: string; phone: string; website: string }) =>
+  rpc<MembershipResult>('public_membership', { p });
 
 export type OrgInfo = { org_name: string; contact_phone: string | null };
 export const useOrgInfo = () =>

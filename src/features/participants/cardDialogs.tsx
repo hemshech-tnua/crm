@@ -5,7 +5,8 @@ import { Link } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useSources, useTemplates } from '@/lib/data';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { CHANNEL_LABEL } from '@/lib/labels';
+import { CHANNEL_LABEL, MEMBERSHIP_LABEL } from '@/lib/labels';
+import type { Membership } from '@/lib/types';
 import { formatPhone, normalizePhone } from '@/lib/phone';
 import { fmtDayLong } from '@/lib/dates';
 import { Button, Checkbox, ChoiceGroup, Input, Notice, Select, Textarea, cx } from '@/ui/kit';
@@ -44,6 +45,8 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
     notes: card.notes ?? '',
     consent_updates: card.consent_updates,
     photo_opt_out: card.photo_opt_out,
+    membership: card.membership,
+    member_since: card.member_since ?? '',
   });
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [dupe, setDupe] = useState<{ id: string; full_name: string | null } | null>(null);
@@ -74,6 +77,9 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
         notes: f.notes.trim() || null,
         consent_updates: f.consent_updates,
         photo_opt_out: f.photo_opt_out,
+        membership: f.membership,
+        // empty date with "member": the server fills in today
+        member_since: f.membership === 'member' ? f.member_since || null : null,
       }).eq('id', card.id);
       if (error) {
         if (errorCode(error) === 'duplicate_phone') {
@@ -146,6 +152,12 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
           <option value="">לא ידוע</option>
           {(sources.data ?? []).filter((s) => s.is_active || s.id === f.first_source_id).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </Select>
+        <Select label="חברות בעמותה" value={f.membership} onChange={(e) => set('membership', e.target.value as Membership)}>
+          {(['none', 'requested', 'member'] as const).map((m) => <option key={m} value={m}>{MEMBERSHIP_LABEL[m]}</option>)}
+        </Select>
+        {f.membership === 'member' ? (
+          <Input label="חבר/ה מתאריך" type="date" min="1990-01-01" max="2100-12-31" value={f.member_since} onChange={(e) => set('member_since', e.target.value)} hint="ריק = היום" />
+        ) : <div className="hidden sm:block" aria-hidden="true" />}
         {source?.asks_detail && (
           <Input label="פירוט המקור" value={f.first_source_detail} onChange={(e) => set('first_source_detail', e.target.value)} maxLength={120} className="sm:col-span-2" />
         )}
