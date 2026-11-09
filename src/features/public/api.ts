@@ -37,6 +37,7 @@ export type CheckinOutcome =
   | 'not_registered'
   | 'token_invalid'
   | 'device_invalid'
+  | 'need_details'
   | 'window_not_open'
   | 'window_closed'
   | 'window_unavailable';
@@ -136,6 +137,10 @@ export const cancelRegistration = (token: string, reason: string | null) =>
 export const checkIn = (p: { code: string; device?: string; token?: string; phone?: string }) => rpc<CheckinResult>('public_checkin', { p });
 
 export const walkIn = (p: PersonPayload & { code: string }) => rpc<CheckinResult>('public_walkin', { p });
+
+/** Someone already on file, not registered for this meeting: phone + full name checks in; otherwise "need_details". */
+export const checkInKnown = (p: { code: string; phone: string; full_name: string; website: string }) =>
+  rpc<CheckinResult>('public_checkin_known', { p });
 
 /** "That's not me": undo a self check-in made in the last 10 minutes. */
 export const undoCheckin = (token: string) => rpc<{ ok: boolean }>('public_checkin_undo', { p_token: token });

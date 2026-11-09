@@ -136,6 +136,9 @@ test('scenario 8 @phone: register, check in, and the door list on a phone', asyn
   await friend.getByLabel('מספר הטלפון שלך').fill(fp);
   await friend.getByRole('button', { name: 'צ׳ק־אין' }).click();
   await friend.getByLabel('שם מלא').fill('חבר בכניסה');
+  await friend.getByRole('button', { name: 'המשך' }).click();
+  // unknown to us: on to the short form, with the name already filled in
+  await expect(friend.getByLabel('שם מלא')).toHaveValue('חבר בכניסה');
   await friend.getByLabel('עיר מגורים').fill('לוד');
   await friend.getByLabel('גיל').fill('29');
   await friend.getByRole('radio', { name: /חבר\/ה/ }).check();

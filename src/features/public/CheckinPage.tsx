@@ -4,12 +4,12 @@ import type { PublicEvent } from '@/lib/types';
 import { fmtDayLong, fmtTime, relativeDays } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { Button, ButtonLink, EmptyState, ErrorBox, Input, Notice, Skeleton } from '@/ui/kit';
-import { checkIn, undoCheckin, usePublicSources, useCheckinInfo, useSavedStatuses, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
+import { checkIn, checkInKnown, undoCheckin, usePublicSources, useCheckinInfo, useSavedStatuses, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
 import { forgetPerson, forgetToken, knownPeople, rememberPerson, saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { timeRange } from './eventText';
-import { ConsentFields, PersonFields, phoneError, usePersonForm } from './PersonForm';
-import { ResultTitle, SuccessMark } from './shared';
+import { ConsentFields, PersonFields, cleanText, nameError, phoneError, usePersonForm } from './PersonForm';
+import { Honeypot, ResultTitle, SuccessMark } from './shared';
 
 /** #/c/:checkinCode — scanned from the QR sign at the entrance, on the participant's own phone. */
 export function CheckinPage() {
@@ -186,18 +186,26 @@ function Walkin({ code, phone, onBack, onResult }: {
   onResult: (r: CheckinResult) => void;
 }) {
   const sources = usePublicSources();
+  // first just the name: someone we already know is checked in with it; everyone else continues to the short form
+  const [name, setName] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
         <h1 className="font-display text-[1.9rem] leading-tight">ברוך/ה הבא/ה!</h1>
-        <p className="mt-1 text-lg text-ink-soft">לא מצאנו הרשמה עם המספר הזה. אין בעיה: ממלאים כמה פרטים ונכנסים.</p>
+        <p className="mt-1 text-lg text-ink-soft">
+          {name == null
+            ? 'לא מצאנו הרשמה למפגש הזה עם המספר הזה. אין בעיה: איך קוראים לך?'
+            : 'עוד כמה פרטים ונכנסים. זה רק בפעם הראשונה.'}
+        </p>
       </div>
-      {sources.isPending ? (
+      {name == null ? (
+        <NameStep code={code} phone={phone} onResult={onResult} onNeedDetails={setName} />
+      ) : sources.isPending ? (
         <Skeleton lines={6} />
       ) : sources.isError ? (
         <ErrorBox error={errorMessage(sources.error)} onRetry={() => sources.refetch()} />
       ) : (
-        <WalkinForm code={code} phone={phone} sources={sources.data} onResult={onResult} />
+        <WalkinForm code={code} phone={phone} name={name} sources={sources.data} onResult={onResult} />
       )}
       <button type="button" onClick={onBack} className="min-h-11 self-center px-3 font-semibold text-tide underline underline-offset-4">
         טעיתי במספר, חזרה
@@ -206,13 +214,70 @@ function Walkin({ code, phone, onBack, onResult }: {
   );
 }
 
-function WalkinForm({ code, phone, sources, onResult }: {
+/** Full name only. Known to us (phone + same name on the card): checked in. Anyone else: on to the short form. */
+function NameStep({ code, phone, onResult, onNeedDetails }: {
   code: string;
   phone: string;
+  onResult: (r: CheckinResult) => void;
+  onNeedDetails: (name: string) => void;
+}) {
+  const [name, setName] = useState('');
+  const [website, setWebsite] = useState('');
+  const [err, setErr] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setError(null);
+    const ne = nameError(name);
+    setErr(ne);
+    if (ne) {
+      document.getElementById('walkin-name')?.focus();
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await checkInKnown({ code, phone: phone.trim(), full_name: cleanText(name), website });
+      if (r.result === 'need_details') onNeedDetails(cleanText(name));
+      else onResult(r);
+    } catch (x) {
+      if (errorCode(x) === 'invalid_name') setErr(errorMessage(x));
+      else setError(errorMessage(x));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={submit} noValidate className="flex flex-col gap-5" aria-label="השם שלך">
+      <Input
+        id="walkin-name"
+        label={<span className="text-lg">שם מלא</span>}
+        autoComplete="name"
+        enterKeyHint="go"
+        maxLength={80}
+        autoFocus
+        className="h-16! text-2xl"
+        value={name}
+        onChange={(e) => { setName(e.target.value); setErr(undefined); }}
+        error={err}
+        hint="אם כבר היית אצלנו, זה כל מה שצריך."
+      />
+      <Honeypot value={website} onChange={setWebsite} />
+      {error && <ErrorBox error={error} />}
+      <Button type="submit" size="lg" busy={busy} className="h-16! w-full text-xl!">המשך</Button>
+    </form>
+  );
+}
+
+function WalkinForm({ code, phone, name, sources, onResult }: {
+  code: string;
+  phone: string;
+  name: string;
   sources: PublicSource[];
   onResult: (r: CheckinResult) => void;
 }) {
-  const form = usePersonForm({ phone });
+  const form = usePersonForm({ phone, full_name: name });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

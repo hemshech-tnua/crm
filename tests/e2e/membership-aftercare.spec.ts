@@ -16,6 +16,7 @@ test('@phone a walk-in is remembered: the next meeting is one tap, and joining t
   await page.getByLabel('מספר הטלפון שלך').fill(who.p);
   await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
   await page.getByLabel('שם מלא').fill(who.n);
+  await page.getByRole('button', { name: 'המשך' }).click();
   await page.getByLabel('עיר מגורים').fill('מודיעין');
   await page.getByLabel('גיל').fill('31');
   await page.getByRole('radio', { name: /אינסטגרם/ }).check();
@@ -43,6 +44,27 @@ test('@phone a walk-in is remembered: the next meeting is one tap, and joining t
   expect(card!.membership).toBe('requested');
   const { data: tasks } = await coord.from('follow_ups').select('type, status').eq('participant_id', card!.id).eq('type', 'membership');
   expect(tasks).toEqual([{ type: 'membership', status: 'open' }]);
+  expect(errors, errors.join('\n')).toEqual([]);
+});
+
+test('@phone someone already on file, not registered for this meeting: phone and name are enough', async ({ page }) => {
+  const errors = watchConsole(page);
+  const ev = await makeEvent({ title: `מוכר ${Date.now().toString(36)}`, startsInMinutes: 20 });
+  const coord = await staff('coord');
+  const who = { n: `ענבר ${name().split(' ')[1]}`, p: phone() };
+  await coord.from('participants').insert({ full_name: who.n, phone: who.p, city: 'מודיעין' });
+
+  await page.goto(`#/c/${ev.checkin_code}`);
+  await page.getByLabel('מספר הטלפון שלך').fill(who.p);
+  await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
+  await expect(page.getByText('לא מצאנו הרשמה למפגש הזה עם המספר הזה. אין בעיה: איך קוראים לך?')).toBeVisible();
+  await page.getByLabel('שם מלא').fill(`  ${who.n} `);
+  await page.getByRole('button', { name: 'המשך' }).click();
+  await expect(page.getByRole('heading', { name: /ענבר/ })).toBeVisible();
+  await expect(page.getByLabel('עיר מגורים')).toHaveCount(0);
+  const { data: list } = await coord.rpc('staff_checkin_list', { p_event_id: ev.id });
+  expect(list).toHaveLength(1);
+  expect(list[0]).toMatchObject({ display_name: who.n, attendance: 'attended', is_walk_in: true });
   expect(errors, errors.join('\n')).toEqual([]);
 });
 

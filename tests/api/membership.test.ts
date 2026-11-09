@@ -67,6 +67,47 @@ describe('the phone remembers who checked in from it', () => {
   });
 });
 
+describe('someone already on file at the door', () => {
+  it('phone + the same full name checks in without the form; anything else asks for details, with one answer', async () => {
+    const coord = await staff('coord');
+    const v = visitor();
+    const ev = await makeEvent({ startsInMinutes: 20 });
+    const who = { n: name(), p: phone() };
+    await coord.from('participants').insert({ full_name: who.n, phone: who.p, city: 'לוד' });
+
+    const wrong = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: who.p, full_name: name(), website: '' } });
+    const unknown = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: phone(), full_name: who.n, website: '' } });
+    expect(wrong.data).toEqual({ result: 'need_details' });
+    expect(unknown.data).toEqual(wrong.data);
+
+    const ok = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: who.p, full_name: `  ${who.n.replace(' ', '   ')} `, website: '' } });
+    expect(ok.error).toBeNull();
+    expect(ok.data).toMatchObject({ result: 'checked_in', first_name: first(who.n), membership: 'none' });
+    expect(typeof ok.data.device).toBe('string');
+    const again = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: who.p, full_name: who.n, website: '' } });
+    expect(again.data.result).toBe('already_checked_in');
+    const { data: list } = await coord.rpc('staff_checkin_list', { p_event_id: ev.id });
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ phone: e164(who.p), attendance: 'attended', is_walk_in: true, checkin_method: 'self_qr' });
+
+    // outside the check-in window, bad input, honeypot
+    const later = await makeEvent({ startsInMinutes: 6 * 60 });
+    expect((await v.rpc('public_checkin_known', { p: { code: later.checkin_code, phone: who.p, full_name: who.n, website: '' } })).data.result).toBe('window_not_open');
+    expect((await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: '12', full_name: who.n, website: '' } })).error?.message).toBe('invalid_phone');
+    expect((await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: who.p, full_name: who.n, website: 'x' } })).data).toEqual({ result: 'need_details' });
+  });
+
+  it('limits name guesses for one phone', async () => {
+    const v = visitor();
+    const ev = await makeEvent({ startsInMinutes: 20 });
+    const p = phone();
+    const tries = [];
+    for (let i = 0; i < 6; i++) tries.push(await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: p, full_name: name(), website: '' } }));
+    expect(tries.slice(0, 5).every((t) => t.data?.result === 'need_details')).toBe(true);
+    expect(tries[5].error?.message).toBe('rate_limited');
+  });
+});
+
 describe('membership in the association', () => {
   it('a phone that checked in asks to join in one tap; staff get a task, which closes when they become a member', async () => {
     const v = visitor();

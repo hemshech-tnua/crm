@@ -261,7 +261,7 @@ describe('privilege surface (defense in depth)', () => {
   it('anonymous visitors can execute exactly the public endpoints and read no table or view', () => {
     const fns = sql("select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('public','private') and has_function_privilege('anon', p.oid, 'execute')");
     expect(fns.split(',')).toEqual([
-      'public_cancel', 'public_checkin', 'public_checkin_info', 'public_checkin_undo', 'public_feedback_context', 'public_get_event',
+      'public_cancel', 'public_checkin', 'public_checkin_info', 'public_checkin_known', 'public_checkin_undo', 'public_feedback_context', 'public_get_event',
       'public_list_events', 'public_membership', 'public_org_info', 'public_propose', 'public_register', 'public_registration', 'public_sources',
       'public_submit_feedback', 'public_walkin',
     ]);
