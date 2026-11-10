@@ -38,9 +38,14 @@ VITE_SUPABASE_URL=https://<REF>.supabase.co VITE_SUPABASE_ANON_KEY=<anon/publish
 # מעלים את התיקייה dist/ לאחסון סטטי
 ```
 
-**GitHub Pages (כמו שאר אתרי הריפו):** ה-workflow `.github/workflows/pages.yml` בונה את התיקייה ומפרסם בכתובת `/desktop-tutorial/hemshech-tnua/`. צריך להגדיר ב-GitHub ← Settings ← Secrets and variables ← Actions שני **Variables**: `HEMSHECH_SUPABASE_URL` ו-`HEMSHECH_SUPABASE_ANON_KEY`. בלי שניהם השלב מדלג, והאתר לא מתפרסם.
+**GitHub Pages:** ה-workflow `.github/workflows/deploy.yml` מריץ בדיקות (טיפוסים, lint, בדיקות יחידה), בונה ומפרסם בכל דחיפה ל-`main`. הגדרה חד־פעמית ב-GitHub:
+- Settings ← Pages ← Source: **GitHub Actions**.
+- Settings ← Secrets and variables ← Actions ← **Variables**: `SUPABASE_URL` ו-`SUPABASE_ANON_KEY` של פרויקט הייצור.
+- בלי המשתנים האלה האתר מתחבר לפרויקט ההדגמה (נתונים בדויים) ומציג פס "סביבת הדגמה". `ENV_LABEL` (רשות) מציג פס אחר, למשל לסביבת בדיקות.
+- ה-workflow `.github/workflows/checks.yml` מריץ את אותן בדיקות על כל Pull Request.
+- כתובת האתר צריכה להופיע ב-`ALLOWED_ORIGINS` של פונקציית `staff-admin` (סוד בפרויקט Supabase, או ברירת המחדל בקוד).
 
-**Cloudflare Pages (מומלץ לדומיין של העמותה):** Build command `npm run build`, output `dist`, root `hemshech-tnua`, ומשתני הסביבה למעלה. הקובץ `public/_headers` מוסיף כותרות אבטחה.
+**Cloudflare Pages (מומלץ לדומיין של העמותה):** Build command `npm run build`, output `dist`, ומשתני הסביבה למעלה. הקובץ `public/_headers` מוסיף כותרות אבטחה.
 
 ## 3. משתמשים והרשאות
 

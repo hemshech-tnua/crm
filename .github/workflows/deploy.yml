@@ -1,0 +1,61 @@
+# Deploys the CRM to GitHub Pages on every push to main, after the checks pass.
+# (Inside the original monorepo this folder is not the repository root, so GitHub ignores this file there;
+#  it becomes active once the app lives in its own repository.)
+# Until the production project exists the site connects to the DEMO project (fictitious data only) and shows a
+# "demo environment" strip. For production set the repository Variables SUPABASE_URL and SUPABASE_ANON_KEY
+# (Settings → Secrets and variables → Actions → Variables) and leave ENV_LABEL empty.
+# The anon key is public by design: every permission is enforced by RLS and SQL functions on the server.
+# Actions are pinned to full commit SHAs.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Checks (types, lint, unit tests)
+        run: npm run typecheck && npm run lint && npm run test:unit
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://bvoubfasrgumpehyxbcg.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2b3ViZmFzcmd1bXBlaHl4YmNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQwNTMwMTEsImV4cCI6MjEwOTYyOTAxMX0.pNfgZOgR3Z0tdjGF6AvZV1G1xfVODEL39uV6UD9wtCM' }}
+          VITE_ENV_LABEL: "${{ vars.SUPABASE_URL == '' && 'סביבת הדגמה · כל השמות והנתונים כאן בדויים' || vars.ENV_LABEL }}"
+        run: npm run build
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
