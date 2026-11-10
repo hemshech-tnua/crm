@@ -220,7 +220,7 @@ function InviteDialog({ invite, onClose }: { invite: { staff: Staff; url: string
     <Dialog open={!!invite} onClose={onClose} title="קישור כניסה ראשונה" size="sm">
       {invite && (
         <div className="flex flex-col gap-4">
-          <p>שלחו ל<span className="font-semibold">{invite.staff.full_name}</span> את הקישור באופן אישי. הוא עובד פעם אחת ותקף 7 ימים. הקישור מוצג עכשיו בלבד.</p>
+          <p>שלחו ל<span className="font-semibold">{invite.staff.full_name}</span> את הקישור באופן אישי. הוא עובד פעם אחת ותקף 48 שעות. הקישור מוצג עכשיו בלבד.</p>
           <code dir="ltr" className="num block break-all rounded-[var(--radius-control)] bg-mist p-3 text-sm">{invite.url}</code>
           <div className="flex flex-wrap gap-2">
             {invite.staff.phone && (

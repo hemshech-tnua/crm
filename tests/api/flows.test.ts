@@ -178,7 +178,7 @@ describe('check-in at the door', () => {
     const byToken = await v.rpc('public_checkin', { p: { code: ev.checkin_code, token: r.data.token } });
     expect(byToken.data.result).toBe('checked_in');
     expect(byToken.data.first_name).toBe(reg.full_name.split(' ')[0]);
-    const again = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: reg.phone } });
+    const again = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: reg.phone, full_name: reg.full_name } });
     expect(again.data.result).toBe('already_checked_in');
 
     // unknown phone -> the walk-in form
@@ -496,7 +496,7 @@ describe('user simulation round 1 fixes', () => {
     const v = visitor();
     const a = registration(ev.public_code);
     const r = await v.rpc('public_register', { p: a });
-    const c = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: a.phone } });
+    const c = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: a.phone, full_name: a.full_name } });
     expect(c.data.can_undo).toBe(true);
     expect((await v.rpc('public_registration', { p_token: c.data.token })).data.can_cancel).toBe(false);
     expect((await v.rpc('public_cancel', { p_token: c.data.token })).error?.message).toBe('too_late');
@@ -564,7 +564,7 @@ describe('user simulation round 1 fixes (staff side)', () => {
     const ph = phone();
     const { data: p } = await coord.from('participants').insert({ full_name: n, phone: ph }).select('id').single();
     const door = await staff('door');
-    const { data: sug, error } = await door.rpc('staff_walkin_suggest', { p_event_id: ev.id, p_query: n.slice(0, 12) });
+    const { data: sug, error } = await door.rpc('staff_walkin_suggest', { p_event_id: ev.id, p_query: n });
     expect(error).toBeNull();
     const hit = sug.find((x: any) => x.participant_id === p!.id);
     expect(hit).toMatchObject({ full_name: n, phone_last4: e164(ph).slice(-4) });

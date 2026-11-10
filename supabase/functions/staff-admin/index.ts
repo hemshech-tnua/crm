@@ -69,6 +69,16 @@ function normalizePhone(raw: unknown): string | null {
   return /^\+[1-9]\d{7,14}$/.test(v) ? v : null;
 }
 
+// The caller's IP for throttling. On Supabase the request passes Cloudflare, which sets cf-connecting-ip itself
+// (a client cannot forge it); x-real-ip carries the same value. X-Forwarded-For is client-controlled at its left end,
+// so it is only a local-development fallback, and then only its rightmost hop (the one our own proxy appended).
+function clientIp(req: Request): string {
+  return req.headers.get('cf-connecting-ip')?.trim()
+    || req.headers.get('x-real-ip')?.trim()
+    || req.headers.get('x-forwarded-for')?.split(',').pop()?.trim()
+    || 'unknown';
+}
+
 async function sha256hex(text: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -123,22 +133,33 @@ Deno.serve(async (req) => {
     }
     const phone = normalizePhone(String(b.phone ?? ''));
     const password = String(b.password ?? '');
-    if (!phone || !password || password.length > 72) return reply(req, 400, { error: 'invalid_login' });
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    // Constant-time floor: every outcome (bad phone, bad password, success, rate-limited) takes the same wall-clock
+    // time, so an attacker cannot tell a real staff phone from a stranger's by timing the bcrypt grant.
+    const t0 = Date.now();
+    const settle = async (status: number, body: unknown) => {
+      const elapsed = Date.now() - t0;
+      if (elapsed < 350) await new Promise((r) => setTimeout(r, 350 - elapsed));
+      return reply(req, status, body);
+    };
+    if (!phone || !password || password.length > 72) return settle(400, { error: 'invalid_login' });
+    // Trust the rightmost X-Forwarded-For hop (appended by the platform proxy), not the client-supplied left side.
+    // Per phone (the real anti-brute-force) and per caller IP. No global cap on purpose: one would let a stranger
+    // lock every staff member out at once.
+    const ip = clientIp(req);
     for (const [bucket, limit] of [[`pwlogin-phone:${await sha256hex(phone)}`, 8], [`pwlogin-ip:${await sha256hex(ip)}`, 30]] as const) {
       const rl = await rest('POST', 'rpc/service_rate_limit', { p_bucket: bucket, p_limit: limit, p_window_seconds: 900 }, 'return=minimal');
-      if (!rl.ok) return reply(req, 429, { error: 'rate_limited' });
+      if (!rl.ok) return settle(429, { error: 'rate_limited' });
     }
     const member = (await rest('GET', `staff?phone=eq.${encodeURIComponent(phone)}&select=user_id,is_active`)).data?.[0];
     const user = member?.is_active ? (await authAdmin('GET', `/${member.user_id}`)).data : null;
-    if (!user?.email) return reply(req, 400, { error: 'invalid_login' });
+    if (!user?.email) return settle(400, { error: 'invalid_login' });
     const t = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST', headers: { apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: user.email, password }),
     });
     const tj = await t.json().catch(() => null);
-    if (!t.ok || !tj?.access_token) return reply(req, 400, { error: 'invalid_login' });
-    return reply(req, 200, { access_token: tj.access_token, refresh_token: tj.refresh_token });
+    if (!t.ok || !tj?.access_token) return settle(400, { error: 'invalid_login' });
+    return settle(200, { access_token: tj.access_token, refresh_token: tj.refresh_token });
   }
 
   // ── first entry by a personal link (no session yet) ──
@@ -154,6 +175,12 @@ Deno.serve(async (req) => {
     if (!/^[A-Za-z0-9]{32}$/.test(token)) return reply(req, 404, { error: 'invite_invalid' });
     if (!emailRe.test(email) || email.length > 254) return reply(req, 400, { error: 'invalid_email' });
     const hash = await sha256hex(token);
+    // Throttle per caller IP and per link: the link is a credential, so probing it must be bounded.
+    const ip = clientIp(req);
+    for (const [bucket, limit] of [[`claim-ip:${await sha256hex(ip)}`, 20], [`claim-token:${hash}`, 10]] as const) {
+      const rl = await rest('POST', 'rpc/service_rate_limit', { p_bucket: bucket, p_limit: limit, p_window_seconds: 3600 }, 'return=minimal');
+      if (!rl.ok) return reply(req, 429, { error: 'rate_limited' });
+    }
     const inv = (await rest('GET', `staff_invites?token_hash=eq.${hash}&select=*`)).data?.[0];
     if (!inv || inv.used_at || new Date(inv.expires_at).getTime() < Date.now()) return reply(req, 404, { error: 'invite_invalid' });
     const member = (await rest('GET', `staff?user_id=eq.${inv.user_id}&select=*`)).data?.[0];
@@ -161,8 +188,8 @@ Deno.serve(async (req) => {
     if (email !== member.email) {
       const res = await authAdmin('PUT', `/${inv.user_id}`, { email, email_confirm: true });
       if (!res.ok) {
-        const exists = res.status === 422 || /already|registered|exists/i.test(JSON.stringify(res.data ?? ''));
-        return reply(req, exists ? 409 : 400, { error: exists ? 'email_exists' : 'update_failed' });
+        // generic to an unauthenticated caller: never reveal whether an email already has an account
+        return reply(req, 400, { error: 'claim_failed' });
       }
       await rest('PATCH', `staff?user_id=eq.${inv.user_id}`, { email, must_change_password: false }, 'return=minimal');
     }
@@ -261,10 +288,12 @@ Deno.serve(async (req) => {
     if (!target.is_active) return reply(req, 400, { error: 'update_failed' });
     const token = inviteToken();
     await rest('DELETE', `staff_invites?user_id=eq.${targetId}&used_at=is.null`, undefined, 'return=minimal');
-    const ins = await rest('POST', 'staff_invites', { token_hash: await sha256hex(token), user_id: targetId, created_by: caller.id }, 'return=minimal');
+    // a first-entry link is a bearer credential: keep its life short
+    const expiresAt = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+    const ins = await rest('POST', 'staff_invites', { token_hash: await sha256hex(token), user_id: targetId, created_by: caller.id, expires_at: expiresAt }, 'return=minimal');
     if (!ins.ok) return reply(req, 400, { error: 'update_failed' });
     await audit('staff_invite', targetId);
-    return reply(req, 200, { token });
+    return reply(req, 200, { token, expires_at: expiresAt });
   }
 
   if (action === 'reset_password') {
@@ -326,7 +355,7 @@ Deno.serve(async (req) => {
     }
 
     const changesAccess = ('role' in patch && patch.role !== target.role) || ('is_active' in patch && patch.is_active !== target.is_active);
-    if (targetId === caller.id && changesAccess) return reply(req, 400, { error: 'cannot_change_self' });
+    if (targetId.toLowerCase() === caller.id.toLowerCase() && changesAccess) return reply(req, 400, { error: 'cannot_change_self' });
     const losesAdmin = target.role === 'admin' && target.is_active &&
       (('role' in patch && patch.role !== 'admin') || patch.is_active === false);
     if (losesAdmin) {

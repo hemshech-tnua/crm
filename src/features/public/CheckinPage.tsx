@@ -194,7 +194,7 @@ function Walkin({ code, phone, onBack, onResult }: {
         <h1 className="font-display text-[1.9rem] leading-tight">ברוך/ה הבא/ה!</h1>
         <p className="mt-1 text-lg text-ink-soft">
           {name == null
-            ? 'לא מצאנו הרשמה למפגש הזה עם המספר הזה. אין בעיה: איך קוראים לך?'
+            ? 'רק עוד דבר אחד: איך קוראים לך? (שם מלא, כמו בהרשמה)'
             : 'עוד כמה פרטים ונכנסים. זה רק בפעם הראשונה.'}
         </p>
       </div>

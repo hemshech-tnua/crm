@@ -57,7 +57,7 @@ test('@phone someone already on file, not registered for this meeting: phone and
   await page.goto(`#/c/${ev.checkin_code}`);
   await page.getByLabel('מספר הטלפון שלך').fill(who.p);
   await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
-  await expect(page.getByText('לא מצאנו הרשמה למפגש הזה עם המספר הזה. אין בעיה: איך קוראים לך?')).toBeVisible();
+  await expect(page.getByText('רק עוד דבר אחד: איך קוראים לך? (שם מלא, כמו בהרשמה)')).toBeVisible();
   await page.getByLabel('שם מלא').fill(`  ${who.n} `);
   await page.getByRole('button', { name: 'המשך' }).click();
   await expect(page.getByRole('heading', { name: /ענבר/ })).toBeVisible();

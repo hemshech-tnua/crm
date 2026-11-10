@@ -43,7 +43,7 @@ export function FirstEntryPage() {
         {error && <ErrorBox error={error} />}
         <Button type="submit" size="lg" busy={busy} disabled={!email || !again}>כניסה</Button>
       </form>
-      <p className="mt-6 text-sm text-muted">הקישור אישי, עובד פעם אחת ותקף 7 ימים. אין להעביר אותו לאחרים.</p>
+      <p className="mt-6 text-sm text-muted">הקישור אישי, עובד פעם אחת ותקף 48 שעות. אין להעביר אותו לאחרים.</p>
     </div>
   );
 }

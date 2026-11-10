@@ -35,6 +35,9 @@ test('a phone that registered two people asks who arrived; a mistaken check-in c
   await page.getByRole('button', { name: /מישהו אחר\? צ׳ק־אין עם מספר טלפון/ }).click();
   await page.getByLabel('מספר הטלפון שלך').fill(people[1].p);
   await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
+  // a phone number alone is not enough: the full name, as registered
+  await page.getByLabel('שם מלא').fill(people[1].n);
+  await page.getByRole('button', { name: 'המשך' }).click();
   await page.getByRole('button', { name: /זה לא אני/ }).click();
   await expect(page.getByText('הצ׳ק־אין בוטל. אפשר להקליד שוב את המספר הנכון.')).toBeVisible();
   expect(await status()).toEqual({ [people[0].n]: 'attended', [people[1].n]: 'unknown' });

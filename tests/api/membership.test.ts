@@ -58,7 +58,7 @@ describe('the phone remembers who checked in from it', () => {
     const ev = await makeEvent({ startsInMinutes: 20 });
     const reg = registration(ev.public_code);
     await v.rpc('public_register', { p: reg });
-    const c = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: reg.phone } });
+    const c = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: reg.phone, full_name: reg.full_name } });
     expect(typeof c.data.device).toBe('string');
     const undo = await v.rpc('public_checkin_undo', { p_token: c.data.token });
     expect(undo.data).toEqual({ ok: true });
@@ -114,7 +114,7 @@ describe('membership in the association', () => {
     const ev = await makeEvent({ startsInMinutes: 20 });
     const reg = registration(ev.public_code);
     await v.rpc('public_register', { p: reg });
-    const c = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: reg.phone } });
+    const c = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: reg.phone, full_name: reg.full_name } });
 
     const ask = await v.rpc('public_membership', { p: { device: c.data.device } });
     expect(ask.error).toBeNull();
@@ -194,7 +194,7 @@ describe('membership in the association', () => {
     await coord.from('participants').update({ membership: 'member' }).eq('phone', e164(host.phone));
     const guest = registration(ev.public_code, { source: 'friend', referrer: host.phone });
     await v.rpc('public_register', { p: guest });
-    const c = await v.rpc('public_checkin', { p: { code: ev.checkin_code, phone: host.phone } });
+    const c = await v.rpc('public_checkin_known', { p: { code: ev.checkin_code, phone: host.phone, full_name: host.full_name } });
     expect(c.data.membership).toBe('member');
 
     const door = await staff('door');

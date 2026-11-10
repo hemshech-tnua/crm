@@ -1,7 +1,8 @@
 // Sign-in with phone + password (staff-admin ?login=1, migration 20261106001800).
 import { createClient } from '@supabase/supabase-js';
-import { describe, expect, it } from 'vitest';
-import { ANON_KEY, API_URL } from './env';
+import { execSync } from 'node:child_process';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { ANON_KEY, API_URL, DB_URL } from './env';
 import { e164, phone, staff } from './helpers';
 
 async function call(body: Record<string, unknown>) {
@@ -18,6 +19,9 @@ async function login(p: string, password: string) {
   });
   return { status: res.status, body: await res.json() };
 }
+
+// every local test shares one IP; start each test with fresh sign-in throttles
+beforeEach(() => { execSync(`psql "${DB_URL}" -qc "delete from private.rate_limits where key like 'pwlogin-%'"`); });
 
 describe('sign-in with phone and password', () => {
   it('a phone-only account gets a temporary password, signs in with phone + password, and must choose its own', async () => {
@@ -45,5 +49,19 @@ describe('sign-in with phone and password', () => {
     const reset = await call({ action: 'reset_password', user_id: created.body.user_id });
     await call({ action: 'update', user_id: created.body.user_id, is_active: false });
     expect((await login(p, reset.body.temp_password)).body.error).toBe('invalid_login');
+  });
+});
+
+describe('no staff-phone enumeration by timing (security audit F3)', () => {
+  it('an unknown phone and a known phone with a wrong password take the same minimum time', async () => {
+    const p = phone();
+    await call({ action: 'create', full_name: 'תזמון', phone: p, role: 'volunteer' });
+    const time = async (ph: string) => { const t = Date.now(); const r = await login(ph, 'wrong-password-1'); return { ms: Date.now() - t, r }; };
+    const unknown = await time('0501111111');
+    const known = await time(p);
+    expect(unknown.r.body).toEqual({ error: 'invalid_login' });
+    expect(known.r.body).toEqual({ error: 'invalid_login' });
+    expect(unknown.ms).toBeGreaterThanOrEqual(340);
+    expect(known.ms).toBeGreaterThanOrEqual(340);
   });
 });
