@@ -14,9 +14,11 @@ export function watchConsole(page: Page): string[] {
 
 export async function login(page: Page, email: string, password = PASSWORD) {
   await page.goto('#/login');
+  // the login page opens on "code by SMS"; test accounts sign in with email and password
+  await page.getByRole('button', { name: 'כניסה עם אימייל וסיסמה' }).click();
   await page.getByLabel('אימייל').fill(email);
   await page.locator('input[autocomplete="current-password"]').fill(password);
-  await page.getByRole('button', { name: 'כניסה' }).click();
+  await page.getByRole('button', { name: 'כניסה', exact: true }).click();
   await page.waitForURL(/#\/(app|password)/);
 }
 

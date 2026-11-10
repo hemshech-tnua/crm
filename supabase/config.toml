@@ -259,18 +259,22 @@ otp_expiry = 3600
 [auth.sms]
 # Allow/disallow the phone provider. When false, users can't sign up or sign in with SMS.
 # To block new signups only, set enable_signup = false under [auth] instead.
-enabled = false
+# Staff sign in with a one-time SMS code (sign-ups stay off: only phones of existing staff accounts get a code).
+enabled = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
-template = "Your code is {{ .Code }}"
+template = "קוד הכניסה למערכת המשך תנועה: {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
 max_frequency = "5s"
 
 # Use pre-defined map of phone number to OTP for testing.
 # Keys are the phone number with country code and without the + prefix.
-# [auth.sms.test_otp]
-# 14152127777 = "123456"
+# LOCAL TESTS ONLY: fixed codes for fictitious test numbers, no SMS is sent (the hosted project never reads this file).
+[auth.sms.test_otp]
+972500000901 = "246810"
+972500000902 = "246810"
+972500000903 = "246810"
 
 # Configure logged in session timeouts.
 # [auth.sessions]
@@ -290,12 +294,13 @@ max_frequency = "5s"
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# Local only: a placeholder provider so the phone provider can start; the test numbers above never reach it.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+enabled = true
+account_sid = "AClocal00000000000000000000000000"
+message_service_sid = "MGlocal00000000000000000000000000"
+# Not a real token (local placeholder). A real one never goes in this file.
+auth_token = "local-placeholder"
 
 # Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]

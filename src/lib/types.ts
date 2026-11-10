@@ -8,7 +8,10 @@ export type Engagement = 'registered' | 'first_timer' | 'returning' | 'regular' 
 export type Staff = {
   user_id: string;
   full_name: string;
-  email: string;
+  /** Sign-in by password (null for SMS-only accounts). */
+  email: string | null;
+  /** Sign-in by a one-time SMS code to this phone (E.164). */
+  phone: string | null;
   role: Role;
   is_active: boolean;
   must_change_password: boolean;

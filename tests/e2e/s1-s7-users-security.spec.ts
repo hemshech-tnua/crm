@@ -13,7 +13,7 @@ test.describe('scenario 1: a new staff user', () => {
     const fullName = `רכזת בדיקה ${String(stamp).slice(-4).replace(/\d/g, (d) => 'אבגדהוזחטי'[Number(d)])}`;
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('שם מלא').fill(fullName);
-    await dialog.getByLabel('אימייל (שם המשתמש לכניסה)').fill(email);
+    await dialog.getByLabel('אימייל (לא חובה)').fill(email);
     await dialog.getByRole('radio', { name: /^רכז\/ת/ }).check();
     await dialog.getByRole('button', { name: 'יצירת המשתמש' }).click();
 
@@ -68,12 +68,13 @@ test.describe('scenario 7: security in the browser', () => {
 
   test('wrong password gives one message that does not reveal whether the account exists', async ({ page }) => {
     await page.goto('#/login');
+    await page.getByRole('button', { name: 'כניסה עם אימייל וסיסמה' }).click();
     await page.getByLabel('אימייל').fill('admin@example.test');
     await page.locator('input[autocomplete="current-password"]').fill('wrong-password-1');
-    await page.getByRole('button', { name: 'כניסה' }).click();
+    await page.getByRole('button', { name: 'כניסה', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText('האימייל או הסיסמה לא נכונים.');
     await page.getByLabel('אימייל').fill('nobody@example.test');
-    await page.getByRole('button', { name: 'כניסה' }).click();
+    await page.getByRole('button', { name: 'כניסה', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText('האימייל או הסיסמה לא נכונים.');
   });
 

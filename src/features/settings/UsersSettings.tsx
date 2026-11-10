@@ -4,6 +4,7 @@ import { staffAdmin, useMe } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
 import { useStaffList } from '@/lib/data';
 import { ROLE_HINT, ROLE_LABEL } from '@/lib/labels';
+import { formatPhone, normalizePhone } from '@/lib/phone';
 import type { Role, Staff } from '@/lib/types';
 import { Badge, Button, ChoiceGroup, ErrorBox, Input, Notice, Panel, Select, Skeleton } from '@/ui/kit';
 import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
@@ -18,6 +19,8 @@ export function UsersSettings() {
   const confirm = useConfirm();
   const [creating, setCreating] = useState(false);
   const [secret, setSecret] = useState<{ name: string; email: string; password: string } | null>(null);
+  const [smsReady, setSmsReady] = useState<{ name: string; phone: string } | null>(null);
+  const [phoneFor, setPhoneFor] = useState<Staff | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['staff'] });
@@ -40,7 +43,7 @@ export function UsersSettings() {
   const reset = async (s: Staff) => {
     if (!(await confirm({ title: `איפוס סיסמה ל${s.full_name}`, body: 'תיווצר סיסמה זמנית חדשה. הסיסמה הקודמת תפסיק לעבוד, ובכניסה הבאה תתבקש/י לבחור סיסמה אישית.', confirm: 'איפוס הסיסמה' }))) return;
     const res = await run(s.user_id, { action: 'reset_password', user_id: s.user_id }, 'נוצרה סיסמה זמנית');
-    if (res?.temp_password) setSecret({ name: s.full_name, email: s.email, password: res.temp_password });
+    if (res?.temp_password && s.email) setSecret({ name: s.full_name, email: s.email, password: res.temp_password });
   };
 
   const toggle = async (s: Staff) => {
@@ -62,16 +65,20 @@ export function UsersSettings() {
                 <li key={s.user_id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5">
                   <div className="min-w-48 flex-1">
                     <div className="font-semibold">{s.full_name} {self && <span className="text-sm font-normal text-muted">(את/ה)</span>}</div>
-                    <div className="num text-sm text-muted" dir="ltr" style={{ textAlign: 'right' }}>{s.email}</div>
+                    <div className="num text-sm text-muted" dir="ltr" style={{ textAlign: 'right' }}>
+                      {[s.phone ? formatPhone(s.phone) : null, s.email].filter(Boolean).join(' · ')}
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {!s.is_active && <Badge tone="bad">חסום</Badge>}
+                    {s.phone && <Badge tone="tide">כניסה בקוד SMS</Badge>}
                     {s.is_active && s.must_change_password && <Badge tone="warn">ממתין לבחירת סיסמה</Badge>}
                     <Select aria-label={`תפקיד של ${s.full_name}`} value={s.role} disabled={self || busy === s.user_id} className="h-10 w-40"
                       onChange={(e) => run(s.user_id, { action: 'update', user_id: s.user_id, role: e.target.value }, 'התפקיד עודכן')}>
                       {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                     </Select>
-                    <Button size="sm" variant="secondary" onClick={() => reset(s)} disabled={busy === s.user_id}>איפוס סיסמה</Button>
+                    <Button size="sm" variant="secondary" onClick={() => setPhoneFor(s)} disabled={busy === s.user_id}>{s.phone ? 'שינוי טלפון' : 'הוספת טלפון'}</Button>
+                    {s.email && <Button size="sm" variant="secondary" onClick={() => reset(s)} disabled={busy === s.user_id}>איפוס סיסמה</Button>}
                     {!self && (
                       <Button size="sm" variant={s.is_active ? 'danger' : 'secondary'} onClick={() => toggle(s)} busy={busy === s.user_id}>
                         {s.is_active ? 'חסימה' : 'הפעלה מחדש'}
@@ -91,14 +98,37 @@ export function UsersSettings() {
         <p className="mt-3 text-sm text-muted">ההרשאות נאכפות בשרת, לא רק במסך. מומלץ לתת לכל אדם את התפקיד המצומצם ביותר שמספיק לו.</p>
       </Panel>
 
-      <CreateUser open={creating} onClose={() => setCreating(false)} onCreated={(name, email, password) => { setCreating(false); refresh(); setSecret({ name, email, password }); }} />
+      <CreateUser
+        open={creating}
+        onClose={() => setCreating(false)}
+        onCreated={(r) => {
+          setCreating(false);
+          refresh();
+          if (r.password && r.email) setSecret({ name: r.name, email: r.email, password: r.password });
+          else if (r.phone) setSmsReady({ name: r.name, phone: r.phone });
+        }}
+      />
       <SecretDialog secret={secret} onClose={() => setSecret(null)} />
+      <SmsReadyDialog ready={smsReady} onClose={() => setSmsReady(null)} />
+      {phoneFor && (
+        <PhoneDialog
+          staff={phoneFor}
+          onClose={() => setPhoneFor(null)}
+          onSave={async (phone) => {
+            const ok = await run(phoneFor.user_id, { action: 'update', user_id: phoneFor.user_id, phone }, phone ? 'הטלפון נשמר: הכניסה עכשיו בקוד SMS' : 'הטלפון הוסר');
+            if (ok) setPhoneFor(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (name: string, email: string, password: string) => void }) {
+type Created = { name: string; email: string | null; phone: string | null; password: string | null };
+
+function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (r: Created) => void }) {
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role | ''>('');
   const [busy, setBusy] = useState(false);
@@ -107,13 +137,16 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
     e.preventDefault();
     setError(null);
     if (name.trim().length < 2) return setError('צריך שם מלא.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return setError('כתובת האימייל לא תקינה.');
+    const p = phone.trim() ? normalizePhone(phone) : null;
+    if (phone.trim() && !(p && /^\+9725\d{8}$/.test(p))) return setError('צריך מספר טלפון נייד, למשל 050-1234567.');
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return setError('כתובת האימייל לא תקינה.');
+    if (!p && !email.trim()) return setError('צריך טלפון נייד (לכניסה בקוד SMS) או אימייל (לכניסה בסיסמה).');
     if (!role) return setError('צריך לבחור תפקיד.');
     setBusy(true);
     try {
-      const res = await staffAdmin<{ temp_password: string }>({ action: 'create', full_name: name.trim(), email: email.trim(), role });
-      onCreated(name.trim(), email.trim(), res.temp_password);
-      setName(''); setEmail(''); setRole('');
+      const res = await staffAdmin<{ temp_password: string | null }>({ action: 'create', full_name: name.trim(), email: email.trim() || undefined, phone: p ?? undefined, role });
+      onCreated({ name: name.trim(), email: email.trim() || null, phone: p, password: res.temp_password });
+      setName(''); setPhone(''); setEmail(''); setRole('');
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -124,11 +157,59 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
     <Dialog open={open} onClose={onClose} title="משתמש חדש">
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input label="אימייל (שם המשתמש לכניסה)" type="email" ltr value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Input label="טלפון נייד (לכניסה בקוד SMS)" type="tel" inputMode="tel" ltr className="num" placeholder="050-1234567" value={phone} onChange={(e) => setPhone(e.target.value)} hint="מומלץ. נכנסים עם קוד חד־פעמי שנשלח לטלפון, בלי סיסמה." />
+        <Input label="אימייל (לא חובה)" type="email" ltr value={email} onChange={(e) => setEmail(e.target.value)} hint="בלי טלפון: כניסה עם אימייל וסיסמה זמנית." />
         <ChoiceGroup<Role> legend="תפקיד" required columns={1} value={role} onChange={setRole}
           options={ROLES.map((r) => ({ value: r, label: <span>{ROLE_LABEL[r]} <span className="block text-sm font-normal text-muted">{ROLE_HINT[r]}</span></span> }))} />
         {error && <ErrorBox error={error} />}
         <div className="flex gap-2"><Button type="submit" busy={busy}>יצירת המשתמש</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
+      </form>
+    </Dialog>
+  );
+}
+
+/** The account signs in with an SMS code: nothing secret to hand over, just how to get in. */
+function SmsReadyDialog({ ready, onClose }: { ready: { name: string; phone: string } | null; onClose: () => void }) {
+  const copy = useCopy();
+  const link = `${window.location.origin}${window.location.pathname}#/login`;
+  return (
+    <Dialog open={!!ready} onClose={onClose} title="המשתמש נוצר" size="sm">
+      {ready && (
+        <div className="flex flex-col gap-4">
+          <p>
+            <span className="font-semibold">{ready.name}</span> נכנס/ת עם קוד חד־פעמי ב-SMS לטלפון{' '}
+            <span className="num font-semibold" dir="ltr">{formatPhone(ready.phone)}</span>. אין סיסמה.
+          </p>
+          <div className="flex gap-2">
+            <Button icon="copy" onClick={() => copy(`כניסה למערכת המשך תנועה\n${link}\nמקלידים את מספר הטלפון שלך ומקבלים קוד ב-SMS.`, 'ההוראות הועתקו')}>העתקת הוראות הכניסה</Button>
+            <Button variant="ghost" onClick={onClose}>סגירה</Button>
+          </div>
+        </div>
+      )}
+    </Dialog>
+  );
+}
+
+function PhoneDialog({ staff, onClose, onSave }: { staff: Staff; onClose: () => void; onSave: (phone: string | null) => Promise<void> }) {
+  const [phone, setPhone] = useState(formatPhone(staff.phone));
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    const p = phone.trim() ? normalizePhone(phone) : null;
+    if (phone.trim() && !(p && /^\+9725\d{8}$/.test(p))) return setError('צריך מספר טלפון נייד, למשל 050-1234567.');
+    if (!p && !staff.email) return setError('בלי טלפון ובלי אימייל לא יהיה איך להיכנס.');
+    setBusy(true);
+    await onSave(p);
+    setBusy(false);
+  };
+  return (
+    <Dialog open onClose={onClose} title={`טלפון לכניסה: ${staff.full_name}`} size="sm">
+      <form onSubmit={save} className="flex flex-col gap-4" noValidate>
+        <Input label="טלפון נייד" type="tel" inputMode="tel" ltr className="num" placeholder="050-1234567" value={phone} onChange={(e) => { setPhone(e.target.value); setError(null); }} />
+        <p className="text-sm text-muted">הקוד לכניסה נשלח ב-SMS למספר הזה. {staff.email ? 'אפשר להשאיר ריק כדי לחזור לכניסה עם סיסמה.' : ''}</p>
+        {error && <ErrorBox error={error} />}
+        <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
       </form>
     </Dialog>
   );

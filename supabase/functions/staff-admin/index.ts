@@ -1,9 +1,10 @@
 // Staff administration for Hemshech Tnua CRM.
 // Actions:
 //   change_password  any signed-in staff member (also on a temporary password)
-//   create           admin: new staff user with a one-time temporary password
-//   reset_password   admin: new temporary password, user must change it on next sign-in
-//   update           admin: name / role / active (deactivation also blocks sign-in)
+//   create           admin: new staff user. With a phone: signs in with a one-time SMS code (no password).
+//                    With an email only: a one-time temporary password.
+//   reset_password   admin: new temporary password, user must change it on next sign-in (email accounts)
+//   update           admin: name / role / active (deactivation also blocks sign-in) / phone
 // Runs with the service role. The caller's session is verified here, and every action is written to audit_log.
 
 // No third-party imports: plain fetch against the project's Auth and REST APIs (smaller attack surface, no install step).
@@ -51,6 +52,19 @@ function validPassword(pw: unknown, email?: string): pw is string {
 }
 
 const emailRe = /^[^\s@<>()]+@[^\s@<>()]+\.[^\s@<>()]{2,}$/;
+
+// Mirrors private.normalize_phone() in the database: Israeli formats to E.164 (+9725…).
+function normalizePhone(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  let v = raw.replace(/[\s\-.()\u200e\u200f\u202a-\u202e]/g, '');
+  if (!v) return null;
+  if (v.startsWith('00')) v = '+' + v.slice(2);
+  if (/^0[2-9]\d{7,8}$/.test(v)) v = '+972' + v.slice(1);
+  if (/^972[2-9]\d{7,8}$/.test(v)) v = '+' + v;
+  if (v.startsWith('+9720')) v = '+972' + v.slice(5);
+  if (v.startsWith('+972')) return /^\+9725\d{8}$/.test(v) ? v : null; // staff sign in by SMS: mobile numbers only
+  return /^\+[1-9]\d{7,14}$/.test(v) ? v : null;
+}
 
 // Minimal service-role clients for Auth admin and PostgREST.
 function svcHeaders(extra: HeadersInit = {}): HeadersInit {
@@ -118,27 +132,38 @@ Deno.serve(async (req) => {
 
   if (action === 'create') {
     const email = String(body.email ?? '').trim().toLowerCase();
+    const rawPhone = String(body.phone ?? '').trim();
+    const phone = rawPhone ? normalizePhone(rawPhone) : null;
     const fullName = String(body.full_name ?? '').trim();
     const role = String(body.role ?? '') as Role;
-    if (!emailRe.test(email) || email.length > 254) return reply(req, 400, { error: 'invalid_email' });
+    if (email && (!emailRe.test(email) || email.length > 254)) return reply(req, 400, { error: 'invalid_email' });
+    if (rawPhone && !phone) return reply(req, 400, { error: 'invalid_phone' });
+    if (!email && !phone) return reply(req, 400, { error: 'login_required' });
     if (fullName.length < 2 || fullName.length > 80) return reply(req, 400, { error: 'invalid_name' });
     if (!ROLES.includes(role)) return reply(req, 400, { error: 'invalid_role' });
-    const password = tempPassword();
-    const created = await authAdmin('POST', '', { email, password, email_confirm: true });
+    // with a phone: sign-in by SMS code, no password at all; with an email only: a temporary password
+    const password = phone ? null : tempPassword();
+    const created = await authAdmin('POST', '', {
+      ...(email ? { email, email_confirm: true } : {}),
+      ...(phone ? { phone: phone.slice(1), phone_confirm: true } : {}),
+      ...(password ? { password } : {}),
+    });
     if (!created.ok || !created.data?.id) {
-      const exists = created.status === 422 || /already|registered|exists/i.test(JSON.stringify(created.data ?? ''));
-      return reply(req, exists ? 409 : 400, { error: exists ? 'email_exists' : 'create_failed' });
+      const text = JSON.stringify(created.data ?? '');
+      const exists = created.status === 422 || /already|registered|exists/i.test(text);
+      return reply(req, exists ? 409 : 400, { error: exists ? (/phone/i.test(text) ? 'phone_exists' : 'email_exists') : 'create_failed' });
     }
     const newId = created.data.id as string;
     const ins = await rest('POST', 'staff', {
-      user_id: newId, full_name: fullName, email, role, is_active: true, must_change_password: true, created_by: caller.id,
+      user_id: newId, full_name: fullName, email: email || null, phone, role, is_active: true,
+      must_change_password: !phone, created_by: caller.id,
     }, 'return=minimal');
     if (!ins.ok) {
       await authAdmin('DELETE', `/${newId}`);
       return reply(req, 400, { error: 'create_failed' });
     }
-    await audit('staff_create', newId, { role });
-    return reply(req, 200, { user_id: newId, temp_password: password });
+    await audit('staff_create', newId, { role, login: phone ? 'sms' : 'password' });
+    return reply(req, 200, { user_id: newId, temp_password: password, login: phone ? 'sms' : 'password' });
   }
 
   const targetId = String(body.user_id ?? '');
@@ -148,6 +173,7 @@ Deno.serve(async (req) => {
   if (!target) return reply(req, 404, { error: 'not_found' });
 
   if (action === 'reset_password') {
+    if (!target.email) return reply(req, 400, { error: 'no_email' }); // SMS-only accounts have no password to reset
     const password = tempPassword();
     const res = await authAdmin('PUT', `/${targetId}`, { password });
     if (!res.ok) return reply(req, 400, { error: 'reset_failed' });
@@ -168,6 +194,22 @@ Deno.serve(async (req) => {
       patch.role = body.role;
     }
     if (body.is_active !== undefined) patch.is_active = Boolean(body.is_active);
+    if (body.phone !== undefined) {
+      const raw = String(body.phone ?? '').trim();
+      const phone = raw ? normalizePhone(raw) : null;
+      if (raw && !phone) return reply(req, 400, { error: 'invalid_phone' });
+      if (!phone && !target.email) return reply(req, 400, { error: 'login_required' });
+      if (phone !== target.phone) {
+        // the auth user's phone is what the SMS code goes to
+        const res = await authAdmin('PUT', `/${targetId}`, phone ? { phone: phone.slice(1), phone_confirm: true } : { phone: '' });
+        if (!res.ok) {
+          const exists = res.status === 422 || /already|registered|exists/i.test(JSON.stringify(res.data ?? ''));
+          return reply(req, exists ? 409 : 400, { error: exists ? 'phone_exists' : 'update_failed' });
+        }
+        patch.phone = phone;
+        if (phone) patch.must_change_password = false;
+      }
+    }
 
     const changesAccess = ('role' in patch && patch.role !== target.role) || ('is_active' in patch && patch.is_active !== target.is_active);
     if (targetId === caller.id && changesAccess) return reply(req, 400, { error: 'cannot_change_self' });
@@ -182,7 +224,7 @@ Deno.serve(async (req) => {
     if ('is_active' in patch && patch.is_active !== target.is_active) {
       await authAdmin('PUT', `/${targetId}`, { ban_duration: patch.is_active ? 'none' : '876000h' });
     }
-    await audit('staff_update', targetId, { role: patch.role ?? target.role, is_active: patch.is_active ?? target.is_active });
+    await audit('staff_update', targetId, { role: patch.role ?? target.role, is_active: patch.is_active ?? target.is_active, phone_changed: 'phone' in patch });
     return reply(req, 200, { ok: true });
   }
 
