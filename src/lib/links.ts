@@ -6,6 +6,8 @@ export const registerUrl = (eventCode: string, ref?: string | null) =>
   `${appBase()}#/r/${eventCode}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`;
 export const allEventsUrl = (ref?: string | null) => `${appBase()}#/${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`;
 export const checkinUrl = (checkinCode: string) => `${appBase()}#/c/${checkinCode}`;
+/** The permanent sign of a site: always leads to whichever meeting there is open for check-in. */
+export const siteCheckinUrl = (siteCode: string) => `${appBase()}#/s/${siteCode}`;
 export const feedbackUrl = (eventCode: string) => `${appBase()}#/f/${eventCode}`;
 export const manageUrl = (token: string) => `${appBase()}#/m/${token}`;
 export const proposeUrl = () => `${appBase()}#/join`;

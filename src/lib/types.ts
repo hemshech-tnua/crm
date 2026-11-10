@@ -15,7 +15,7 @@ export type Staff = {
   created_at?: string;
 };
 
-export type Site = { id: string; name: string; address: string | null; is_active: boolean };
+export type Site = { id: string; name: string; address: string | null; is_active: boolean; /** Code on the permanent entrance sign (#/s/…). */ checkin_code: string };
 
 export type Source = { id: string; key: string; label: string; is_friend: boolean; asks_detail: boolean; sort_order: number; is_active: boolean };
 

@@ -1,11 +1,17 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import QRCode from 'qrcode';
 import { supabase } from '@/lib/supabase';
+import { can, useRole } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
 import { useSites, useSources } from '@/lib/data';
+import { downloadFile } from '@/lib/csv';
+import { siteCheckinUrl } from '@/lib/links';
 import type { Site, Source } from '@/lib/types';
-import { Badge, Button, Checkbox, ErrorBox, Input, Panel, Skeleton } from '@/ui/kit';
-import { Dialog, useToast } from '@/ui/feedback';
+import { Badge, Button, Checkbox, ErrorBox, Input, Notice, Panel, Skeleton } from '@/ui/kit';
+import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
+import { QrImage } from '@/features/events/shared';
+import { dataUrlToBlob } from '@/features/events/context';
 
 // ───────────── acquisition sources ─────────────
 
@@ -78,6 +84,7 @@ export function SitesSettings() {
   const qc = useQueryClient();
   const toast = useToast();
   const [f, setF] = useState<Partial<Site> | null>(null);
+  const [sign, setSign] = useState<Site | null>(null);
   const [error, setError] = useState<string | null>(null);
   const save = useMutation({
     mutationFn: async () => {
@@ -96,12 +103,14 @@ export function SitesSettings() {
             <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
               <div className="flex-1"><div className="font-semibold">{s.name}</div><div className="text-sm text-muted">{s.address}</div></div>
               {!s.is_active && <Badge>לא פעיל</Badge>}
+              <Button size="sm" variant="secondary" icon="qr" onClick={() => setSign(s)}>שלט קבוע לכניסה</Button>
               <Button size="sm" variant="secondary" icon="edit" onClick={() => setF(s)}>עריכה</Button>
             </li>
           ))}
         </ul>
       )}
-      <p className="px-5 pb-4 text-sm text-muted">לכל מתחם מפגשים משלו. בדוחות ובדשבורד אפשר לסנן לפי מתחם (שאלה 43 בשאלון).</p>
+      <p className="px-5 pb-4 text-sm text-muted">לכל מתחם מפגשים משלו, וברקוד קבוע אחד לשלט בכניסה. בדוחות ובדשבורד אפשר לסנן לפי מתחם (שאלה 43 בשאלון).</p>
+      {sign && <SiteSignDialog site={(sites.data ?? []).find((x) => x.id === sign.id) ?? sign} onClose={() => setSign(null)} />}
       <Dialog open={!!f} onClose={() => { setF(null); setError(null); }} title={f?.id ? 'עריכת מתחם' : 'מתחם חדש'} size="sm">
         {f && (
           <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (!f.name || f.name.trim().length < 2) return setError('צריך שם למתחם.'); save.mutate(); }}>
@@ -114,5 +123,79 @@ export function SitesSettings() {
         )}
       </Dialog>
     </Panel>
+  );
+}
+
+/**
+ * The permanent entrance sign of a site: one QR for every meeting there (#/s/<code>). Downloads as SVG (vector, for
+ * laser engraving or print shops) and PNG, with high error correction so a worn or engraved code still scans.
+ */
+function SiteSignDialog({ site, onClose }: { site: Site; onClose: () => void }) {
+  const role = useRole();
+  const toast = useToast();
+  const copy = useCopy();
+  const confirm = useConfirm();
+  const qc = useQueryClient();
+  const url = siteCheckinUrl(site.checkin_code);
+  const opts = { errorCorrectionLevel: 'H' as const, margin: 4, color: { dark: '#000000', light: '#FFFFFF' } };
+  const file = `שלט-כניסה-${site.name}`.replace(/[\\/:*?"<>|]+/g, '-');
+  const svg = async () => {
+    try {
+      downloadFile(`${file}.svg`, new Blob([await QRCode.toString(url, { ...opts, type: 'svg' })], { type: 'image/svg+xml' }));
+    } catch {
+      toast.error('לא הצלחנו ליצור את הקובץ. נסו שוב.');
+    }
+  };
+  const png = async () => {
+    try {
+      downloadFile(`${file}.png`, dataUrlToBlob(await QRCode.toDataURL(url, { ...opts, width: 2048 })));
+    } catch {
+      toast.error('לא הצלחנו ליצור את הקובץ. נסו שוב.');
+    }
+  };
+  const rotate = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('admin_rotate_site_code', { p_site_id: site.id });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sites'] }); toast.success('נוצר קוד חדש. השלט הישן כבר לא עובד.'); },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  const askRotate = async () => {
+    const ok = await confirm({
+      title: 'להחליף את הקוד של השלט?',
+      danger: true,
+      confirm: 'החלפת הקוד',
+      cancel: 'חזרה',
+      body: <p>רק אם הקוד דלף ומשתמשים בו מרחוק. השלט הקיים יפסיק לעבוד מיד, וצריך להכין שלט חדש.</p>,
+    });
+    if (ok) rotate.mutate();
+  };
+  return (
+    <Dialog open onClose={onClose} title={`שלט קבוע לכניסה: ${site.name}`}>
+      <div className="flex flex-col gap-4">
+        <p className="text-[0.95rem] text-ink-soft">
+          ברקוד אחד לכל המפגשים במתחם. מי שסורק/ת מגיע/ה לצ׳ק־אין של המפגש שפתוח באותו רגע. אם אין מפגש פתוח, מופיע מתי ייפתח הבא.
+        </p>
+        <div className="flex justify-center"><QrImage value={url} size={220} label={`ברקוד קבוע לכניסה, ${site.name}`} className="rounded-lg border border-line-soft" /></div>
+        <div className="flex items-center gap-2">
+          <code dir="ltr" className="num min-w-0 flex-1 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2 text-sm">{url}</code>
+          <Button size="sm" variant="ghost" icon="copy" onClick={() => copy(url, 'הקישור הועתק')}>העתקה</Button>
+        </div>
+        <Notice tone="warn" icon="alert">
+          לפני חריטה או הדפסה קבועה: הברקוד מכיל את כתובת האתר. אם הכתובת תשתנה (למשל במעבר לדומיין של העמותה), השלט יפסיק לעבוד. כדאי לחרוט רק אחרי שהכתובת סופית.
+        </Notice>
+        <div className="flex flex-wrap gap-2">
+          <Button icon="download" onClick={svg}>הורדה לחריטה (SVG)</Button>
+          <Button variant="secondary" icon="download" onClick={png}>הורדה כתמונה (PNG)</Button>
+        </div>
+        <p className="text-sm text-muted">הקובץ בשחור־לבן, עם תיקון שגיאות גבוה ושוליים לבנים, כך שגם שלט עם שריטות או בחריטה על עץ נסרק. מומלץ גודל של 10 ס״מ לפחות.</p>
+        {can.admin(role) && (
+          <button type="button" onClick={askRotate} disabled={rotate.isPending} className="self-start text-sm font-semibold text-bad underline underline-offset-4">
+            הקוד דלף? החלפת הקוד (השלט הישן יפסיק לעבוד)
+          </button>
+        )}
+      </div>
+    </Dialog>
   );
 }

@@ -150,6 +150,25 @@ export type MembershipResult = { result: 'requested' | 'already_requested' | 'al
 export const requestMembership = (p: { device: string } | { full_name: string; phone: string; website: string }) =>
   rpc<MembershipResult>('public_membership', { p });
 
+export type SiteCheckin = {
+  site: string;
+  /** Meetings at this site open for check-in now (normally one). */
+  open: { checkin_code: string; event: PublicEvent }[];
+  /** When nothing is open: the next meeting here and when its check-in opens. */
+  next: { opens_at: string; event: PublicEvent } | null;
+};
+export const useSiteCheckin = (code: string) =>
+  useQuery({
+    queryKey: ['pub', 'site', code],
+    retry,
+    // standing at the sign before check-in opens: the page moves on by itself
+    refetchInterval: (q) => {
+      const d = q.state.data;
+      return d && !d.open.length && d.next && new Date(d.next.opens_at).getTime() - Date.now() < 12 * 3600_000 ? 60_000 : false;
+    },
+    queryFn: () => rpc<SiteCheckin>('public_site_checkin', { p_code: code }),
+  });
+
 export type OrgInfo = { org_name: string; contact_phone: string | null };
 export const useOrgInfo = () =>
   useQuery({ queryKey: ['pub', 'org'], staleTime: 10 * 60_000, queryFn: () => rpc<OrgInfo>('public_org_info') });
