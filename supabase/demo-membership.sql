@@ -1,4 +1,4 @@
--- DEMO ONLY: local demo and the hosted demo project, never production (run after demo-data.sql and demo-live.sql).
+-- DEMO ONLY: the local demo, never the hosted project (it is the real system). Run after demo-data.sql and demo-live.sql.
 -- Fictitious association membership, touching only the demo phones (+97250000…): about two thirds of the regulars
 -- (3+ visits) are members, so every meeting also has non-members who get the invitation to join; and three people
 -- asked to join after a meeting, each with the follow-up task the join form creates. Safe to run again.

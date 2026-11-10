@@ -13,7 +13,7 @@ DB=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 psql "$DB" -v ON_ERROR_STOP=1 -q -f supabase/demo-data.sql
 psql "$DB" -v ON_ERROR_STOP=1 -q -f supabase/demo-live.sql
 psql "$DB" -v ON_ERROR_STOP=1 -q -f supabase/demo-membership.sql
-# local only: a sample team WhatsApp number for the footer (the hosted demo leaves it empty)
+# local only: a sample team WhatsApp number for the footer
 psql "$DB" -q -c "update public.settings set contact_phone = '+972527110055'"
 # the Edge runtime sometimes starts before the network is ready after a machine restart
 for _ in 1 2 3; do

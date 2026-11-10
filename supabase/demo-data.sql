@@ -1,5 +1,5 @@
--- DEMO DATA ONLY. Fictitious people and meetings for development, screenshots, user simulations and the
--- separate hosted demo project (hemshech-tnua-demo). Never run against the production project.
+-- DEMO DATA ONLY. Fictitious people and meetings for LOCAL development, screenshots and user simulations.
+-- Never run against the hosted project: since 10.11.2026 it is the real system (supabase/go-live.sql).
 -- Run:  psql "$LOCAL_DB_URL" -f supabase/demo-data.sql
 -- Every name here is invented. Phones are in the 050-000xxxx range.
 do $$

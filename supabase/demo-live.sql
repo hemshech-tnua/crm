@@ -1,4 +1,4 @@
--- DEMO ONLY: local demo and the hosted demo project, never production (run after demo-data.sql). Adds what makes the demo "live" whatever day it is run:
+-- DEMO ONLY: the local demo, never the hosted project (it is the real system). Run after demo-data.sql. Adds what makes the demo "live" whatever day it is run:
 -- a demo meeting starting in an hour (to try QR check-in and the door list now), and this week's Friday as an
 -- ended, not-yet-closed meeting (to try "סגירת המפגש") when that Friday has passed and is missing.
 do $$

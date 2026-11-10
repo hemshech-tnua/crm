@@ -44,7 +44,7 @@ VITE_SUPABASE_URL=https://<REF>.supabase.co VITE_SUPABASE_ANON_KEY=<anon/publish
 **GitHub Pages:** ה-workflow `.github/workflows/deploy.yml` מריץ בדיקות (טיפוסים, lint, בדיקות יחידה), בונה ומפרסם בכל דחיפה ל-`main`. הגדרה חד־פעמית ב-GitHub:
 - Settings ← Pages ← Source: **GitHub Actions**.
 - Settings ← Secrets and variables ← Actions ← **Variables**: `SUPABASE_URL` ו-`SUPABASE_ANON_KEY` של פרויקט הייצור.
-- בלי המשתנים האלה האתר מתחבר לפרויקט ההדגמה (נתונים בדויים) ומציג פס "סביבת הדגמה". `ENV_LABEL` (רשות) מציג פס אחר, למשל לסביבת בדיקות.
+- בלי המשתנים האלה האתר מתחבר לפרויקט הייצור (`bvoubfasrgumpehyxbcg`, שהיה פרויקט ההדגמה עד העלייה לאוויר ב-10.11.2026). `ENV_LABEL` (רשות) מציג פס בראש כל עמוד, למשל לסביבת בדיקות.
 - ה-workflow `.github/workflows/checks.yml` מריץ את אותן בדיקות על כל Pull Request.
 - כתובת האתר צריכה להופיע ב-`ALLOWED_ORIGINS` של פונקציית `staff-admin` (סוד בפרויקט Supabase, או ברירת המחדל בקוד).
 
