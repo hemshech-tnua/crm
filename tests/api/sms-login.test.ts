@@ -43,8 +43,8 @@ describe('staff sign-in by SMS code', () => {
     // full access right away (no temporary password step)
     const { error } = await user.from('events').select('id').limit(1);
     expect(error).toBeNull();
-    // and no password to reset
-    expect((await call(admin, { action: 'reset_password', user_id: created.body.user_id })).body.error).toBe('no_email');
+    // a temporary password is possible too (sign-in with phone + password)
+    expect((await call(admin, { action: 'reset_password', user_id: created.body.user_id })).body.temp_password).toMatch(/^[A-Za-z0-9]{14}$/);
     // the same phone cannot be given to a second person
     expect((await call(admin, { action: 'create', full_name: 'כפילות', phone: '0500000901', role: 'volunteer' })).body.error).toBe('phone_exists');
   });

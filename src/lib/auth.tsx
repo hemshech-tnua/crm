@@ -108,6 +108,24 @@ export async function staffAdmin<T = Record<string, unknown>>(body: Record<strin
   return json as T;
 }
 
+/** Sign-in with phone + password: the server finds the staff account by phone and returns a session. */
+export async function signInWithPhonePassword(phone: string, password: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${functionsUrl}/staff-admin?login=1`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password }),
+    });
+  } catch {
+    throw { message: 'network' };
+  }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw { message: json.error ?? 'invalid_login', status: res.status };
+  const { error } = await supabase.auth.setSession({ access_token: json.access_token, refresh_token: json.refresh_token });
+  if (error) throw { message: 'invalid_login' };
+}
+
 /** First entry by a personal link: sets the person's own email and signs them in (no email is sent). */
 export async function claimInvite(token: string, email: string): Promise<void> {
   let res: Response;

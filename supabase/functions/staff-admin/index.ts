@@ -7,6 +7,7 @@
 //   update           admin: name / role / active (deactivation also blocks sign-in) / phone / email
 //   invite           admin: a one-time first-entry link for a staff member (7 days)
 //   claim_invite     no session: the link's owner types their email and gets a sign-in token (no email is sent)
+//   phone login      no session (?login=1): phone + password; accounts without an email get an internal one
 // Runs with the service role. The caller's session is verified here, and every action is written to audit_log.
 
 // No third-party imports: plain fetch against the project's Auth and REST APIs (smaller attack surface, no install step).
@@ -73,6 +74,9 @@ async function sha256hex(text: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Password sign-in needs an email on the auth user; a phone-only account gets one that can never receive mail.
+const internalEmail = (phone: string) => `p${phone.replace(/\D/g, '')}@staff.hemshech-tnua.invalid`;
+
 function inviteToken(): string {
   const alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
   let out = '';
@@ -108,6 +112,34 @@ async function rest(method: string, path: string, body?: unknown, prefer = 'retu
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req) });
   if (req.method !== 'POST') return reply(req, 405, { error: 'method_not_allowed' });
+
+  // ── sign-in with phone + password (no session yet). One answer for every failure. ──
+  if (new URL(req.url).searchParams.get('login') === '1') {
+    let b: Record<string, unknown>;
+    try {
+      b = await req.json();
+    } catch {
+      return reply(req, 400, { error: 'invalid_body' });
+    }
+    const phone = normalizePhone(String(b.phone ?? ''));
+    const password = String(b.password ?? '');
+    if (!phone || !password || password.length > 72) return reply(req, 400, { error: 'invalid_login' });
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    for (const [bucket, limit] of [[`pwlogin-phone:${await sha256hex(phone)}`, 8], [`pwlogin-ip:${await sha256hex(ip)}`, 30]] as const) {
+      const rl = await rest('POST', 'rpc/service_rate_limit', { p_bucket: bucket, p_limit: limit, p_window_seconds: 900 }, 'return=minimal');
+      if (!rl.ok) return reply(req, 429, { error: 'rate_limited' });
+    }
+    const member = (await rest('GET', `staff?phone=eq.${encodeURIComponent(phone)}&select=user_id,is_active`)).data?.[0];
+    const user = member?.is_active ? (await authAdmin('GET', `/${member.user_id}`)).data : null;
+    if (!user?.email) return reply(req, 400, { error: 'invalid_login' });
+    const t = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST', headers: { apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    const tj = await t.json().catch(() => null);
+    if (!t.ok || !tj?.access_token) return reply(req, 400, { error: 'invalid_login' });
+    return reply(req, 200, { access_token: tj.access_token, refresh_token: tj.refresh_token });
+  }
 
   // ── first entry by a personal link (no session yet) ──
   if (new URL(req.url).searchParams.get('claim') === '1') {
@@ -236,9 +268,12 @@ Deno.serve(async (req) => {
   }
 
   if (action === 'reset_password') {
-    if (!target.email) return reply(req, 400, { error: 'no_email' }); // SMS-only accounts have no password to reset
     const password = tempPassword();
-    const res = await authAdmin('PUT', `/${targetId}`, { password });
+    // a phone-only account signs in with phone + password; its auth user gets an internal, undeliverable email
+    const authUser = (await authAdmin('GET', `/${targetId}`)).data;
+    const needsEmail = !authUser?.email && target.phone;
+    if (!authUser?.email && !target.phone) return reply(req, 400, { error: 'no_email' });
+    const res = await authAdmin('PUT', `/${targetId}`, needsEmail ? { password, email: internalEmail(target.phone), email_confirm: true } : { password });
     if (!res.ok) return reply(req, 400, { error: 'reset_failed' });
     await setStaff(targetId, { must_change_password: true });
     await audit('staff_reset_password', targetId);

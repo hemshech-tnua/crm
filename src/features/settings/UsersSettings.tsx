@@ -46,7 +46,7 @@ export function UsersSettings() {
   const reset = async (s: Staff) => {
     if (!(await confirm({ title: `איפוס סיסמה ל${s.full_name}`, body: 'תיווצר סיסמה זמנית חדשה. הסיסמה הקודמת תפסיק לעבוד, ובכניסה הבאה תתבקש/י לבחור סיסמה אישית.', confirm: 'איפוס הסיסמה' }))) return;
     const res = await run(s.user_id, { action: 'reset_password', user_id: s.user_id }, 'נוצרה סיסמה זמנית');
-    if (res?.temp_password && s.email) setSecret({ name: s.full_name, email: s.email, password: res.temp_password });
+    if (res?.temp_password) setSecret({ name: s.full_name, email: s.email ?? formatPhone(s.phone), password: res.temp_password });
   };
 
   const toggle = async (s: Staff) => {
@@ -88,7 +88,7 @@ export function UsersSettings() {
                     )}
                     <Button size="sm" variant="secondary" onClick={() => setEmailFor(s)} disabled={busy === s.user_id}>{s.email ? 'שינוי אימייל' : 'הוספת אימייל'}</Button>
                     <Button size="sm" variant="secondary" onClick={() => setPhoneFor(s)} disabled={busy === s.user_id}>{s.phone ? 'שינוי טלפון' : 'הוספת טלפון'}</Button>
-                    {s.email && <Button size="sm" variant="secondary" onClick={() => reset(s)} disabled={busy === s.user_id}>איפוס סיסמה</Button>}
+                    <Button size="sm" variant="secondary" onClick={() => reset(s)} disabled={busy === s.user_id}>{s.must_change_password ? 'איפוס סיסמה' : 'סיסמה זמנית'}</Button>
                     {!self && (
                       <Button size="sm" variant={s.is_active ? 'danger' : 'secondary'} onClick={() => toggle(s)} busy={busy === s.user_id}>
                         {s.is_active ? 'חסימה' : 'הפעלה מחדש'}
@@ -293,14 +293,14 @@ function SecretDialog({ secret, onClose }: { secret: { name: string; email: stri
         <div className="flex flex-col gap-4">
           <p>מסרו ל<span className="font-semibold">{secret.name}</span> את פרטי הכניסה באופן אישי (שיחה או הודעה פרטית). הסיסמה מוצגת עכשיו בלבד ולא נשמרת במערכת.</p>
           <div className="rounded-[var(--radius-control)] bg-mist p-4">
-            <div className="text-sm text-muted">אימייל</div>
+            <div className="text-sm text-muted">שם משתמש (טלפון או אימייל)</div>
             <div className="num font-semibold" dir="ltr" style={{ textAlign: 'right' }}>{secret.email}</div>
             <div className="mt-2 text-sm text-muted">סיסמה זמנית</div>
             <div className="num font-display text-2xl tracking-wider" dir="ltr" style={{ textAlign: 'right' }}>{secret.password}</div>
           </div>
           <Notice>בכניסה הראשונה המערכת תבקש לבחור סיסמה אישית, ועד אז לא מוצגים שום נתונים.</Notice>
           <div className="flex gap-2">
-            <Button icon="copy" onClick={() => copy(`כניסה למערכת המשך תנועה\n${window.location.origin}${window.location.pathname}#/login\nאימייל: ${secret.email}\nסיסמה זמנית: ${secret.password}`, 'פרטי הכניסה הועתקו')}>העתקת פרטי הכניסה</Button>
+            <Button icon="copy" onClick={() => copy(`כניסה למערכת המשך תנועה\n${window.location.origin}${window.location.pathname}#/login\nשם משתמש: ${secret.email}\nסיסמה זמנית: ${secret.password}\nבכניסה: "כניסה עם טלפון או אימייל וסיסמה"`, 'פרטי הכניסה הועתקו')}>העתקת פרטי הכניסה</Button>
             <Button variant="ghost" onClick={onClose}>סגירה</Button>
           </div>
         </div>

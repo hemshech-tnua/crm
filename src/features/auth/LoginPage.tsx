@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
-import { useAuth, useMe } from '@/lib/auth';
+import { signInWithPhonePassword, useAuth, useMe } from '@/lib/auth';
 import { formatPhone, normalizePhone } from '@/lib/phone';
 import { Button, ErrorBox, Input, Notice } from '@/ui/kit';
 
@@ -11,7 +11,7 @@ type Mode = 'email' | 'sms' | 'password';
 const MODE_LINK: Record<Mode, string> = {
   email: 'כניסה עם קוד במייל',
   sms: 'כניסה עם קוד בטלפון (SMS)',
-  password: 'כניסה עם אימייל וסיסמה',
+  password: 'כניסה עם טלפון או אימייל וסיסמה',
 };
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -201,7 +201,23 @@ function PasswordLogin({ from }: { from: string }) {
     e.preventDefault();
     setError(null);
     setBusy(true);
-    const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const id = email.trim();
+    if (!id.includes('@')) {
+      // a phone number: the server finds the staff account by phone
+      const phone = normalizePhone(id);
+      try {
+        if (!phone) throw { message: 'invalid_login' };
+        await signInWithPhonePassword(phone, password);
+      } catch (x) {
+        setBusy(false);
+        setError((x as { message?: string }).message === 'rate_limited' ? 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.' : 'הטלפון או הסיסמה לא נכונים.');
+        return;
+      }
+      setBusy(false);
+      navigate(from, { replace: true });
+      return;
+    }
+    const { error: err } = await supabase.auth.signInWithPassword({ email: id, password });
     setBusy(false);
     if (err) {
       // the same message for a wrong email and a wrong password: do not reveal which accounts exist
@@ -214,7 +230,7 @@ function PasswordLogin({ from }: { from: string }) {
   return (
     <>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate aria-label="כניסה בסיסמה">
-        <Input label="אימייל" type="email" autoComplete="username" ltr required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input label="טלפון נייד או אימייל" autoComplete="username" ltr required value={email} onChange={(e) => setEmail(e.target.value)} />
         <Input label="סיסמה" type="password" autoComplete="current-password" ltr required value={password} onChange={(e) => setPassword(e.target.value)} />
         {error && <ErrorBox error={error} />}
         <Button type="submit" size="lg" busy={busy} disabled={!email || !password}>כניסה</Button>

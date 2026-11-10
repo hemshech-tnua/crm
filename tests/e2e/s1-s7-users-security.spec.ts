@@ -20,7 +20,7 @@ test.describe('scenario 1: a new staff user', () => {
     const created = page.getByRole('dialog', { name: 'המשתמש נוצר' });
     await expect(created).toContainText(email);
     await created.getByRole('button', { name: 'סגירה' }).first().click();
-    await page.getByRole('listitem').filter({ hasText: fullName }).getByRole('button', { name: 'איפוס סיסמה' }).click();
+    await page.getByRole('listitem').filter({ hasText: fullName }).getByRole('button', { name: 'סיסמה זמנית' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'איפוס הסיסמה' }).click();
     const secret = page.getByRole('dialog', { name: 'סיסמה זמנית' });
     await expect(secret).toBeVisible();
@@ -73,12 +73,12 @@ test.describe('scenario 7: security in the browser', () => {
 
   test('wrong password gives one message that does not reveal whether the account exists', async ({ page }) => {
     await page.goto('#/login');
-    await page.getByRole('button', { name: 'כניסה עם אימייל וסיסמה' }).click();
-    await page.getByLabel('אימייל').fill('admin@example.test');
+    await page.getByRole('button', { name: 'כניסה עם טלפון או אימייל וסיסמה' }).click();
+    await page.getByLabel('טלפון נייד או אימייל').fill('admin@example.test');
     await page.locator('input[autocomplete="current-password"]').fill('wrong-password-1');
     await page.getByRole('button', { name: 'כניסה', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText('האימייל או הסיסמה לא נכונים.');
-    await page.getByLabel('אימייל').fill('nobody@example.test');
+    await page.getByLabel('טלפון נייד או אימייל').fill('nobody@example.test');
     await page.getByRole('button', { name: 'כניסה', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText('האימייל או הסיסמה לא נכונים.');
   });
