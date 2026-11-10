@@ -20,7 +20,8 @@ export function LoginPage() {
   const me = useMe();
   const location = useLocation();
   const [params] = useSearchParams();
-  const [mode, setMode] = useState<Mode>('email');
+  // phone/email + password works without any mail or SMS service; the code options are one tap away
+  const [mode, setMode] = useState<Mode>('password');
   const from = (location.state as { from?: string } | null)?.from ?? '/app';
 
   if (ready && session && me.data?.is_active) {

@@ -50,7 +50,7 @@ test('staff sign in with a code sent by SMS, without a password', async ({ page 
   expect(real, real.join('\n')).toEqual([]);
 });
 
-test('staff sign in with a code sent by email (the default on the login page)', async ({ page }) => {
+test('staff sign in with a code sent by email', async ({ page }) => {
   const errors = watchConsole(page);
   const admin = await staff('admin');
   const token = (await admin.auth.getSession()).data.session!.access_token;
@@ -63,6 +63,7 @@ test('staff sign in with a code sent by email (the default on the login page)', 
   expect(res.status).toBe(200);
 
   await page.goto('#/login');
+  await page.getByRole('button', { name: 'כניסה עם קוד במייל' }).click();
   await page.getByLabel('כתובת האימייל שלך').fill(email);
   await page.getByRole('button', { name: 'שליחת קוד למייל' }).click();
   await expect(page.getByText(/רשומה בצוות, נשלח אליה עכשיו קוד/)).toBeVisible();

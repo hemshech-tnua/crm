@@ -6,6 +6,7 @@ import { useStaffList } from '@/lib/data';
 import { ROLE_HINT, ROLE_LABEL } from '@/lib/labels';
 import { formatPhone, normalizePhone, whatsappLink } from '@/lib/phone';
 import { firstEntryUrl } from '@/lib/links';
+import { RowMenu } from '@/features/events/shared';
 import type { Role, Staff } from '@/lib/types';
 import { Badge, Button, ChoiceGroup, ErrorBox, Input, Notice, Panel, Select, Skeleton } from '@/ui/kit';
 import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
@@ -66,7 +67,7 @@ export function UsersSettings() {
               const self = s.user_id === me.data?.user_id;
               return (
                 <li key={s.user_id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5">
-                  <div className="min-w-48 flex-1">
+                  <div className="min-w-0 flex-1 basis-48">
                     <div className="font-semibold">{s.full_name} {self && <span className="text-sm font-normal text-muted">(את/ה)</span>}</div>
                     <div className="num text-sm text-muted" dir="ltr" style={{ textAlign: 'right' }}>
                       {[s.phone ? formatPhone(s.phone) : null, s.email].filter(Boolean).join(' · ')}
@@ -74,26 +75,25 @@ export function UsersSettings() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {!s.is_active && <Badge tone="bad">חסום</Badge>}
-                    {!s.must_change_password && <Badge tone="tide">כניסה בקוד</Badge>}
                     {s.is_active && s.must_change_password && <Badge tone="warn">ממתין לבחירת סיסמה</Badge>}
-                    <Select aria-label={`תפקיד של ${s.full_name}`} value={s.role} disabled={self || busy === s.user_id} className="h-10 w-40"
-                      onChange={(e) => run(s.user_id, { action: 'update', user_id: s.user_id, role: e.target.value }, 'התפקיד עודכן')}>
-                      {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-                    </Select>
-                    {!self && s.is_active && (
-                      <Button size="sm" variant="secondary" disabled={busy === s.user_id}
-                        onClick={async () => { const r = await run(s.user_id, { action: 'invite', user_id: s.user_id }, 'נוצר קישור כניסה ראשונה'); if (r && 'token' in r) setInvite({ staff: s, url: firstEntryUrl(String((r as { token: string }).token)) }); }}>
-                        קישור כניסה ראשונה
-                      </Button>
-                    )}
-                    <Button size="sm" variant="secondary" onClick={() => setEmailFor(s)} disabled={busy === s.user_id}>{s.email ? 'שינוי אימייל' : 'הוספת אימייל'}</Button>
-                    <Button size="sm" variant="secondary" onClick={() => setPhoneFor(s)} disabled={busy === s.user_id}>{s.phone ? 'שינוי טלפון' : 'הוספת טלפון'}</Button>
-                    <Button size="sm" variant="secondary" onClick={() => reset(s)} disabled={busy === s.user_id}>{s.must_change_password ? 'איפוס סיסמה' : 'סיסמה זמנית'}</Button>
-                    {!self && (
-                      <Button size="sm" variant={s.is_active ? 'danger' : 'secondary'} onClick={() => toggle(s)} busy={busy === s.user_id}>
-                        {s.is_active ? 'חסימה' : 'הפעלה מחדש'}
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <Select aria-label={`תפקיד של ${s.full_name}`} value={s.role} disabled={self || busy === s.user_id} className="h-10 w-36"
+                        onChange={(e) => run(s.user_id, { action: 'update', user_id: s.user_id, role: e.target.value }, 'התפקיד עודכן')}>
+                        {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                      </Select>
+                      {busy !== s.user_id && (
+                        <RowMenu label={`פעולות ל${s.full_name}`} items={[
+                          ...(!self && s.is_active ? [{ label: 'קישור כניסה ראשונה', icon: 'link' as const, onClick: async () => {
+                            const r = await run(s.user_id, { action: 'invite', user_id: s.user_id }, 'נוצר קישור כניסה ראשונה');
+                            if (r && 'token' in r) setInvite({ staff: s, url: firstEntryUrl(String((r as { token: string }).token)) });
+                          } }] : []),
+                          { label: 'סיסמה זמנית', icon: 'shield' as const, onClick: () => reset(s) },
+                          { label: s.phone ? 'שינוי טלפון' : 'הוספת טלפון', icon: 'phone' as const, onClick: () => setPhoneFor(s) },
+                          { label: s.email ? 'שינוי אימייל' : 'הוספת אימייל', icon: 'message' as const, onClick: () => setEmailFor(s) },
+                          ...(!self ? [{ label: s.is_active ? 'חסימה' : 'הפעלה מחדש', icon: (s.is_active ? 'close' : 'check') as 'close' | 'check', danger: s.is_active, onClick: () => toggle(s) }] : []),
+                        ]} />
+                      )}
+                    </div>
                   </div>
                 </li>
               );

@@ -21,6 +21,7 @@ export function PublicLayout() {
       </main>
       <footer className="mx-auto w-full max-w-xl px-5 pb-8 text-sm text-muted">
         <div className="flex flex-wrap gap-x-5 border-t border-line pt-2">
+          <Link to="/member" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">הצטרפות לעמותה</Link>
           <Link to="/privacy" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">מדיניות פרטיות</Link>
           <Link to="/join" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">רוצים להרצות או להדריך?</Link>
           <Link to="/login" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">כניסת צוות</Link>
