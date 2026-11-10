@@ -4,7 +4,8 @@ import { staffAdmin, useMe } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
 import { useStaffList } from '@/lib/data';
 import { ROLE_HINT, ROLE_LABEL } from '@/lib/labels';
-import { formatPhone, normalizePhone } from '@/lib/phone';
+import { formatPhone, normalizePhone, whatsappLink } from '@/lib/phone';
+import { firstEntryUrl } from '@/lib/links';
 import type { Role, Staff } from '@/lib/types';
 import { Badge, Button, ChoiceGroup, ErrorBox, Input, Notice, Panel, Select, Skeleton } from '@/ui/kit';
 import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
@@ -22,6 +23,7 @@ export function UsersSettings() {
   const [ready, setReady] = useState<{ name: string; email: string | null; phone: string | null } | null>(null);
   const [phoneFor, setPhoneFor] = useState<Staff | null>(null);
   const [emailFor, setEmailFor] = useState<Staff | null>(null);
+  const [invite, setInvite] = useState<{ staff: Staff; url: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['staff'] });
@@ -78,6 +80,12 @@ export function UsersSettings() {
                       onChange={(e) => run(s.user_id, { action: 'update', user_id: s.user_id, role: e.target.value }, 'התפקיד עודכן')}>
                       {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                     </Select>
+                    {!self && s.is_active && (
+                      <Button size="sm" variant="secondary" disabled={busy === s.user_id}
+                        onClick={async () => { const r = await run(s.user_id, { action: 'invite', user_id: s.user_id }, 'נוצר קישור כניסה ראשונה'); if (r && 'token' in r) setInvite({ staff: s, url: firstEntryUrl(String((r as { token: string }).token)) }); }}>
+                        קישור כניסה ראשונה
+                      </Button>
+                    )}
                     <Button size="sm" variant="secondary" onClick={() => setEmailFor(s)} disabled={busy === s.user_id}>{s.email ? 'שינוי אימייל' : 'הוספת אימייל'}</Button>
                     <Button size="sm" variant="secondary" onClick={() => setPhoneFor(s)} disabled={busy === s.user_id}>{s.phone ? 'שינוי טלפון' : 'הוספת טלפון'}</Button>
                     {s.email && <Button size="sm" variant="secondary" onClick={() => reset(s)} disabled={busy === s.user_id}>איפוס סיסמה</Button>}
@@ -112,6 +120,7 @@ export function UsersSettings() {
       />
       <SecretDialog secret={secret} onClose={() => setSecret(null)} />
       <CodeReadyDialog ready={ready} onClose={() => setReady(null)} />
+      <InviteDialog invite={invite} onClose={() => setInvite(null)} />
       {emailFor && (
         <EmailDialog
           staff={emailFor}
@@ -195,6 +204,29 @@ function CodeReadyDialog({ ready, onClose }: { ready: { name: string; email: str
           </p>
           <div className="flex gap-2">
             <Button icon="copy" onClick={() => copy(`כניסה למערכת המשך תנועה\n${link}\n${how}`, 'ההוראות הועתקו')}>העתקת הוראות הכניסה</Button>
+            <Button variant="ghost" onClick={onClose}>סגירה</Button>
+          </div>
+        </div>
+      )}
+    </Dialog>
+  );
+}
+
+/** A one-time first-entry link: the person opens it, types their own email, and is in. */
+function InviteDialog({ invite, onClose }: { invite: { staff: Staff; url: string } | null; onClose: () => void }) {
+  const copy = useCopy();
+  const text = invite ? `היי ${invite.staff.full_name.split(' ')[0]}, זה הקישור האישי שלך לכניסה הראשונה למערכת של המשך תנועה. כותבים בו את האימייל שלך ונכנסים:\n${invite.url}` : '';
+  return (
+    <Dialog open={!!invite} onClose={onClose} title="קישור כניסה ראשונה" size="sm">
+      {invite && (
+        <div className="flex flex-col gap-4">
+          <p>שלחו ל<span className="font-semibold">{invite.staff.full_name}</span> את הקישור באופן אישי. הוא עובד פעם אחת ותקף 7 ימים. הקישור מוצג עכשיו בלבד.</p>
+          <code dir="ltr" className="num block break-all rounded-[var(--radius-control)] bg-mist p-3 text-sm">{invite.url}</code>
+          <div className="flex flex-wrap gap-2">
+            {invite.staff.phone && (
+              <a href={whatsappLink(invite.staff.phone, text)} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-full bg-tide px-5 font-semibold text-mist">שליחה בוואטסאפ</a>
+            )}
+            <Button variant="secondary" icon="copy" onClick={() => copy(text, 'ההודעה הועתקה')}>העתקה</Button>
             <Button variant="ghost" onClick={onClose}>סגירה</Button>
           </div>
         </div>

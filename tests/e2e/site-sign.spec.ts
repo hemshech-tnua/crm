@@ -72,3 +72,22 @@ test('staff sign in with a code sent by email (the default on the login page)', 
   await expect(page).toHaveURL(/#\/app\/dashboard/);
   expect(errors, errors.join('\n')).toEqual([]);
 });
+
+test('a new staff member enters the first time by a personal link, typing their own email', async ({ page }) => {
+  const errors = watchConsole(page);
+  const admin = await staff('admin');
+  const token = (await admin.auth.getSession()).data.session!.access_token;
+  const post = (body: Record<string, unknown>) => fetch(`${API_URL}/functions/v1/staff-admin`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body),
+  }).then((r) => r.json());
+  const created = await post({ action: 'create', full_name: 'מתנדבת בקישור', phone: `05${Date.now().toString().slice(-8)}`, role: 'volunteer' });
+  const inv = await post({ action: 'invite', user_id: created.user_id });
+
+  await page.goto(`#/welcome/${inv.token}`);
+  const email = `welcome-${Date.now()}@example.test`;
+  await page.getByLabel('האימייל שלך').fill(email);
+  await page.getByLabel('שוב, לאימות').fill(email);
+  await page.getByRole('button', { name: 'כניסה', exact: true }).click();
+  await expect(page).toHaveURL(/#\/app\/door/);
+  expect(errors, errors.join('\n')).toEqual([]);
+});

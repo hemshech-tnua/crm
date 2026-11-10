@@ -108,6 +108,24 @@ export async function staffAdmin<T = Record<string, unknown>>(body: Record<strin
   return json as T;
 }
 
+/** First entry by a personal link: sets the person's own email and signs them in (no email is sent). */
+export async function claimInvite(token: string, email: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${functionsUrl}/staff-admin?claim=1`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, email }),
+    });
+  } catch {
+    throw { message: 'network' };
+  }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw { message: json.error ?? 'unknown', status: res.status };
+  const { error } = await supabase.auth.verifyOtp({ token_hash: json.token_hash, type: 'magiclink' });
+  if (error) throw { message: 'invite_invalid' };
+}
+
 /** Guards a staff route: signed in, active, password changed, and one of the allowed roles. */
 export function RequireStaff({ roles, children }: { roles?: Role[]; children: ReactNode }) {
   const { session, ready } = useAuth();

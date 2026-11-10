@@ -18,6 +18,7 @@ const FeedbackPage = page(() => import('@/features/public/FeedbackPage'), 'Feedb
 const ProposePage = page(() => import('@/features/public/ProposePage'), 'ProposePage');
 const MemberPage = page(() => import('@/features/public/MemberPage'), 'MemberPage');
 const SitePage = page(() => import('@/features/public/SitePage'), 'SitePage');
+const FirstEntryPage = page(() => import('@/features/auth/FirstEntryPage'), 'FirstEntryPage');
 const PrivacyPage = page(() => import('@/features/public/PrivacyPage'), 'PrivacyPage');
 // auth
 const LoginPage = page(() => import('@/features/auth/LoginPage'), 'LoginPage');
@@ -63,6 +64,7 @@ export const router = createHashRouter([
       { path: '/member', element: wait(<MemberPage />) },
       { path: '/privacy', element: wait(<PrivacyPage />) },
       { path: '/login', element: wait(<LoginPage />) },
+      { path: '/welcome/:token', element: wait(<FirstEntryPage />) },
       { path: '/password', element: wait(<PasswordPage />) },
     ],
   },

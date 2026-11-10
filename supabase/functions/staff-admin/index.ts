@@ -5,6 +5,8 @@
 //                    With login: 'password' (email required): a one-time temporary password instead.
 //   reset_password   admin: new temporary password, user must change it on next sign-in (email accounts)
 //   update           admin: name / role / active (deactivation also blocks sign-in) / phone / email
+//   invite           admin: a one-time first-entry link for a staff member (7 days)
+//   claim_invite     no session: the link's owner types their email and gets a sign-in token (no email is sent)
 // Runs with the service role. The caller's session is verified here, and every action is written to audit_log.
 
 // No third-party imports: plain fetch against the project's Auth and REST APIs (smaller attack surface, no install step).
@@ -66,6 +68,18 @@ function normalizePhone(raw: unknown): string | null {
   return /^\+[1-9]\d{7,14}$/.test(v) ? v : null;
 }
 
+async function sha256hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function inviteToken(): string {
+  const alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (const b of crypto.getRandomValues(new Uint8Array(32))) out += alphabet[b % alphabet.length];
+  return out;
+}
+
 // Minimal service-role clients for Auth admin and PostgREST.
 function svcHeaders(extra: HeadersInit = {}): HeadersInit {
   return { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json', ...extra };
@@ -94,6 +108,43 @@ async function rest(method: string, path: string, body?: unknown, prefer = 'retu
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req) });
   if (req.method !== 'POST') return reply(req, 405, { error: 'method_not_allowed' });
+
+  // ── first entry by a personal link (no session yet) ──
+  if (new URL(req.url).searchParams.get('claim') === '1') {
+    let b: Record<string, unknown>;
+    try {
+      b = await req.json();
+    } catch {
+      return reply(req, 400, { error: 'invalid_body' });
+    }
+    const token = String(b.token ?? '');
+    const email = String(b.email ?? '').trim().toLowerCase();
+    if (!/^[A-Za-z0-9]{32}$/.test(token)) return reply(req, 404, { error: 'invite_invalid' });
+    if (!emailRe.test(email) || email.length > 254) return reply(req, 400, { error: 'invalid_email' });
+    const hash = await sha256hex(token);
+    const inv = (await rest('GET', `staff_invites?token_hash=eq.${hash}&select=*`)).data?.[0];
+    if (!inv || inv.used_at || new Date(inv.expires_at).getTime() < Date.now()) return reply(req, 404, { error: 'invite_invalid' });
+    const member = (await rest('GET', `staff?user_id=eq.${inv.user_id}&select=*`)).data?.[0];
+    if (!member || !member.is_active) return reply(req, 404, { error: 'invite_invalid' });
+    if (email !== member.email) {
+      const res = await authAdmin('PUT', `/${inv.user_id}`, { email, email_confirm: true });
+      if (!res.ok) {
+        const exists = res.status === 422 || /already|registered|exists/i.test(JSON.stringify(res.data ?? ''));
+        return reply(req, exists ? 409 : 400, { error: exists ? 'email_exists' : 'update_failed' });
+      }
+      await rest('PATCH', `staff?user_id=eq.${inv.user_id}`, { email, must_change_password: false }, 'return=minimal');
+    }
+    await rest('PATCH', `staff_invites?token_hash=eq.${hash}`, { used_at: new Date().toISOString() }, 'return=minimal');
+    // a sign-in token for this one time, handed back instead of emailed
+    const link = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+      method: 'POST', headers: svcHeaders(), body: JSON.stringify({ type: 'magiclink', email }),
+    });
+    const ld = await link.json().catch(() => null);
+    const hashed = ld?.hashed_token ?? ld?.properties?.hashed_token;
+    if (!link.ok || !hashed) return reply(req, 400, { error: 'update_failed' });
+    await rest('POST', 'audit_log', { actor_id: inv.user_id, actor_role: member.role, action: 'staff_first_entry', entity: 'staff', entity_id: inv.user_id, details: {} }, 'return=minimal');
+    return reply(req, 200, { token_hash: hashed, email });
+  }
 
   const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
   if (!jwt) return reply(req, 401, { error: 'unauthenticated' });
@@ -173,6 +224,16 @@ Deno.serve(async (req) => {
   const targetRes = await rest('GET', `staff?user_id=eq.${targetId}&select=*`);
   const target = targetRes.ok ? targetRes.data?.[0] : null;
   if (!target) return reply(req, 404, { error: 'not_found' });
+
+  if (action === 'invite') {
+    if (!target.is_active) return reply(req, 400, { error: 'update_failed' });
+    const token = inviteToken();
+    await rest('DELETE', `staff_invites?user_id=eq.${targetId}&used_at=is.null`, undefined, 'return=minimal');
+    const ins = await rest('POST', 'staff_invites', { token_hash: await sha256hex(token), user_id: targetId, created_by: caller.id }, 'return=minimal');
+    if (!ins.ok) return reply(req, 400, { error: 'update_failed' });
+    await audit('staff_invite', targetId);
+    return reply(req, 200, { token });
+  }
 
   if (action === 'reset_password') {
     if (!target.email) return reply(req, 400, { error: 'no_email' }); // SMS-only accounts have no password to reset

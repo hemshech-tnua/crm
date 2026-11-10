@@ -12,4 +12,6 @@ export const feedbackUrl = (eventCode: string) => `${appBase()}#/f/${eventCode}`
 export const manageUrl = (token: string) => `${appBase()}#/m/${token}`;
 export const proposeUrl = () => `${appBase()}#/join`;
 /** The "join the association" page. Generic: the phone that checked in is recognised there, nothing personal in the link. */
+/** One-time first-entry link for a staff member (the token is never stored in plain form). */
+export const firstEntryUrl = (token: string) => `${appBase()}#/welcome/${token}`;
 export const memberUrl = () => `${appBase()}#/member`;
