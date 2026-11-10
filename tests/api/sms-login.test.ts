@@ -22,7 +22,7 @@ async function call(client: SupabaseClient, body: Record<string, unknown>) {
 
 // the test numbers are fixed (they have fixed codes), so accounts from an earlier run are removed first
 beforeAll(() => {
-  execSync(`psql "${DB_URL}" -qc "delete from auth.users where phone in ('972500000901','972500000902','972500000903')"`);
+  execSync(`psql "${DB_URL}" -qc "delete from auth.users where phone in ('972500000901','972500000902','972500000903','972500000904')"`);
 });
 
 describe('staff sign-in by SMS code', () => {
@@ -30,7 +30,7 @@ describe('staff sign-in by SMS code', () => {
     const admin = await staff('admin');
     const created = await call(admin, { action: 'create', full_name: 'מנהלת בקוד', phone: '050-000-0901', role: 'admin' });
     expect(created.status).toBe(200);
-    expect(created.body).toMatchObject({ login: 'sms', temp_password: null });
+    expect(created.body).toMatchObject({ login: 'code', temp_password: null });
 
     const user = fresh();
     expect((await user.auth.signInWithOtp({ phone: '+972500000901', options: { shouldCreateUser: false } })).error).toBeNull();
@@ -60,7 +60,7 @@ describe('staff sign-in by SMS code', () => {
 
   it('an existing email account can switch to SMS sign-in, and a deactivated person cannot get in', async () => {
     const admin = await staff('admin');
-    const created = await call(admin, { action: 'create', full_name: 'רכז מעבר', email: `switch-${Date.now()}@example.test`, role: 'coordinator' });
+    const created = await call(admin, { action: 'create', full_name: 'רכז מעבר', email: `switch-${Date.now()}@example.test`, role: 'coordinator', login: 'password' });
     expect(created.body.login).toBe('password');
     const id = created.body.user_id;
     expect((await call(admin, { action: 'update', user_id: id, phone: '050 000 0902' })).status).toBe(200);

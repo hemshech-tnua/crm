@@ -1,7 +1,7 @@
 // The permanent entrance sign: one QR for every meeting at a site.
 import { expect, test } from '@playwright/test';
 import { execSync } from 'node:child_process';
-import { makeEvent, staff } from '../api/helpers';
+import { mailedCode, makeEvent, staff } from '../api/helpers';
 import { API_URL, DB_URL } from '../api/env';
 import { watchConsole } from './support';
 
@@ -35,6 +35,7 @@ test('staff sign in with a code sent by SMS, without a password', async ({ page 
   expect(res.status).toBe(200);
 
   await page.goto('#/login');
+  await page.getByRole('button', { name: 'כניסה עם קוד בטלפון (SMS)' }).click();
   await page.getByLabel('מספר הטלפון הנייד שלך').fill('050-000-0903');
   await page.getByRole('button', { name: 'שליחת קוד ב-SMS' }).click();
   await expect(page.getByText(/רשום בצוות, נשלח אליו עכשיו קוד/)).toBeVisible();
@@ -47,4 +48,27 @@ test('staff sign in with a code sent by SMS, without a password', async ({ page 
   // the wrong code is answered with 403, which the browser logs; nothing else may fail
   const real = errors.filter((e) => !/status of 403/.test(e));
   expect(real, real.join('\n')).toEqual([]);
+});
+
+test('staff sign in with a code sent by email (the default on the login page)', async ({ page }) => {
+  const errors = watchConsole(page);
+  const admin = await staff('admin');
+  const token = (await admin.auth.getSession()).data.session!.access_token;
+  const email = `e2e-code-${Date.now()}@example.test`;
+  const res = await fetch(`${API_URL}/functions/v1/staff-admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: 'create', full_name: 'רכזת בקוד מייל', email, role: 'coordinator' }),
+  });
+  expect(res.status).toBe(200);
+
+  await page.goto('#/login');
+  await page.getByLabel('כתובת האימייל שלך').fill(email);
+  await page.getByRole('button', { name: 'שליחת קוד למייל' }).click();
+  await expect(page.getByText(/רשומה בצוות, נשלח אליה עכשיו קוד/)).toBeVisible();
+  const code = await mailedCode(email);
+  await page.getByLabel('הקוד מהמייל').fill(code!);
+  await page.getByRole('button', { name: 'כניסה', exact: true }).click();
+  await expect(page).toHaveURL(/#\/app\/dashboard/);
+  expect(errors, errors.join('\n')).toEqual([]);
 });

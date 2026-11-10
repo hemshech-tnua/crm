@@ -1,10 +1,10 @@
 // Staff administration for Hemshech Tnua CRM.
 // Actions:
 //   change_password  any signed-in staff member (also on a temporary password)
-//   create           admin: new staff user. With a phone: signs in with a one-time SMS code (no password).
-//                    With an email only: a one-time temporary password.
+//   create           admin: new staff user who signs in with a one-time code by email and/or SMS (no password).
+//                    With login: 'password' (email required): a one-time temporary password instead.
 //   reset_password   admin: new temporary password, user must change it on next sign-in (email accounts)
-//   update           admin: name / role / active (deactivation also blocks sign-in) / phone
+//   update           admin: name / role / active (deactivation also blocks sign-in) / phone / email
 // Runs with the service role. The caller's session is verified here, and every action is written to audit_log.
 
 // No third-party imports: plain fetch against the project's Auth and REST APIs (smaller attack surface, no install step).
@@ -141,8 +141,9 @@ Deno.serve(async (req) => {
     if (!email && !phone) return reply(req, 400, { error: 'login_required' });
     if (fullName.length < 2 || fullName.length > 80) return reply(req, 400, { error: 'invalid_name' });
     if (!ROLES.includes(role)) return reply(req, 400, { error: 'invalid_role' });
-    // with a phone: sign-in by SMS code, no password at all; with an email only: a temporary password
-    const password = phone ? null : tempPassword();
+    // sign-in by a one-time code (email or SMS), no password at all, unless a password was asked for
+    if (body.login === 'password' && !email) return reply(req, 400, { error: 'invalid_email' });
+    const password = body.login === 'password' ? tempPassword() : null;
     const created = await authAdmin('POST', '', {
       ...(email ? { email, email_confirm: true } : {}),
       ...(phone ? { phone: phone.slice(1), phone_confirm: true } : {}),
@@ -156,14 +157,15 @@ Deno.serve(async (req) => {
     const newId = created.data.id as string;
     const ins = await rest('POST', 'staff', {
       user_id: newId, full_name: fullName, email: email || null, phone, role, is_active: true,
-      must_change_password: !phone, created_by: caller.id,
+      must_change_password: !!password, created_by: caller.id,
     }, 'return=minimal');
     if (!ins.ok) {
       await authAdmin('DELETE', `/${newId}`);
       return reply(req, 400, { error: 'create_failed' });
     }
-    await audit('staff_create', newId, { role, login: phone ? 'sms' : 'password' });
-    return reply(req, 200, { user_id: newId, temp_password: password, login: phone ? 'sms' : 'password' });
+    const login = password ? 'password' : 'code';
+    await audit('staff_create', newId, { role, login });
+    return reply(req, 200, { user_id: newId, temp_password: password, login });
   }
 
   const targetId = String(body.user_id ?? '');
@@ -210,6 +212,22 @@ Deno.serve(async (req) => {
         if (phone) patch.must_change_password = false;
       }
     }
+    if (body.email !== undefined) {
+      const email = String(body.email ?? '').trim().toLowerCase();
+      if (email && (!emailRe.test(email) || email.length > 254)) return reply(req, 400, { error: 'invalid_email' });
+      const phoneAfter = 'phone' in patch ? patch.phone : target.phone;
+      if (!email && !phoneAfter) return reply(req, 400, { error: 'login_required' });
+      if ((email || null) !== target.email) {
+        // the auth user's email is where the sign-in code goes
+        const res = await authAdmin('PUT', `/${targetId}`, email ? { email, email_confirm: true } : { email: '' });
+        if (!res.ok) {
+          const exists = res.status === 422 || /already|registered|exists/i.test(JSON.stringify(res.data ?? ''));
+          return reply(req, exists ? 409 : 400, { error: exists ? 'email_exists' : 'update_failed' });
+        }
+        patch.email = email || null;
+        if (email) patch.must_change_password = false;
+      }
+    }
 
     const changesAccess = ('role' in patch && patch.role !== target.role) || ('is_active' in patch && patch.is_active !== target.is_active);
     if (targetId === caller.id && changesAccess) return reply(req, 400, { error: 'cannot_change_self' });
@@ -224,7 +242,7 @@ Deno.serve(async (req) => {
     if ('is_active' in patch && patch.is_active !== target.is_active) {
       await authAdmin('PUT', `/${targetId}`, { ban_duration: patch.is_active ? 'none' : '876000h' });
     }
-    await audit('staff_update', targetId, { role: patch.role ?? target.role, is_active: patch.is_active ?? target.is_active, phone_changed: 'phone' in patch });
+    await audit('staff_update', targetId, { role: patch.role ?? target.role, is_active: patch.is_active ?? target.is_active, phone_changed: 'phone' in patch, email_changed: 'email' in patch });
     return reply(req, 200, { ok: true });
   }
 

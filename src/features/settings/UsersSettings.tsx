@@ -19,8 +19,9 @@ export function UsersSettings() {
   const confirm = useConfirm();
   const [creating, setCreating] = useState(false);
   const [secret, setSecret] = useState<{ name: string; email: string; password: string } | null>(null);
-  const [smsReady, setSmsReady] = useState<{ name: string; phone: string } | null>(null);
+  const [ready, setReady] = useState<{ name: string; email: string | null; phone: string | null } | null>(null);
   const [phoneFor, setPhoneFor] = useState<Staff | null>(null);
+  const [emailFor, setEmailFor] = useState<Staff | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['staff'] });
@@ -71,12 +72,13 @@ export function UsersSettings() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {!s.is_active && <Badge tone="bad">חסום</Badge>}
-                    {s.phone && <Badge tone="tide">כניסה בקוד SMS</Badge>}
+                    {!s.must_change_password && <Badge tone="tide">כניסה בקוד</Badge>}
                     {s.is_active && s.must_change_password && <Badge tone="warn">ממתין לבחירת סיסמה</Badge>}
                     <Select aria-label={`תפקיד של ${s.full_name}`} value={s.role} disabled={self || busy === s.user_id} className="h-10 w-40"
                       onChange={(e) => run(s.user_id, { action: 'update', user_id: s.user_id, role: e.target.value }, 'התפקיד עודכן')}>
                       {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                     </Select>
+                    <Button size="sm" variant="secondary" onClick={() => setEmailFor(s)} disabled={busy === s.user_id}>{s.email ? 'שינוי אימייל' : 'הוספת אימייל'}</Button>
                     <Button size="sm" variant="secondary" onClick={() => setPhoneFor(s)} disabled={busy === s.user_id}>{s.phone ? 'שינוי טלפון' : 'הוספת טלפון'}</Button>
                     {s.email && <Button size="sm" variant="secondary" onClick={() => reset(s)} disabled={busy === s.user_id}>איפוס סיסמה</Button>}
                     {!self && (
@@ -105,17 +107,27 @@ export function UsersSettings() {
           setCreating(false);
           refresh();
           if (r.password && r.email) setSecret({ name: r.name, email: r.email, password: r.password });
-          else if (r.phone) setSmsReady({ name: r.name, phone: r.phone });
+          else setReady({ name: r.name, email: r.email, phone: r.phone });
         }}
       />
       <SecretDialog secret={secret} onClose={() => setSecret(null)} />
-      <SmsReadyDialog ready={smsReady} onClose={() => setSmsReady(null)} />
+      <CodeReadyDialog ready={ready} onClose={() => setReady(null)} />
+      {emailFor && (
+        <EmailDialog
+          staff={emailFor}
+          onClose={() => setEmailFor(null)}
+          onSave={async (email) => {
+            const ok = await run(emailFor.user_id, { action: 'update', user_id: emailFor.user_id, email }, email ? 'האימייל נשמר: הכניסה בקוד למייל' : 'האימייל הוסר');
+            if (ok) setEmailFor(null);
+          }}
+        />
+      )}
       {phoneFor && (
         <PhoneDialog
           staff={phoneFor}
           onClose={() => setPhoneFor(null)}
           onSave={async (phone) => {
-            const ok = await run(phoneFor.user_id, { action: 'update', user_id: phoneFor.user_id, phone }, phone ? 'הטלפון נשמר: הכניסה עכשיו בקוד SMS' : 'הטלפון הוסר');
+            const ok = await run(phoneFor.user_id, { action: 'update', user_id: phoneFor.user_id, phone }, phone ? 'הטלפון נשמר: אפשר להיכנס גם בקוד SMS' : 'הטלפון הוסר');
             if (ok) setPhoneFor(null);
           }}
         />
@@ -140,7 +152,7 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
     const p = phone.trim() ? normalizePhone(phone) : null;
     if (phone.trim() && !(p && /^\+9725\d{8}$/.test(p))) return setError('צריך מספר טלפון נייד, למשל 050-1234567.');
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return setError('כתובת האימייל לא תקינה.');
-    if (!p && !email.trim()) return setError('צריך טלפון נייד (לכניסה בקוד SMS) או אימייל (לכניסה בסיסמה).');
+    if (!p && !email.trim()) return setError('צריך אימייל (לכניסה בקוד למייל) או טלפון נייד.');
     if (!role) return setError('צריך לבחור תפקיד.');
     setBusy(true);
     try {
@@ -157,8 +169,8 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
     <Dialog open={open} onClose={onClose} title="משתמש חדש">
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input label="טלפון נייד (לכניסה בקוד SMS)" type="tel" inputMode="tel" ltr className="num" placeholder="050-1234567" value={phone} onChange={(e) => setPhone(e.target.value)} hint="מומלץ. נכנסים עם קוד חד־פעמי שנשלח לטלפון, בלי סיסמה." />
-        <Input label="אימייל (לא חובה)" type="email" ltr value={email} onChange={(e) => setEmail(e.target.value)} hint="בלי טלפון: כניסה עם אימייל וסיסמה זמנית." />
+        <Input label="אימייל (לכניסה בקוד למייל)" type="email" ltr value={email} onChange={(e) => setEmail(e.target.value)} hint="נכנסים עם קוד חד־פעמי שנשלח למייל, בלי סיסמה." />
+        <Input label="טלפון נייד (לא חובה)" type="tel" inputMode="tel" ltr className="num" placeholder="050-1234567" value={phone} onChange={(e) => setPhone(e.target.value)} hint="לכניסה בקוד SMS, כשיחובר שירות SMS." />
         <ChoiceGroup<Role> legend="תפקיד" required columns={1} value={role} onChange={setRole}
           options={ROLES.map((r) => ({ value: r, label: <span>{ROLE_LABEL[r]} <span className="block text-sm font-normal text-muted">{ROLE_HINT[r]}</span></span> }))} />
         {error && <ErrorBox error={error} />}
@@ -168,24 +180,50 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
   );
 }
 
-/** The account signs in with an SMS code: nothing secret to hand over, just how to get in. */
-function SmsReadyDialog({ ready, onClose }: { ready: { name: string; phone: string } | null; onClose: () => void }) {
+/** The account signs in with a one-time code: nothing secret to hand over, just how to get in. */
+function CodeReadyDialog({ ready, onClose }: { ready: { name: string; email: string | null; phone: string | null } | null; onClose: () => void }) {
   const copy = useCopy();
   const link = `${window.location.origin}${window.location.pathname}#/login`;
+  const how = ready?.email ? 'מקלידים את כתובת האימייל שלך ומקבלים קוד למייל.' : 'מקלידים את מספר הטלפון שלך ומקבלים קוד ב-SMS.';
   return (
     <Dialog open={!!ready} onClose={onClose} title="המשתמש נוצר" size="sm">
       {ready && (
         <div className="flex flex-col gap-4">
           <p>
-            <span className="font-semibold">{ready.name}</span> נכנס/ת עם קוד חד־פעמי ב-SMS לטלפון{' '}
-            <span className="num font-semibold" dir="ltr">{formatPhone(ready.phone)}</span>. אין סיסמה.
+            <span className="font-semibold">{ready.name}</span> נכנס/ת עם קוד חד־פעמי{' '}
+            {ready.email ? <>למייל <span className="num font-semibold" dir="ltr">{ready.email}</span></> : <>ב-SMS לטלפון <span className="num font-semibold" dir="ltr">{formatPhone(ready.phone)}</span></>}. אין סיסמה.
           </p>
           <div className="flex gap-2">
-            <Button icon="copy" onClick={() => copy(`כניסה למערכת המשך תנועה\n${link}\nמקלידים את מספר הטלפון שלך ומקבלים קוד ב-SMS.`, 'ההוראות הועתקו')}>העתקת הוראות הכניסה</Button>
+            <Button icon="copy" onClick={() => copy(`כניסה למערכת המשך תנועה\n${link}\n${how}`, 'ההוראות הועתקו')}>העתקת הוראות הכניסה</Button>
             <Button variant="ghost" onClick={onClose}>סגירה</Button>
           </div>
         </div>
       )}
+    </Dialog>
+  );
+}
+
+function EmailDialog({ staff, onClose, onSave }: { staff: Staff; onClose: () => void; onSave: (email: string | null) => Promise<void> }) {
+  const [email, setEmail] = useState(staff.email ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    const v = email.trim().toLowerCase();
+    if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return setError('כתובת האימייל לא תקינה.');
+    if (!v && !staff.phone) return setError('בלי אימייל ובלי טלפון לא יהיה איך להיכנס.');
+    setBusy(true);
+    await onSave(v || null);
+    setBusy(false);
+  };
+  return (
+    <Dialog open onClose={onClose} title={`אימייל לכניסה: ${staff.full_name}`} size="sm">
+      <form onSubmit={save} className="flex flex-col gap-4" noValidate>
+        <Input label="אימייל" type="email" ltr value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} />
+        <p className="text-sm text-muted">הקוד לכניסה נשלח לכתובת הזו.</p>
+        {error && <ErrorBox error={error} />}
+        <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
+      </form>
     </Dialog>
   );
 }

@@ -256,6 +256,13 @@ otp_expiry = 3600
 # subject = "Your password has been changed"
 # content_path = "./supabase/templates/password_changed_notification.html"
 
+
+# Staff sign in with a one-time code by email: the "magic link" email carries the code ({{ .Token }}).
+# The hosted project uses the same text: Authentication → Emails → Templates → Magic Link.
+[auth.email.template.magic_link]
+subject = "קוד כניסה למערכת המשך תנועה"
+content_path = "./supabase/templates/magic_link.html"
+
 [auth.sms]
 # Allow/disallow the phone provider. When false, users can't sign up or sign in with SMS.
 # To block new signups only, set enable_signup = false under [auth] instead.

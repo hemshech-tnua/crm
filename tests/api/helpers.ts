@@ -87,3 +87,22 @@ export function registration(eventCode: string, extra: Record<string, unknown> =
 export function errorCode(error: { message?: string; code?: string } | null): string | undefined {
   return error?.message;
 }
+
+// Local Supabase delivers auth emails to Mailpit; tests read the sign-in code from there.
+const MAILPIT = 'http://127.0.0.1:54324';
+
+/** The newest sign-in code mailed to this address (waits a little for delivery). */
+export async function mailedCode(to: string): Promise<string | null> {
+  for (let i = 0; i < 20; i++) {
+    const list = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`)).json();
+    const id = list.messages?.[0]?.ID;
+    if (id) {
+      const msg = await (await fetch(`${MAILPIT}/api/v1/message/${id}`)).json();
+      const m = /(\d{6,8})/.exec(String(msg.Text ?? '') + String(msg.HTML ?? ''));
+      if (m) return m[1];
+    }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  return null;
+}
+

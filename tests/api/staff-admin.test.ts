@@ -26,7 +26,7 @@ describe('staff administration', () => {
   it('creates a coordinator who must change the temporary password before accessing data', async () => {
     const admin = await staff('admin');
     const email = `new-${Date.now()}@example.test`;
-    const created = await call(admin, { action: 'create', email, full_name: 'רכזת חדשה', role: 'coordinator' });
+    const created = await call(admin, { action: 'create', email, full_name: 'רכזת חדשה', role: 'coordinator', login: 'password' });
     expect(created.status).toBe(200);
     const temp = created.body.temp_password as string;
     expect(temp).toMatch(/^[A-Za-z0-9]{14}$/);

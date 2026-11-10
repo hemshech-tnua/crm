@@ -13,10 +13,15 @@ test.describe('scenario 1: a new staff user', () => {
     const fullName = `רכזת בדיקה ${String(stamp).slice(-4).replace(/\d/g, (d) => 'אבגדהוזחטי'[Number(d)])}`;
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('שם מלא').fill(fullName);
-    await dialog.getByLabel('אימייל (לא חובה)').fill(email);
+    await dialog.getByLabel('אימייל (לכניסה בקוד למייל)').fill(email);
     await dialog.getByRole('radio', { name: /^רכז\/ת/ }).check();
     await dialog.getByRole('button', { name: 'יצירת המשתמש' }).click();
-
+    // a new account signs in with a code by email; here the admin also gives a temporary password
+    const created = page.getByRole('dialog', { name: 'המשתמש נוצר' });
+    await expect(created).toContainText(email);
+    await created.getByRole('button', { name: 'סגירה' }).first().click();
+    await page.getByRole('listitem').filter({ hasText: fullName }).getByRole('button', { name: 'איפוס סיסמה' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'איפוס הסיסמה' }).click();
     const secret = page.getByRole('dialog', { name: 'סיסמה זמנית' });
     await expect(secret).toBeVisible();
     const temp = (await secret.locator('.font-display').innerText()).trim();
