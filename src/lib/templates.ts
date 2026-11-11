@@ -11,6 +11,8 @@ export type TemplateContext = {
   registerLink?: string | null;
   feedbackLink?: string | null;
   joinLink?: string | null;
+  /** The registrant's own #/m/<token> link (made when the message is opened; see MessageComposer). */
+  personalLink?: string | null;
 };
 
 export const PLACEHOLDERS: { key: string; label: string }[] = [
@@ -25,7 +27,11 @@ export const PLACEHOLDERS: { key: string; label: string }[] = [
   { key: 'קישור_הרשמה', label: 'קישור להרשמה למפגש' },
   { key: 'קישור_משוב', label: 'קישור למשוב על המפגש' },
   { key: 'קישור_הצטרפות', label: 'קישור להצטרפות לעמותה' },
+  { key: 'קישור_אישי', label: 'קישור אישי של הנרשם/ת: פתיחה אחת, ובכניסה צ׳ק־אין בלחיצה' },
 ];
+
+/** True when a template needs the registrant's personal link (made on demand, per message). */
+export const needsPersonalLink = (body: string | null | undefined) => !!body && body.includes('{קישור_אישי}');
 
 /** Fills {placeholders}. Lines whose placeholders have no value are dropped instead of sending "הרצאה של {מרצה}". */
 export function renderTemplate(body: string, ctx: TemplateContext): string {
@@ -41,6 +47,7 @@ export function renderTemplate(body: string, ctx: TemplateContext): string {
     'קישור_הרשמה': ctx.registerLink,
     'קישור_משוב': ctx.feedbackLink,
     'קישור_הצטרפות': ctx.joinLink,
+    'קישור_אישי': ctx.personalLink,
   };
   return body
     .split('\n')

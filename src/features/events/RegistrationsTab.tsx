@@ -306,6 +306,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
           templateKeys={composer.keys}
           defaultKey={composer.defaultKey}
           eventId={e.id}
+          registrationId={composer.reg.id}
         />
       )}
       <ManualRegisterDialog

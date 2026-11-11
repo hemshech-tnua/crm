@@ -136,6 +136,14 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
         )}
       </EventTicket>
 
+      {active && upcoming && r.status === 'registered' && (
+        <Block title="בכניסה למפגש">
+          <p className="text-[0.95rem] text-ink-soft">
+            הטלפון הזה כבר זוכר את ההרשמה שלך. בכניסה סורקים את הברקוד ולוחצים "הגעתי", בלי להקליד כלום.
+          </p>
+        </Block>
+      )}
+
       {r.feedback_open && <ManageFeedback token={token} given={r.feedback_given} />}
 
       {invite && <InviteBlock url={invite.url} message={invite.message} />}

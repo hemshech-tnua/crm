@@ -38,7 +38,7 @@ const GROUP_HINT: Record<Group, string> = {
   consented: 'אישרו לקבל עדכונים בוואטסאפ, הגיעו לפעילות כלשהי ב-90 הימים האחרונים, ועדיין לא רשומים למפגש הזה.',
 };
 
-type Person = Recipient & { note?: string; membership?: Membership };
+type Person = Recipient & { note?: string; membership?: Membership; registrationId?: string };
 
 // The thank-you 24 hours after the meeting: the invitation to join is a marketing message (Communications Law
 // §30A), so it goes only to non-members who agreed to updates; everyone else gets the plain thank-you.
@@ -92,6 +92,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
         phone: r.participant!.phone,
         consent_updates: r.participant!.consent_updates,
         membership: r.participant!.membership,
+        registrationId: r.id,
         note: r.first_time && (group === 'attended' || group === 'aftercare') ? 'פעם ראשונה' : undefined,
       }));
   }, [group, regs.data, consented.data]);
@@ -272,6 +273,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
           templateKeys={[tpl.key]}
           defaultKey={tpl.key}
           eventId={e.id}
+          registrationId={composer.registrationId}
         />
       )}
     </div>

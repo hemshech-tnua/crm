@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useTemplates } from '@/lib/data';
-import { renderTemplate, type TemplateContext } from '@/lib/templates';
+import { needsPersonalLink, renderTemplate, type TemplateContext } from '@/lib/templates';
+import { manageUrl } from '@/lib/links';
+import { errorMessage } from '@/lib/errors';
 import { whatsappLink, formatPhone } from '@/lib/phone';
 import type { Template } from '@/lib/types';
 import { Dialog, useCopy, useToast } from './feedback';
@@ -36,7 +38,7 @@ export const allowedFor = (t: Template | undefined, r: Recipient) => !t?.is_mark
  * Pick a template, edit the text, open WhatsApp on this phone with the text ready, and log it.
  * Nothing is ever sent automatically: a person presses "send" in WhatsApp.
  */
-export function MessageComposer({ open, onClose, recipient, context, templateKeys, defaultKey, eventId, followUpId, onSent }: {
+export function MessageComposer({ open, onClose, recipient, context, templateKeys, defaultKey, eventId, followUpId, registrationId, onSent }: {
   open: boolean;
   onClose: () => void;
   recipient: Recipient;
@@ -45,6 +47,8 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
   defaultKey?: string;
   eventId?: string | null;
   followUpId?: string | null;
+  /** The recipient's registration for this meeting: lets a template carry their personal link ({קישור_אישי}). */
+  registrationId?: string | null;
   onSent?: () => void;
 }) {
   const templates = useTemplates();
@@ -61,12 +65,26 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
     if (open) setKey(defaultKey ?? list[0]?.key ?? '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultKey, list.length]);
+  // The personal link is made once per opened message, only when the chosen template uses it. A new link replaces
+  // the previous one of that registration, so it is not made just for showing a template that does not need it.
+  const wantsLink = open && !!registrationId && needsPersonalLink(tpl?.body);
+  const [link, setLink] = useState<{ url: string | null; error: string | null; loading: boolean }>({ url: null, error: null, loading: false });
+  useEffect(() => {
+    if (!wantsLink || link.url || link.loading || link.error) return;
+    setLink({ url: null, error: null, loading: true });
+    supabase.rpc('staff_personal_link', { p_registration_id: registrationId }).then(({ data, error }) => {
+      setLink(error || typeof data !== 'string'
+        ? { url: null, error: errorMessage(error ?? new Error('link')), loading: false }
+        : { url: manageUrl(data), error: null, loading: false });
+    });
+  }, [wantsLink, registrationId, link]);
   useEffect(() => {
     if (!open) return;
     const t = list.find((x) => x.key === key);
-    setText(t ? renderTemplate(t.body, { ...context, firstName }) : '');
+    setText(t ? renderTemplate(t.body, { ...context, firstName, personalLink: link.url }) : '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, key, list.length]);
+  }, [open, key, list.length, link.url]);
+  const linkPending = wantsLink && !link.url && !link.error;
 
   const allowed = tpl ? allowedFor(tpl, recipient) : true;
   const phone = recipient.phone;
@@ -88,10 +106,17 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
         ) : (
           <Textarea label="הטקסט (אפשר לערוך לפני השליחה)" value={text} onChange={(e) => setText(e.target.value)} rows={7} />
         )}
+        {wantsLink && link.error && <Notice tone="warn" icon="alert">לא הצלחנו ליצור קישור אישי: {link.error}</Notice>}
+        {wantsLink && link.url && (
+          <p className="text-sm text-muted">הקישור האישי חדש ומחליף קישור קודם של ההרשמה הזו, אם נשלח. הוא מיועד רק ל{firstName || 'נמען/ת'}.</p>
+        )}
         {!phone && <Notice tone="warn" icon="alert">אין מספר טלפון בכרטיס.</Notice>}
       </div>
       <div className="mt-5 flex flex-wrap gap-2">
-        {phone && allowed && (
+        {phone && allowed && linkPending && (
+          <Button busy disabled>מכין קישור אישי…</Button>
+        )}
+        {phone && allowed && !linkPending && (
           <a
             href={whatsappLink(phone, text)}
             target="_blank"
