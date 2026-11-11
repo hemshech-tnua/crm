@@ -5,7 +5,7 @@
 //                    With login: 'password' (email required): a one-time temporary password instead.
 //   reset_password   admin: new temporary password, user must change it on next sign-in (email accounts)
 //   update           admin: name / role / active (deactivation also blocks sign-in) / phone / email
-//   invite           admin: a one-time first-entry link for a staff member (7 days)
+//   invite           admin: a one-time first-entry link for a staff member (48 hours)
 //   claim_invite     no session: the link's owner types their email and gets a sign-in token (no email is sent)
 //   phone login      no session (?login=1): phone + password; accounts without an email get an internal one
 // Runs with the service role. The caller's session is verified here, and every action is written to audit_log.
