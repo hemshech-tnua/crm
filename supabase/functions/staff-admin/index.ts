@@ -142,7 +142,6 @@ Deno.serve(async (req) => {
       return reply(req, status, body);
     };
     if (!phone || !password || password.length > 72) return settle(400, { error: 'invalid_login' });
-    // Trust the rightmost X-Forwarded-For hop (appended by the platform proxy), not the client-supplied left side.
     // Per phone (the real anti-brute-force) and per caller IP. No global cap on purpose: one would let a stranger
     // lock every staff member out at once.
     const ip = clientIp(req);
