@@ -28,11 +28,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       /* popover not supported: the fixed layer still shows outside dialogs */
     }
   }, [toasts]);
+  // one timer at a time (one toast at a time); it pauses while the pointer or focus is on the toast, so an undo can
+  // still be reached, and resumes with the time that was left
+  const timer = useRef<{ id: number; handle: ReturnType<typeof setTimeout> | null; left: number; since: number } | null>(null);
+  const arm = useCallback((id: number, ms: number) => {
+    if (timer.current?.handle) clearTimeout(timer.current.handle);
+    timer.current = { id, left: ms, since: Date.now(), handle: setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), ms) };
+  }, []);
+  const pause = useCallback(() => {
+    const t = timer.current;
+    if (!t?.handle) return;
+    clearTimeout(t.handle);
+    t.handle = null;
+    t.left = Math.max(1500, t.left - (Date.now() - t.since));
+  }, []);
+  const resume = useCallback(() => {
+    const t = timer.current;
+    if (t && !t.handle) arm(t.id, t.left);
+  }, [arm]);
   const push = useCallback((tone: Toast['tone'], text: string, action?: Toast['action']) => {
     const id = ++seq.current;
     setToasts([{ id, tone, text, action }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === 'bad' ? 7000 : action ? 6000 : 3500);
-  }, []);
+    arm(id, action ? 10000 : tone === 'bad' ? 7000 : 3500);
+  }, [arm]);
   const api = useRef<ToastApi>({
     success: (t, a) => push('good', t, a),
     error: (t) => push('bad', t),
@@ -52,15 +70,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role={t.tone === 'bad' ? 'alert' : 'status'}
+            onPointerEnter={pause}
+            onPointerLeave={resume}
+            onFocus={pause}
+            onBlur={resume}
             className={cx(
-              'toast-in pointer-events-auto flex max-w-md items-center gap-3 rounded-[var(--radius-control)] px-4 py-3 text-[0.95rem] font-medium shadow-lg',
-              t.tone === 'bad' ? 'bg-bad text-white' : 'bg-ink text-mist',
+              'toast-in pointer-events-auto flex max-w-md items-center gap-3 rounded-[var(--radius-control)] px-4 py-3 text-body font-medium shadow-lg',
+              t.tone === 'bad' ? 'bg-bad text-white' : 'bg-ink text-light',
             )}
           >
-            <Icon name={t.tone === 'bad' ? 'alert' : 'checkCircle'} size={18} className={t.tone === 'good' ? 'text-light' : ''} />
+            <Icon name={t.tone === 'bad' ? 'alert' : 'checkCircle'} size={18} />
             <span className="flex-1">{t.text}</span>
             {t.action && (
-              <button type="button" className="font-bold text-light underline-offset-2 hover:underline" onClick={() => { t.action!.run(); setToasts((x) => x.filter((y) => y.id !== t.id)); }}>
+              <button type="button" className="-my-2 -me-2 inline-flex min-h-11 items-center px-3 font-bold text-light underline underline-offset-2" onClick={() => { t.action!.run(); setToasts((x) => x.filter((y) => y.id !== t.id)); }}>
                 {t.action.label}
               </button>
             )}
@@ -102,14 +124,14 @@ export function Dialog({ open, onClose, title, children, footer, size = 'md' }: 
     >
       {open && (
         <div className="flex max-h-[88vh] flex-col">
-          <header className="flex items-center justify-between gap-3 border-b border-line-soft px-5 py-4">
-            <h2 id="dialog-title" className="text-lg font-bold">{title}</h2>
-            <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-[var(--radius-control)] p-2 text-muted hover:bg-mist hover:text-ink">
+          <header className="flex items-center justify-between gap-3 border-b border-edge py-2.5 ps-5 pe-3">
+            <h2 id="dialog-title" className="text-heading font-bold">{title}</h2>
+            <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-[var(--radius-control)] p-2.5 text-muted hover:bg-ink/[0.06] hover:text-ink">
               <Icon name="close" />
             </button>
           </header>
           <div className="overflow-y-auto px-5 py-4">{children}</div>
-          {footer && <footer className="flex flex-wrap justify-start gap-2 border-t border-line-soft px-5 py-3.5">{footer}</footer>}
+          {footer && <footer className="flex flex-wrap justify-start gap-2 border-t border-edge px-5 py-3.5">{footer}</footer>}
         </div>
       )}
     </dialog>
@@ -143,7 +165,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           </>
         }
       >
-        <div className="text-[0.95rem] leading-relaxed text-ink-soft">{state?.body}</div>
+        <div className="text-body text-ink-soft">{state?.body}</div>
       </Dialog>
     </ConfirmCtx.Provider>
   );

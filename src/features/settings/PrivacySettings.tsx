@@ -53,11 +53,11 @@ export function PrivacySettings() {
         {candidates.isLoading ? <div className="p-5"><Skeleton lines={3} /></div> : candidates.error ? <div className="p-5"><ErrorBox error={errorMessage(candidates.error)} /></div> : !candidates.data?.length ? (
           <EmptyState icon="shield" title="אין מועמדים">אין לוחמים שעבר זמן השמירה מאז הפעילות האחרונה שלהם.</EmptyState>
         ) : (
-          <ul className="divide-y divide-line-soft">
+          <ul className="divide-y divide-edge">
             {candidates.data.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
                 <Link to={`/app/participants/${c.id}`} className="flex-1 font-semibold hover:text-tide hover:underline">{c.full_name}</Link>
-                <span className="text-sm text-muted">פעילות אחרונה: <span className="num">{fmtDate(c.last_activity)}</span></span>
+                <span className="text-small text-muted">פעילות אחרונה: <span className="num">{fmtDate(c.last_activity)}</span></span>
                 <Button size="sm" variant="danger" onClick={() => ask(c)} busy={anonymize.isPending && anonymize.variables === c.id}>מחיקת פרטים</Button>
               </li>
             ))}
@@ -108,19 +108,19 @@ export function AuditLog() {
         {Object.entries(ENTITY).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
       </Select>
     }>
-      <p className="px-5 pt-3 text-sm text-muted">מי עשה מה ומתי. היומן שומר אילו שדות השתנו, אבל לא את הערכים האישיים עצמם.</p>
+      <p className="px-5 pt-3 text-small text-muted">מי עשה מה ומתי. היומן שומר אילו שדות השתנו, אבל לא את הערכים האישיים עצמם.</p>
       {q.isLoading ? <div className="p-5"><Skeleton lines={8} /></div> : q.error ? <div className="p-5"><ErrorBox error={errorMessage(q.error)} /></div> : (
         <>
-          <ul className="divide-y divide-line-soft">
+          <ul className="divide-y divide-edge">
             {(q.data ?? []).map((r) => (
-              <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 text-[0.93rem] sm:px-5">
-                <span className="num w-32 shrink-0 text-sm text-muted">{fmtDateTime(r.at)}</span>
+              <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 text-body sm:px-5">
+                <span className="num w-32 shrink-0 text-small text-muted">{fmtDateTime(r.at)}</span>
                 <span className="font-semibold">{who(r)}</span>
                 {r.actor_role && ['admin', 'coordinator', 'volunteer'].includes(r.actor_role) && <Badge>{ROLE_LABEL[r.actor_role as Role]}</Badge>}
                 <span>{ACTION[r.action] ?? r.action}</span>
                 <span className="text-ink-soft">{ENTITY[r.entity] ?? r.entity}</span>
-                {r.changed_fields?.length ? <span className="text-sm text-muted">({r.changed_fields.join(', ')})</span> : null}
-                {r.details && <span className="num text-xs text-faint" dir="ltr">{JSON.stringify(r.details)}</span>}
+                {r.changed_fields?.length ? <span className="text-small text-muted">({r.changed_fields.join(', ')})</span> : null}
+                {r.details && <span className="num text-micro text-faint" dir="ltr">{JSON.stringify(r.details)}</span>}
               </li>
             ))}
           </ul>

@@ -1,7 +1,7 @@
 import { useSearchParams } from 'react-router';
 import { addDays, todayIl } from '@/lib/dates';
 import { useSites } from '@/lib/data';
-import { cx } from '@/ui/kit';
+import { Segmented } from '@/ui/kit';
 
 export type PeriodKey = '30d' | '90d' | 'year' | 'all' | 'custom';
 export type Filters = { from: string | null; to: string | null; type: string | null; site: string | null; period: PeriodKey };
@@ -45,41 +45,27 @@ export function FilterBar({ filters, set, showType = true, custom = false }: {
   filters: Filters; set: (p: Partial<Record<string, string | null>>) => void; showType?: boolean; custom?: boolean;
 }) {
   const sites = useSites();
-  const seg = 'flex rounded-[var(--radius-control)] border border-line bg-paper p-1';
-  const segBtn = (on: boolean) => cx('h-9 rounded-[var(--radius-panel)] px-3 text-sm font-semibold transition-colors', on ? 'bg-ink text-mist' : 'text-ink-soft hover:bg-mist');
+  const periods: { value: PeriodKey; label: string }[] = custom ? [...PRESETS.map((p) => ({ value: p.key, label: p.label })), { value: 'custom', label: 'טווח' }] : PRESETS.map((p) => ({ value: p.key, label: p.label }));
+  const date = 'h-11 rounded-[var(--radius-control)] border border-control-line bg-paper px-2 hover:border-ink';
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className={seg} role="group" aria-label="תקופה">
-        {PRESETS.map((p) => (
-          <button key={p.key} type="button" aria-pressed={filters.period === p.key} className={segBtn(filters.period === p.key)} onClick={() => set({ period: p.key, from: null, to: null })}>
-            {p.label}
-          </button>
-        ))}
-        {custom && (
-          <button type="button" aria-pressed={filters.period === 'custom'} className={segBtn(filters.period === 'custom')}
-            onClick={() => set({ period: 'custom', from: filters.from ?? addDays(todayIl(), -30), to: filters.to ?? todayIl() })}>
-            טווח
-          </button>
-        )}
-      </div>
+      <Segmented label="תקופה" options={periods} value={filters.period}
+        onChange={(v) => v === 'custom'
+          ? set({ period: 'custom', from: filters.from ?? addDays(todayIl(), -30), to: filters.to ?? todayIl() })
+          : set({ period: v, from: null, to: null })} />
       {filters.period === 'custom' && (
-        <div className="flex items-center gap-1.5 text-sm">
-          <input type="date" aria-label="מתאריך" value={filters.from ?? ''} onChange={(e) => set({ from: e.target.value || null })} className="h-11 rounded-[var(--radius-control)] border border-line bg-paper px-2" />
+        <div className="flex items-center gap-1.5 text-small">
+          <input type="date" aria-label="מתאריך" value={filters.from ?? ''} onChange={(e) => set({ from: e.target.value || null })} className={date} />
           <span className="text-muted">עד</span>
-          <input type="date" aria-label="עד תאריך" value={filters.to ?? ''} onChange={(e) => set({ to: e.target.value || null })} className="h-11 rounded-[var(--radius-control)] border border-line bg-paper px-2" />
+          <input type="date" aria-label="עד תאריך" value={filters.to ?? ''} onChange={(e) => set({ to: e.target.value || null })} className={date} />
         </div>
       )}
       {showType && (
-        <div className={seg} role="group" aria-label="סוג פעילות">
-          {[{ v: 'friday', l: 'שישי' }, { v: 'bonfire', l: 'מדורה' }, { v: '', l: 'כל הפעילויות' }].map((t) => (
-            <button key={t.v} type="button" aria-pressed={(filters.type ?? '') === t.v} className={segBtn((filters.type ?? '') === t.v)} onClick={() => set({ type: t.v })}>
-              {t.l}
-            </button>
-          ))}
-        </div>
+        <Segmented label="סוג פעילות" value={filters.type ?? ''} onChange={(v) => set({ type: v })}
+          options={[{ value: 'friday', label: 'שישי' }, { value: 'bonfire', label: 'מדורה' }, { value: '', label: 'כל הפעילויות' }]} />
       )}
       {(sites.data?.length ?? 0) > 1 && (
-        <select aria-label="מתחם" value={filters.site ?? ''} onChange={(e) => set({ site: e.target.value || null })} className="h-11 rounded-[var(--radius-control)] border border-line bg-paper px-3 text-sm font-semibold">
+        <select aria-label="מתחם" value={filters.site ?? ''} onChange={(e) => set({ site: e.target.value || null })} className="h-11 rounded-[var(--radius-control)] border border-control-line bg-paper pr-3 pl-8 text-small font-medium hover:border-ink">
           <option value="">כל המתחמים</option>
           {sites.data!.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>

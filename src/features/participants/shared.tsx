@@ -37,7 +37,7 @@ export const ENGAGEMENT_ORDER: Engagement[] = ['regular', 'returning', 'first_ti
 
 export function EngagementBadge({ status }: { status: Engagement | null | undefined }) {
   if (!status) return null;
-  return <Badge tone={ENGAGEMENT_TONE[status]} title={ENGAGEMENT_HINT[status]}>{ENGAGEMENT_LABEL[status]}</Badge>;
+  return <Badge tone={ENGAGEMENT_TONE[status]} icon={status === 'lapsed' ? 'alert' : undefined} title={ENGAGEMENT_HINT[status]}>{ENGAGEMENT_LABEL[status]}</Badge>;
 }
 
 /** Value that follows `value` after `ms` of quiet (for search-as-you-type against the server). */
@@ -161,24 +161,24 @@ export function ParticipantPicker({ onPick, excludeId, label = 'חיפוש לו�
   return (
     <div className="flex flex-col gap-2">
       <SearchInput value={term} onChange={setTerm} label={label} placeholder={placeholder} />
-      {!typing && <p className="text-sm text-muted">כותבים לפחות 2 תווים מהשם או 3 ספרות מהטלפון.</p>}
-      {typing && res.isFetching && !res.data && <div className="flex items-center gap-2 py-2 text-sm text-muted"><Spinner size={16} />מחפשים…</div>}
-      {typing && res.isError && <p className="text-sm text-bad">החיפוש נכשל. נסו שוב.</p>}
-      {typing && res.data && res.data.length === 0 && <p className="py-2 text-sm text-muted">לא נמצאו לוחמים מתאימים.</p>}
+      {!typing && <p className="text-small text-muted">כותבים לפחות 2 תווים מהשם או 3 ספרות מהטלפון.</p>}
+      {typing && res.isFetching && !res.data && <div className="flex items-center gap-2 py-2 text-small text-muted"><Spinner size={16} />מחפשים…</div>}
+      {typing && res.isError && <p className="text-small text-bad">החיפוש נכשל. נסו שוב.</p>}
+      {typing && res.data && res.data.length === 0 && <p className="py-2 text-small text-muted">לא נמצאו לוחמים מתאימים.</p>}
       {typing && res.data && res.data.length > 0 && (
-        <ul className="flex flex-col divide-y divide-line-soft rounded-[var(--radius-control)] border border-line-soft">
+        <ul className="flex flex-col divide-y divide-edge rounded-[var(--radius-control)] border border-edge bg-paper">
           {res.data.map((p) => (
             <li key={p.id}>
               <button
                 type="button"
                 onClick={() => onPick(p)}
-                className="flex min-h-12 w-full items-center justify-between gap-3 px-3.5 py-2 text-right hover:bg-tide-wash focus-visible:bg-tide-wash"
+                className="flex min-h-12 w-full items-center justify-between gap-3 px-3.5 py-2 text-right hover:bg-ink/[0.05] focus-visible:bg-ink/[0.05]"
               >
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{p.full_name}</span>
-                  {p.city && <span className="block text-sm text-muted">{p.city}</span>}
+                  {p.city && <span className="block text-small text-muted">{p.city}</span>}
                 </span>
-                <span className="num shrink-0 text-sm text-muted">{formatPhone(p.phone)}</span>
+                <span className="num shrink-0 text-small text-muted">{formatPhone(p.phone)}</span>
               </button>
             </li>
           ))}
@@ -205,7 +205,7 @@ export function PhoneText({ phone }: { phone: string | null | undefined }) {
 
 export function FieldGuidance() {
   return (
-    <p className="flex items-start gap-1.5 text-sm text-warn">
+    <p className="flex items-start gap-1.5 text-small text-ink-soft">
       <Icon name="shield" size={16} className="mt-0.5" />
       <span>{NOTES_GUIDANCE}</span>
     </p>

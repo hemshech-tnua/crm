@@ -43,7 +43,7 @@ export function SummaryTab({ event: e }: { event: EventWithStats }) {
   return (
     <div className="flex flex-col gap-5">
       {e.status !== 'completed' && (
-        <p className="text-sm text-muted">המפגש עוד לא נסגר: "לא הגיעו" ושיעור ההגעה יהיו סופיים אחרי "סגירת המפגש".</p>
+        <p className="flex items-center gap-1.5 text-small text-ink-soft"><Icon name="alert" size={15} className="text-warn" />המפגש עוד לא נסגר: "לא הגיעו" ושיעור ההגעה יהיו סופיים אחרי "סגירת המפגש".</p>
       )}
       <section aria-label="נוכחות" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <BigStat highlight label="הגיעו" value={attended} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : 'כולם נרשמו מראש'} />
@@ -62,12 +62,12 @@ export function SummaryTab({ event: e }: { event: EventWithStats }) {
       </section>
 
       <Panel title="דירוגים" actions={<Button size="sm" variant="ghost" icon="copy" onClick={() => copy(teamText, 'הסיכום הועתק')}>העתקת סיכום לצוות</Button>}>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <RatingStat label="דירוג כללי" value={s?.avg_overall} />
           <RatingStat label={e.activity_name ? `פעילות (${e.activity_name})` : 'פעילות'} value={s?.avg_activity} />
           <RatingStat label="הרצאה" value={s?.avg_lecture} />
         </div>
-        <p className="mt-3 text-sm text-muted">ממוצע מתוך 5. "—" כשעוד אין משובים.</p>
+        <p className="mt-3 text-small text-muted">ממוצע מתוך 5. "—" כשעוד אין משובים.</p>
       </Panel>
 
       <Panel title={<span>הערות מהמשוב {comments.length > 0 && <span className="num text-muted">({comments.length})</span>}</span>} padded={false}>
@@ -78,11 +78,11 @@ export function SummaryTab({ event: e }: { event: EventWithStats }) {
         ) : comments.length === 0 ? (
           <EmptyState icon="message" title="עוד אין הערות">אחרי המפגש שולחים למי שהגיע הודעת תודה עם קישור למשוב (לשונית "הודעות").</EmptyState>
         ) : (
-          <ul className="divide-y divide-line-soft">
+          <ul className="divide-y divide-edge">
             {comments.map((f) => (
               <li key={f.id} className="px-4 py-3.5 sm:px-5">
                 <p className="leading-relaxed whitespace-pre-line">{f.comment}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-small text-muted">
                   <Badge tone="neutral" icon="star">כללי <span className="num">{f.overall_rating}</span></Badge>
                   {f.activity_rating != null && <Badge tone="neutral">פעילות <span className="num">{f.activity_rating}</span></Badge>}
                   {f.lecture_rating != null && <Badge tone="neutral">הרצאה <span className="num">{f.lecture_rating}</span></Badge>}
@@ -99,11 +99,11 @@ export function SummaryTab({ event: e }: { event: EventWithStats }) {
 
 function RatingStat({ label, value }: { label: string; value: number | null | undefined }) {
   return (
-    <div className="rounded-[var(--radius-control)] bg-mist px-3 py-3">
-      <div className="text-sm font-medium text-muted">{label}</div>
-      <div className="mt-0.5 flex items-center gap-1.5">
-        <span className="num font-display text-[1.8rem] leading-tight">{value == null ? '—' : num(value, 1)}</span>
-        {value != null && <Icon name="star" size={18} className="text-light-deep" />}
+    <div className="rounded-[var(--radius-control)] border border-edge px-3 py-3">
+      <div className="line-clamp-2 min-h-[2lh] text-small leading-snug font-medium text-muted">{label}</div>
+      <div className="mt-1 flex items-baseline gap-1">
+        <span className="num font-display text-[1.75rem] leading-none sm:text-stat">{value == null ? '—' : num(value, 1)}</span>
+        {value != null && <span className="text-small text-muted">/ 5</span>}
       </div>
     </div>
   );

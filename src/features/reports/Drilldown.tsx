@@ -32,17 +32,17 @@ export function Drilldown({ kind, filters, onClose }: { kind: DrillKind | null; 
       {q.isLoading ? <Skeleton lines={6} /> : q.error ? <ErrorBox error={errorMessage(q.error)} /> : !q.data?.length ? (
         <EmptyState icon="people" title="אין אנשים ברשימה הזו">בתקופה ובסוג הפעילות שנבחרו.</EmptyState>
       ) : (
-        <ul className="divide-y divide-line-soft">
+        <ul className="divide-y divide-edge">
           {q.data.map((r) => (
             <li key={r.id}>
               <Link to={`/app/participants/${r.id}`} onClick={onClose} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 hover:bg-mist/60">
                 <span className="min-w-36 flex-1 font-semibold">{r.full_name}</span>
-                <span className="num text-sm text-muted">{formatPhone(r.phone)}</span>
-                <span className="text-sm text-muted">{r.city ?? ''}</span>
-                <span className="text-sm text-muted">{r.source_label ?? 'מקור לא ידוע'}</span>
-                <span className="text-sm">מפגשים: <span className="num font-semibold">{r.attended_count}</span></span>
-                <span className="text-sm text-muted">אחרון: <span className="num">{fmtDate(r.last_attended_at)}</span></span>
-                <Badge tone={r.engagement_status === 'regular' ? 'light' : r.engagement_status === 'lapsed' ? 'warn' : 'neutral'}>{ENGAGEMENT_LABEL[r.engagement_status]}</Badge>
+                <span className="num text-small text-muted">{formatPhone(r.phone)}</span>
+                <span className="text-small text-muted">{r.city ?? ''}</span>
+                <span className="text-small text-muted">{r.source_label ?? 'מקור לא ידוע'}</span>
+                <span className="text-small">מפגשים: <span className="num font-semibold">{r.attended_count}</span></span>
+                <span className="text-small text-muted">אחרון: <span className="num">{fmtDate(r.last_attended_at)}</span></span>
+                <Badge tone={r.engagement_status === 'regular' ? 'light' : r.engagement_status === 'lapsed' ? 'warn' : 'neutral'} icon={r.engagement_status === 'lapsed' ? 'alert' : undefined}>{ENGAGEMENT_LABEL[r.engagement_status]}</Badge>
               </Link>
             </li>
           ))}

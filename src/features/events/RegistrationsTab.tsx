@@ -10,7 +10,7 @@ import { formatPhone } from '@/lib/phone';
 import { ATTENDANCE_LABEL, REG_STATUS_LABEL } from '@/lib/labels';
 import { downloadFile, toCsv } from '@/lib/csv';
 import type { RegStatus } from '@/lib/types';
-import { Badge, Button, ButtonLink, Checkbox, EmptyState, ErrorBox, Notice, Panel, SearchInput, Skeleton, Spinner, cx } from '@/ui/kit';
+import { Badge, Button, ButtonLink, Checkbox, EmptyState, ErrorBox, FilterChips, IconButton, Notice, Panel, SearchInput, Skeleton, Spinner, Td, Th, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { MessageComposer } from '@/ui/MessageComposer';
@@ -195,24 +195,9 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="סינון לפי סטטוס">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              aria-pressed={filter === f.value}
-              onClick={() => setFilter(f.value)}
-              className={cx(
-                'flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 text-sm font-semibold transition-colors',
-                filter === f.value ? 'border-tide bg-tide text-white' : 'border-line bg-paper text-ink-soft hover:border-tide',
-              )}
-            >
-              {f.label}
-              <span className={cx('num text-xs', filter === f.value ? 'text-white' : 'text-muted')}>{counts[f.value]}</span>
-            </button>
-          ))}
-        </div>
-        <div className="sm:mr-auto sm:w-64">
+        <FilterChips label="סינון לפי סטטוס" value={filter} onChange={setFilter} className="min-w-0 flex-1"
+          options={FILTERS.map((f) => ({ value: f.value, label: f.label, count: counts[f.value] }))} />
+        <div className="shrink-0 sm:mr-auto sm:w-64">
           <SearchInput value={search} onChange={setSearch} placeholder="שם או טלפון" label="חיפוש בנרשמים" />
         </div>
       </div>
@@ -229,12 +214,12 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
         <>
           <ul className="flex flex-col gap-2.5 md:hidden">
             {shown.map((r) => (
-              <li key={r.id} className={cx('rounded-[var(--radius-panel)] border border-line-soft bg-paper p-4', r.status === 'cancelled' && 'opacity-75')}>
+              <li key={r.id} className={cx('rounded-[var(--radius-panel)] border border-edge bg-paper p-4', r.status === 'cancelled' && 'opacity-75')}>
                 <div className="flex items-start justify-between gap-2">
                   <NameCell r={r} />
                   <StatusCell r={r} pos={waitPos.get(r.id)} started={started} />
                 </div>
-                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-sm text-ink-soft">
+                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-small text-ink-soft">
                   {r.participant?.phone && <a href={`tel:${r.participant.phone}`} className="num text-tide">{formatPhone(r.participant.phone)}</a>}
                   {r.participant?.city && <span>{r.participant.city}</span>}
                   <span className="text-muted">נרשם/ה <span className="num">{fmtDateTime(r.registered_at)}</span></span>
@@ -249,40 +234,39 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
             ))}
           </ul>
 
-          <div className="hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper md:block">
-            <table className="w-full text-[0.95rem]">
-              <thead className="border-b border-line-soft text-sm text-muted">
-                <tr className="text-right">
-                  <th className="px-4 py-2.5 font-semibold">שם</th>
-                  <th className="px-3 py-2.5 font-semibold">טלפון ועיר</th>
-                  <th className="px-3 py-2.5 font-semibold">סטטוס</th>
-                  <th className="px-3 py-2.5 font-semibold">נרשם/ה</th>
-                  <th className="px-3 py-2.5 font-semibold">מקור</th>
-                  <th className="px-4 py-2.5"><span className="sr-only">פעולות</span></th>
+          {/* the kit's Th/Td, in a wrapper that does not clip: each row has a menu that opens below it */}
+          <div className="hidden rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
+            <table className="w-full border-collapse text-body" aria-label="נרשמים">
+              <thead>
+                <tr>
+                  <Th className="rounded-tr-[var(--radius-panel)]">שם</Th>
+                  <Th>טלפון ועיר</Th>
+                  <Th>סטטוס</Th>
+                  <Th>נרשם/ה</Th>
+                  <Th>מקור</Th>
+                  <Th className="rounded-tl-[var(--radius-panel)]"><span className="sr-only">פעולות</span></Th>
                 </tr>
               </thead>
               <tbody>
                 {shown.map((r) => (
-                  <tr key={r.id} className={cx('border-b border-line-soft align-top last:border-0', r.status === 'cancelled' && 'text-muted')}>
-                    <td className="px-4 py-3"><NameCell r={r} /></td>
-                    <td className="px-3 py-3">
+                  <tr key={r.id} className={cx('align-top', r.status === 'cancelled' && 'text-muted')}>
+                    <Td className="py-3"><NameCell r={r} /></Td>
+                    <Td className="py-3">
                       {r.participant?.phone && <a href={`tel:${r.participant.phone}`} className="num block text-right text-tide hover:underline">{formatPhone(r.participant.phone)}</a>}
-                      <div className="text-sm text-muted">{r.participant?.city ?? ''}</div>
-                    </td>
-                    <td className="px-3 py-3"><StatusCell r={r} pos={waitPos.get(r.id)} started={started} /></td>
-                    <td className="num px-3 py-3 text-right text-sm text-ink-soft">{fmtDateTime(r.registered_at)}</td>
-                    <td className="px-3 py-3"><SourceCell r={r} /></td>
-                    <td className="px-4 py-2">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="text-small text-muted">{r.participant?.city ?? ''}</div>
+                    </Td>
+                    <Td className="py-3"><StatusCell r={r} pos={waitPos.get(r.id)} started={started} /></Td>
+                    <Td className="num py-3 text-right text-small text-ink-soft">{fmtDateTime(r.registered_at)}</Td>
+                    <Td className="py-3"><SourceCell r={r} /></Td>
+                    <Td>
+                      <div className="flex items-center justify-end gap-1">
                         {r.status === 'waitlisted' && <Button size="sm" icon="userPlus" busy={promote.isPending && promote.variables?.id === r.id} onClick={() => promote.mutate(r)}>קידום</Button>}
                         {r.participant?.phone && (
-                          <button type="button" onClick={() => openComposer(r)} title="הודעת וואטסאפ" aria-label={`הודעת וואטסאפ ל${r.participant.full_name ?? ''}`} className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] text-tide hover:bg-tide-wash">
-                            <Icon name="message" />
-                          </button>
+                          <IconButton icon="message" label={`הודעת וואטסאפ ל${r.participant.full_name ?? ''}`} title="הודעת וואטסאפ" onClick={() => openComposer(r)} />
                         )}
                         <RowMenu items={menuFor(r)} />
                       </div>
-                    </td>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
@@ -350,9 +334,9 @@ function StatusCell({ r, pos, started }: { r: RegRow; pos?: number; started: boo
       {r.status === 'registered' && r.attendance === 'attended' ? (
         <Badge tone="good" icon="check">הגיע/ה{r.checkin_method === 'self_qr' ? ' (QR)' : ''}</Badge>
       ) : r.status === 'registered' && r.attendance === 'no_show' ? (
-        <Badge tone="bad">לא הגיע/ה</Badge>
+        <Badge tone="bad" icon="alert">לא הגיע/ה</Badge>
       ) : r.status === 'waitlisted' ? (
-        <Badge tone="warn">בהמתנה{pos ? <span className="num"> #{pos}</span> : null}</Badge>
+        <Badge tone="warn" icon="alert">בהמתנה{pos ? <span className="num"> #{pos}</span> : null}</Badge>
       ) : r.status === 'cancelled' ? (
         <Badge tone="neutral">ביטל/ה{r.cancelled_by === 'staff' ? ' (צוות)' : ''}</Badge>
       ) : (
@@ -369,8 +353,8 @@ function SourceCell({ r, className = '' }: { r: RegRow; className?: string }) {
   if (r.referrer) parts.push(<span key="r">הביא/ה: <Link to={`/app/participants/${r.referrer.id}`} className="text-tide hover:underline">{r.referrer.full_name}</Link></span>);
   else if (r.referrer_name) parts.push(<span key="r">הביא/ה: {r.referrer_name}</span>);
   if (r.utm_source && !r.link) parts.push(<span key="u" dir="ltr" className="num">utm: {r.utm_source}</span>);
-  if (!parts.length) return <span className={cx('text-sm text-faint', className)}>{r.created_via === 'staff' ? 'רישום ידני' : '—'}</span>;
-  return <div className={cx('flex flex-col gap-0.5 text-sm text-ink-soft', className)}>{parts}</div>;
+  if (!parts.length) return <span className={cx('text-small text-faint', className)}>{r.created_via === 'staff' ? 'רישום ידני' : '—'}</span>;
+  return <div className={cx('flex flex-col gap-0.5 text-small text-ink-soft', className)}>{parts}</div>;
 }
 
 // ───────────── manual registration ─────────────
@@ -436,13 +420,13 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
           />
         )}
         {!enabled ? (
-          <p className="text-sm text-muted">מקלידים לפחות 2 אותיות מהשם, או 3 ספרות מהטלפון.</p>
+          <p className="text-small text-muted">מקלידים לפחות 2 אותיות מהשם, או 3 ספרות מהטלפון.</p>
         ) : results.isLoading ? (
           <div className="flex justify-center py-4 text-muted"><Spinner /></div>
         ) : results.isError ? (
           <ErrorBox error={errorMessage(results.error)} />
         ) : results.data?.length ? (
-          <ul className="flex flex-col divide-y divide-line-soft">
+          <ul className="flex flex-col divide-y divide-edge">
             {results.data.map((p) => {
               const reg = existing.get(p.id);
               const active = reg && reg.status !== 'cancelled';
@@ -450,7 +434,7 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
                 <li key={p.id} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{p.full_name}</div>
-                    <div className="text-sm text-muted">
+                    <div className="text-small text-muted">
                       <span className="num">{formatPhone(p.phone)}</span>{p.city ? ` · ${p.city}` : ''}
                     </div>
                   </div>
@@ -466,9 +450,9 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-muted">לא נמצאו לוחמים בשם או במספר הזה.</p>
+          <p className="text-small text-muted">לא נמצאו לוחמים בשם או במספר הזה.</p>
         )}
-        <div className="border-t border-line-soft pt-3 text-sm text-ink-soft">
+        <div className="border-t border-edge pt-3 text-small text-ink-soft">
           לא במערכת? <Link to="/app/participants/new" className="font-semibold text-tide hover:underline">יצירת כרטיס ללוחם/ת חדש/ה</Link>, ואז חוזרים לכאן לרישום.
         </div>
       </div>

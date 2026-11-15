@@ -17,7 +17,7 @@ export function AccountSettings() {
         ['תפקיד', `${ROLE_LABEL[me.data.role]}: ${ROLE_HINT[me.data.role]}`],
       ]} />
       {me.data.email && <div className="mt-5"><ButtonLink to="/password" variant="secondary" icon="shield">החלפת סיסמה</ButtonLink></div>}
-      <p className="mt-3 text-sm text-muted">משתמשים במכשיר משותף? בסוף העבודה לוחצים "יציאה". המערכת מנתקת לבד אחרי 12 שעות בלי פעילות.</p>
+      <p className="mt-3 text-small text-muted">משתמשים במכשיר משותף? בסוף העבודה לוחצים "יציאה". המערכת מנתקת לבד אחרי 12 שעות בלי פעילות.</p>
     </Panel>
     <TwoStepSettings />
     </div>

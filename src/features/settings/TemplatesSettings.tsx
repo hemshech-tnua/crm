@@ -36,9 +36,9 @@ export function TemplatesSettings() {
           <Panel key={t.key} title={t.label} actions={<Button size="sm" variant="secondary" icon="edit" onClick={() => setEditing(t)}>עריכה</Button>}>
             <div className="mb-2 flex flex-wrap gap-2">
               <Badge>{AUDIENCE[t.audience]}</Badge>
-              {t.is_marketing ? <Badge tone="warn">דורש הסכמה</Badge> : <Badge tone="tide">הודעת שירות</Badge>}
+              {t.is_marketing ? <Badge tone="warn" icon="alert">דורש הסכמה</Badge> : <Badge tone="tide">הודעת שירות</Badge>}
             </div>
-            <p className="whitespace-pre-line text-[0.95rem] leading-relaxed text-ink-soft">{renderTemplate(t.body, SAMPLE)}</p>
+            <p className="whitespace-pre-line text-body leading-relaxed text-ink-soft">{renderTemplate(t.body, SAMPLE)}</p>
           </Panel>
         ))}
       </div>
@@ -86,20 +86,20 @@ function EditTemplate({ t, onClose }: { t: Template | null; onClose: () => void 
           <Input label="שם ההודעה" value={label} onChange={(e) => setLabel(e.target.value)} />
           <Textarea ref={ref} label="הטקסט" value={body} onChange={(e) => setBody(e.target.value)} rows={8} error={unknown.length ? `לא מוכר: ${unknown.map((u) => `{${u}}`).join(', ')}` : null} />
           <div>
-            <div className="mb-1.5 text-sm font-semibold">הוספת פרט שמתמלא לבד</div>
+            <div className="mb-1.5 text-small font-medium">הוספת פרט שמתמלא לבד</div>
             <div className="flex flex-wrap gap-1.5">
               {PLACEHOLDERS.map((p) => (
-                <button key={p.key} type="button" title={p.label} onClick={() => insert(p.key)} className="rounded-[var(--radius-control)] border border-line bg-paper px-2.5 py-1 text-sm hover:border-tide hover:text-tide">{p.label}</button>
+                <button key={p.key} type="button" title={p.label} onClick={() => insert(p.key)} className="min-h-9 rounded-[var(--radius-control)] border border-control-line bg-paper px-2.5 py-1 text-small font-medium hover:border-ink pointer-coarse:min-h-11">{p.label}</button>
               ))}
             </div>
-            <p className="mt-2 text-sm text-muted">שורה שיש בה פרט חסר (למשל עוד אין מרצה) לא תופיע בהודעה.</p>
+            <p className="mt-2 text-small text-muted">שורה שיש בה פרט חסר (למשל עוד אין מרצה) לא תופיע בהודעה.</p>
           </div>
           <Checkbox checked={marketing} onChange={setMarketing} label="הודעה שיווקית: נשלחת רק למי שהסכים לקבל עדכונים" hint="הזמנות למפגשים, הודעות לאחר תקופה בלי הגעה. אישור הרשמה ותזכורת למפגש שנרשמו אליו הן הודעות שירות." />
           {save.error && <ErrorBox error={errorMessage(save.error)} />}
         </div>
         <div>
-          <div className="mb-1.5 text-sm font-semibold">איך זה ייראה (דוגמה)</div>
-          <div className="rounded-2xl rounded-tl-sm bg-[#dcf8c6] p-4 whitespace-pre-line text-[0.95rem] leading-relaxed text-[#111b21] shadow-sm">{renderTemplate(body, SAMPLE) || '—'}</div>
+          <div className="mb-1.5 text-small font-medium">איך זה ייראה (דוגמה)</div>
+          <div className="rounded-2xl rounded-tl-sm bg-[#dcf8c6] p-4 whitespace-pre-line text-body leading-relaxed text-[#111b21] shadow-sm">{renderTemplate(body, SAMPLE) || '—'}</div>
         </div>
       </div>
     </Dialog>

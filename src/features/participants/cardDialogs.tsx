@@ -130,7 +130,7 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
         <div className="flex flex-col gap-1.5">
           <Input label="טלפון" required ltr inputMode="tel" value={f.phone} onChange={(e) => { set('phone', e.target.value); setDupe(null); }} error={errors.phone} autoComplete="off" />
           {dupe && (
-            <p className="text-sm">
+            <p className="text-small">
               <Link to={`/app/participants/${dupe.id}`} onClick={onClose} className="font-semibold text-tide hover:underline">לכרטיס של {dupe.full_name}</Link>
               <span className="text-muted"> · אם זה אותו אדם, אפשר למזג בדף "כפילויות אפשריות".</span>
             </p>
@@ -174,7 +174,7 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
           />
           <Checkbox label="לא מעוניין/ת להופיע בתמונות" checked={f.photo_opt_out} onChange={(v) => set('photo_opt_out', v)} />
         </div>
-        {formError && <p className="text-sm font-medium text-bad sm:col-span-2" role="alert">{formError}</p>}
+        {formError && <p className="text-small font-medium text-bad sm:col-span-2" role="alert">{formError}</p>}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
       </form>
     </Dialog>
@@ -309,7 +309,7 @@ export function MessageChooser({ recipient, regs, nextEvent, onClose }: {
   }
   return (
     <Dialog open onClose={onClose} title={`הודעה ל${recipient.full_name ?? ''}`}>
-      <p className="mb-3 text-[0.95rem] text-ink-soft">על מה ההודעה?</p>
+      <p className="mb-3 text-body text-ink-soft">על מה ההודעה?</p>
       <ul className="flex flex-col gap-2">
         {purposes.map((p) => {
           const blocked = p.marketing && !recipient.consent_updates;
@@ -320,12 +320,12 @@ export function MessageChooser({ recipient, regs, nextEvent, onClose }: {
                 onClick={() => setPicked(p)}
                 className={cx(
                   'flex min-h-14 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] border px-4 py-2.5 text-right transition-colors',
-                  blocked ? 'border-line-soft bg-mist/60' : 'border-line bg-paper hover:border-tide hover:bg-tide-wash',
+                  blocked ? 'border-edge bg-mist/60' : 'border-control-line bg-paper hover:border-ink hover:bg-ink/[0.04]',
                 )}
               >
                 <span className="min-w-0">
                   <span className="block font-semibold">{p.title}</span>
-                  <span className="block text-sm text-muted">{blocked ? 'לא אישר/ה עדכונים בוואטסאפ: אפשר רק להתקשר' : p.about}</span>
+                  <span className="block text-small text-muted">{blocked ? 'לא אישר/ה עדכונים בוואטסאפ: אפשר רק להתקשר' : p.about}</span>
                 </span>
                 <Icon name="chevron" size={18} className="text-faint" />
               </button>

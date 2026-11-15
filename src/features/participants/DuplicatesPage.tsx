@@ -48,7 +48,7 @@ export function DuplicatesPage() {
         <Panel><EmptyState icon="checkCircle" title="לא נמצאו כפילויות">אין כרגע כרטיסים עם שמות דומים. כדאי לבדוק שוב מדי פעם.</EmptyState></Panel>
       ) : (
         <>
-          <p className="mb-3 text-[0.95rem] text-ink-soft">
+          <p className="mb-3 text-body text-ink-soft">
             <span className="num font-semibold text-ink">{pairs.data.length}</span> זוגות לבדיקה. בוחרים איזה כרטיס להשאיר ולוחצים "מיזוג". אם אלה שני אנשים שונים, פשוט ממשיכים הלאה.
           </p>
           <ul className="flex flex-col gap-4">
@@ -123,8 +123,8 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
   };
 
   return (
-    <li className="rounded-[var(--radius-panel)] border border-line-soft bg-paper">
-      <div className="flex items-center justify-between gap-2 border-b border-line-soft px-4 py-2.5 text-sm text-muted sm:px-5">
+    <li className="rounded-[var(--radius-panel)] border border-edge bg-paper">
+      <div className="flex items-center justify-between gap-2 border-b border-edge px-4 py-2.5 text-small text-muted sm:px-5">
         <span>דמיון בשם: <span className="num font-semibold text-ink">{Math.round(pair.similarity * 100)}%</span></span>
         <span>איזה כרטיס להשאיר?</span>
       </div>
@@ -134,10 +134,10 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
           <SideCard key={s.id} side={s} stats={stats?.get(s.id)} keep={keep === s.id} onKeep={() => setChosen(s.id)} name={`keep-${pair.a.id}-${pair.b.id}`} />
         ))}
       </fieldset>
-      <div className="flex flex-wrap items-center gap-3 border-t border-line-soft px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-center gap-3 border-t border-edge px-4 py-3 sm:px-5">
         <Button icon="merge" busy={merge.isPending} disabled={dismiss.isPending} onClick={ask}>מיזוג</Button>
         <Button variant="ghost" busy={dismiss.isPending} disabled={merge.isPending} onClick={() => dismiss.mutate()}>אלה שני אנשים שונים</Button>
-        <span className="text-sm text-muted">במיזוג, הכרטיס של {gone.full_name} (<PhoneText phone={gone.phone} />) יתמזג לתוך הכרטיס של {kept.full_name} (<PhoneText phone={kept.phone} />).</span>
+        <span className="text-small text-muted">במיזוג, הכרטיס של {gone.full_name} (<PhoneText phone={gone.phone} />) יתמזג לתוך הכרטיס של {kept.full_name} (<PhoneText phone={kept.phone} />).</span>
       </div>
     </li>
   );
@@ -147,16 +147,16 @@ function SideCard({ side, stats, keep, onKeep, name }: { side: Side; stats?: Ros
   return (
     <label className={cx(
       'flex cursor-pointer flex-col gap-1.5 rounded-[var(--radius-control)] border-2 p-3.5 transition-colors',
-      keep ? 'border-tide bg-tide-wash/50' : 'border-line-soft hover:border-line',
+      keep ? 'border-ink bg-paper' : 'border-edge bg-paper hover:border-control-line',
     )}>
       <span className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2">
           <input type="radio" name={name} checked={keep} onChange={onKeep} className="h-5 w-5 accent-tide" />
           <span className="font-bold">{side.full_name}</span>
         </span>
-        {keep ? <span className="text-sm font-semibold text-tide">נשאר</span> : <span className="text-sm text-muted">יתמזג</span>}
+        {keep ? <span className="text-small font-semibold text-tide">נשאר</span> : <span className="text-small text-muted">יתמזג</span>}
       </span>
-      <span className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
+      <span className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-small">
         <span className="text-muted">טלפון</span><span><PhoneText phone={side.phone} /></span>
         <span className="text-muted">עיר</span><span>{side.city ?? <span className="text-faint">—</span>}</span>
         <span className="text-muted">נוצר</span><span><span className="num">{fmtDate(side.created_at)}</span></span>
@@ -167,7 +167,7 @@ function SideCard({ side, stats, keep, onKeep, name }: { side: Side; stats?: Ros
           <EngagementBadge status={stats?.engagement_status} />
         </span>
       </span>
-      <Link to={`/app/participants/${side.id}`} className="inline-flex items-center gap-1 self-start text-sm font-medium text-tide hover:underline" onClick={(e) => e.stopPropagation()}>
+      <Link to={`/app/participants/${side.id}`} className="inline-flex items-center gap-1 self-start text-small font-medium text-tide hover:underline" onClick={(e) => e.stopPropagation()}>
         <Icon name="external" size={14} />
         פתיחת הכרטיס
       </Link>

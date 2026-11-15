@@ -370,7 +370,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs:
             )}
           >
             {t.label}
-            {t.count != null && <span className={cx('num rounded-[2px] px-1.5 text-xs font-bold', on ? 'bg-ink text-light' : 'bg-mist-deep text-ink-soft')}>{t.count}</span>}
+            {t.count != null && <span className={cx('num rounded-[2px] px-1.5 text-xs font-bold', on ? 'bg-ink text-light' : 'border border-ink/25 text-ink-soft')}>{t.count}</span>}
           </button>
         );
       })}
@@ -391,7 +391,10 @@ export function KeyValue({ items }: { items: [ReactNode, ReactNode][] }) {
   );
 }
 
-export function SearchInput({ value, onChange, placeholder, label }: { value: string; onChange: (v: string) => void; placeholder: string; label: string }) {
+export function SearchInput({ value, onChange, placeholder, label, inputMode, size = 'md' }: {
+  value: string; onChange: (v: string) => void; placeholder: string; label: string;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode']; size?: 'md' | 'lg';
+}) {
   return (
     <div className="relative">
       <Icon name="search" size={18} className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-faint" />
@@ -401,7 +404,8 @@ export function SearchInput({ value, onChange, placeholder, label }: { value: st
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={cx(controlBase, 'h-12 pr-10')}
+        inputMode={inputMode}
+        className={cx(controlBase, size === 'lg' ? 'h-14 pr-10 text-lg' : 'h-12 pr-10')}
       />
     </div>
   );
@@ -438,7 +442,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
 
 /** Filter chips: a row of toggles with optional counts (participants, registrations, follow-ups). */
 export function FilterChips<T extends string>({ options, value, onChange, label, className = '' }: {
-  options: { value: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
+  options: { value: T; label: ReactNode; count?: number; title?: string }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
 }) {
   return (
     <div role="group" aria-label={label} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0', className)}>
@@ -449,6 +453,7 @@ export function FilterChips<T extends string>({ options, value, onChange, label,
             key={o.value}
             type="button"
             aria-pressed={on}
+            title={o.title}
             onClick={() => onChange(o.value)}
             className={cx(
               'inline-flex h-10 pointer-coarse:h-11 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-medium transition-colors',
@@ -465,9 +470,9 @@ export function FilterChips<T extends string>({ options, value, onChange, label,
 }
 
 /** Data tables: one wrapper, header and cell style everywhere. Numeric columns: `numeric` (left-aligned, tabular). */
-export function Table({ children, className = '', label }: { children: ReactNode; className?: string; label?: string }) {
+export function Table({ children, className = '', label, overflow = 'scroll' }: { children: ReactNode; className?: string; label?: string; /** 'visible' when a row menu pops out of the table */ overflow?: 'scroll' | 'visible' }) {
   return (
-    <div className={cx('overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper', className)}>
+    <div className={cx('rounded-[var(--radius-panel)] border border-edge bg-paper', overflow === 'scroll' ? 'overflow-x-auto' : 'overflow-visible', className)}>
       <table className="w-full border-collapse text-body" aria-label={label}>{children}</table>
     </div>
   );

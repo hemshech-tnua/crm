@@ -128,11 +128,11 @@ export function ParticipantNewPage() {
         <Panel title="פרטים בסיסיים">
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="שם מלא" required value={f.full_name} onChange={(e) => set('full_name', e.target.value)} error={errors.full_name} maxLength={80} autoComplete="off" autoFocus />
-            <Input label="טלפון" required ltr type="tel" inputMode="tel" placeholder="050-1234567" value={f.phone} onChange={(e) => set('phone', e.target.value)} error={errors.phone} autoComplete="off" />
+            <Input label="טלפון" required ltr type="tel" inputMode="tel" hint="למשל 050-1234567" value={f.phone} onChange={(e) => set('phone', e.target.value)} error={errors.phone} autoComplete="off" />
           </div>
 
           <div aria-live="polite" className="mt-3 flex flex-col gap-3 empty:hidden">
-            {dup.isFetching && !dup.data && <p className="flex items-center gap-2 text-sm text-muted"><Spinner size={14} />בודקים אם הלוחם/ת כבר במערכת…</p>}
+            {dup.isFetching && !dup.data && <p className="flex items-center gap-2 text-small text-muted"><Spinner size={14} />בודקים אם הלוחם/ת כבר במערכת…</p>}
             {byPhone && (
               <div className="flex flex-col gap-2 rounded-[var(--radius-control)] border border-bad/30 bg-bad-wash px-4 py-3 text-bad sm:flex-row sm:items-center sm:justify-between">
                 <p className="flex items-start gap-2 font-medium">
@@ -176,7 +176,7 @@ export function ParticipantNewPage() {
             {source?.asks_detail && <Input label="פירוט" value={f.source_detail} onChange={(e) => set('source_detail', e.target.value)} maxLength={120} />}
             {source?.is_friend && (
               <div className="flex flex-col gap-3 rounded-[var(--radius-control)] bg-mist p-3.5">
-                <p className="text-sm font-semibold">מי הביא/ה?</p>
+                <p className="text-small font-semibold">מי הביא/ה?</p>
                 {referrer ? (
                   <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-paper px-3.5 py-2.5">
                     <span className="font-semibold">{referrer.full_name}</span>
@@ -211,7 +211,7 @@ export function ParticipantNewPage() {
 
         <Panel title="לרשום גם למפגש?">
           {events.data && events.data.length === 0 ? (
-            <p className="text-[0.95rem] text-muted">אין כרגע מפגש פתוח להרשמה.</p>
+            <p className="text-body text-muted">אין כרגע מפגש פתוח להרשמה.</p>
           ) : (
             <Select label="מפגש" value={f.event} onChange={(e) => set('event', e.target.value)} hint="אם המפגש מלא, הלוחם/ת ייכנס/תיכנס לרשימת ההמתנה.">
               <option value="">לא עכשיו</option>
@@ -220,7 +220,7 @@ export function ParticipantNewPage() {
           )}
         </Panel>
 
-        {formError && <p className="text-sm font-medium text-bad" role="alert">{formError}</p>}
+        {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" size="lg" icon="userPlus" busy={create.isPending} disabled={!!byPhone}>יצירת הכרטיס</Button>
           <ButtonLink to="/app/participants" variant="ghost" size="lg">ביטול</ButtonLink>

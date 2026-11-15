@@ -5,7 +5,7 @@ import { errorMessage } from '@/lib/errors';
 import { fmtDay, fmtShortDate, fmtTime, ilParts, relativeDays, todayIl } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
 import type { Speaker } from '@/lib/types';
-import { Badge, ButtonLink, Button, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
+import { Badge, ButtonLink, Button, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, Table, Tabs, Td, Th, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { StatusBadge, TypeBadge, isUnclosed, timeRange } from './shared';
 import { useEventList } from './queries';
@@ -73,11 +73,10 @@ export function EventsPage() {
       ) : (
         <>
           {unclosed > 0 && (
-            <div className="mb-4 flex items-start gap-2.5 rounded-[var(--radius-control)] bg-warn-wash px-3.5 py-3 text-sm text-warn">
-              <Icon name="alert" size={18} className="mt-0.5" />
-              <span>
+            <div className="mb-4">
+              <Notice tone="warn" icon="alert">
                 {unclosed === 1 ? 'מפגש אחד הסתיים ולא נסגר.' : `${unclosed} מפגשים הסתיימו ולא נסגרו.`} בסגירה מסומנים מי שלא הגיעו ונוצרות משימות מעקב.
-              </span>
+              </Notice>
             </div>
           )}
           <PastList events={list} now={now} />
@@ -117,7 +116,7 @@ function WhenCell({ e, highlight }: { e: EventWithStats; highlight?: boolean }) 
       <span className={cx('w-1 shrink-0 rounded-[var(--radius-control)]', highlight ? 'bg-ink' : 'bg-transparent')} aria-hidden="true" />
       <div>
         <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span></div>
-        <div className="flex items-center gap-1.5 text-sm text-muted">
+        <div className="flex items-center gap-1.5 text-small text-muted">
           <span className="num">{timeRange(e)}</span>
           {today ? <Badge tone="light">היום</Badge> : highlight ? <span>· {relativeDays(e.starts_at)}</span> : null}
         </div>
@@ -139,8 +138,8 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
               <Link
                 to={`/app/events/${e.id}`}
                 className={cx(
-                  'block rounded-[var(--radius-panel)] border bg-paper p-4 transition-colors hover:border-tide',
-                  e.id === nextId ? 'border-ink' : 'border-line-soft',
+                  'block rounded-[var(--radius-panel)] border bg-paper p-4 transition-colors hover:border-ink',
+                  e.id === nextId ? 'border-ink' : 'border-edge',
                   e.status === 'cancelled' && 'opacity-70',
                 )}
               >
@@ -153,12 +152,12 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
                   <span className={cx('font-bold', e.status === 'cancelled' && 'line-through')}>{e.title}</span>
                 </div>
                 {(sp.name || sp.topic) && (
-                  <div className="mt-1 text-sm text-ink-soft">
+                  <div className="mt-1 text-small text-ink-soft">
                     {sp.name ?? 'מרצה לא נקבע/ה'}{sp.topic ? `: ${sp.topic}` : ''}
-                    {sp.pending && <span className="ms-1.5 text-warn">(ממתין לאישור)</span>}
+                    {sp.pending && <span className="ms-1.5 font-medium text-warn">(ממתין לאישור)</span>}
                   </div>
                 )}
-                <div className="mt-2.5 flex items-center gap-4 text-sm">
+                <div className="mt-2.5 flex items-center gap-4 text-small">
                   <span className="flex items-center gap-1.5"><Icon name="people" size={16} className="text-muted" />נרשמו <Capacity e={e} /></span>
                   {(e.stats?.waitlisted_count ?? 0) > 0 && <span>בהמתנה <span className="num font-semibold">{e.stats!.waitlisted_count}</span></span>}
                   {e.type === 'friday' && !e.speaker_id && e.status !== 'cancelled' && <Badge tone="warn" icon="mic">בלי מרצה</Badge>}
@@ -170,16 +169,15 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
       </ul>
 
       {/* desktop: table */}
-      <div className="hidden overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper md:block">
-        <table className="w-full text-[0.95rem]">
-          <thead className="border-b border-line-soft bg-mist/60 text-sm text-muted">
-            <tr className="text-right">
-              <th className="px-4 py-2.5 font-semibold">מתי</th>
-              <th className="px-3 py-2.5 font-semibold">מפגש</th>
-              <th className="px-3 py-2.5 font-semibold">סטטוס</th>
-              <th className="px-3 py-2.5 font-semibold">נרשמו</th>
-              <th className="px-3 py-2.5 font-semibold">המתנה</th>
-              <th className="px-4 py-2.5 font-semibold">מרצה ונושא</th>
+      <Table className="hidden md:block" label="מפגשים קרובים">
+          <thead>
+            <tr>
+              <Th>מתי</Th>
+              <Th>מפגש</Th>
+              <Th>סטטוס</Th>
+              <Th numeric>נרשמו</Th>
+              <Th numeric>המתנה</Th>
+              <Th>מרצה ונושא</Th>
             </tr>
           </thead>
           <tbody>
@@ -189,41 +187,40 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
                 <tr
                   key={e.id}
                   onClick={() => navigate(`/app/events/${e.id}`)}
-                  className={cx('cursor-pointer border-b border-line-soft last:border-0 hover:bg-mist/50', e.status === 'cancelled' && 'text-muted')}
+                  className={cx('cursor-pointer hover:bg-mist/60', e.status === 'cancelled' && 'text-muted')}
                 >
-                  <td className="py-3 pr-3 pl-4"><WhenCell e={e} highlight={e.id === nextId} /></td>
-                  <td className="px-3 py-3">
+                  <Td className="ps-3!"><WhenCell e={e} highlight={e.id === nextId} /></Td>
+                  <Td>
                     <div className="flex items-center gap-2">
                       <TypeBadge type={e.type} />
                       <Link to={`/app/events/${e.id}`} onClick={(ev) => ev.stopPropagation()} className={cx('font-bold hover:text-tide hover:underline', e.status === 'cancelled' && 'line-through')}>
                         {e.title}
                       </Link>
                     </div>
-                  </td>
-                  <td className="px-3 py-3"><StatusBadge status={e.status} /></td>
-                  <td className="px-3 py-3"><Capacity e={e} /></td>
-                  <td className="px-3 py-3"><span className="num">{e.stats?.waitlisted_count ? e.stats.waitlisted_count : <span className="text-faint">—</span>}</span></td>
-                  <td className="max-w-72 px-4 py-3">
+                  </Td>
+                  <Td><StatusBadge status={e.status} /></Td>
+                  <Td numeric><Capacity e={e} /></Td>
+                  <Td numeric>{e.stats?.waitlisted_count ? e.stats.waitlisted_count : <span className="text-faint">—</span>}</Td>
+                  <Td className="max-w-72">
                     {sp.name || sp.topic ? (
                       <div className="leading-snug">
                         <div className="font-medium">
                           {sp.name ?? <span className="text-muted">מרצה לא נקבע/ה</span>}
-                          {sp.pending && <span className="ms-1.5 text-sm text-warn">(ממתין לאישור)</span>}
+                          {sp.pending && <span className="ms-1.5 text-small text-warn">(ממתין לאישור)</span>}
                         </div>
-                        {sp.topic && <div className="truncate text-sm text-muted">{sp.topic}</div>}
+                        {sp.topic && <div className="truncate text-small text-muted">{sp.topic}</div>}
                       </div>
                     ) : e.type === 'friday' && e.status !== 'cancelled' ? (
                       <Badge tone="warn" icon="mic">בלי מרצה</Badge>
                     ) : (
                       <span className="text-faint">—</span>
                     )}
-                  </td>
+                  </Td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
-      </div>
+      </Table>
     </>
   );
 }
@@ -255,10 +252,10 @@ function PastList({ events, now }: { events: EventWithStats[]; now: number }) {
           const n = pastNumbers(e);
           return (
             <li key={e.id}>
-              <Link to={`/app/events/${e.id}`} className={cx('block rounded-[var(--radius-panel)] border border-line-soft bg-paper p-4 hover:border-tide', e.status === 'cancelled' && 'opacity-70')}>
+              <Link to={`/app/events/${e.id}`} className={cx('block rounded-[var(--radius-panel)] border border-edge bg-paper p-4 hover:border-ink', e.status === 'cancelled' && 'opacity-70')}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span> <span className="num text-sm font-normal text-muted">{fmtTime(e.starts_at)}</span></div>
+                    <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span> <span className="num text-small font-normal text-muted">{fmtTime(e.starts_at)}</span></div>
                     <div className="mt-1 flex flex-wrap items-center gap-2"><TypeBadge type={e.type} /><span className="font-bold">{e.title}</span></div>
                   </div>
                   {isUnclosed(e, now) ? <UnclosedBadge /> : <StatusBadge status={e.status} />}
@@ -277,48 +274,46 @@ function PastList({ events, now }: { events: EventWithStats[]; now: number }) {
         })}
       </ul>
 
-      <div className="hidden overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper md:block">
-        <table className="w-full text-[0.95rem]">
-          <thead className="border-b border-line-soft bg-mist/60 text-sm text-muted">
-            <tr className="text-right">
-              <th className="px-4 py-2.5 font-semibold">מתי</th>
-              <th className="px-3 py-2.5 font-semibold">מפגש</th>
-              <th className="px-3 py-2.5 font-semibold">הגיעו</th>
-              <th className="px-3 py-2.5 font-semibold">חדשים / חוזרים</th>
-              <th className="px-3 py-2.5 font-semibold" title="מבין מי שנרשם מראש ולא ביטל">שיעור הגעה</th>
-              <th className="px-3 py-2.5 font-semibold">דירוג</th>
-              <th className="px-4 py-2.5 font-semibold">סטטוס</th>
+      <Table className="hidden md:block" label="מפגשים קודמים">
+          <thead>
+            <tr>
+              <Th>מתי</Th>
+              <Th>מפגש</Th>
+              <Th numeric>הגיעו</Th>
+              <Th>חדשים / חוזרים</Th>
+              <Th numeric><span title="מבין מי שנרשם מראש ולא ביטל">שיעור הגעה</span></Th>
+              <Th numeric>דירוג</Th>
+              <Th>סטטוס</Th>
             </tr>
           </thead>
           <tbody>
             {events.map((e) => {
               const n = pastNumbers(e);
               return (
-                <tr key={e.id} onClick={() => navigate(`/app/events/${e.id}`)} className={cx('cursor-pointer border-b border-line-soft last:border-0 hover:bg-mist/50', e.status === 'cancelled' && 'text-muted')}>
-                  <td className="px-4 py-3">
+                <tr key={e.id} onClick={() => navigate(`/app/events/${e.id}`)} className={cx('cursor-pointer hover:bg-mist/60', e.status === 'cancelled' && 'text-muted')}>
+                  <Td>
                     <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span></div>
-                    <div className="num text-right text-sm text-muted">{fmtTime(e.starts_at)}</div>
-                  </td>
-                  <td className="px-3 py-3">
+                    <div className="num text-right text-small text-muted">{fmtTime(e.starts_at)}</div>
+                  </Td>
+                  <Td>
                     <div className="flex items-center gap-2">
                       <TypeBadge type={e.type} />
                       <Link to={`/app/events/${e.id}`} onClick={(ev) => ev.stopPropagation()} className="font-bold hover:text-tide hover:underline">{e.title}</Link>
                     </div>
-                  </td>
-                  <td className="num px-3 py-3 text-right font-semibold">{n.attended}</td>
-                  <td className="px-3 py-3">{n.newRet}</td>
-                  <td className="num px-3 py-3 text-right">{n.show}</td>
-                  <td className="px-3 py-3">
-                    <span className="num">{n.rating}</span>
-                    {n.feedback > 0 && <span className="ms-1 text-sm text-muted">({n.feedback})</span>}
-                  </td>
-                  <td className="px-4 py-3">{isUnclosed(e, now) ? <UnclosedBadge /> : <StatusBadge status={e.status} />}</td>
+                  </Td>
+                  <Td numeric className="font-semibold">{n.attended}</Td>
+                  <Td>{n.newRet}</Td>
+                  <Td numeric>{n.show}</Td>
+                  <Td numeric>
+                    {n.feedback > 0 && <span className="me-1 text-small text-muted">({n.feedback})</span>}
+                    {n.rating}
+                  </Td>
+                  <Td>{isUnclosed(e, now) ? <UnclosedBadge /> : <StatusBadge status={e.status} />}</Td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
-      </div>
+      </Table>
     </>
   );
 }
@@ -330,9 +325,9 @@ function NewReturning({ n, r }: { n: number; r: number }) {
 
 function MiniStat({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex flex-col-reverse rounded-[var(--radius-panel)] bg-mist px-1 py-1.5">
-      <dt className="text-[0.72rem] leading-tight text-muted">{label}</dt>
-      <dd className="font-display text-lg leading-tight tabular-nums">{value}</dd>
+    <div className="flex flex-col-reverse rounded-[var(--radius-control)] bg-mist px-1 py-1.5">
+      <dt className="text-micro text-muted">{label}</dt>
+      <dd className="text-heading font-bold tabular-nums">{value}</dd>
     </div>
   );
 }

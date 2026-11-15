@@ -10,7 +10,7 @@ import { formatPhone } from '@/lib/phone';
 import { toCsv, downloadFile } from '@/lib/csv';
 import { ENGAGEMENT_HINT, ENGAGEMENT_LABEL } from '@/lib/labels';
 import type { Engagement } from '@/lib/types';
-import { Button, ButtonLink, EmptyState, ErrorBox, PageHeader, SearchInput, Select, Skeleton, Spinner, cx } from '@/ui/kit';
+import { Button, ButtonLink, EmptyState, ErrorBox, FilterChips, PageHeader, SearchInput, Select, Skeleton, Spinner, Table, Td, Th, cx } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { ENGAGEMENT_ORDER, EngagementBadge, ago, useDebounced } from './shared';
@@ -178,13 +178,13 @@ export function ParticipantsPage() {
               onClick={() => setMoreFilters((v) => !v)}
               aria-expanded={moreFilters}
               className={cx(
-                'inline-flex h-12 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 font-semibold',
-                moreFilters || activeExtra ? 'border-tide bg-tide-wash text-tide-deep' : 'border-line bg-paper text-ink',
+                'inline-flex h-12 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 font-semibold transition-colors',
+                moreFilters || activeExtra ? 'border-ink bg-ink text-light' : 'border-control-line bg-paper text-ink hover:border-ink',
               )}
             >
               <Icon name="filter" size={18} />
               סינון
-              {activeExtra > 0 && <span className="num rounded-[var(--radius-control)] bg-tide px-1.5 text-xs text-white">{activeExtra}</span>}
+              {activeExtra > 0 && <span className="num rounded-[2px] bg-light px-1.5 text-micro font-bold text-ink">{activeExtra}</span>}
             </button>
           </div>
         </div>
@@ -192,7 +192,7 @@ export function ParticipantsPage() {
         <StatusChips value={f.status} counts={counts.data} onChange={(status) => setF({ status })} />
 
         {moreFilters && (
-          <div className="grid grid-cols-1 gap-3 rounded-[var(--radius-panel)] border border-line-soft bg-paper p-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 rounded-[var(--radius-panel)] border border-edge bg-paper p-3.5 sm:grid-cols-2 lg:grid-cols-4">
             <Select label="מקור היכרות" value={f.source} onChange={(e) => setF({ source: e.target.value })}>
               <option value="">כל המקורות</option>
               {(sources.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -209,8 +209,8 @@ export function ParticipantsPage() {
               <option value="no">לא הסכימו</option>
             </Select>
             <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-semibold">משימות מעקב</span>
-              <label className="flex h-12 cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border border-line px-3.5">
+              <span className="text-small font-medium">משימות מעקב</span>
+              <label className="flex h-12 cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border border-control-line bg-paper px-3.5 hover:border-ink">
                 <input type="checkbox" checked={f.task} onChange={(e) => setF({ task: e.target.checked })} className="h-5 w-5 accent-tide" />
                 <span>יש משימה פתוחה</span>
               </label>
@@ -223,9 +223,9 @@ export function ParticipantsPage() {
         {roster.isError ? (
           <ErrorBox error={errorMessage(roster.error)} onRetry={() => roster.refetch()} />
         ) : roster.isLoading || (!roster.data && roster.isFetching) ? (
-          <div className="rounded-[var(--radius-panel)] border border-line-soft bg-paper p-5"><Skeleton lines={8} /></div>
+          <div className="rounded-[var(--radius-panel)] border border-edge bg-paper p-5"><Skeleton lines={8} /></div>
         ) : rows.length === 0 ? (
-          <div className="rounded-[var(--radius-panel)] border border-line-soft bg-paper">
+          <div className="rounded-[var(--radius-panel)] border border-edge bg-paper">
             {anyFilter ? (
               <EmptyState icon="search" title="לא נמצאו לוחמים" action={<Button variant="secondary" onClick={clearAll}>ניקוי החיפוש והסינון</Button>}>
                 {q ? <>אין תוצאות עבור "{q}". אפשר לחפש לפי חלק מהשם, 4 ספרות אחרונות של הטלפון או עיר.</> : 'אף לוחם/ת לא מתאים/ה לסינון שנבחר.'}
@@ -238,7 +238,7 @@ export function ParticipantsPage() {
           </div>
         ) : (
           <>
-            <div className="mb-2 flex items-center justify-between text-sm text-muted">
+            <div className="mb-2 flex items-center justify-between text-small text-muted">
               <span>
                 {anyFilter ? 'נמצאו ' : ''}<span className="num font-semibold text-ink">{total.toLocaleString('he-IL')}</span> {total === 1 ? 'לוחם/ת' : 'לוחמים'}
               </span>
@@ -249,7 +249,7 @@ export function ParticipantsPage() {
             {rows.length < total && (
               <div className="mt-4 flex flex-col items-center gap-1.5">
                 <Button variant="secondary" busy={roster.isFetching} onClick={() => setPaging({ key: filterKey, limit: limit + PAGE })}>הצגת עוד</Button>
-                <span className="text-sm text-muted">מוצגים <span className="num">{rows.length}</span> מתוך <span className="num">{total}</span></span>
+                <span className="text-small text-muted">מוצגים <span className="num">{rows.length}</span> מתוך <span className="num">{total}</span></span>
               </div>
             )}
           </>
@@ -267,32 +267,15 @@ function StatusChips({ value, counts, onChange }: { value: Engagement | ''; coun
   ];
   return (
     <div>
-      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="סינון לפי סטטוס">
-        {chips.map((c) => {
-          const on = value === c.v;
-          return (
-            <button
-              key={c.v || 'all'}
-              type="button"
-              aria-pressed={on}
-              title={c.hint}
-              onClick={() => onChange(c.v)}
-              className={cx(
-                'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 text-[0.9rem] font-semibold transition-colors',
-                on ? 'border-ink bg-ink text-mist' : 'border-line bg-paper text-ink-soft hover:border-ink-soft/50',
-              )}
-            >
-              {c.label}
-              {c.n != null && <span className={cx('num text-xs', on ? 'text-mist/75' : 'text-muted')}>{c.n}</span>}
-            </button>
-          );
-        })}
-        <button type="button" onClick={() => setHelp((h) => !h)} aria-expanded={help} className="inline-flex h-10 shrink-0 items-center gap-1 px-2 text-sm font-medium text-tide hover:underline">
+      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+        <FilterChips label="סינון לפי סטטוס" value={value} onChange={onChange}
+          options={chips.map((c) => ({ value: c.v, label: c.label, count: c.n }))} />
+        <button type="button" onClick={() => setHelp((h) => !h)} aria-expanded={help} className="inline-flex h-10 shrink-0 items-center gap-1 self-start px-1 text-small font-medium text-tide hover:underline sm:self-auto sm:px-2">
           מה ההבדל?
         </button>
       </div>
       {help && (
-        <dl className="mt-2 grid gap-x-4 gap-y-1.5 rounded-[var(--radius-control)] bg-tide-wash p-3.5 text-sm text-ink sm:grid-cols-[auto_1fr]">
+        <dl className="mt-2 grid gap-x-4 gap-y-1.5 rounded-[var(--radius-panel)] border border-edge bg-paper p-3.5 text-small text-ink sm:grid-cols-[auto_1fr]">
           {ENGAGEMENT_ORDER.map((s) => (
             <div key={s} className="contents">
               <dt className="font-bold">{ENGAGEMENT_LABEL[s]}</dt>
@@ -322,52 +305,50 @@ function TaskMark() {
 
 function RosterTable({ rows, sourceLabel, openSet, from }: ListProps) {
   return (
-    <div className="hidden overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper md:block">
-      <table className="w-full text-[0.95rem]">
-        <thead className="border-b border-line-soft bg-mist/60 text-right text-sm text-muted">
+    <Table className="hidden md:block" label="לוחמים">
+        <thead>
           <tr>
-            <th className="px-4 py-2.5 font-semibold">שם</th>
-            <th className="px-3 py-2.5 font-semibold">טלפון</th>
-            <th className="px-3 py-2.5 font-semibold">עיר</th>
-            <th className="px-3 py-2.5 font-semibold">גיל</th>
-            <th className="px-3 py-2.5 font-semibold" title="מפגשי שישי שהגיע/ה אליהם">מפגשי שישי</th>
-            <th className="px-3 py-2.5 font-semibold" title="כל הפעילויות, כולל ערבי מדורה">פעילויות</th>
-            <th className="px-3 py-2.5 font-semibold">ביקור אחרון</th>
-            <th className="px-3 py-2.5 font-semibold">מקור</th>
-            <th className="px-4 py-2.5 font-semibold">סטטוס</th>
+            <Th>שם</Th>
+            <Th>טלפון</Th>
+            <Th>עיר</Th>
+            <Th numeric>גיל</Th>
+            <Th numeric><span title="מפגשי שישי שהגיע/ה אליהם">מפגשי שישי</span></Th>
+            <Th numeric><span title="כל הפעילויות, כולל ערבי מדורה">פעילויות</span></Th>
+            <Th>ביקור אחרון</Th>
+            <Th>מקור</Th>
+            <Th>סטטוס</Th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-line-soft">
+        <tbody>
           {rows.map((r) => {
             const a = age(r.birth_year, r.birth_date);
             return (
-              <tr key={r.id} className="hover:bg-mist/50">
-                <td className="px-4 py-2.5">
+              <tr key={r.id} className="hover:bg-mist/60">
+                <Td>
                   <span className="flex items-center gap-1.5">
                     <Link to={`/app/participants/${r.id}`} state={{ from }} className="font-semibold text-ink hover:text-tide hover:underline">{r.full_name}</Link>
                     {openSet.has(r.id) && <TaskMark />}
                   </span>
-                </td>
-                <td className="px-3 py-2.5"><span className="num whitespace-nowrap text-ink-soft">{formatPhone(r.phone)}</span></td>
-                <td className="px-3 py-2.5 text-ink-soft">{r.city ?? <span className="text-faint">—</span>}</td>
-                <td className="px-3 py-2.5"><span className="num">{a ?? '—'}</span></td>
-                <td className="px-3 py-2.5"><span className="num font-semibold">{r.stats?.friday_count ?? 0}</span></td>
-                <td className="px-3 py-2.5"><span className="num text-ink-soft">{r.stats?.attended_count ?? 0}</span></td>
-                <td className="px-3 py-2.5 whitespace-nowrap text-ink-soft"><LastVisit at={r.stats?.last_attended_at} /></td>
-                <td className="max-w-40 truncate px-3 py-2.5 text-ink-soft" title={r.first_source_id ? sourceLabel.get(r.first_source_id) : undefined}>{r.first_source_id ? sourceLabel.get(r.first_source_id) : <span className="text-faint">—</span>}</td>
-                <td className="px-4 py-2.5"><EngagementBadge status={r.stats?.engagement_status} /></td>
+                </Td>
+                <Td><span className="num whitespace-nowrap text-ink-soft">{formatPhone(r.phone)}</span></Td>
+                <Td className="text-ink-soft">{r.city ?? <span className="text-faint">—</span>}</Td>
+                <Td numeric>{a ?? '—'}</Td>
+                <Td numeric className="font-semibold">{r.stats?.friday_count ?? 0}</Td>
+                <Td numeric className="text-ink-soft">{r.stats?.attended_count ?? 0}</Td>
+                <Td className="whitespace-nowrap text-ink-soft"><LastVisit at={r.stats?.last_attended_at} /></Td>
+                <Td className="max-w-40 truncate text-ink-soft"><span title={r.first_source_id ? sourceLabel.get(r.first_source_id) : undefined}>{r.first_source_id ? sourceLabel.get(r.first_source_id) : <span className="text-faint">—</span>}</span></Td>
+                <Td><EngagementBadge status={r.stats?.engagement_status} /></Td>
               </tr>
             );
           })}
         </tbody>
-      </table>
-    </div>
+    </Table>
   );
 }
 
 function RosterCards({ rows, sourceLabel, openSet, from }: ListProps) {
   return (
-    <ul className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper md:hidden">
+    <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper md:hidden">
       {rows.map((r) => {
         const a = age(r.birth_year, r.birth_date);
         const fridays = r.stats?.friday_count ?? 0;
@@ -381,12 +362,12 @@ function RosterCards({ rows, sourceLabel, openSet, from }: ListProps) {
                 </span>
                 <EngagementBadge status={r.stats?.engagement_status} />
               </span>
-              <span className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+              <span className="flex flex-wrap items-center gap-x-2 text-small text-muted">
                 <span className="num">{formatPhone(r.phone)}</span>
                 {r.city && <><span aria-hidden="true">·</span><span>{r.city}</span></>}
                 {a != null && <><span aria-hidden="true">·</span><span>גיל <span className="num">{a}</span></span></>}
               </span>
-              <span className="flex flex-wrap items-center gap-x-2 text-sm text-ink-soft">
+              <span className="flex flex-wrap items-center gap-x-2 text-small text-ink-soft">
                 <span><span className="num font-semibold">{fridays}</span> {fridays === 1 ? 'מפגש שישי' : 'מפגשי שישי'}</span>
                 {r.stats?.last_attended_at && <><span aria-hidden="true">·</span><span>ביקור אחרון <LastVisit at={r.stats.last_attended_at} /></span></>}
                 {r.first_source_id && <><span aria-hidden="true">·</span><span className="truncate">{sourceLabel.get(r.first_source_id)}</span></>}

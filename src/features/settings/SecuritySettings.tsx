@@ -68,9 +68,9 @@ export function SecuritySettings() {
           <Notice tone="warn" icon="alert">
             מישהו נרשם לשירות האימות בלי להיות איש צוות. לחשבונות כאלה אין גישה לשום מידע, אבל כדאי לסגור את ההרשמה העצמית: בלוח הבקרה של Supabase, Authentication ← Sign In / Providers ← לכבות "Allow new users to sign up".
           </Notice>
-          <ul className="mt-3 divide-y divide-line-soft">
+          <ul className="mt-3 divide-y divide-edge">
             {s.unknown_accounts.map((u, i) => (
-              <li key={i} className="flex flex-wrap justify-between gap-2 py-2 text-[0.95rem]">
+              <li key={i} className="flex flex-wrap justify-between gap-2 py-2 text-body">
                 <span className="num" dir="ltr">{u.email ?? u.phone ?? 'ללא פרטים'}</span>
                 <span className="num text-muted">{fmtDateTime(u.created_at)}</span>
               </li>
@@ -82,29 +82,29 @@ export function SecuritySettings() {
       )}
 
       <Panel title="חסימות ב־24 השעות האחרונות">
-        <ul className="divide-y divide-line-soft">
+        <ul className="divide-y divide-edge">
           {LIMITS.map((l) => (
             <li key={l.key} className="flex items-center justify-between gap-3 py-2.5">
               <div>
                 <div className="font-semibold">{l.label}</div>
-                <div className="text-sm text-muted">{l.hint}</div>
+                <div className="text-small text-muted">{l.hint}</div>
               </div>
-              <Badge tone={s.limits_24h[l.key] > 0 ? 'warn' : 'neutral'}><span className="num">{s.limits_24h[l.key]}</span></Badge>
+              <Badge tone={s.limits_24h[l.key] > 0 ? 'warn' : 'neutral'} icon={s.limits_24h[l.key] > 0 ? 'alert' : undefined}><span className="num">{s.limits_24h[l.key]}</span></Badge>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-muted">מספר גבוה בשורה של כניסת צוות או קישורי כניסה הוא סימן לניסיון פריצה. החסימות משתחררות לבד.</p>
+        <p className="mt-3 text-small text-muted">מספר גבוה בשורה של כניסת צוות או קישורי כניסה הוא סימן לניסיון פריצה. החסימות משתחררות לבד.</p>
       </Panel>
 
       <Panel title="אימות דו־שלבי לאנשי הצוות">
         {noMfa.length > 0 && <div className="mb-3"><Notice>מומלץ שכל מנהל/ת יפעיל/תפעיל אימות דו־שלבי ב"החשבון שלי".</Notice></div>}
-        <ul className="divide-y divide-line-soft">
+        <ul className="divide-y divide-edge">
           {s.staff.map((m) => (
             <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <div>
                 <span className="font-semibold">{m.full_name}</span>
-                <span className="ms-2 text-sm text-muted">{ROLE_LABEL[m.role]}{!m.is_active ? ' · חסום/ה' : ''}</span>
-                <div className="text-sm text-muted">כניסה אחרונה: {m.last_sign_in_at ? <span className="num">{fmtDateTime(m.last_sign_in_at)}</span> : 'עוד לא נכנס/ה'}</div>
+                <span className="ms-2 text-small text-muted">{ROLE_LABEL[m.role]}{!m.is_active ? ' · חסום/ה' : ''}</span>
+                <div className="text-small text-muted">כניסה אחרונה: {m.last_sign_in_at ? <span className="num">{fmtDateTime(m.last_sign_in_at)}</span> : 'עוד לא נכנס/ה'}</div>
               </div>
               {m.mfa ? <Badge tone="good" icon="check">אימות דו־שלבי</Badge> : <Badge>סיסמה בלבד</Badge>}
             </li>
@@ -116,9 +116,9 @@ export function SecuritySettings() {
         {s.recent.length === 0 ? (
           <p className="text-muted">אין שינויים.</p>
         ) : (
-          <ul className="divide-y divide-line-soft">
+          <ul className="divide-y divide-edge">
             {s.recent.map((r, i) => (
-              <li key={i} className="flex flex-wrap justify-between gap-2 py-2 text-[0.95rem]">
+              <li key={i} className="flex flex-wrap justify-between gap-2 py-2 text-body">
                 <span>{ACTION_LABEL[r.action] ?? r.action}{r.target ? `: ${r.target}` : ''}{r.actor ? <span className="text-muted"> (על ידי {r.actor})</span> : null}</span>
                 <span className="num text-muted">{fmtDateTime(r.at)}</span>
               </li>

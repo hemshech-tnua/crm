@@ -5,7 +5,8 @@ import { fmtDateTime } from '@/lib/dates';
 import { formatPhone } from '@/lib/phone';
 import { renderTemplate } from '@/lib/templates';
 import type { Membership, Template } from '@/lib/types';
-import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, Panel, Select, Skeleton, cx } from '@/ui/kit';
+import { Badge, Button, ButtonLink, EmptyState, ErrorBox, FilterChips, Notice, Panel, Select, Skeleton, cx } from '@/ui/kit';
+import { Icon } from '@/ui/Icon';
 import { MessageComposer, allowedFor, type Recipient } from '@/ui/MessageComposer';
 import type { EventPeople } from './context';
 import { useConsentedRecent, useEventRegistrations, useSentForEvent } from './queries';
@@ -159,37 +160,23 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
               <Notice tone="light" icon="alert">הודעה שיווקית: לפי חוק התקשורת נשלחת רק למי שאישר/ה לקבל עדכונים והזמנות.</Notice>
             )}
             <div>
-              <div className="mb-1.5 text-sm font-semibold">כך זה ייראה</div>
-              <div className="rounded-[var(--radius-control)] bg-[#e7f4ea] px-3.5 py-3 text-[0.95rem] leading-relaxed whitespace-pre-line text-ink">{preview || <span className="text-muted">התבנית ריקה.</span>}</div>
-              <p className="mt-1.5 text-sm text-muted">שורה עם פרט שחסר במפגש (למשל מרצה) יורדת מההודעה. אפשר לערוך את הטקסט לפני כל שליחה.</p>
+              <div className="mb-1.5 text-small font-medium">כך זה ייראה</div>
+              <div className="rounded-[var(--radius-control)] bg-[#e7f4ea] px-3.5 py-3 text-body leading-relaxed whitespace-pre-line text-ink">{preview || <span className="text-muted">התבנית ריקה.</span>}</div>
+              <p className="mt-1.5 text-small text-muted">שורה עם פרט שחסר במפגש (למשל מרצה) יורדת מההודעה. אפשר לערוך את הטקסט לפני כל שליחה.</p>
               {broadcast && (
-                <div className="mt-3 rounded-[var(--radius-control)] border border-line-soft p-3">
-                  <p className="text-sm text-ink-soft">יש רשימת תפוצה בוואטסאפ לנרשמים? אפשר לשלוח לכולם בבת אחת עם נוסח כללי:</p>
+                <div className="mt-3 rounded-[var(--radius-control)] border border-edge p-3">
+                  <p className="text-small text-ink-soft">יש רשימת תפוצה בוואטסאפ לנרשמים? אפשר לשלוח לכולם בבת אחת עם נוסח כללי:</p>
                   <Button size="sm" variant="secondary" icon="copy" className="mt-2" onClick={() => copy(broadcast, 'הנוסח הכללי הועתק')}>העתקת נוסח כללי לרשימת תפוצה</Button>
                 </div>
               )}
             </div>
             </>)}
-            <fieldset>
-              <legend className="mb-1.5 text-sm font-semibold">למי</legend>
-              <div className="flex flex-wrap gap-1.5">
-                {GROUPS.map((g) => (
-                  <button
-                    key={g.value}
-                    type="button"
-                    aria-pressed={group === g.value}
-                    onClick={() => setPickedGroup(g.value)}
-                    className={cx(
-                      'h-10 rounded-[var(--radius-control)] border px-3.5 text-sm font-semibold transition-colors',
-                      group === g.value ? 'border-tide bg-tide text-white' : 'border-line bg-paper text-ink-soft hover:border-tide',
-                    )}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-sm text-muted">{GROUP_HINT[group]}</p>
-            </fieldset>
+            <div>
+              <div className="mb-1.5 text-small font-medium" aria-hidden="true">למי</div>
+              <FilterChips label="למי" value={group} onChange={setPickedGroup} className="sm:mx-0 sm:flex-wrap"
+                options={GROUPS.map((g) => ({ value: g.value, label: g.label }))} />
+              <p className="mt-2 text-small text-muted">{GROUP_HINT[group]}</p>
+            </div>
           </div>
         </Panel>
 
@@ -199,10 +186,10 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
           padded={false}
         >
           <div className="px-4 pt-3 sm:px-5">
-            <div className="h-2 overflow-hidden rounded-[var(--radius-control)] bg-mist-deep" role="progressbar" aria-valuemin={0} aria-valuemax={eligibleCount} aria-valuenow={doneCount} aria-label="התקדמות השליחה">
-              <div className="h-full rounded-[var(--radius-control)] bg-tide transition-[width]" style={{ width: eligibleCount ? `${(doneCount / eligibleCount) * 100}%` : '0%' }} />
+            <div className="h-1.5 bg-ink/10" role="progressbar" aria-valuemin={0} aria-valuemax={eligibleCount} aria-valuenow={doneCount} aria-label="התקדמות השליחה">
+              <div className="h-full bg-ink transition-[width]" style={{ width: eligibleCount ? `${(doneCount / eligibleCount) * 100}%` : '0%' }} />
             </div>
-            {blocked > 0 && <p className="mt-2 text-sm text-warn">{blocked === 1 ? 'נמען/ת אחד/ת לא אישר/ה' : `${blocked} נמענים לא אישרו`} לקבל עדכונים, ולכן ההודעה הזו לא נשלחת {blocked === 1 ? 'אליו/ה' : 'אליהם'}.</p>}
+            {blocked > 0 && <p className="mt-2 flex items-start gap-1.5 text-small font-medium text-warn"><Icon name="alert" size={15} className="mt-0.5" />{blocked === 1 ? 'נמען/ת אחד/ת לא אישר/ה' : `${blocked} נמענים לא אישרו`} לקבל עדכונים, ולכן ההודעה הזו לא נשלחת {blocked === 1 ? 'אליו/ה' : 'אליהם'}.</p>}
           </div>
           {loading ? (
             <div className="p-5"><Skeleton lines={5} /></div>
@@ -213,7 +200,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
               {aftercare ? 'עוד אין מי שסומן/ה כהגעה למפגש הזה.' : group === 'no_show' && e.status !== 'completed' ? 'מי שלא הגיע/ה מסומן/ת בסגירת המפגש.' : group === 'consented' ? 'אין כרגע מי שאישר/ה עדכונים, הגיע/ה לאחרונה ולא רשום/ה.' : 'אפשר לבחור קבוצה אחרת.'}
             </EmptyState>
           ) : (
-            <ul className="mt-2 divide-y divide-line-soft">
+            <ul className="mt-2 divide-y divide-edge">
               {ordered.map((p) => {
                 const at = sentAt.get(p.id);
                 const ok = eligible(p);
@@ -226,7 +213,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                         {aftercare && p.membership === 'member' && <Badge tone="good">חבר/ת עמותה</Badge>}
                         {aftercare && p.phone && aftercareKey(p, list) === 'join_invite' && <Badge tone="light">+ הזמנה להצטרף</Badge>}
                       </div>
-                      <div className="num text-right text-sm text-muted">{formatPhone(p.phone) || 'אין טלפון'}</div>
+                      <div className="num text-right text-small text-muted">{formatPhone(p.phone) || 'אין טלפון'}</div>
                     </div>
                     {at ? (
                       <div className="flex items-center gap-1.5">
@@ -236,7 +223,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                     ) : !p.phone ? (
                       <Badge tone="neutral">אין טלפון</Badge>
                     ) : !ok ? (
-                      <Badge tone="warn" title="לא אישר/ה לקבל עדכונים והזמנות">אין הסכמה</Badge>
+                      <Badge tone="warn" icon="alert" title="לא אישר/ה לקבל עדכונים והזמנות">אין הסכמה</Badge>
                     ) : (
                       <Button size="sm" variant="secondary" icon="message" onClick={() => setComposer(p)}>שליחה</Button>
                     )}
@@ -245,7 +232,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
               })}
             </ul>
           )}
-          <div className="border-t border-line-soft px-4 py-3 text-sm text-muted sm:px-5">
+          <div className="border-t border-edge px-4 py-3 text-small text-muted sm:px-5">
             רוצים לשנות את נוסח התבניות? <ButtonLink to="/app/settings" variant="ghost" size="sm">הגדרות</ButtonLink>
           </div>
         </Panel>
@@ -283,7 +270,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
 /** What the after-meeting thank-you does, when it is ready, and the two texts. */
 function AftercareInfo({ readyAt, joinCount, thanks, join }: { readyAt: Date; joinCount: number; thanks: string; join: string }) {
   const ready = readyAt.getTime() <= Date.now();
-  const bubble = 'rounded-[var(--radius-control)] bg-[#e7f4ea] px-3.5 py-3 text-[0.95rem] leading-relaxed whitespace-pre-line text-ink';
+  const bubble = 'rounded-[var(--radius-control)] bg-[#e7f4ea] px-3.5 py-3 text-body leading-relaxed whitespace-pre-line text-ink';
   return (
     <>
       {ready ? (
@@ -292,15 +279,15 @@ function AftercareInfo({ readyAt, joinCount, thanks, join }: { readyAt: Date; jo
         <Notice tone="tide" icon="calendar">ההודעות יהיו מוכנות ב-<span className="num">{fmtDateTime(readyAt.toISOString())}</span>, 24 שעות אחרי סוף המפגש. אז המפגש יופיע גם בלוח הבקרה. אפשר לשלוח כבר עכשיו.</Notice>
       )}
       <div>
-        <div className="mb-1.5 text-sm font-semibold">תודה (לכל מי שהגיע/ה)</div>
+        <div className="mb-1.5 text-small font-medium">תודה (לכל מי שהגיע/ה)</div>
         <div className={bubble}>{thanks || <span className="text-muted">אין תבנית "תודה". אפשר להוסיף בהגדרות.</span>}</div>
       </div>
       <div>
-        <div className="mb-1.5 text-sm font-semibold">
+        <div className="mb-1.5 text-small font-medium">
           תודה + הזמנה להצטרף לעמותה {joinCount > 0 && <span className="font-normal text-muted">(<span className="num">{joinCount}</span> נמענים)</span>}
         </div>
         <div className={bubble}>{join || <span className="text-muted">אין תבנית "הזמנה להצטרף". אפשר להוסיף בהגדרות.</span>}</div>
-        <p className="mt-1.5 text-sm text-muted">רק למי שעוד לא חבר/ת עמותה ואישר/ה לקבל עדכונים והזמנות (חוק התקשורת). אפשר לערוך את הטקסט לפני כל שליחה.</p>
+        <p className="mt-1.5 text-small text-muted">רק למי שעוד לא חבר/ת עמותה ואישר/ה לקבל עדכונים והזמנות (חוק התקשורת). אפשר לערוך את הטקסט לפני כל שליחה.</p>
       </div>
     </>
   );

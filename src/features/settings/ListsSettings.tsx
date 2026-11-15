@@ -21,7 +21,7 @@ export function SourcesSettings() {
   return (
     <Panel title="אפשרויות ב'איך שמעת עלינו?'" padded={false} actions={<Button icon="plus" onClick={() => setEditing({ is_active: true, is_friend: false, asks_detail: false, sort_order: 80 })}>מקור חדש</Button>}>
       {sources.isLoading ? <div className="p-5"><Skeleton lines={5} /></div> : sources.error ? <div className="p-5"><ErrorBox error={errorMessage(sources.error)} /></div> : (
-        <ul className="divide-y divide-line-soft">
+        <ul className="divide-y divide-edge">
           {(sources.data ?? []).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
               <span className={`flex-1 font-medium ${s.is_active ? '' : 'text-faint line-through'}`}>{s.label}</span>
@@ -33,7 +33,7 @@ export function SourcesSettings() {
           ))}
         </ul>
       )}
-      <p className="px-5 pb-4 text-sm text-muted">מקור שכבר נבחר בעבר לא נמחק, רק מוסתר מהטופס, כדי שהדוחות על העבר יישארו נכונים.</p>
+      <p className="px-5 pb-4 text-small text-muted">מקור שכבר נבחר בעבר לא נמחק, רק מוסתר מהטופס, כדי שהדוחות על העבר יישארו נכונים.</p>
       <SourceDialog value={editing} onClose={() => setEditing(null)} />
     </Panel>
   );
@@ -98,10 +98,10 @@ export function SitesSettings() {
   return (
     <Panel title="מתחמים" padded={false} actions={<Button icon="plus" onClick={() => setF({ is_active: true })}>מתחם חדש</Button>}>
       {sites.isLoading ? <div className="p-5"><Skeleton lines={3} /></div> : (
-        <ul className="divide-y divide-line-soft">
+        <ul className="divide-y divide-edge">
           {(sites.data ?? []).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
-              <div className="flex-1"><div className="font-semibold">{s.name}</div><div className="text-sm text-muted">{s.address}</div></div>
+              <div className="flex-1"><div className="font-semibold">{s.name}</div><div className="text-small text-muted">{s.address}</div></div>
               {!s.is_active && <Badge>לא פעיל</Badge>}
               <Button size="sm" variant="secondary" icon="qr" onClick={() => setSign(s)}>שלט קבוע לכניסה</Button>
               <Button size="sm" variant="secondary" icon="edit" onClick={() => setF(s)}>עריכה</Button>
@@ -109,7 +109,7 @@ export function SitesSettings() {
           ))}
         </ul>
       )}
-      <p className="px-5 pb-4 text-sm text-muted">לכל מתחם מפגשים משלו, וברקוד קבוע אחד לשלט בכניסה. בדוחות ובדשבורד אפשר לסנן לפי מתחם (שאלה 43 בשאלון).</p>
+      <p className="px-5 pb-4 text-small text-muted">לכל מתחם מפגשים משלו, וברקוד קבוע אחד לשלט בכניסה. בדוחות ובדשבורד אפשר לסנן לפי מתחם (שאלה 43 בשאלון).</p>
       {sign && <SiteSignDialog site={(sites.data ?? []).find((x) => x.id === sign.id) ?? sign} onClose={() => setSign(null)} />}
       <Dialog open={!!f} onClose={() => { setF(null); setError(null); }} title={f?.id ? 'עריכת מתחם' : 'מתחם חדש'} size="sm">
         {f && (
@@ -174,12 +174,12 @@ function SiteSignDialog({ site, onClose }: { site: Site; onClose: () => void }) 
   return (
     <Dialog open onClose={onClose} title={`שלט קבוע לכניסה: ${site.name}`}>
       <div className="flex flex-col gap-4">
-        <p className="text-[0.95rem] text-ink-soft">
+        <p className="text-body text-ink-soft">
           ברקוד אחד לכל המפגשים במתחם. מי שסורק/ת מגיע/ה לצ׳ק־אין של המפגש שפתוח באותו רגע. אם אין מפגש פתוח, מופיע מתי ייפתח הבא.
         </p>
-        <div className="flex justify-center"><QrImage value={url} size={220} label={`ברקוד קבוע לכניסה, ${site.name}`} className="rounded-[var(--radius-panel)] border border-line-soft" /></div>
+        <div className="flex justify-center"><QrImage value={url} size={220} label={`ברקוד קבוע לכניסה, ${site.name}`} className="rounded-[var(--radius-panel)] border border-edge" /></div>
         <div className="flex items-center gap-2">
-          <code dir="ltr" className="num min-w-0 flex-1 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2 text-sm">{url}</code>
+          <code dir="ltr" className="num min-w-0 flex-1 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2 text-small">{url}</code>
           <Button size="sm" variant="ghost" icon="copy" onClick={() => copy(url, 'הקישור הועתק')}>העתקה</Button>
         </div>
         <Notice tone="warn" icon="alert">
@@ -189,9 +189,9 @@ function SiteSignDialog({ site, onClose }: { site: Site; onClose: () => void }) 
           <Button icon="download" onClick={svg}>הורדה לחריטה (SVG)</Button>
           <Button variant="secondary" icon="download" onClick={png}>הורדה כתמונה (PNG)</Button>
         </div>
-        <p className="text-sm text-muted">הקובץ בשחור־לבן, עם תיקון שגיאות גבוה ושוליים לבנים, כך שגם שלט עם שריטות או בחריטה על עץ נסרק. מומלץ גודל של 10 ס״מ לפחות.</p>
+        <p className="text-small text-muted">הקובץ בשחור־לבן, עם תיקון שגיאות גבוה ושוליים לבנים, כך שגם שלט עם שריטות או בחריטה על עץ נסרק. מומלץ גודל של 10 ס״מ לפחות.</p>
         {can.admin(role) && (
-          <button type="button" onClick={askRotate} disabled={rotate.isPending} className="self-start text-sm font-semibold text-bad underline underline-offset-4">
+          <button type="button" onClick={askRotate} disabled={rotate.isPending} className="self-start text-small font-semibold text-bad underline underline-offset-4">
             הקוד דלף? החלפת הקוד (השלט הישן יפסיק לעבוד)
           </button>
         )}

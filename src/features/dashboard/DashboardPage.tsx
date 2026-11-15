@@ -8,7 +8,7 @@ import { derived, num, pct, type Kpis } from '@/lib/metrics';
 import { fmtDate, fmtDayLong, fmtTime, relativeDays, todayIl, ilParts } from '@/lib/dates';
 import { registerUrl } from '@/lib/links';
 import { useMe } from '@/lib/auth';
-import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton } from '@/ui/kit';
+import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, cx } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import { Icon, type IconName } from '@/ui/Icon';
 import { FridayLine, GoalStat, SplitBars } from '@/ui/charts';
@@ -91,48 +91,51 @@ export function DashboardPage() {
         </Panel>
       ) : (
         <>
-          {/* the next meeting: a navy panel, the beige date as the one highlight on the page; stripes enter from the corner */}
+          {/* the next meeting: a navy panel, the beige date as the one highlight on the page; a short run of stripes
+              enters from the top edge and stays a full unit clear of the text (book p.42) */}
           {events.isLoading ? <Skeleton lines={3} className="mb-6" /> : next ? (
-            <section className="relative mb-6 overflow-hidden rounded-[var(--radius-panel)] bg-ink text-mist">
-              <Stripes width={88} height={88} unit={12} dir="fall" count={2} offset={10} className="absolute top-0 left-0 h-[88px] w-[88px] text-light" />
-              <div className="relative flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6 sm:pl-24">
+            <section className="relative mb-6 overflow-hidden rounded-[var(--radius-panel)] bg-ink text-light">
+              {/* two whole stripes that enter from the top edge and are cut by a horizontal line (desktop only: on a
+                  phone the header right above already carries the brand's run) */}
+              <Stripes width={100} height={48} unit={12} dir="fall" count={2} offset={48} className="absolute top-0 left-0 hidden h-12 w-[100px] text-light sm:block" />
+              <div className="relative flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6 sm:pl-32">
                 <div className="flex items-center gap-4">
-                  <div className="rounded-[var(--radius-control)] bg-light px-3.5 py-2 text-center text-ink">
-                    <div className="text-xs font-bold">{relativeDays(next.starts_at)}</div>
-                    <div className="num font-display text-2xl leading-tight">{fmtDate(next.starts_at).slice(0, 5)}</div>
+                  <div className="shrink-0 rounded-[var(--radius-control)] bg-light px-3.5 py-2 text-center text-ink">
+                    <div className="text-micro font-semibold">{relativeDays(next.starts_at)}</div>
+                    <div className="num text-section font-bold">{fmtDate(next.starts_at).slice(0, 5)}</div>
                   </div>
-                  <div>
-                    <div className="text-sm text-mist/70">המפגש הבא</div>
-                    <Link to={`/app/events/${next.id}`} className="font-display text-xl hover:underline">{next.title}</Link>
-                    <div className="text-sm text-mist/80">{fmtDayLong(next.starts_at)} · <span className="num">{fmtTime(next.starts_at)}</span></div>
+                  <div className="min-w-0">
+                    <div className="text-small text-light/75">המפגש הבא</div>
+                    <Link to={`/app/events/${next.id}`} className="text-section font-bold hover:underline">{next.title}</Link>
+                    <div className="text-small text-light/80">{fmtDayLong(next.starts_at)} · <span className="num">{fmtTime(next.starts_at)}</span></div>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-end gap-6">
                   <div>
-                    <div className="num font-display text-[2.4rem] leading-none text-light">
-                      {next.stats?.registered_count ?? 0}{next.capacity ? <span className="text-xl text-mist/60">/{next.capacity}</span> : null}
+                    <div className="num font-display text-stat text-light">
+                      {next.stats?.registered_count ?? 0}{next.capacity ? <span className="text-section text-light/60">/{next.capacity}</span> : null}
                     </div>
-                    <div className="text-sm text-mist/70">נרשמו</div>
+                    <div className="text-small text-light/75">נרשמו</div>
                   </div>
                   {(next.stats?.waitlisted_count ?? 0) > 0 && (
                     <div>
-                      <div className="num font-display text-[2rem] leading-none">{next.stats!.waitlisted_count}</div>
-                      <div className="text-sm text-mist/70">בהמתנה</div>
+                      <div className="num font-display text-stat">{next.stats!.waitlisted_count}</div>
+                      <div className="text-small text-light/75">בהמתנה</div>
                     </div>
                   )}
                   <div className="flex flex-wrap gap-2">
-                    <ButtonLink to={`/app/events/${next.id}`} variant="light">ניהול המפגש</ButtonLink>
-                    {ilParts(next.starts_at).date === todayIl() && <ButtonLink to={`/app/events/${next.id}/door`} variant="secondary" icon="door">מצב כניסה</ButtonLink>}
+                    <ButtonLink to={`/app/events/${next.id}`} variant="light" cta>ניהול המפגש</ButtonLink>
+                    {ilParts(next.starts_at).date === todayIl() && <ButtonLink to={`/app/events/${next.id}/door`} variant="onDark" icon="door">מצב כניסה</ButtonLink>}
                     {nextOpen?.status === 'open' && (
-                      <Button variant="ghost" className="text-mist! hover:bg-white/10" icon="copy" onClick={() => copy(registerUrl(nextOpen.public_code), 'קישור ההרשמה הועתק')}>קישור הרשמה</Button>
+                      <Button variant="onDark" icon="copy" onClick={() => copy(registerUrl(nextOpen.public_code), 'קישור ההרשמה הועתק')}>קישור הרשמה</Button>
                     )}
                   </div>
                 </div>
               </div>
               {next.status === 'draft' && (
-                <div className="flex items-center gap-2 bg-light-wash px-5 py-2.5 text-sm font-medium text-ink">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-light px-5 py-2.5 text-small font-medium text-ink">
                   <Icon name="alert" size={16} />המפגש עדיין טיוטה, וההרשמה אליו לא פתוחה.
-                  <Link to={`/app/events/${next.id}`} className="font-bold underline">לפתיחת הרשמה</Link>
+                  <Link to={`/app/events/${next.id}`} className="inline-flex min-h-11 items-center font-bold underline">לפתיחת הרשמה</Link>
                 </div>
               )}
             </section>
@@ -144,7 +147,7 @@ export function DashboardPage() {
             </Panel>
           )}
 
-          <Panel title="קו השישי" className="mb-6" actions={<span className="text-sm text-muted">כל נקודה היא מפגש. לחיצה פותחת את הסיכום שלו.</span>}>
+          <Panel title="קו השישי" className="mb-6" description="כל נקודה היא מפגש. לחיצה פותחת את הסיכום שלו.">
             {events.isLoading ? <Skeleton lines={4} /> : past.length === 0 && !next ? (
               <p className="text-muted">הקו יתחיל להתמלא אחרי המפגש הראשון שמתקיים.</p>
             ) : (
@@ -157,12 +160,12 @@ export function DashboardPage() {
           </Panel>
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-xl">היעדים לשנה</h2>
+            <h2 className="text-section font-bold">היעדים לשנה</h2>
             <FilterBar filters={filters} set={set} />
           </div>
           {kpis.error ? <ErrorBox error={errorMessage(kpis.error)} onRetry={() => kpis.refetch()} /> : (
-            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              {!kpis.data || !d || !g ? Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton h-40" />) : (
+            <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
+              {!kpis.data || !d || !g ? Array.from({ length: 5 }).map((_, i) => <div key={i} className={cx('skeleton h-40', i === 4 && 'col-span-2 lg:col-span-1')} />) : (
                 <>
                   <GoalStat label="ממוצע משתתפים למפגש" value={d.avgAttendance} display={num(d.avgAttendance, 1)} goal={g.avg_attendance} goalDisplay={num(g.avg_attendance)}
                     hint={kpis.data.events === 1 ? `${kpis.data.attendances} הגעות במפגש אחד` : `${kpis.data.attendances} הגעות ב-${kpis.data.events} מפגשים`} onOpen={() => setDrill('attendees')} />
@@ -172,18 +175,23 @@ export function DashboardPage() {
                     hint={`${kpis.data.returning_attendees} מתוך ${kpis.data.unique_attendees} לוחמים`} onOpen={() => setDrill('returning')} />
                   <GoalStat label="חדשים שהגיעו דרך חבר" value={d.friendShare} display={pct(d.friendShare)} goal={g.friend_share} goalDisplay={pct(g.friend_share)}
                     hint={`${kpis.data.friend_new} מתוך ${kpis.data.new_attendees} חדשים`} onOpen={() => setDrill('friend_new')} />
-                  <GoalStat label="דירוג ממוצע למפגש" value={d.avgRating} display={num(d.avgRating, 1)} goal={g.avg_rating} goalDisplay={num(g.avg_rating, 1)}
+                  <GoalStat className="col-span-2 lg:col-span-1" label="דירוג ממוצע למפגש" value={d.avgRating} display={num(d.avgRating, 1)} goal={g.avg_rating} goalDisplay={num(g.avg_rating, 1)}
                     hint={kpis.data.feedback_count ? `${kpis.data.feedback_count} משובים` : 'עוד אין משובים'} />
                 </>
               )}
             </div>
           )}
           {kpis.data && (
-            <p className="-mt-3 mb-6 text-sm text-muted">
+            <p className="-mt-3 mb-6 text-small text-muted">
               בתקופה: <button type="button" className="font-semibold text-tide hover:underline" onClick={() => setDrill('new')}>{kpis.data.new_attendees} לוחמים חדשים</button>
               {' · '}{kpis.data.walk_ins} הגיעו בלי הרשמה · {kpis.data.cancelled} ביטולים
               {kpis.data.attendances > 0 && <> · {pct(d?.selfCheckinShare ?? null)} עשו צ׳ק־אין עצמי</>}
-              {(kpis.data.unclosed_events ?? 0) > 0 && <span className="font-semibold text-warn"> · {kpis.data.unclosed_events} מפגשים שהסתיימו ולא נסגרו לא נכללים במספרים</span>}
+              {(kpis.data.unclosed_events ?? 0) > 0 && (
+                <span className="mt-1.5 flex flex-wrap items-center gap-2 text-ink-soft">
+                  <Badge tone="warn" icon="alert"><span className="num">{kpis.data.unclosed_events}</span> לא נסגרו</Badge>
+                  מפגשים שהסתיימו ולא נסגרו לא נכללים במספרים
+                </span>
+              )}
             </p>
           )}
 
@@ -193,7 +201,7 @@ export function DashboardPage() {
                 <AttentionList a={attention.data!} />
               )}
             </Panel>
-            <Panel title="מאיפה מגיעים, ומי חוזר" actions={<Link to="/app/reports?tab=sources" className="text-sm font-semibold text-tide hover:underline">לדוח המלא</Link>}>
+            <Panel title="מאיפה מגיעים, ומי חוזר" actions={<Link to="/app/reports?tab=sources" className="-my-2 inline-flex min-h-11 items-center text-small font-semibold text-tide hover:underline">לדוח המלא</Link>}>
               {sources.isLoading ? <Skeleton lines={4} /> : sources.error ? <ErrorBox error={errorMessage(sources.error)} /> : !sources.data?.some((s) => s.participants > 0) ? (
                 <p className="text-muted">כשלוחמים חדשים יגיעו למפגשים, יופיע כאן מאיזה מקור הם הגיעו וכמה מהם חזרו.</p>
               ) : (
@@ -247,17 +255,17 @@ function AttentionList({ a }: { a: Attention }) {
   if (!items.length) {
     return <EmptyState icon="checkCircle" title="הכול מטופל">אין מפגשים פתוחים, משימות באיחור או קבועים שנעלמו.</EmptyState>;
   }
-  const toneCls = { bad: 'bg-bad-wash text-bad', warn: 'bg-warn-wash text-warn', tide: 'bg-tide-wash text-tide' };
+  const toneCls = { bad: 'bg-bad-wash text-bad ring-1 ring-inset ring-bad/30', warn: 'bg-warn-wash text-warn ring-1 ring-inset ring-warn/40', tide: 'bg-ink text-light' };
   return (
-    <ul className="flex flex-col divide-y divide-line-soft">
+    <ul className="flex flex-col divide-y divide-edge">
       {items.map((it, i) => (
-        <li key={i} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] ${toneCls[it.tone]}`}><Icon name={it.icon} size={17} /></span>
-          <span className="flex-1 text-[0.95rem] leading-snug">{it.text}</span>
-          <Link to={it.to} className="shrink-0 text-sm font-semibold text-tide hover:underline">{it.action}</Link>
+        <li key={i} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+          <span className={`mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] ${toneCls[it.tone]}`}><Icon name={it.icon} size={17} /></span>
+          <span className="flex-1 py-2 text-body leading-snug">{it.text}</span>
+          <Link to={it.to} className="-mx-2 inline-flex min-h-11 shrink-0 items-center px-2 text-small font-semibold text-tide hover:underline">{it.action}</Link>
         </li>
       ))}
-      {a.followups_open > 0 && <li className="pt-3 text-sm text-muted">סה״כ <Badge>{a.followups_open}</Badge> משימות מעקב פתוחות</li>}
+      {a.followups_open > 0 && <li className="pt-3 text-small text-muted">סה״כ <Badge>{a.followups_open}</Badge> משימות מעקב פתוחות</li>}
     </ul>
   );
 }

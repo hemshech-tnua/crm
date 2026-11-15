@@ -168,7 +168,7 @@ export function CompleteTaskDialog({ task, onClose }: {
       </>}
     >
       <div className="flex flex-col gap-4">
-        <p className="text-[0.95rem] text-ink-soft">{task.title}{task.participantName ? ` · ${task.participantName}` : ''}</p>
+        <p className="text-body text-ink-soft">{task.title}{task.participantName ? ` · ${task.participantName}` : ''}</p>
         <ChoiceGroup<Channel>
           legend="איך דיברתם?"
           columns={2}
@@ -180,7 +180,7 @@ export function CompleteTaskDialog({ task, onClose }: {
           <Textarea label="מה עלה בשיחה?" required value={outcome} onChange={(e) => setOutcome(e.target.value)} maxLength={1000} rows={4} error={err} placeholder="למשל: מרגיש טוב, עבר לעבוד בבוקר בשישי" />
           <div className="flex flex-wrap gap-2">
             {QUICK_OUTCOMES.map((q) => (
-              <button key={q} type="button" onClick={() => setOutcome(q)} className="min-h-9 rounded-[var(--radius-control)] border border-line bg-paper px-3 text-sm font-medium text-ink-soft hover:border-tide hover:text-tide">
+              <button key={q} type="button" onClick={() => setOutcome(q)} className="min-h-10 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 text-small font-medium text-ink-soft hover:border-ink hover:text-ink pointer-coarse:min-h-11">
                 {q}
               </button>
             ))}
@@ -255,7 +255,7 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
           {list.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
         </Select>
         <Input label="תאריך יעד" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-        {err && <p className="text-sm font-medium text-bad" role="alert">{err}</p>}
+        {err && <p className="text-small font-medium text-bad" role="alert">{err}</p>}
       </div>
     </Dialog>
   );
@@ -313,7 +313,7 @@ export function NewTaskDialog({ participant, onClose, onCreated }: {
       <div className="flex flex-col gap-4">
         {person ? (
           <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-tide-wash px-3.5 py-2.5">
-            <span><span className="text-sm text-muted">לוחם/ת: </span><span className="font-semibold">{person.full_name}</span></span>
+            <span><span className="text-small text-muted">לוחם/ת: </span><span className="font-semibold">{person.full_name}</span></span>
             {!participant && <Button size="sm" variant="ghost" onClick={() => setPerson(null)}>החלפה</Button>}
           </div>
         ) : (
@@ -331,7 +331,7 @@ export function NewTaskDialog({ participant, onClose, onCreated }: {
           <Textarea label="הערה (לא חובה)" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} rows={2} />
           <FieldGuidance />
         </div>
-        {err && <p className="text-sm font-medium text-bad" role="alert">{err}</p>}
+        {err && <p className="text-small font-medium text-bad" role="alert">{err}</p>}
       </div>
     </Dialog>
   );

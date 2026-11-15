@@ -303,7 +303,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
             <Input label="שעת התחלה" type="time" required ltr value={f.start} onChange={(e) => set('start', e.target.value)} error={errors.start} step={300} />
             <Input label="שעת סיום" type="time" required ltr value={f.end} onChange={(e) => set('end', e.target.value)} error={errors.end} step={300} />
           </div>
-          <p className="-mt-2 text-sm text-muted">השעות לפי שעון ישראל.</p>
+          <p className="-mt-2 text-small text-muted">השעות לפי שעון ישראל.</p>
         </div>
       </Panel>
 
@@ -350,7 +350,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               {speaker.full_name} עדיין {speaker.status === 'proposed' ? 'ממתין/ה לאישור' : 'לא מאושר/ת'} של מנהל/ת. אפשר לשבץ, וכדאי לאשר לפני שמפרסמים.
             </Notice>
           )}
-          {speaker?.bio_line && <p className="text-sm text-muted">{speaker.bio_line}</p>}
+          {speaker?.bio_line && <p className="text-small text-muted">{speaker.bio_line}</p>}
           <Textarea
             label="תיאור למשתתפים"
             value={f.description}
@@ -400,10 +400,10 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
             </div>
           )}
           {lockedStatus ? (
-            <div className="flex items-center gap-2 text-[0.95rem]">
+            <div className="flex items-center gap-2 text-body">
               <span className="font-semibold">סטטוס:</span>
               <StatusBadge status={f.status} />
-              <span className="text-sm text-muted">{f.status === 'cancelled' ? 'המפגש בוטל.' : 'המפגש נסגר.'}</span>
+              <span className="text-small text-muted">{f.status === 'cancelled' ? 'המפגש בוטל.' : 'המפגש נסגר.'}</span>
             </div>
           ) : (
             <Select label="סטטוס" value={f.status} onChange={(e) => set('status', e.target.value as EventStatus)} hint="ביטול מפגש וסגירת מפגש שהתקיים נעשים מעמוד המפגש.">
@@ -429,7 +429,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
 
       {errors.form && <ErrorBox error={errors.form} />}
       {Object.keys(errors).some((k) => k !== 'form' && errors[k as keyof Errors]) && (
-        <p className="text-sm font-medium text-bad" role="alert">יש שדות שצריך לתקן. הם מסומנים באדום.</p>
+        <p className="text-small font-medium text-bad" role="alert">יש שדות שצריך לתקן. הם מסומנים באדום.</p>
       )}
 
       <div className="flex flex-wrap gap-2">

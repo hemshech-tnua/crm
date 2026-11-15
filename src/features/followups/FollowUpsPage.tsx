@@ -7,7 +7,7 @@ import { fmtDate, fmtShortDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
 import { FOLLOWUP_TYPE_LABEL } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
-import { Badge, Button, EmptyState, ErrorBox, IconButton, PageHeader, Panel, Skeleton, Tabs, buttonClass, cx } from '@/ui/kit';
+import { Badge, Button, EmptyState, ErrorBox, FilterChips, IconButton, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { PersonLink, ago, daysUntil, useNextOpenEvent, type EventForMessage } from '@/features/participants/shared';
 import {
@@ -73,7 +73,7 @@ export function FollowUpsPage() {
         <button
           type="button"
           onClick={() => document.getElementById('lapsed')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          className="mb-4 flex w-full items-center gap-2.5 rounded-[var(--radius-control)] bg-warn-wash px-4 py-3 text-right text-[0.95rem] font-medium text-warn hover:underline"
+          className="mb-4 flex min-h-12 w-full items-center gap-2.5 rounded-[var(--radius-control)] border-s-[3px] border-warn bg-warn-wash px-4 py-3 text-right text-body font-medium text-warn hover:underline"
         >
           <Icon name="alert" size={18} />
           <span className="flex-1"><span className="num font-bold">{lapsed.length}</span> {lapsed.length === 1 ? 'קבוע/ה שהפסיק/ה להגיע מחכה' : 'קבועים שהפסיקו להגיע מחכים'} להחלטה אם לפנות</span>
@@ -93,14 +93,8 @@ export function FollowUpsPage() {
       />
 
       {tab !== 'done' && Object.keys(typeCounts).length > 1 && (
-        <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="סינון לפי סוג משימה">
-          {[{ v: null, l: 'הכול', n: allOpen.length }, ...Object.entries(FOLLOWUP_TYPE_LABEL).filter(([k]) => typeCounts[k]).map(([k, l]) => ({ v: k, l, n: typeCounts[k] }))].map((o) => (
-            <button key={o.v ?? 'all'} type="button" aria-pressed={typeFilter === o.v} onClick={() => setType(o.v)}
-              className={`min-h-10 rounded-[var(--radius-control)] border px-3.5 text-sm font-semibold ${typeFilter === o.v ? 'border-ink bg-ink text-mist' : 'border-line bg-paper text-ink-soft hover:border-tide'}`}>
-              {o.l} <span className="num">{o.n}</span>
-            </button>
-          ))}
-        </div>
+        <FilterChips label="סינון לפי סוג משימה" className="mb-4" value={typeFilter ?? ''} onChange={(v) => setType(v || null)}
+          options={[{ value: '', label: 'הכול', count: allOpen.length }, ...Object.entries(FOLLOWUP_TYPE_LABEL).filter(([k]) => typeCounts[k]).map(([k, l]) => ({ value: k, label: l, count: typeCounts[k] }))]} />
       )}
 
       {tab === 'done' ? (
@@ -154,11 +148,12 @@ function TaskGroups({ tasks, nextEvent, showAssignee, empty }: { tasks: TaskRow[
     <div className="flex flex-col gap-5">
       {groups.map((g) => (
         <section key={g.key} aria-labelledby={`g-${g.key}`}>
-          <h2 id={`g-${g.key}`} className={cx('mb-2 flex items-center gap-2 text-sm font-bold', g.key === 'late' ? 'text-bad' : 'text-muted')}>
+          <h2 id={`g-${g.key}`} className={cx('mb-2 flex items-center gap-2 text-heading font-semibold', g.key === 'late' ? 'text-bad' : 'text-ink')}>
+            {g.key === 'late' && <Icon name="alert" size={16} />}
             {g.title}
-            <span className="num rounded-[var(--radius-control)] bg-mist-deep px-1.5 text-xs text-ink-soft">{g.items.length}</span>
+            <span className="num text-small font-medium text-muted">({g.items.length})</span>
           </h2>
-          <ul className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper">
+          <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper">
             {g.items.map((t) => (
               <TaskItem key={t.id} task={t} showAssignee={showAssignee} onAct={(kind) => setDoing({ kind, task: t })} />
             ))}
@@ -189,14 +184,14 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
     <li className={cx('flex flex-col gap-3 px-4 py-3.5 sm:px-5 lg:flex-row lg:items-center lg:justify-between', late && 'border-s-4 border-s-bad')}>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          {p ? <PersonLink id={p.id} name={p.full_name} className="text-[1.05rem]" /> : <span className="text-muted">פרטים נמחקו</span>}
+          {p ? <PersonLink id={p.id} name={p.full_name} className="text-heading" /> : <span className="text-muted">פרטים נמחקו</span>}
           {!t.title.startsWith(FOLLOWUP_TYPE_LABEL[t.type]) && (
-            <Badge tone={t.type === 'lapsed' ? 'warn' : t.type === 'no_show' ? 'neutral' : 'tide'}>{FOLLOWUP_TYPE_LABEL[t.type]}</Badge>
+            <Badge tone={t.type === 'lapsed' ? 'warn' : t.type === 'no_show' ? 'neutral' : 'tide'} icon={t.type === 'lapsed' ? 'alert' : undefined}>{FOLLOWUP_TYPE_LABEL[t.type]}</Badge>
           )}
         </div>
-        <p className="mt-0.5 text-[0.95rem] text-ink">{t.title}</p>
-        {t.notes && <p className="mt-0.5 whitespace-pre-line text-sm text-ink-soft">{t.notes}</p>}
-        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted">
+        <p className="mt-0.5 text-body text-ink">{t.title}</p>
+        {t.notes && <p className="mt-0.5 whitespace-pre-line text-small text-ink-soft">{t.notes}</p>}
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-small text-muted">
           <DueText date={t.due_date} />
           {t.event && (
             <>
@@ -207,23 +202,24 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
           {showAssignee && (
             <>
               <span aria-hidden="true">·</span>
-              <span>{t.assignee_id ? name.get(t.assignee_id) ?? 'איש/אשת צוות' : <span className="text-warn">בלי אחראי/ת</span>}</span>
+              <span>{t.assignee_id ? name.get(t.assignee_id) ?? 'איש/אשת צוות' : <Badge tone="warn" icon="alert">בלי אחראי/ת</Badge>}</span>
             </>
           )}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Button size="sm" icon="check" onClick={() => onAct('done')} className="h-11 sm:h-9">בוצע</Button>
+      {/* one quiet "done" per row; the only navy button on the page is "משימה חדשה" */}
+      <div className="flex shrink-0 items-center gap-1">
+        <Button size="sm" variant="secondary" icon="check" onClick={() => onAct('done')} className="me-1">בוצע</Button>
         {p?.phone && (
           <>
-            <Button size="sm" variant="secondary" icon="message" onClick={() => onAct('msg')} className="h-11 sm:h-9">וואטסאפ</Button>
-            <a href={telLink(p.phone)} className={buttonClass('secondary', 'sm', 'h-11 sm:h-9')} aria-label={`חיוג אל ${p.full_name}`}>
-              <Icon name="phone" size={16} />
-              <span className="hidden sm:inline">חיוג</span>
+            <IconButton icon="message" label={`וואטסאפ אל ${p.full_name ?? ''}`} onClick={() => onAct('msg')} />
+            <a href={telLink(p.phone)} aria-label={`חיוג אל ${p.full_name}`} title="חיוג"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] text-ink-soft hover:bg-ink/[0.07] hover:text-ink pointer-coarse:h-11 pointer-coarse:w-11">
+              <Icon name="phone" size={20} />
             </a>
           </>
         )}
-        <IconButton icon="edit" label="עריכה: אחראי/ת, תאריך יעד או ביטול" onClick={() => onAct('edit')} className="h-11 w-11" />
+        <IconButton icon="edit" label="עריכה: אחראי/ת, תאריך יעד או ביטול" onClick={() => onAct('edit')} />
       </div>
     </li>
   );
@@ -238,18 +234,18 @@ function DoneList({ q }: { q: { data?: TaskRow[]; isLoading: boolean; isError: b
   if (!q.data.length) return <Panel><EmptyState icon="task" title="עוד לא הושלמו משימות">משימה שמסמנים "בוצע" עוברת לכאן, עם מה שעלה בשיחה.</EmptyState></Panel>;
   return (
     <>
-      <p className="mb-2 text-sm text-muted">100 המשימות האחרונות שהושלמו או בוטלו.</p>
-      <ul className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper">
+      <p className="mb-2 text-small text-muted">100 המשימות האחרונות שהושלמו או בוטלו.</p>
+      <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper">
         {q.data.map((t) => (
           <li key={t.id} className="px-4 py-3 sm:px-5">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               {t.participant ? <PersonLink id={t.participant.id} name={t.participant.full_name} /> : <span className="text-muted">פרטים נמחקו</span>}
               <Badge tone={t.status === 'done' ? 'good' : 'neutral'} icon={t.status === 'done' ? 'check' : undefined}>{t.status === 'done' ? 'בוצע' : 'בוטלה'}</Badge>
-              <span className="text-sm text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</span>
+              <span className="text-small text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</span>
             </div>
-            <p className="mt-0.5 text-[0.95rem]">{t.title}</p>
-            {t.outcome && <p className="mt-1 whitespace-pre-line rounded-[var(--radius-control)] bg-mist px-3 py-2 text-[0.95rem] text-ink-soft">{t.outcome}</p>}
-            <p className="mt-1 text-sm text-muted">
+            <p className="mt-0.5 text-body">{t.title}</p>
+            {t.outcome && <p className="mt-1 whitespace-pre-line rounded-[var(--radius-control)] bg-mist px-3 py-2 text-body text-ink-soft">{t.outcome}</p>}
+            <p className="mt-1 text-small text-muted">
               {[t.completed_by ? name.get(t.completed_by) : null, t.completed_at ? fmtDate(t.completed_at) : null].filter(Boolean).join(' · ')}
             </p>
           </li>
@@ -266,7 +262,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
   return (
     <section id="lapsed" className="mt-8 scroll-mt-20">
       <Panel title="קבועים שהפסיקו להגיע" padded={false}>
-        <p className="border-b border-line-soft px-4 py-3 text-sm text-ink-soft sm:px-5">
+        <p className="border-b border-edge px-4 py-3 text-small text-ink-soft sm:px-5">
           היו קבועים, ומאז הביקור האחרון התקיימו 3 מפגשי שישי בלי שהגיעו. לפני שפונים אליהם פותחים משימה: זה האישור שמישהו מהצוות ידבר איתם.
         </p>
         {error ? (
@@ -276,12 +272,12 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
         ) : !lapsed.length ? (
           <EmptyState icon="checkCircle" title="אין כרגע קבועים שמחכים להחלטה">כל מי שהפסיק/ה להגיע כבר משויך/ת למשימה.</EmptyState>
         ) : (
-          <ul className="divide-y divide-line-soft">
+          <ul className="divide-y divide-edge">
             {lapsed.map((l) => (
               <li key={l.participant_id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <div className="min-w-0">
                   <PersonLink id={l.participant_id} name={l.full_name} />
-                  <p className="text-sm text-muted">
+                  <p className="text-small text-muted">
                     <span className="num">{l.friday_count}</span> מפגשי שישי · ביקור אחרון {l.last_attended_at ? <span title={fmtDate(l.last_attended_at)}>{ago(l.last_attended_at)}</span> : '—'} · מאז התקיימו <span className="num">{l.fridays_missed}</span> מפגשים
                   </p>
                 </div>
@@ -289,7 +285,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
                   size="sm"
                   variant="secondary"
                   icon="plus"
-                  className="h-11 self-start sm:h-9 sm:self-auto"
+                  className="self-start sm:self-auto"
                   busy={openTask.isPending && openTask.variables === l.participant_id}
                   onClick={() => openTask.mutate(l.participant_id)}
                 >

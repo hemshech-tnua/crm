@@ -98,7 +98,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
         ) : (
           <Notice icon="shield">יופיע/תופיע ב"הצעות ממתינות" עד שמנהל/ת יאשר/תאשר.</Notice>
         ))}
-        {formError && <p className="text-sm font-medium text-bad" role="alert">{formError}</p>}
+        {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
       </form>
     </Dialog>

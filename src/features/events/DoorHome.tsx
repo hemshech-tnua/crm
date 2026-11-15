@@ -5,6 +5,7 @@ import { errorMessage } from '@/lib/errors';
 import { fmtDayLong, fmtTime, ilParts, todayIl } from '@/lib/dates';
 import { Badge, ButtonLink, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
+import { Tri } from '@/ui/Shapes';
 import { eventKeys, fetchCheckinList, useDoorEvents, type DoorEvent } from './queries';
 import { StatusBadge, TypeBadge, inDoorWindow, timeRange } from './shared';
 
@@ -65,31 +66,30 @@ function DoorCard({ e, now, manager }: { e: DoorEvent; now: number; manager: boo
   const live = now >= new Date(e.starts_at).getTime() - 2 * 3600_000 && now <= new Date(e.ends_at).getTime();
 
   const body = (
-    <div className={cx('rounded-[var(--radius-panel)] border bg-paper p-5 transition-colors', live && !cancelled ? 'border-ink' : 'border-line-soft', open && !cancelled && 'hover:border-tide')}>
+    <div className={cx('rounded-[var(--radius-panel)] border bg-paper p-5 transition-colors', live && !cancelled ? 'border-ink' : 'border-edge', open && !cancelled && 'hover:border-ink')}>
       <div className="flex flex-wrap items-center gap-2">
         <TypeBadge type={e.type} />
         {live && !cancelled ? <Badge tone="light">עכשיו</Badge> : <StatusBadge status={e.status} endsAt={e.ends_at} />}
       </div>
-      <div className="mt-2 font-display text-[1.6rem] leading-tight">{e.title}</div>
+      <div className="mt-2 text-section font-bold">{e.title}</div>
       <div className="mt-1 text-ink-soft">
         {fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span>
       </div>
-      {e.location && <div className="text-sm text-muted">{e.location}</div>}
+      {e.location && <div className="text-small text-muted">{e.location}</div>}
       {open && !cancelled && counts.data && (
-        <div className="mt-3 flex items-baseline gap-2 text-[1.05rem]">
-          <span>הגיעו</span>
-          <span className="num font-display text-2xl">{arrived}</span>
-          <span className="text-muted">· רשומים</span>
-          <span className="num font-display text-2xl text-ink-soft">{registered}</span>
+        <div className="mt-3 flex items-baseline gap-2 text-body">
+          <span className="num font-display text-stat leading-none">{arrived}<span className="text-section text-muted">/{registered}</span></span>
+          <span className="font-medium text-ink-soft">הגיעו מתוך הרשומים</span>
         </div>
       )}
       <div className="mt-4">
         {cancelled ? (
           <p className="font-semibold text-bad">המפגש בוטל.</p>
         ) : open ? (
-          <span className="flex h-14 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] bg-tide text-lg font-semibold text-white">
+          <span className="flex h-14 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] bg-tide text-heading font-semibold text-light">
             <Icon name="door" />
             פתיחת רשימת הנוכחות
+            <Tri className="ms-1" />
           </span>
         ) : (
           <p className="text-muted">הרשימה תיפתח ב-<span className="num">{fmtTime(new Date(new Date(e.starts_at).getTime() - WINDOW))}</span>.</p>

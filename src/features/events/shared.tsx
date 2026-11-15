@@ -30,7 +30,8 @@ export function StatusBadge({ status, endsAt }: { status: EventStatus; endsAt?: 
   if (endsAt && (status === 'open' || status === 'closed') && new Date(endsAt).getTime() < Date.now()) {
     return <Badge tone="warn" icon="alert">הסתיים, לא נסגר</Badge>;
   }
-  return <Badge tone={STATUS_TONE[status]} icon={status === 'completed' ? 'check' : undefined}>{EVENT_STATUS_LABEL[status]}</Badge>;
+  const tone = STATUS_TONE[status];
+  return <Badge tone={tone} icon={tone === 'warn' || tone === 'bad' ? 'alert' : status === 'completed' ? 'check' : undefined}>{EVENT_STATUS_LABEL[status]}</Badge>;
 }
 
 /** "09:00–11:30" (shown LTR). */
@@ -53,10 +54,10 @@ export function BigStat({ label, value, sub, highlight, className = '' }: {
   label: ReactNode; value: ReactNode; sub?: ReactNode; highlight?: boolean; className?: string;
 }) {
   return (
-    <div className={cx('rounded-[var(--radius-control)] border px-4 py-3', highlight ? 'border-ink/60 bg-light-wash' : 'border-line-soft bg-paper', className)}>
-      <div className="text-sm font-medium text-muted">{label}</div>
-      <div className="num mt-0.5 text-right font-display text-[2rem] leading-tight text-ink">{value}</div>
-      {sub && <div className="mt-0.5 text-sm text-muted">{sub}</div>}
+    <div className={cx('rounded-[var(--radius-panel)] border px-4 py-3', highlight ? 'border-ink bg-light' : 'border-edge bg-paper', className)}>
+      <div className="text-small font-medium text-muted">{label}</div>
+      <div className="num mt-1 text-right font-display text-stat text-ink">{value}</div>
+      {sub && <div className="mt-1 text-small text-muted">{sub}</div>}
     </div>
   );
 }
@@ -86,17 +87,17 @@ export function useQrDataUrl(value: string, size: number) {
 /** A link with its own copy button. The URL is shown LTR and can be selected. */
 export function LinkRow({ label, url, onCopy, extra }: { label: ReactNode; url: string; onCopy: () => void; extra?: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5 border-b border-line-soft py-3 last:border-0 sm:flex-row sm:items-center sm:gap-3">
+    <div className="flex flex-col gap-1.5 border-b border-edge py-3 last:border-0 sm:flex-row sm:items-center sm:gap-3">
       <div className="min-w-0 flex-1">
         <div className="font-semibold">{label}</div>
-        <div dir="ltr" className="truncate text-left text-sm text-muted select-all">{url}</div>
+        <div dir="ltr" className="truncate text-left text-small text-muted select-all">{url}</div>
       </div>
       <div className="flex shrink-0 gap-2">
         {extra}
         <button
           type="button"
           onClick={onCopy}
-          className="inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-line bg-paper px-3 text-sm font-semibold hover:border-tide hover:text-tide"
+          className="inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 text-small font-semibold hover:border-ink hover:bg-ink/[0.06] pointer-coarse:h-11"
         >
           העתקה
         </button>
@@ -132,19 +133,19 @@ export function RowMenu({ items, label = 'פעולות נוספות', big = fals
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={cx('inline-flex items-center justify-center rounded-[var(--radius-control)] text-ink-soft hover:bg-mist-deep hover:text-ink', big ? 'h-12 w-12' : 'h-10 w-10')}
+        className={cx('inline-flex items-center justify-center rounded-[var(--radius-control)] text-ink-soft hover:bg-ink/[0.07] hover:text-ink', big ? 'h-12 w-12' : 'h-10 w-10 pointer-coarse:h-11 pointer-coarse:w-11')}
       >
         <Icon name="more" size={big ? 24 : 20} />
       </button>
       {open && (
-        <div role="menu" className="absolute top-full left-0 z-30 mt-1 min-w-48 rounded-[var(--radius-control)] border border-line bg-paper py-1 shadow-lg">
+        <div role="menu" className="absolute top-full left-0 z-30 mt-1 min-w-48 rounded-[var(--radius-control)] border border-edge bg-paper py-1 shadow-lg">
           {items.map((it) => (
             <button
               key={it.label}
               type="button"
               role="menuitem"
               onClick={() => { setOpen(false); it.onClick(); }}
-              className={cx('flex h-12 w-full items-center gap-2.5 px-3.5 text-right font-medium hover:bg-mist', it.danger ? 'text-bad' : 'text-ink')}
+              className={cx('flex h-12 w-full items-center gap-2.5 px-3.5 text-right font-medium hover:bg-ink/[0.06]', it.danger ? 'text-bad' : 'text-ink')}
             >
               {it.icon && <Icon name={it.icon} size={18} />}
               {it.label}

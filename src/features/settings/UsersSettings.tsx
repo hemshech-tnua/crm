@@ -62,20 +62,20 @@ export function UsersSettings() {
     <div className="flex flex-col gap-5">
       <Panel title="אנשי הצוות" padded={false} actions={<Button icon="userPlus" onClick={() => setCreating(true)}>משתמש חדש</Button>}>
         {staff.isLoading ? <div className="p-5"><Skeleton lines={4} /></div> : staff.error ? <div className="p-5"><ErrorBox error={errorMessage(staff.error)} /></div> : (
-          <ul className="divide-y divide-line-soft">
+          <ul className="divide-y divide-edge">
             {(staff.data ?? []).map((s) => {
               const self = s.user_id === me.data?.user_id;
               return (
                 <li key={s.user_id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5">
                   <div className="min-w-0 flex-1 basis-48">
-                    <div className="font-semibold">{s.full_name} {self && <span className="text-sm font-normal text-muted">(את/ה)</span>}</div>
-                    <div className="num text-sm text-muted" dir="ltr" style={{ textAlign: 'right' }}>
+                    <div className="font-semibold">{s.full_name} {self && <span className="text-small font-normal text-muted">(את/ה)</span>}</div>
+                    <div className="num text-small text-muted" dir="ltr" style={{ textAlign: 'right' }}>
                       {[s.phone ? formatPhone(s.phone) : null, s.email].filter(Boolean).join(' · ')}
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {!s.is_active && <Badge tone="bad">חסום</Badge>}
-                    {s.is_active && s.must_change_password && <Badge tone="warn">ממתין לבחירת סיסמה</Badge>}
+                    {!s.is_active && <Badge tone="bad" icon="alert">חסום</Badge>}
+                    {s.is_active && s.must_change_password && <Badge tone="warn" icon="alert">ממתין לבחירת סיסמה</Badge>}
                     <div className="flex items-center gap-1">
                       <Select aria-label={`תפקיד של ${s.full_name}`} value={s.role} disabled={self || busy === s.user_id} className="h-10 w-36"
                         onChange={(e) => run(s.user_id, { action: 'update', user_id: s.user_id, role: e.target.value }, 'התפקיד עודכן')}>
@@ -110,10 +110,10 @@ export function UsersSettings() {
         )}
       </Panel>
       <Panel title="מה כל תפקיד רואה">
-        <ul className="flex flex-col gap-2 text-[0.95rem]">
+        <ul className="flex flex-col gap-2 text-body">
           {ROLES.map((r) => <li key={r}><span className="font-semibold">{ROLE_LABEL[r]}:</span> <span className="text-ink-soft">{ROLE_HINT[r]}</span></li>)}
         </ul>
-        <p className="mt-3 text-sm text-muted">ההרשאות נאכפות בשרת, לא רק במסך. מומלץ לתת לכל אדם את התפקיד המצומצם ביותר שמספיק לו.</p>
+        <p className="mt-3 text-small text-muted">ההרשאות נאכפות בשרת, לא רק במסך. מומלץ לתת לכל אדם את התפקיד המצומצם ביותר שמספיק לו.</p>
       </Panel>
 
       <CreateUser
@@ -187,9 +187,9 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} required />
         <Input label="אימייל (לכניסה בקוד למייל)" type="email" ltr value={email} onChange={(e) => setEmail(e.target.value)} hint="נכנסים עם קוד חד־פעמי שנשלח למייל, בלי סיסמה." />
-        <Input label="טלפון נייד (לא חובה)" type="tel" inputMode="tel" ltr className="num" placeholder="050-1234567" value={phone} onChange={(e) => setPhone(e.target.value)} hint="לכניסה בקוד SMS, כשיחובר שירות SMS." />
+        <Input label="טלפון נייד (לא חובה)" type="tel" inputMode="tel" ltr className="num" value={phone} onChange={(e) => setPhone(e.target.value)} hint="למשל 050-1234567. לכניסה בקוד SMS, כשיחובר שירות SMS." />
         <ChoiceGroup<Role> legend="תפקיד" required columns={1} value={role} onChange={setRole}
-          options={ROLES.map((r) => ({ value: r, label: <span>{ROLE_LABEL[r]} <span className="block text-sm font-normal text-muted">{ROLE_HINT[r]}</span></span> }))} />
+          options={ROLES.map((r) => ({ value: r, label: <span>{ROLE_LABEL[r]} <span className="block text-small font-normal text-muted">{ROLE_HINT[r]}</span></span> }))} />
         {error && <ErrorBox error={error} />}
         <div className="flex gap-2"><Button type="submit" busy={busy}>יצירת המשתמש</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
       </form>
@@ -229,7 +229,7 @@ function InviteDialog({ invite, onClose }: { invite: { staff: Staff; url: string
       {invite && (
         <div className="flex flex-col gap-4">
           <p>שלחו ל<span className="font-semibold">{invite.staff.full_name}</span> את הקישור באופן אישי. הוא עובד פעם אחת ותקף 48 שעות. הקישור מוצג עכשיו בלבד.</p>
-          <code dir="ltr" className="num block break-all rounded-[var(--radius-control)] bg-mist p-3 text-sm">{invite.url}</code>
+          <code dir="ltr" className="num block break-all rounded-[var(--radius-control)] bg-mist p-3 text-small">{invite.url}</code>
           <div className="flex flex-wrap gap-2">
             {invite.staff.phone && (
               <a href={whatsappLink(invite.staff.phone, text)} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-tide px-5 font-semibold text-mist">שליחה בוואטסאפ</a>
@@ -260,7 +260,7 @@ function EmailDialog({ staff, onClose, onSave }: { staff: Staff; onClose: () => 
     <Dialog open onClose={onClose} title={`אימייל לכניסה: ${staff.full_name}`} size="sm">
       <form onSubmit={save} className="flex flex-col gap-4" noValidate>
         <Input label="אימייל" type="email" ltr value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} />
-        <p className="text-sm text-muted">הקוד לכניסה נשלח לכתובת הזו.</p>
+        <p className="text-small text-muted">הקוד לכניסה נשלח לכתובת הזו.</p>
         {error && <ErrorBox error={error} />}
         <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
       </form>
@@ -284,8 +284,8 @@ function PhoneDialog({ staff, onClose, onSave }: { staff: Staff; onClose: () => 
   return (
     <Dialog open onClose={onClose} title={`טלפון לכניסה: ${staff.full_name}`} size="sm">
       <form onSubmit={save} className="flex flex-col gap-4" noValidate>
-        <Input label="טלפון נייד" type="tel" inputMode="tel" ltr className="num" placeholder="050-1234567" value={phone} onChange={(e) => { setPhone(e.target.value); setError(null); }} />
-        <p className="text-sm text-muted">הקוד לכניסה נשלח ב-SMS למספר הזה. {staff.email ? 'אפשר להשאיר ריק כדי לחזור לכניסה עם סיסמה.' : ''}</p>
+        <Input label="טלפון נייד" type="tel" inputMode="tel" ltr className="num" hint="למשל 050-1234567" value={phone} onChange={(e) => { setPhone(e.target.value); setError(null); }} />
+        <p className="text-small text-muted">הקוד לכניסה נשלח ב-SMS למספר הזה. {staff.email ? 'אפשר להשאיר ריק כדי לחזור לכניסה עם סיסמה.' : ''}</p>
         {error && <ErrorBox error={error} />}
         <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
       </form>
@@ -301,10 +301,10 @@ function SecretDialog({ secret, onClose }: { secret: { name: string; email: stri
         <div className="flex flex-col gap-4">
           <p>מסרו ל<span className="font-semibold">{secret.name}</span> את פרטי הכניסה באופן אישי (שיחה או הודעה פרטית). הסיסמה מוצגת עכשיו בלבד ולא נשמרת במערכת.</p>
           <div className="rounded-[var(--radius-control)] bg-mist p-4">
-            <div className="text-sm text-muted">שם משתמש (טלפון או אימייל)</div>
+            <div className="text-small text-muted">שם משתמש (טלפון או אימייל)</div>
             <div className="num font-semibold" dir="ltr" style={{ textAlign: 'right' }}>{secret.email}</div>
-            <div className="mt-2 text-sm text-muted">סיסמה זמנית</div>
-            <div className="num font-display text-2xl tracking-wider" dir="ltr" style={{ textAlign: 'right' }}>{secret.password}</div>
+            <div className="mt-2 text-small text-muted">סיסמה זמנית</div>
+            <div className="num text-section font-bold tracking-wider" dir="ltr" style={{ textAlign: 'right' }}>{secret.password}</div>
           </div>
           <Notice>בכניסה הראשונה המערכת תבקש לבחור סיסמה אישית, ועד אז לא מוצגים שום נתונים.</Notice>
           <div className="flex gap-2">

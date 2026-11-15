@@ -90,18 +90,18 @@ export function TwoStepSettings() {
     <Panel title="אימות דו־שלבי" actions={on ? <Badge tone="good" icon="check">פעיל</Badge> : <Badge>כבוי</Badge>}>
       {on ? (
         <>
-          <p className="text-[0.95rem] text-ink-soft">בכל כניסה, אחרי הסיסמה, המערכת מבקשת קוד מאפליקציית האימות בטלפון. גם מי שישיג את הסיסמה לא ייכנס בלי הטלפון.</p>
+          <p className="text-body text-ink-soft">בכל כניסה, אחרי הסיסמה, המערכת מבקשת קוד מאפליקציית האימות בטלפון. גם מי שישיג את הסיסמה לא ייכנס בלי הטלפון.</p>
           <Button variant="secondary" className="mt-4" busy={busy} onClick={disable}>כיבוי</Button>
         </>
       ) : enroll ? (
         <form onSubmit={verify} className="flex flex-col gap-4" noValidate aria-label="הפעלת אימות דו־שלבי">
-          <ol className="list-decimal space-y-1 ps-5 text-[0.95rem] text-ink-soft">
+          <ol className="list-decimal space-y-1 ps-5 text-body text-ink-soft">
             <li>מתקינים בטלפון אפליקציית אימות (Google Authenticator, Microsoft Authenticator או דומה).</li>
             <li>באפליקציה בוחרים "הוספה" וסורקים את הברקוד.</li>
             <li>מקלידים כאן את הקוד בן 6 הספרות שמופיע באפליקציה.</li>
           </ol>
           <div className="self-center rounded-[var(--radius-panel)] bg-white p-3"><img src={enroll.qr} alt="ברקוד להוספת המשתמש לאפליקציית האימות" width={200} height={200} /></div>
-          <p className="text-sm text-muted">אי אפשר לסרוק? מקלידים באפליקציה את המפתח: <span className="num select-all break-all" dir="ltr">{enroll.secret}</span></p>
+          <p className="text-small text-muted">אי אפשר לסרוק? מקלידים באפליקציה את המפתח: <span className="num select-all break-all" dir="ltr">{enroll.secret}</span></p>
           <Input label="קוד מהאפליקציה" inputMode="numeric" autoComplete="one-time-code" maxLength={7} ltr className="num text-xl tracking-[0.3em]"
             value={code} onChange={(e) => setCode(e.target.value)} />
           {error && <ErrorBox error={error} />}
@@ -112,7 +112,7 @@ export function TwoStepSettings() {
         </form>
       ) : (
         <>
-          <p className="text-[0.95rem] text-ink-soft">שכבת הגנה נוספת: בכל כניסה, אחרי הסיסמה, מקלידים גם קוד מתחלף מאפליקציה בטלפון. מומלץ מאוד למנהלים.</p>
+          <p className="text-body text-ink-soft">שכבת הגנה נוספת: בכל כניסה, אחרי הסיסמה, מקלידים גם קוד מתחלף מאפליקציה בטלפון. מומלץ מאוד למנהלים.</p>
           {error && <div className="mt-3"><ErrorBox error={error} /></div>}
           <Button className="mt-4" icon="shield" busy={busy} onClick={start}>הפעלת אימות דו־שלבי</Button>
           {me.data?.role === 'admin' && <div className="mt-4"><Notice>אם הטלפון יאבד, מנהל/ת אחר/ת יכול/ה לאפס את האימות במסך המשתמשים.</Notice></div>}

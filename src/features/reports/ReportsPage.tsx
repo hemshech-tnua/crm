@@ -10,6 +10,7 @@ import { EVENT_TYPE_LABEL } from '@/lib/labels';
 import type { EventType } from '@/lib/types';
 import { Badge, Button, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, Tabs } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
+import { Icon } from '@/ui/Icon';
 import { Columns, SplitBars } from '@/ui/charts';
 import { FilterBar, rpcArgs, useFilters, type Filters } from './period';
 import { Drilldown, type DrillKind } from './Drilldown';
@@ -65,8 +66,9 @@ function State({ q, empty, children }: { q: { isLoading: boolean; error: unknown
   return <>{children}</>;
 }
 
-const th = 'px-3 py-2.5 text-right text-sm font-semibold text-muted whitespace-nowrap';
-const td = 'px-3 py-2.5 whitespace-nowrap';
+// the kit's Th/Td look (ui/kit.tsx), as class strings: these tables are built from column lists
+const th = 'h-10 bg-mist/70 px-3 text-right text-micro font-medium text-muted whitespace-nowrap first:ps-4 last:pe-4';
+const td = 'h-12 px-3 py-2 whitespace-nowrap first:ps-4 last:pe-4';
 
 // ───────────── per event ─────────────
 
@@ -107,32 +109,32 @@ function EventsReport({ filters }: { filters: Filters }) {
     <State q={q} empty={!rows.length}>
       <Panel padded={false} title={`${rows.length} מפגשים שהתקיימו`} actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('events', 'mifgashim', rows, cols)}>ייצוא לאקסל</Button>}>
         <div className="overflow-x-auto">
-          <table className="w-full text-[0.93rem]">
-            <thead className="border-b border-line-soft bg-mist/50">
+          <table className="w-full text-body">
+            <thead className="border-b border-edge">
               <tr>
                 <th className={th}>מפגש</th><th className={th}>מרצה ונושא</th><th className={th}>נרשמו</th><th className={th}>הגיעו</th>
                 <th className={th}>חדשים</th><th className={th}>חוזרים</th><th className={th}>שיעור הגעה</th><th className={th}>דירוג</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line-soft">
+            <tbody className="divide-y divide-edge">
               {rows.map((r) => {
                 const show = ratio(r.attended_registered_count, r.registered_count);
                 return (
-                  <tr key={r.id} className="hover:bg-mist/40">
+                  <tr key={r.id} className="hover:bg-mist/60">
                     <td className={td}>
                       <Link to={`/app/events/${r.id}?tab=summary`} className="font-semibold text-ink hover:text-tide hover:underline">{r.title}</Link>
-                      <div className="text-sm text-muted"><span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}{r.status !== 'completed' && <> · <Badge tone="warn">לא נסגר</Badge></>}</div>
+                      <div className="text-small text-muted"><span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}{r.status !== 'completed' && <> · <Badge tone="warn" icon="alert">לא נסגר</Badge></>}</div>
                     </td>
                     <td className={`${td} max-w-60 truncate`} title={[r.speaker_name, r.lecture_topic].filter(Boolean).join(': ')}>
                       {r.speaker_name ?? <span className="text-faint">—</span>}
-                      {r.lecture_topic && <div className="truncate text-sm text-muted">{r.lecture_topic}</div>}
+                      {r.lecture_topic && <div className="truncate text-small text-muted">{r.lecture_topic}</div>}
                     </td>
                     <td className={`${td} num`}>{r.registered_count}</td>
-                    <td className={`${td} num font-display text-lg`}>{r.attended_count}</td>
+                    <td className={`${td} num font-bold`}>{r.attended_count}</td>
                     <td className={`${td} num`}>{r.new_count}</td>
                     <td className={`${td} num`}>{r.returning_count}</td>
                     <td className={`${td} num`}>{pct(show)}</td>
-                    <td className={`${td} num`}>{num(r.avg_overall, 1)}{r.feedback_count ? <span className="text-xs text-muted"> ({r.feedback_count})</span> : null}</td>
+                    <td className={`${td} num`}>{num(r.avg_overall, 1)}{r.feedback_count ? <span className="text-micro text-muted"> ({r.feedback_count})</span> : null}</td>
                   </tr>
                 );
               })}
@@ -169,16 +171,16 @@ function MonthlyReport({ filters }: { filters: Filters }) {
     <State q={q} empty={!rows.length}>
       <Panel title="הגעות לפי חודש" className="mb-5">
         <Columns data={rows.map((r) => ({ key: r.month, label: fmtMonth(r.month), total: r.attendances, highlight: r.new_attendees, title: `${r.attendances} הגעות, ${r.new_attendees} חדשים` }))} />
-        <div className="mt-2 flex gap-5 text-sm text-muted">
-          <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm bg-tint" />חדשים באותו חודש</span>
-          <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm bg-ink/85" />שאר ההגעות</span>
+        <div className="mt-2 flex gap-5 text-small text-muted">
+          <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 bg-tint" />חדשים באותו חודש</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 bg-ink" />שאר ההגעות</span>
         </div>
       </Panel>
       <Panel padded={false} title="פירוט" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('monthly', 'chodashi', rows, cols)}>ייצוא לאקסל</Button>}>
         <div className="overflow-x-auto">
-          <table className="w-full text-[0.93rem]">
-            <thead className="border-b border-line-soft bg-mist/50"><tr>{cols.map((c) => <th key={c.header} className={th}>{c.header}</th>)}</tr></thead>
-            <tbody className="divide-y divide-line-soft">
+          <table className="w-full text-body">
+            <thead className="border-b border-edge"><tr>{cols.map((c) => <th key={c.header} className={th}>{c.header}</th>)}</tr></thead>
+            <tbody className="divide-y divide-edge">
               {[...rows].reverse().map((r) => (
                 <tr key={r.month}>{cols.map((c, i) => <td key={c.header} className={`${td} ${i ? 'num' : 'font-semibold'}`}>{String(c.value(r) ?? '—')}</td>)}</tr>
               ))}
@@ -216,9 +218,9 @@ function SourcesReport({ filters }: { filters: Filters }) {
         <State q={s} empty={!sources.length}>
           <div className="grid gap-6 lg:grid-cols-2">
             <SplitBars totalLabel="הגיעו פעם אחת" partLabel="חזרו" rows={sources.filter((x) => x.participants > 0).map((x) => ({ key: x.source_id ?? 'none', label: x.label, total: x.participants, part: x.returned, note: x.registered_only ? `${x.registered_only} נרשמו ועוד לא הגיעו` : undefined }))} />
-            <table className="w-full self-start text-[0.93rem]">
-              <thead className="border-b border-line-soft"><tr><th className={th}>מקור</th><th className={th}>חדשים</th><th className={th}>חזרו</th><th className={th}>ממוצע מפגשים</th></tr></thead>
-              <tbody className="divide-y divide-line-soft">
+            <table className="w-full self-start text-body">
+              <thead className="border-b border-edge"><tr><th className={th}>מקור</th><th className={th}>חדשים</th><th className={th}>חזרו</th><th className={th}>ממוצע מפגשים</th></tr></thead>
+              <tbody className="divide-y divide-edge">
                 {sources.map((x) => (
                   <tr key={x.source_id ?? 'none'}>
                     <td className={td}>{x.label}</td>
@@ -233,16 +235,16 @@ function SourcesReport({ filters }: { filters: Filters }) {
         </State>
       </Panel>
 
-      <Panel title="קישורי הרשמה לפי ערוץ וקמפיין" actions={<Link to="/app/settings?tab=links" className="text-sm font-semibold text-tide hover:underline">ניהול קישורים</Link>}>
+      <Panel title="קישורי הרשמה לפי ערוץ וקמפיין" actions={<Link to="/app/settings?tab=links" className="-my-2 inline-flex min-h-11 items-center text-small font-semibold text-tide hover:underline">ניהול קישורים</Link>}>
         <State q={l} empty={!(l.data ?? []).length}>
           <div className="overflow-x-auto">
-            <table className="w-full text-[0.93rem]">
-              <thead className="border-b border-line-soft"><tr><th className={th}>קישור</th><th className={th}>ערוץ</th><th className={th}>הרשמות</th><th className={th}>הגיעו</th><th className={th}>אנשים חדשים</th></tr></thead>
-              <tbody className="divide-y divide-line-soft">
+            <table className="w-full text-body">
+              <thead className="border-b border-edge"><tr><th className={th}>קישור</th><th className={th}>ערוץ</th><th className={th}>הרשמות</th><th className={th}>הגיעו</th><th className={th}>אנשים חדשים</th></tr></thead>
+              <tbody className="divide-y divide-edge">
                 {(l.data ?? []).map((x) => (
                   <tr key={x.id}>
-                    <td className={td}><span className="font-semibold">{x.label}</span> <span className="num text-sm text-muted">?ref={x.code}</span>{!x.is_active && <> <Badge>לא פעיל</Badge></>}</td>
-                    <td className={td}>{x.source_label ?? '—'}{x.campaign && <div className="text-sm text-muted">{x.campaign}</div>}</td>
+                    <td className={td}><span className="font-semibold">{x.label}</span> <span className="num text-small text-muted">?ref={x.code}</span>{!x.is_active && <> <Badge>לא פעיל</Badge></>}</td>
+                    <td className={td}>{x.source_label ?? '—'}{x.campaign && <div className="text-small text-muted">{x.campaign}</div>}</td>
                     <td className={`${td} num`}>{x.registrations}</td>
                     <td className={`${td} num`}>{x.attended}</td>
                     <td className={`${td} num`}>{x.new_people}</td>
@@ -259,17 +261,17 @@ function SourcesReport({ filters }: { filters: Filters }) {
           {r.data && (
             <>
               {r.data.unlinked_names > 0 && (
-                <p className="mb-3 text-sm text-warn">{r.data.unlinked_names} לוחמים כתבו שם של חבר שעוד לא קושר לכרטיס. אפשר לקשר מתוך כרטיס הלוחם.</p>
+                <p className="mb-3 flex items-start gap-1.5 text-small font-medium text-warn"><Icon name="alert" size={15} className="mt-0.5" />{r.data.unlinked_names} לוחמים כתבו שם של חבר שעוד לא קושר לכרטיס. אפשר לקשר מתוך כרטיס הלוחם.</p>
               )}
-              <ul className="divide-y divide-line-soft">
+              <ul className="divide-y divide-edge">
                 {r.data.referrers.map((x) => (
                   <li key={x.id} className="flex flex-wrap items-center gap-x-5 gap-y-1 py-2.5">
                     <Link to={`/app/participants/${x.id}`} className="min-w-40 flex-1 font-semibold hover:text-tide hover:underline">{x.full_name}</Link>
-                    <span className="text-sm">הביא/ה <span className="num font-display text-lg">{x.friends}</span></span>
-                    <span className="text-sm text-muted">הגיעו: <span className="num">{x.friends_attended}</span></span>
-                    <span className="text-sm text-muted">חזרו: <span className="num">{x.friends_returned}</span></span>
+                    <span className="text-small">הביא/ה <span className="num font-bold">{x.friends}</span></span>
+                    <span className="text-small text-muted">הגיעו: <span className="num">{x.friends_attended}</span></span>
+                    <span className="text-small text-muted">חזרו: <span className="num">{x.friends_returned}</span></span>
                     {x.friend_list?.length ? (
-                      <span className="w-full text-sm text-ink-soft">
+                      <span className="w-full text-small text-ink-soft">
                         {x.friend_list.map((f, i) => (
                           <span key={f.id}>{i > 0 && ' · '}<Link to={`/app/participants/${f.id}`} className="hover:text-tide hover:underline">{f.full_name}</Link>
                             <span className="num text-muted"> ({f.attended})</span></span>
@@ -312,18 +314,18 @@ function PresentersReport({ filters }: { filters: Filters }) {
     if (!list.length) return <p className="p-5 text-muted">אין עדיין מפגשים שנסגרו בתקופה.</p>;
     return (
       <div className="overflow-x-auto">
-        <table className="w-full text-[0.93rem]">
-          <thead className="border-b border-line-soft bg-mist/50"><tr>
+        <table className="w-full text-body">
+          <thead className="border-b border-edge"><tr>
             <th className={th}>שם</th><th className={th}>{kind === 'speaker' ? 'נושאי ההרצאות' : 'פעילויות'}</th><th className={th}>מפגשים</th>
             <th className={th}>ממוצע משתתפים</th><th className={th}>חדשים</th><th className={th}>{kind === 'speaker' ? 'דירוג ההרצאה' : 'דירוג הפעילות'}</th>
           </tr></thead>
-          <tbody className="divide-y divide-line-soft">
+          <tbody className="divide-y divide-edge">
             {list.map((x) => (
               <tr key={x.id}>
                 <td className={`${td} font-semibold`}>{x.full_name}</td>
                 <td className={`${td} max-w-72 truncate`} title={x.topics ?? ''}>{x.topics ?? x.topic ?? '—'}</td>
                 <td className={`${td} num`}>{x.events}</td>
-                <td className={`${td} num font-display text-lg`}>{num(x.avg_attendance, 1)}</td>
+                <td className={`${td} num font-bold`}>{num(x.avg_attendance, 1)}</td>
                 <td className={`${td} num`}>{x.new_attendees}</td>
                 <td className={`${td} num`}>{num(x.avg_rating, 1)}</td>
               </tr>
@@ -361,7 +363,7 @@ function RetentionReport({ filters }: { filters: Filters }) {
       <Panel title="לכמה מפגשים כל לוחם הגיע (מאז ומעולם)">
         <State q={q} empty={total === 0}>
           <Columns data={(q.data ?? []).map((b) => ({ key: b.bucket, label: `${b.bucket} ${b.bucket === '1' ? 'מפגש' : 'מפגשים'}`, total: b.participants, highlight: 0 }))} />
-          <p className="mt-3 text-sm text-muted">
+          <p className="mt-3 text-small text-muted">
             {total} לוחמים הגיעו לפחות פעם אחת. {q.data && q.data[0] ? `${pct(ratio(total - q.data[0].participants, total))} מהם חזרו לפחות פעם נוספת.` : ''}
           </p>
         </State>

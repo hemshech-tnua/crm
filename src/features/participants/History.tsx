@@ -65,7 +65,7 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
               {c.template_key && <span className="font-normal text-ink-soft">: {tplLabel.get(c.template_key) ?? 'הודעה מתבנית'}</span>}
             </p>
             {c.summary && <p className="mt-0.5 whitespace-pre-line text-ink-soft">{c.summary}</p>}
-            {task && <p className="mt-0.5 text-sm text-muted">במסגרת משימה: {task.title}</p>}
+            {task && <p className="mt-0.5 text-small text-muted">במסגרת משימה: {task.title}</p>}
             <Meta>{[c.created_by ? staffName.get(c.created_by) ?? 'איש/אשת צוות' : null, fmtDateTime(c.created_at)]}</Meta>
           </div>
         ),
@@ -81,7 +81,7 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
         node: (
           <div>
             <p className="font-semibold">{t.status === 'done' ? 'משימה הושלמה' : 'משימה בוטלה'}: <span className="font-normal">{t.title}</span></p>
-            <p className="text-sm text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</p>
+            <p className="text-small text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</p>
             {t.outcome && <p className="mt-0.5 whitespace-pre-line text-ink-soft">{t.outcome}</p>}
             <Meta>{[t.completed_by ? staffName.get(t.completed_by) : null, t.completed_at ? fmtDate(t.completed_at) : null]}</Meta>
           </div>
@@ -98,21 +98,21 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
     <ol className="relative">
       {items.map((it, i) => (
         <li key={it.key} className="relative flex gap-3 pb-5 last:pb-0">
-          {i < items.length - 1 && <span className="absolute top-9 bottom-0 right-[17px] w-px bg-line" aria-hidden="true" />}
+          {i < items.length - 1 && <span className="absolute top-9 bottom-0 right-[17px] w-px bg-ink/15" aria-hidden="true" />}
           <span
             className={cx(
               'relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] border-2',
-              it.dot === 'attended' && 'border-tide bg-tide text-white',
+              it.dot === 'attended' && 'border-tide bg-tide text-light',
               it.dot === 'missed' && 'border-bad/50 bg-paper text-bad',
               it.dot === 'next' && 'border-ink bg-light text-ink',
-              it.dot === 'contact' && 'border-line bg-mist text-ink-soft',
-              it.dot === 'plain' && 'border-line bg-paper text-muted',
+              it.dot === 'contact' && 'border-control-line/50 bg-mist text-ink-soft',
+              it.dot === 'plain' && 'border-control-line/50 bg-paper text-muted',
             )}
             aria-hidden="true"
           >
             <Icon name={it.icon} size={17} />
           </span>
-          <div className="min-w-0 flex-1 pt-1.5 text-[0.95rem]">{it.node}</div>
+          <div className="min-w-0 flex-1 pt-1.5 text-body">{it.node}</div>
         </li>
       ))}
     </ol>
@@ -122,16 +122,16 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
 function Meta({ children }: { children: (string | null | undefined)[] }) {
   const parts = children.filter(Boolean);
   if (!parts.length) return null;
-  return <p className="mt-1 text-sm text-muted">{parts.join(' · ')}</p>;
+  return <p className="mt-1 text-small text-muted">{parts.join(' · ')}</p>;
 }
 
 function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; future: boolean }) {
   const ev = r.event!;
   const badges: ReactNode[] = [];
   if (r.status === 'cancelled') badges.push(<Badge key="s">{r.cancelled_by === 'staff' ? 'בוטל ע״י הצוות' : 'ביטל/ה'}</Badge>);
-  else if (r.status === 'waitlisted') badges.push(<Badge key="s" tone="warn">ברשימת המתנה</Badge>);
+  else if (r.status === 'waitlisted') badges.push(<Badge key="s" tone="warn" icon="alert">ברשימת המתנה</Badge>);
   else if (r.attendance === 'attended') badges.push(<Badge key="s" tone="good" icon="check">הגיע/ה</Badge>);
-  else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="bad">לא הגיע/ה</Badge>);
+  else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="bad" icon="alert">לא הגיע/ה</Badge>);
   else badges.push(<Badge key="s" tone={future ? 'light' : 'neutral'}>{future ? 'רשום/ה' : 'טרם סומן'}</Badge>);
   if (r.is_walk_in) badges.push(<Badge key="w">הגיע/ה בלי הרשמה</Badge>);
 
@@ -148,8 +148,8 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
         </Link>
         {badges}
       </div>
-      <p className="text-sm text-ink-soft">{fmtDayLong(ev.starts_at)}</p>
-      <ul className="mt-1 flex flex-col gap-0.5 text-sm text-muted">
+      <p className="text-small text-ink-soft">{fmtDayLong(ev.starts_at)}</p>
+      <ul className="mt-1 flex flex-col gap-0.5 text-small text-muted">
         {checkin && <li>{checkin}</li>}
         {!r.is_walk_in && <li>נרשם/ה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (ע״י הצוות)' : ''}</li>}
         {(r.how_heard || r.how_heard_detail) && <li>איך שמע/ה: {[r.how_heard?.label, r.how_heard_detail].filter(Boolean).join(': ')}</li>}
@@ -169,16 +169,15 @@ function FeedbackItem({ f, standalone }: { f: CardFeedback; standalone?: boolean
   return (
     <div className={cx(!standalone && 'mt-2 rounded-[var(--radius-control)] bg-mist px-3 py-2')}>
       {standalone && <p className="font-semibold">משוב{f.event ? ` על ${f.event.title}, ${fmtDate(f.event.starts_at)}` : ''}</p>}
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small">
         {!standalone && <span className="font-semibold">המשוב שנתן/ה:</span>}
         {parts.filter(([, v]) => v != null).map(([k, v]) => (
           <span key={k} className="inline-flex items-center gap-1">
-            <Icon name="star" size={14} className="text-light-deep" />
             {k} <span className="num font-semibold">{v}/5</span>
           </span>
         ))}
       </p>
-      {f.comment && <p className="mt-1 text-[0.95rem] text-ink-soft">"{f.comment}"</p>}
+      {f.comment && <p className="mt-1 text-body text-ink-soft">"{f.comment}"</p>}
     </div>
   );
 }

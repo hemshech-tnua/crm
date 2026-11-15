@@ -34,12 +34,12 @@ export function LinksSettings() {
         {links.isLoading ? <div className="p-5"><Skeleton lines={4} /></div> : links.error ? <div className="p-5"><ErrorBox error={errorMessage(links.error)} /></div> : !links.data?.length ? (
           <EmptyState icon="link" title="עוד אין קישורים לפי ערוץ" action={<Button icon="plus" onClick={() => setOpen(true)}>קישור ראשון</Button>}>למשל: "ביו באינסטגרם" או "קבוצת המילואים של מודיעין".</EmptyState>
         ) : (
-          <ul className="divide-y divide-line-soft">
+          <ul className="divide-y divide-edge">
             {links.data.map((l) => (
               <li key={l.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
                 <div className="min-w-48 flex-1">
                   <div className="font-semibold">{l.label} {!l.is_active && <Badge>מושבת</Badge>}</div>
-                  <div className="text-sm text-muted">{label(l.source_id) ?? 'בלי ערוץ'}{l.campaign ? ` · ${l.campaign}` : ''} · <span className="num">ref={l.code}</span></div>
+                  <div className="text-small text-muted">{label(l.source_id) ?? 'בלי ערוץ'}{l.campaign ? ` · ${l.campaign}` : ''} · <span className="num">ref={l.code}</span></div>
                 </div>
                 <Button size="sm" variant="secondary" icon="copy" disabled={!l.is_active} onClick={() => copy(allEventsUrl(l.code), 'הקישור הועתק')}>העתקה</Button>
                 <Button size="sm" variant="ghost" onClick={() => toggle.mutate({ id: l.id, is_active: !l.is_active })}>{l.is_active ? 'השבתה' : 'הפעלה'}</Button>

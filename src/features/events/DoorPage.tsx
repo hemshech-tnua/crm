@@ -7,7 +7,7 @@ import { useSources } from '@/lib/data';
 import { errorCode, errorMessage, must } from '@/lib/errors';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { normalizePhone } from '@/lib/phone';
-import { Badge, Button, EmptyState, ErrorBox, Input, Notice, Panel, Select, Skeleton, cx } from '@/ui/kit';
+import { Badge, Button, EmptyState, ErrorBox, Input, Notice, Panel, SearchInput, Select, Skeleton, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { eventKeys, fetchCheckinList, useDoorEvent, useInvalidateEvent, type CheckinRow } from './queries';
@@ -142,50 +142,41 @@ export function DoorPage() {
   return (
     <div className="mx-auto max-w-2xl">
       {/* sticky header: event, live counter, search */}
-      <div className="sticky top-14 z-20 -mx-4 -mt-5 border-b border-line bg-mist/95 px-4 pt-3 pb-3 backdrop-blur sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:-mt-9 md:px-10 md:pt-5">
+      <div className="sticky top-16 z-20 -mx-4 -mt-5 border-b border-edge bg-sky/95 px-4 pt-1 pb-3 backdrop-blur sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:-mt-9 md:px-10 md:pt-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Link to={can.manage(role) ? `/app/events/${id}` : '/app/door'} className="inline-flex items-center gap-1 text-sm font-medium text-tide">
+            <Link to={can.manage(role) ? `/app/events/${id}` : '/app/door'} className="inline-flex min-h-11 items-center gap-1 text-small font-medium text-tide hover:underline">
               <Icon name="back" size={16} />
               {can.manage(role) ? 'לעמוד המפגש' : 'כניסה'}
             </Link>
-            <h1 className="truncate font-display text-[1.45rem] leading-tight">{e?.title ?? 'רשימת נוכחות'}</h1>
-            {e && <div className="text-sm text-muted">{fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span></div>}
+            <h1 className="truncate text-section font-bold">{e?.title ?? 'רשימת נוכחות'}</h1>
+            {e && <div className="hidden text-small text-muted sm:block">{fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span></div>}
+            {!forbidden && walkIns > 0 && <div className="text-small text-ink-soft">מתוכם בלי הרשמה <span className="num font-bold text-ink">{walkIns}</span></div>}
           </div>
-          {!forbidden && <div className="shrink-0 rounded-[var(--radius-control)] bg-light px-3.5 py-1.5 text-center text-ink" aria-live="polite">
-            <div className="num font-display text-[2rem] leading-none">{totalArrived}</div>
-            <div className="text-xs font-semibold">הגיעו</div>
+          {/* one live tile: arrived out of registered */}
+          {!forbidden && <div className="mt-2 shrink-0 rounded-[var(--radius-control)] bg-ink px-3.5 py-2 text-center text-light" aria-live="polite">
+            <div className="num font-display text-[1.75rem] leading-none" aria-label={`הגיעו ${totalArrived} מתוך ${totalRegistered} רשומים`}>
+              {totalArrived}<span className="text-heading text-light/70">/{totalRegistered}</span>
+            </div>
+            <div className="mt-0.5 text-micro font-medium">הגיעו</div>
           </div>}
         </div>
-        {!forbidden && <>
-        <div className="mt-1.5 text-[0.95rem] font-medium text-ink-soft">
-          הגיעו <span className="num font-bold text-ink">{totalArrived}</span> · רשומים <span className="num font-bold text-ink">{totalRegistered}</span>
-          {walkIns > 0 && <> · בלי הרשמה <span className="num font-bold text-ink">{walkIns}</span></>}
-        </div>
-        <div className="mt-2.5 flex gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Icon name="search" size={20} className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-faint" />
-            <input
-              type="search"
-              inputMode="search"
-              aria-label="חיפוש לפי שם או 4 ספרות אחרונות"
-              placeholder="שם או 4 ספרות"
-              value={search}
-              onChange={(x) => setSearch(x.target.value)}
-              className="h-14 w-full rounded-[var(--radius-control)] border border-line bg-paper pr-11 pl-3 text-[1.05rem] placeholder:text-faint focus:border-tide focus:ring-2 focus:ring-tide/20 focus:outline-none"
-            />
+        {!forbidden && (
+          <div className="mt-2.5 flex gap-2">
+            <div className="min-w-0 flex-1">
+              <SearchInput value={search} onChange={setSearch} label="חיפוש לפי שם או 4 ספרות אחרונות" placeholder="שם או 4 ספרות" size="lg" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setWalkin(/\d/.test(term) ? '' : term)}
+              disabled={!!inactive || forbidden}
+              className="flex h-12 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] bg-tide px-3 font-semibold text-light hover:bg-ink-soft active:bg-tide-deep disabled:bg-tide/40 disabled:text-light/80"
+            >
+              <Icon name="userPlus" size={20} />
+              <span className="text-right text-small leading-tight">הגיע/ה<br />בלי הרשמה</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setWalkin(/\d/.test(term) ? '' : term)}
-            disabled={!!inactive || forbidden}
-            className="flex h-14 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] bg-tide px-3.5 font-semibold text-white hover:bg-tide-deep disabled:bg-faint"
-          >
-            <Icon name="userPlus" size={20} />
-            <span className="text-right text-[0.9rem] leading-tight">הגיע/ה<br />בלי הרשמה</span>
-          </button>
-        </div>
-        </>}
+        )}
       </div>
 
       <div className="pt-4">
@@ -258,7 +249,7 @@ export function DoorPage() {
                 )}
               </section>
             )}
-            <p className="text-center text-sm text-muted">
+            <p className="text-center text-small text-muted">
               כל סימון נשמר מיד. הרשימה מתעדכנת לבד כל 15 שניות{list.dataUpdatedAt ? <>, עודכנה ב-<span className="num">{fmtTime(new Date(list.dataUpdatedAt))}</span></> : null}.
             </p>
           </div>
@@ -279,11 +270,11 @@ export function DoorPage() {
 function Section({ title, count, hint, children }: { title: string; count: number; hint?: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-2 flex items-baseline gap-2 px-1 text-[1.05rem] font-bold">
+      <h2 className="mb-2 flex items-baseline gap-2 px-1 text-heading font-bold">
         {title}
-        <span className="num text-sm font-normal text-muted">({count})</span>
+        <span className="num text-small font-normal text-muted">({count})</span>
       </h2>
-      {hint && <p className="-mt-1 mb-2 px-1 text-sm text-muted">{hint}</p>}
+      {hint && <p className="-mt-1 mb-2 px-1 text-small text-muted">{hint}</p>}
       <ul className="flex flex-col gap-2">{children}</ul>
     </section>
   );
@@ -295,7 +286,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
   const on = r.attendance === 'attended';
   const nth = r.prior_fridays + 1;
   return (
-    <li className={cx('flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border bg-paper py-2.5 pr-2.5 pl-1.5', on ? 'border-good/40' : 'border-line-soft')}>
+    <li className={cx('flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border bg-paper py-2.5 pr-2.5 pl-1.5', on ? 'border-good/40' : 'border-edge')}>
       <button
         type="button"
         onClick={onToggle}
@@ -303,15 +294,15 @@ function Row({ r, friday, disabled, onToggle, menu }: {
         aria-pressed={on}
         aria-label={on ? `${r.display_name} הגיע/ה. לחיצה מבטלת` : `סימון ש${r.display_name} הגיע/ה`}
         className={cx(
-          'flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] border-2 transition-colors active:scale-95 disabled:opacity-50',
-          on ? 'border-good bg-good text-white' : 'border-tide/50 bg-paper text-tide hover:bg-tide-wash',
+          'flex h-14 w-14 shrink-0 items-center justify-center rounded-[var(--radius-control)] border-2 transition-colors active:scale-95 disabled:opacity-50',
+          on ? 'border-good bg-good text-white' : 'border-control-line bg-paper text-ink hover:border-ink hover:bg-ink/[0.06]',
         )}
       >
         {on ? <Icon name="check" size={30} strokeWidth={3} /> : <span aria-hidden="true" className="h-7 w-7 rounded-[var(--radius-control)] border-[3px] border-current" />}
       </button>
       <div className="min-w-0 flex-1">
-        <div className={cx('truncate text-[1.1rem] font-bold leading-snug', r.status === 'cancelled' && 'text-muted')}>{r.display_name}</div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
+        <div className={cx('truncate text-heading font-bold', r.status === 'cancelled' && 'text-muted')}>{r.display_name}</div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-small text-muted">
           {r.phone_last4 && <span className="num" aria-label={`טלפון שמסתיים ב-${r.phone_last4}`}>••{r.phone_last4}</span>}
           {r.first_time && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
           {friday && !r.first_time && isMilestone(nth) && <Badge tone="good" icon="star" title={`מפגש השישי ה-${nth} שלו/ה. כדאי לברך!`}>מפגש שישי {nth}</Badge>}
@@ -325,7 +316,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
           {r.invited_by && <span title="מי הזמין/ה">בהזמנת {r.invited_by}</span>}
           {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
           {r.status === 'waitlisted' && r.waitlist_position && <span>בהמתנה <span className="num">#{r.waitlist_position}</span></span>}
-          {r.attendance === 'no_show' && <Badge tone="bad">סומן/ה לא הגיע/ה</Badge>}
+          {r.attendance === 'no_show' && <Badge tone="bad" icon="alert">סומן/ה לא הגיע/ה</Badge>}
           {on && r.checked_in_at && (
             <span>
               <span className="num">{fmtTime(r.checked_in_at)}</span>
@@ -436,21 +427,21 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
       <Input label="שם מלא" required autoFocus={!initialName} value={name} onChange={(x) => setName(x.target.value)} error={errors.name} autoComplete="off" maxLength={80} />
       {(suggestions.data?.length ?? 0) > 0 && !phone && (
         <div className="rounded-[var(--radius-control)] border border-tide/30 bg-tide-wash p-3" aria-live="polite">
-          <p className="mb-2 text-sm font-semibold text-tide-deep">כבר מכירים? אם זה אחד מאלה, לוחצים עליו במקום להוסיף כרטיס חדש:</p>
+          <p className="mb-2 text-small font-semibold text-tide-deep">כבר מכירים? אם זה אחד מאלה, לוחצים עליו במקום להוסיף כרטיס חדש:</p>
           <ul className="flex flex-col gap-1.5">
             {suggestions.data!.map((p) => (
               <li key={p.participant_id}>
                 <button type="button" disabled={pick.isPending} onClick={() => pick.mutate(p)}
                   className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] bg-paper px-3 text-right hover:ring-2 hover:ring-tide/40">
                   <span className="font-semibold">{p.full_name}{p.city ? <span className="font-normal text-muted"> · {p.city}</span> : null}</span>
-                  {p.phone_last4 && <span className="num text-sm text-muted">••{p.phone_last4}</span>}
+                  {p.phone_last4 && <span className="num text-small text-muted">••{p.phone_last4}</span>}
                 </button>
               </li>
             ))}
           </ul>
         </div>
       )}
-      <Input label="טלפון" required type="tel" inputMode="tel" ltr autoFocus={!!initialName} value={phone} onChange={(x) => setPhone(x.target.value)} error={errors.phone} placeholder="050-1234567" autoComplete="off" />
+      <Input label="טלפון" required type="tel" inputMode="tel" ltr autoFocus={!!initialName} value={phone} onChange={(x) => setPhone(x.target.value)} error={errors.phone} hint="למשל 050-1234567" autoComplete="off" />
       {more ? (
         <>
           <Input label="עיר" value={city} onChange={(x) => setCity(x.target.value)} maxLength={60} autoComplete="off" />
@@ -463,7 +454,7 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
       ) : (
         <button type="button" onClick={() => setMore(true)} className="h-11 self-start font-semibold text-tide">הוספת עיר, גיל ומקור (לא חובה)</button>
       )}
-      {errors.form && <p className="text-sm font-medium text-bad" role="alert">{errors.form}</p>}
+      {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button type="submit" size="lg" icon="check" busy={add.isPending}>רישום וסימון הגעה</Button>
         <Button variant="ghost" size="lg" onClick={onClose}>ביטול</Button>
