@@ -114,7 +114,7 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
       )}
       <Honeypot value={website} onChange={setWebsite} />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" busy={busy} className="w-full">{submitLabel}</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="w-full">{submitLabel}</Button>
     </form>
   );
 }

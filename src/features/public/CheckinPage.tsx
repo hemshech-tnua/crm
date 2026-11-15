@@ -188,7 +188,7 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
         error={phoneErr}
       />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" busy={busy} className="h-16! w-full text-xl!">צ׳ק־אין</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">צ׳ק־אין</Button>
       <p className="text-center text-[0.95rem] text-muted">לא נרשמת מראש? גם בסדר. מקלידים טלפון וממשיכים משם.</p>
     </form>
   );
@@ -280,7 +280,7 @@ function NameStep({ code, phone, onResult, onNeedDetails }: {
       />
       <Honeypot value={website} onChange={setWebsite} />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" busy={busy} className="h-16! w-full text-xl!">המשך</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">המשך</Button>
     </form>
   );
 }
@@ -315,7 +315,7 @@ function WalkinForm({ code, phone, name, sources, onResult }: {
       <PersonFields form={form} sources={sources} big />
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" busy={busy} className="h-16! w-full text-xl!">נרשמים ונכנסים</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">נרשמים ונכנסים</Button>
     </form>
   );
 }
@@ -398,8 +398,8 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
   const milestone = event?.type === 'friday' ? MILESTONES[r.friday_count ?? 0] : undefined;
   const firstTime = r.result === 'checked_in' && r.attended_count === 1;
   return (
-    <div className="flex flex-col items-center gap-4 pt-6 text-center">
-      <SuccessMark size="lg" />
+    <div className="flex flex-col items-start gap-4 pt-6 text-right">
+      <SuccessMark size="lg" className="mx-0" />
       <ResultTitle size="xl" className="mt-2">
         {r.first_name ? (
           <>
@@ -419,8 +419,8 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
       {!milestone && firstTime && <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>}
       {r.membership === 'member' && <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2 text-[1.05rem] font-semibold text-ink">יש לך חברות בעמותה. תודה על השותפות!</p>}
       {r.can_undo && r.result === 'checked_in' && (
-        <div className="mt-1 flex flex-col items-center gap-2">
-          <button type="button" onClick={notMe} disabled={undoing} className="min-h-11 px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
+        <div className="mt-1 flex flex-col items-start gap-2">
+          <button type="button" onClick={notMe} disabled={undoing} className="-ms-3 min-h-11 px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
             {undoing ? 'מבטלים…' : r.first_name ? `זה לא אני, אני לא ${r.first_name}` : 'זה לא אני'}
           </button>
           {undoError && <ErrorBox error={undoError} />}

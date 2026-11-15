@@ -6,6 +6,7 @@ import { downloadFile } from '@/lib/csv';
 import type { ReferralLink } from '@/lib/types';
 import { Button, ButtonLink, Checkbox, Input, Notice, Panel, Segmented, Select, cx } from '@/ui/kit';
 import { Tri } from '@/ui/Shapes';
+import { Icon } from '@/ui/Icon';
 import { useCopy, useToast } from '@/ui/feedback';
 import type { EventPeople } from './context';
 import {
@@ -86,8 +87,11 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
   const waLink = active.find((l) => l.id === waId);
   const publicUrl = registerUrl(e.public_code, igLink?.code);
   const waUrl = registerUrl(e.public_code, waLink?.code);
-  const shownLink = publicUrl.replace(/^https?:\/\//, '');
-  const drawn: PostContent = { ...content, link: withLink ? shownLink : '' };
+  // a link printed on the image is for typing: no protocol and no tracking query (nobody types "?ref=…")
+  const shownLink = publicUrl.replace(/^https?:\/\//, '').replace(/\?.*$/, '');
+  // the image never says "the link is in the bio" right above a printed link
+  const drawnCta = withLink && /בביו/.test(content.cta) ? 'הירשמו בקישור' : content.cta;
+  const drawn: PostContent = { ...content, cta: drawnCta, link: withLink ? shownLink : '' };
 
   const canvases = useRef<Partial<Record<PostFormat, HTMLCanvasElement | null>>>({});
   const [fontsReady, setFontsReady] = useState(false);
@@ -201,7 +205,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
                     );
                   })}
                   <label className={cx(
-                    'flex aspect-[4/5] cursor-pointer flex-col items-center justify-center gap-1 rounded-[var(--radius-control)] border-2 border-dashed p-1 text-center text-[0.78rem] leading-tight font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink',
+                    'flex aspect-[4/5] cursor-pointer flex-col items-center justify-center gap-1 rounded-[var(--radius-control)] border p-1 text-center text-[0.78rem] leading-tight font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink',
                     ownPhoto ? 'border-solid border-ink bg-paper' : 'border-control-line bg-paper hover:border-ink',
                   )}>
                     <input
@@ -214,7 +218,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
                         x.target.value = '';
                       }}
                     />
-                    {ownPhoto && <Tri />}
+                    {ownPhoto ? <Tri /> : <Icon name="image" size={22} />}
                     <span>בחירה מהמכשיר</span>
                   </label>
                 </div>

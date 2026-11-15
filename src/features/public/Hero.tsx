@@ -24,7 +24,7 @@ export function Hero({ photo, kicker, title, children, position = 'center', clas
       </div>
       <div className="relative order-first aspect-[3/1] overflow-hidden sm:aspect-[16/7] lg:order-none lg:aspect-auto">
         <img src={photo} alt="" decoding="async" fetchPriority="high" className="h-full w-full object-cover lg:absolute lg:inset-0" style={{ objectPosition: position }} />
-        <Stripes width={200} height={90} unit={20} dir="fall" count={3} offset={0} className="absolute bottom-0 left-0 h-[34%] w-[34%] text-light lg:h-[26%] lg:w-[30%]" />
+        <Stripes width={200} height={90} unit={20} dir="fall" count={3} offset={0} className="absolute bottom-0 left-0 hidden h-[34%] w-[34%] text-light sm:block lg:h-[26%] lg:w-[30%]" />
       </div>
     </section>
   );

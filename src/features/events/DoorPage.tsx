@@ -217,7 +217,7 @@ export function DoorPage() {
               </Section>
             )}
             {!term && notYet.length === 0 && totalRegistered > 0 && (
-              <p className="flex items-center gap-2 rounded-[var(--radius-control)] bg-good-wash px-4 py-3 font-semibold text-good">
+              <p className="flex items-center gap-2 rounded-[var(--radius-control)] bg-ink px-4 py-3 font-semibold text-light">
                 <Icon name="checkCircle" />כל הרשומים הגיעו
               </p>
             )}
@@ -286,7 +286,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
   const on = r.attendance === 'attended';
   const nth = r.prior_fridays + 1;
   return (
-    <li className={cx('flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border bg-paper py-2.5 pr-2.5 pl-1.5', on ? 'border-good/40' : 'border-edge')}>
+    <li className={cx('flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border bg-paper py-2.5 pr-2.5 pl-1.5', on ? 'border-ink/50' : 'border-edge')}>
       <button
         type="button"
         onClick={onToggle}
@@ -295,7 +295,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
         aria-label={on ? `${r.display_name} הגיע/ה. לחיצה מבטלת` : `סימון ש${r.display_name} הגיע/ה`}
         className={cx(
           'flex h-14 w-14 shrink-0 items-center justify-center rounded-[var(--radius-control)] border-2 transition-colors active:scale-95 disabled:opacity-50',
-          on ? 'border-good bg-good text-white' : 'border-control-line bg-paper text-ink hover:border-ink hover:bg-ink/[0.06]',
+          on ? 'border-ink bg-ink text-light' : 'border-control-line bg-paper text-ink hover:border-ink hover:bg-ink/[0.06]',
         )}
       >
         {on ? <Icon name="check" size={30} strokeWidth={3} /> : <span aria-hidden="true" className="h-7 w-7 rounded-[var(--radius-control)] border-[3px] border-current" />}

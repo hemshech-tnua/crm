@@ -12,7 +12,7 @@ type Size = 'sm' | 'md' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
   // brand book: a squared navy button with beige type (and the triangle ◀ on a call to action); outlined navy; beige on navy
-  primary: 'bg-tide text-light hover:bg-ink-soft active:bg-tide-deep disabled:bg-tide/40 disabled:text-light/80',
+  primary: 'bg-tide text-light hover:bg-ink-soft active:bg-tide-deep disabled:border disabled:border-ink/25 disabled:bg-transparent disabled:text-ink/45',
   secondary: 'bg-transparent text-ink border border-control-line hover:border-ink hover:bg-ink/[0.06] active:bg-ink/10 disabled:text-ink/45 disabled:border-ink/25',
   ghost: 'text-ink hover:bg-ink/[0.06] active:bg-ink/10 disabled:text-faint',
   danger: 'bg-transparent text-bad border border-bad hover:bg-bad-wash disabled:text-faint disabled:border-line',
@@ -251,7 +251,8 @@ const TONE: Record<Tone, string> = {
   neutral: 'border border-ink/25 text-ink-soft',
   tide: 'border border-ink/40 text-ink',
   light: 'bg-light text-ink',
-  good: 'bg-good-wash text-good ring-1 ring-inset ring-good/30',
+  // the book has two colours: "done / OK" is told by a full navy frame, weight and (from the caller) the check icon
+  good: 'border border-ink font-semibold text-ink',
   bad: 'bg-bad-wash text-bad ring-1 ring-inset ring-bad/30',
   warn: 'bg-warn-wash text-warn ring-1 ring-inset ring-warn/40',
   ink: 'bg-ink text-light',
@@ -445,7 +446,7 @@ export function FilterChips<T extends string>({ options, value, onChange, label,
   options: { value: T; label: ReactNode; count?: number; title?: string }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
 }) {
   return (
-    <div role="group" aria-label={label} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0', className)}>
+    <div role="group" aria-label={label} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [mask-image:linear-gradient(to_right,transparent,#000_28px)] sm:mx-0 sm:flex-wrap sm:px-0 sm:[mask-image:none]', className)}>
       {options.map((o) => {
         const on = o.value === value;
         return (

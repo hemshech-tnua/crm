@@ -11,10 +11,10 @@ import { useOrgInfo } from './api';
 import { formatPhone, whatsappLink } from '@/lib/phone';
 
 /** The one highlighted moment of a screen: a beige check that draws itself on navy (static when reduced motion is on). */
-export function SuccessMark({ size = 'md' }: { size?: 'md' | 'lg' }) {
+export function SuccessMark({ size = 'md', className = 'mx-auto' }: { size?: 'md' | 'lg'; className?: string }) {
   const box = size === 'lg' ? 'h-24 w-24' : 'h-20 w-20';
   return (
-    <div className={cx('mx-auto flex items-center justify-center rounded-[var(--radius-control)] bg-ink text-light', box)} aria-hidden="true">
+    <div className={cx(className, 'flex items-center justify-center rounded-[var(--radius-control)] bg-ink text-light', box)} aria-hidden="true">
       <svg width={size === 'lg' ? 48 : 40} height={size === 'lg' ? 48 : 40} viewBox="0 0 24 24">
         <path
           d="M20 6 9 17l-5-5"
@@ -201,8 +201,8 @@ export function ContactLine({ inline = false }: { inline?: boolean }) {
   const phone = org.data?.contact_phone;
   if (!phone) return <>{inline ? 'פנו לצוות העמותה.' : <p className="text-sm text-muted">שאלות? פנו לצוות העמותה.</p>}</>;
   const link = (
-    <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-tide underline underline-offset-2">
-      כתבו לנו בוואטסאפ (<span className="num">{formatPhone(phone)}</span>)
+    <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="inline-block py-3 leading-5 font-semibold text-tide underline underline-offset-2">
+      כתבו לנו בוואטסאפ (<span dir="ltr" className="num whitespace-nowrap">{formatPhone(phone)}</span>)
     </a>
   );
   return inline ? link : <p className="text-sm text-muted">שאלות או בקשות? {link}</p>;

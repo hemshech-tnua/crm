@@ -160,7 +160,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       <PersonFields form={form} sources={sources} invitedBy={event.invited_by} />
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" busy={busy} className="w-full">
+      <Button type="submit" size="lg" cta busy={busy} className="w-full">
         {waitlist ? 'הצטרפות לרשימת ההמתנה' : 'הרשמה'}
       </Button>
     </form>

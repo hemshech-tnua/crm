@@ -3,8 +3,9 @@
 // Brand book pp.44–45: the icons are built from filled geometric shapes only, every diagonal at 45°, in one colour
 // (navy on beige or beige on navy). Inner details are cut out of the shape (negative), never drawn with a line.
 // So the navigation icons and the glyphs that carry meaning on a screen (calendar, people, task, mic, chart, settings,
-// overview, door, clock, pin, alert, message…) are FILLED shapes, cut with even-odd. The small utility glyphs (check,
-// close, chevrons, copy, search, plus…) stay as thin strokes, with square caps and mitred joins to match the geometry.
+// overview, door, clock, pin, alert, message, search, copy, download, edit, phone, camera, image…) are FILLED shapes,
+// cut with even-odd. The smallest utility glyphs (check, close, chevrons, plus, link…) stay as thin strokes, with
+// square caps and mitred joins to match the geometry.
 
 type Glyph = { d: string; fill?: true };
 
@@ -52,25 +53,25 @@ const GLYPHS: Record<string, Glyph> = {
 
   // ── strokes: small utility glyphs ──
   plus: s('M12 5v14M5 12h14'),
-  search: s('M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5'),
-  phone: s('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z'),
-  copy: s('M8 8h12v12H8zM16 5V4H4v12h1'),
-  download: s('M12 3v12M7 10l5 5 5-5M4 21h16'),
+  search: f('M10 2l8 8-8 8-8-8zM10 5.5 5.5 10l4.5 4.5 4.5-4.5zM16.4 15l6 6-1.4 1.4-6-6z'),
+  phone: f('M3 3h5l3 3-3 3 7 7 3-3 3 3v5h-3L3 6z'),
+  copy: f('M8 8h13v13H8zM10 10v9h9v-9zM3 3h13v3h-2V5H5v9h1v2H3z'),
+  download: f('M11 2h2v11.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM3 19h18v2.5H3z'),
   qr: s('M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2M18 18h2v2'),
   close: s('M18 6 6 18M6 6l12 12'),
   chevron: s('M15 18l-6-6 6-6'),
   back: s('M9 18l6-6-6-6'),
   logout: s('M15 3h5v18h-5M8 17l-5-5 5-5M3 12h12'),
-  edit: s('M12 20h9M16.5 3.5l3 3L7 19l-4 1 1-4z'),
+  edit: f('M14.5 4.5l5 5L8.5 20.5h-5v-5zM16 3l1.5-1.5 5 5L21 8z'),
   check: s('M20 6 9 17l-5-5'),
   merge: s('M6 3v6a6 6 0 0 0 6 6h6M18 15l-3-3M18 15l-3 3M6 21v-6'),
   link: s('M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7'),
   external: s('M18 13v7H4V6h7M15 3h6v6M10 14 21 3'),
-  camera: s('M23 20H1V6h6l2-3h6l2 3h6zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'),
+  camera: f('M2 7h5l3-3h4l3 3h5v13H2zM12 9l4.5 4.5L12 18l-4.5-4.5z'),
   noCamera: s('M1 1l22 22M21 20H1V6h5m3-3h6l2 3h6v12M15 15.5a4 4 0 0 1-5.5-5.5'),
-  image: s('M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L3 21'),
+  image: f('M3 3h18v18H3zM5 5v14h14V5zM5 19l7-7 7 7zM16 6l2 2-2 2-2-2z'),
   undo: s('M3 7v6h6M21 17a9 9 0 0 0-15-6.7L3 13'),
-  sparkle: s('M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z'),
+  sparkle: f('M12 3l9 9-9 9-9-9zM12 8.5 8.5 12l3.5 3.5 3.5-3.5z'),
   flame: s('M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-5 5-5 8-1-1-2-2-2-4-2 2-2 5-2 8 0 4 3 7 7 7z'),
   filter: s('M3 5h18M6 12h12M10 19h4'),
 };

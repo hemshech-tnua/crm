@@ -153,7 +153,7 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
               ['יום הולדת', card.birth_date ? fmtLongDate(card.birth_date) : null],
               ['עיסוק', card.occupation],
               ['עדכונים בוואטסאפ', card.consent_updates
-                ? <span className="text-good">מסכים/ה{card.consent_updates_at && <span className="text-muted"> מ-<span className="num">{fmtDate(card.consent_updates_at)}</span></span>}</span>
+                ? <span className="font-semibold text-ink">מסכים/ה{card.consent_updates_at && <span className="text-muted"> מ-<span className="num">{fmtDate(card.consent_updates_at)}</span></span>}</span>
                 : <span className="text-ink-soft">לא אישר/ה (אפשר להתקשר)</span>],
               ['עמותה', <MembershipText key="m" card={card} />],
               ['צילום', card.photo_opt_out ? <span className="text-warn">לא מעוניין/ת להופיע בתמונות</span> : 'אין הגבלה'],
@@ -226,7 +226,7 @@ function Referrer({ card, onLink }: { card: Card; onLink: () => void }) {
 
 function MembershipText({ card }: { card: Card }) {
   if (card.membership === 'member') {
-    return <span className="text-good">{MEMBERSHIP_LABEL.member}{card.member_since && <span className="text-muted"> מ-<span className="num">{fmtDate(card.member_since)}</span></span>}</span>;
+    return <span className="font-semibold text-ink">{MEMBERSHIP_LABEL.member}{card.member_since && <span className="text-muted"> מ-<span className="num">{fmtDate(card.member_since)}</span></span>}</span>;
   }
   if (card.membership === 'requested') {
     return <span className="text-warn">{MEMBERSHIP_LABEL.requested}{card.membership_requested_at && <span className="text-muted"> ב-<span className="num">{fmtDate(card.membership_requested_at)}</span></span>}</span>;

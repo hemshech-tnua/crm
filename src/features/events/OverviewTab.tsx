@@ -50,7 +50,7 @@ function Counters({ e }: { e: EventWithStats }) {
   const free = e.capacity != null ? Math.max(0, e.capacity - reg - (s?.walk_in_count ?? 0)) : null;
   if (e.status === 'cancelled' && !reg && !s?.waitlisted_count) return null;
   return (
-    <section aria-label="מספרים" className={cx('grid gap-3', started && e.status !== 'cancelled' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 sm:max-w-2xl')}>
+    <section aria-label="מספרים" className={cx('grid gap-3', started && e.status !== 'cancelled' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3')}>
       {started && e.status !== 'cancelled' && (
         <BigStat highlight label="הגיעו" value={s?.attended_count ?? 0} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : undefined} />
       )}
@@ -595,6 +595,7 @@ function EntranceSign({ e, url, qrSize, page = false }: { e: EventWithStats; url
     'אין מצלמה או קליטה? פונים לצוות בכניסה',
   ];
   return (
+    // white is the paper, as on the book's letterhead (p.65): the sign prints on any office printer without a beige flood
     <div className={cx('flex flex-col overflow-hidden bg-white text-right text-ink', page && 'entrance-sign-page h-[297mm] w-[210mm]')}>
       <div className={cx('relative overflow-hidden bg-ink pt-[1.4em] pb-[1.5em] text-light', page ? 'px-[12mm]' : 'px-[1.6em]')}>
         <Stripes width={300} height={150} unit={28} dir="fall" count={3} className="absolute top-0 left-0 h-[9em] w-[18em]" />
@@ -614,8 +615,9 @@ function EntranceSign({ e, url, qrSize, page = false }: { e: EventWithStats; url
           ))}
         </ul>
       </div>
-      <div className="relative mt-auto h-[2.2em] shrink-0 overflow-hidden bg-ink" aria-hidden="true">
-        <Stripes width={200} height={36} unit={11} dir="fall" count={4} offset={6} className="absolute top-0 left-0 h-full w-[12em] text-light" />
+      {/* the closing band uses the header's stripe unit (one X per composition, book p.38): same viewBox scale, 0.06em */}
+      <div className="relative mt-auto h-[3.42em] shrink-0 overflow-hidden bg-ink" aria-hidden="true">
+        <Stripes width={300} height={57} unit={28} dir="fall" count={3} className="absolute top-0 left-0 h-full w-[18em] text-light" />
       </div>
     </div>
   );

@@ -519,7 +519,7 @@ const cropMemo = new WeakMap<HTMLImageElement, Map<string, { dy: number; run: Pt
  * The photograph in the image zone: cropped so the band stays in view and every face is whole and clear of the logo,
  * then a run of stripes in the largest size that fits a free corner. Returns the logo colour.
  */
-function photoZone(ctx: CanvasRenderingContext2D, img: HTMLImageElement, art: PhotoArt, W: number, Z: number, logo: Rect, safeTop: number): string {
+function photoZone(ctx: CanvasRenderingContext2D, img: HTMLImageElement, art: PhotoArt, W: number, Z: number, logo: Rect, safeTop: number): { logo: string; striped: boolean } {
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
   const s = Math.max(W / iw, Z / ih);
@@ -570,7 +570,8 @@ function photoZone(ctx: CanvasRenderingContext2D, img: HTMLImageElement, art: Ph
   const sizes: [number, number, number][] = art.modest
     ? [[2, 1, 1.6], [2, 1, 1.3]]
     : [[2, 2, 1.75], [3, 1, 2.3], [2, 2, 1.4], [2, 1, 2], [2, 1, 1.6], [2, 1, 1.3]];
-  const corners = art.corners ?? ['bottom-right', 'bottom-left'];
+  // in a story the top is under Instagram's own bar, so a run there loses its shape: never place it there
+  const corners = (art.corners ?? ['bottom-right', 'bottom-left']).filter((c) => !(safeTop && c === 'top-left'));
   const fitRun = (dy: number) => {
     const obstacles: Rect[] = [
       ...faces.map((f) => grow(toRect(f, dy), 16)),
@@ -581,8 +582,7 @@ function photoZone(ctx: CanvasRenderingContext2D, img: HTMLImageElement, art: Ph
       const [n, tiers, tk] = sizes[si];
       for (let ci = 0; ci < corners.length; ci++) {
         const polys = cornerRun(corners[ci], W, Z, unit, n, tiers, Math.round(w * tk));
-        // in a story, a run at the top would sit under Instagram's bar: try it last
-        const rank = si * 10 + ci + (safeTop && corners[ci] === 'top-left' ? 25 : 0);
+        const rank = si * 10 + ci;
         if (!polys.some((p) => obstacles.some((o) => polyHitsRect(p, o)))) return { polys, rank };
       }
     }
@@ -648,7 +648,7 @@ function photoZone(ctx: CanvasRenderingContext2D, img: HTMLImageElement, art: Ph
     ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2);
     ctx.restore();
   }
-  return pick.color;
+  return { logo: pick.color, striped: !!run };
 }
 
 /**
@@ -772,7 +772,7 @@ function drawPhotoPost(ctx: CanvasRenderingContext2D, c: PostContent, f: Frame, 
     if (zoneH >= lo) break;
   }
   zoneH = Math.round(Math.min(hi, Math.max(lo, zoneH)));
-  const logoColor = photoZone(ctx, photo, a, W, zoneH, f.logo, 0);
+  const logoColor = photoZone(ctx, photo, a, W, zoneH, f.logo, 0).logo;
   drawLogo(ctx, right, f.logoTop, f.logoH, logoColor);
   head.draw(f.bottom - head.h);
   left.draw(f.bottom - left.h);
@@ -900,8 +900,20 @@ function drawStory(ctx: CanvasRenderingContext2D, c: PostContent, f: Frame, phot
   }
   zoneH = Math.round(Math.min(hi, Math.max(lo, zoneH)));
   if (photo) {
-    const logoColor = photoZone(ctx, photo, art ?? { band: { top: 0.2, bottom: 0.6 } }, W, zoneH, f.logo, SAFE_TOP);
-    drawLogo(ctx, right, f.logoTop, f.logoH, logoColor);
+    const zone = photoZone(ctx, photo, art ?? { band: { top: 0.2, bottom: 0.6 } }, W, zoneH, f.logo, SAFE_TOP);
+    drawLogo(ctx, right, f.logoTop, f.logoH, zone.logo);
+    if (!zone.striped) {
+      // no free corner on the photograph: the run enters the foot of the story instead, below the text (as the
+      // program layout's foot), in the type colour on the ground
+      const unit = Math.round(W * 0.075);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, H - SAFE_BOTTOM + 48, W, SAFE_BOTTOM - 48);
+      ctx.clip();
+      ctx.fillStyle = fg;
+      cornerRun('bottom-left', W, H, unit, 2, 1, Math.round(unit * R2 * 1.6)).forEach((poly) => fillPoly(ctx, poly));
+      ctx.restore();
+    }
     const content = stack([[head, 0], [rest, Math.round(titleSize * 0.36)]]);
     content.draw(f.bottom - content.h);
     return;

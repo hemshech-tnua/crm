@@ -97,7 +97,7 @@ export function StaffLayout() {
         {role !== 'volunteer' && <Stripes width={116} height={64} unit={12} dir="fall" count={2} offset={64} className="pointer-events-none absolute top-0 left-0 h-16 w-[116px] text-light" />}
         <Link to="/app" className="relative flex items-center" aria-label="המשך תנועה: ראשי">
           {/* the full logo at the book's minimum size; the "lockup" cut is not a sanctioned variant (book p.26) */}
-          <Logo variant="full" height={44} />
+          <Logo variant="symbol" height={40} label="המשך תנועה" />
         </Link>
         {role === 'volunteer' && (
           <button type="button" onClick={out} className="relative flex items-center gap-1.5 text-small font-medium text-light/85"><Icon name="logout" size={18} />יציאה</button>

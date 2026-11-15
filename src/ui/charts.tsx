@@ -117,7 +117,7 @@ export function GoalStat({ label, value, display, goal, goalDisplay, hint, onOpe
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-small">
         <span className="text-muted">יעד <span className="num">{goalDisplay}</span></span>
-        {value == null ? <span className="text-faint">אין עדיין נתונים</span> : met ? <span className="font-semibold text-good">עומד ביעד</span> : <span className="font-medium text-ink-soft">מתחת ליעד</span>}
+        {value == null ? <span className="text-faint">אין עדיין נתונים</span> : met ? <span className="inline-flex items-center gap-1 font-semibold text-ink"><Icon name="check" size={14} />עומד ביעד</span> : <span className="font-medium text-ink-soft">מתחת ליעד</span>}
       </div>
       {hint && <p className="mt-1.5 hidden text-micro text-muted sm:block">{hint}</p>}
     </>

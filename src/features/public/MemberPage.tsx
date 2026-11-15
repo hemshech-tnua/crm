@@ -153,7 +153,7 @@ function ByForm({ onDone }: { onDone: (r: MembershipResult) => void }) {
         נשתמש בפרטים רק כדי לחזור אליך לגבי ההצטרפות לעמותה. אין חובה חוקית למסור אותם, אבל בלעדיהם לא נוכל לחזור אליך. רק צוות העמותה רואה אותם.{' '}
       </PrivacyNote>
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" busy={busy} className="w-full">אני רוצה להצטרף</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="w-full">אני רוצה להצטרף</Button>
     </form>
   );
 }

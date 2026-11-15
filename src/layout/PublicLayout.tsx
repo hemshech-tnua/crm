@@ -15,13 +15,14 @@ const WIDE = /^\/(?:$|r\/|member$|join$)/;
  */
 export function PublicLayout() {
   const { pathname } = useLocation();
-  const width = WIDE.test(pathname) ? 'max-w-xl lg:max-w-5xl' : 'max-w-xl';
+  const wide = WIDE.test(pathname);
+  const width = wide ? 'max-w-xl lg:max-w-5xl' : 'max-w-xl';
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="relative overflow-hidden bg-ink text-light">
         <Stripes width={260} height={112} unit={24} dir="fall" count={3} offset={0} className="absolute inset-y-0 left-0 h-full w-[200px] sm:w-[260px]" />
-        <div className="relative flex items-center px-5 py-3 sm:px-10 sm:py-6">
-          <Link to="/" aria-label="המשך תנועה: המפגשים הקרובים" className="[--logo-h:56px] sm:[--logo-h:72px]">
+        <div className="relative flex items-center px-5 py-2.5 sm:px-10 sm:py-6">
+          <Link to="/" aria-label="המשך תנועה: המפגשים הקרובים" className="[--logo-h:64px] sm:[--logo-h:76px]">
             <Logo variant="full" height="var(--logo-h)" />
           </Link>
         </div>
@@ -30,7 +31,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <footer className={cx('mx-auto w-full px-5 pb-8 text-small text-muted', width)}>
-        <div className="flex flex-col border-t border-edge pt-2 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+        <div className={cx('flex flex-col border-t border-edge pt-2', wide && 'lg:flex-row lg:items-center lg:justify-between lg:gap-6')}>
           <nav aria-label="קישורים נוספים" className="flex flex-wrap gap-x-5">
             <Link to="/member" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">הצטרפות לעמותה</Link>
             <Link to="/join" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">רוצים להרצות או להדריך?</Link>
