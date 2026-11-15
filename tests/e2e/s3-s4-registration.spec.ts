@@ -10,7 +10,7 @@ async function fillRegistration(page: Page, p: { name: string; phone: string; ci
   await page.getByLabel('עיר מגורים').fill(p.city);
   await page.getByLabel('גיל').fill(p.age);
   await page.getByRole('radio', { name: p.source }).check();
-  if (p.referrer) await page.getByLabel('מי הביא/ה אותך? שם או טלפון').fill(p.referrer);
+  if (p.referrer) await page.getByLabel('דרך מי הגעת? שם או טלפון').fill(p.referrer);
   await page.getByRole('button', { name: 'הרשמה', exact: true }).click();
 }
 
@@ -76,7 +76,7 @@ test('a friend registers through a personal invite link and is credited to the i
   const inviterPhone = phone();
   const { data: inviter } = await coord.from('participants').insert({ full_name: 'מזמין בדיקה', phone: inviterPhone }).select('id, referral_code').single();
   await page.goto(`#/r/${ev.public_code}?ref=${inviter!.referral_code}`);
-  await expect(page.getByText(/מזמין הזמין\/ה אותך/)).toBeVisible();
+  await expect(page.getByText(/הזמנה ממזמין/)).toBeVisible();
   await expect(page.getByRole('radio', { name: /חבר\/ה/ })).toBeChecked();
   const friendPhone = phone();
   await page.getByLabel('שם מלא').fill('חבר מוזמן');

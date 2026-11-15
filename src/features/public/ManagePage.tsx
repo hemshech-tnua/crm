@@ -60,8 +60,8 @@ function statusLine(r: RegistrationInfo): { badge: ReactNode; text: string } {
   }
   if (r.attendance === 'attended') return { badge: <Badge tone="good" icon="check">הגעת</Badge>, text: 'תודה שבאת! היה כיף לראות אותך.' };
   if (r.attendance === 'no_show') return { badge: <Badge>לא הגעת הפעם</Badge>, text: 'נשמח לראות אותך במפגש הבא.' };
-  if (new Date(e.starts_at).getTime() <= Date.now()) return { badge: <Badge tone="good">רשום/ה</Badge>, text: 'המפגש כבר התחיל.' };
-  return { badge: <Badge tone="good" icon="check">רשום/ה</Badge>, text: 'ההרשמה שלך בתוקף. מחכים לך!' };
+  if (new Date(e.starts_at).getTime() <= Date.now()) return { badge: <Badge tone="good">נרשמת</Badge>, text: 'המפגש כבר התחיל.' };
+  return { badge: <Badge tone="good" icon="check">נרשמת</Badge>, text: 'ההרשמה שלך בתוקף. מחכים לך!' };
 }
 
 function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
@@ -84,7 +84,7 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
       title: waitlisted ? 'לצאת מרשימת ההמתנה?' : 'לבטל את ההרשמה?',
       body: (
         <div className="flex flex-col gap-4">
-          <p>{waitlisted ? 'המקום שלך בתור יעבור לבאים אחריך.' : 'המקום יתפנה למי שמחכה. אם תתחרט/י, אפשר להירשם שוב כל עוד יש מקום.'}</p>
+          <p>{waitlisted ? 'המקום שלך בתור יעבור לבאים אחריך.' : 'המקום יתפנה למי שמחכה. אם בכל זאת יסתדר, אפשר להירשם שוב כל עוד יש מקום.'}</p>
           <Textarea
             label="רוצה לספר לנו למה? (לא חובה)"
             maxLength={300}
@@ -122,7 +122,7 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-display text-[1.9rem] leading-tight">{r.first_name ? `היי ${r.first_name}` : 'ההרשמה שלך'}</h1>
+        <h1 className="font-display text-title">{r.first_name ? `היי ${r.first_name}` : 'ההרשמה שלך'}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2">{line.badge}</div>
         <p className="mt-2 text-[1.05rem] text-ink-soft">{line.text}</p>
         {r.status === 'cancelled' && e.registration_open && e.status !== 'cancelled' && (
@@ -138,8 +138,8 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
 
       {active && upcoming && r.status === 'registered' && (
         <Block title="בכניסה למפגש">
-          <p className="text-[0.95rem] text-ink-soft">
-            הטלפון הזה כבר זוכר את ההרשמה שלך. בכניסה סורקים את הברקוד ולוחצים "הגעתי", בלי להקליד כלום.
+          <p className="text-[0.9375rem] text-ink-soft">
+            הטלפון הזה כבר זוכר את ההרשמה שלך. בכניסה סורקים את הברקוד ולוחצים ״הגעתי״, בלי להקליד כלום.
           </p>
         </Block>
       )}
@@ -150,7 +150,7 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
 
       {r.can_cancel && r.status !== 'cancelled' && (
         <Block title={waitlisted ? 'כבר לא צריך את המקום בתור?' : 'לא מסתדר לך להגיע?'}>
-          <p className="text-[0.95rem] text-ink-soft">
+          <p className="text-[0.9375rem] text-ink-soft">
             {waitlisted ? 'אפשר לצאת מרשימת ההמתנה בלחיצה.' : 'עדכון מראש מפנה את המקום למי שמחכה. זה עוזר לכולם.'}
           </p>
           {error && <div className="mt-3"><ErrorBox error={error} /></div>}
@@ -176,7 +176,7 @@ function ManageFeedback({ token, given }: { token: string; given: boolean }) {
   if ((sent || given) && !editing) {
     return (
       <Block title="המשוב שלך">
-        <p className="text-[0.95rem] text-ink-soft">{sent ? 'תודה! המשוב התקבל.' : 'כבר שלחת משוב על המפגש הזה. תודה!'}</p>
+        <p className="text-[0.9375rem] text-ink-soft">{sent ? 'תודה! המשוב התקבל.' : 'כבר שלחת משוב על המפגש הזה. תודה!'}</p>
         <Button variant="ghost" className="mt-2 -ms-3" icon="edit" onClick={() => setEditing(true)}>עדכון המשוב</Button>
       </Block>
     );
@@ -184,7 +184,7 @@ function ManageFeedback({ token, given }: { token: string; given: boolean }) {
 
   return (
     <Block title="משוב על המפגש">
-      <p className="mb-4 text-[0.95rem] text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
+      <p className="mb-4 text-[0.9375rem] text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
       <FeedbackForm
         ctx={ctx.data}
         token={token}

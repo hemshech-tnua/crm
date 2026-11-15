@@ -19,8 +19,8 @@ test('a phone that registered two people asks who arrived; a mistaken check-in c
     await expect(page.getByRole('heading', { name: 'נרשמת!' })).toBeVisible();
   }
   await page.goto(`#/c/${ev.checkin_code}`);
-  await expect(page.getByText('מהטלפון הזה נרשמו כמה אנשים. מי הגיע/ה?')).toBeVisible();
-  await page.getByRole('button', { name: `${people[0].n.split(' ')[0]} הגיע/ה` }).click();
+  await expect(page.getByText('מהטלפון הזה נרשמו כמה אנשים. על מי עושים צ׳ק־אין?')).toBeVisible();
+  await page.getByRole('button', { name: people[0].n.split(' ')[0], exact: true }).click();
   await expect(page.getByRole('heading', { name: new RegExp(people[0].n.split(' ')[0]) })).toBeVisible();
 
   const coord = await staff('coord');

@@ -2,22 +2,12 @@ import { useId, useState, type FormEvent } from 'react';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { normalizePhone } from '@/lib/phone';
 import { Button, ErrorBox, Input, Rating, Textarea } from '@/ui/kit';
-import { Icon } from '@/ui/Icon';
 import { submitFeedback, type FeedbackContext } from './api';
 import { theActivity } from './eventText';
+import { PhoneExample } from './PersonForm';
 import { Honeypot } from './shared';
 
 const MAX_COMMENT = 1000;
-
-function FieldError({ children }: { children?: string }) {
-  if (!children) return null;
-  return (
-    <p className="mt-1.5 flex items-center gap-1 text-sm font-medium text-bad" role="alert">
-      <Icon name="alert" size={15} />
-      {children}
-    </p>
-  );
-}
 
 /**
  * The questions after a meeting (questionnaire Q40 + the overall rating, assumption H5).
@@ -86,8 +76,7 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6" aria-label="משוב על המפגש">
       <div id={`${ids}-overall`}>
-        <Rating legend="איך היה המפגש?" required value={overall} onChange={(n) => { setOverall(n); setErrors((x) => ({ ...x, overall: undefined })); }} />
-        <FieldError>{errors.overall}</FieldError>
+        <Rating legend="איך היה המפגש?" required value={overall} error={errors.overall} onChange={(n) => { setOverall(n); setErrors((x) => ({ ...x, overall: undefined })); }} />
       </div>
       {ctx.has_activity && (
         <Rating legend={`מה דעתך על ${theActivity(e)}?`} value={activity} onChange={setActivity} />
@@ -112,13 +101,12 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
         <Input
           id={`${ids}-phone`}
           label="הטלפון שלך"
-          hint="לא חובה – כדי שנדע שזה את/ה."
+          hint={<PhoneExample prefix="לא חובה. כך נדע שהמשוב ממך. " />}
           type="tel"
           inputMode="tel"
           autoComplete="tel"
           ltr
           maxLength={20}
-          placeholder="050-1234567"
           value={phone}
           onChange={(x) => { setPhone(x.target.value); setErrors((v) => ({ ...v, phone: undefined })); }}
           error={errors.phone}

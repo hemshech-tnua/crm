@@ -4,6 +4,7 @@ import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { Button, ButtonLink, ExternalButton, cx } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
+import { Tri } from '@/ui/Shapes';
 import { downloadIcs, googleCalendarUrl } from './calendar';
 import { Glyph } from './marks';
 import { useOrgInfo } from './api';
@@ -30,10 +31,10 @@ export function SuccessMark({ size = 'md' }: { size?: 'md' | 'lg' }) {
   );
 }
 
-/** A calm, beige mark for "noted, but not final" (waitlist). */
+/** A calm mark for "noted, but not final" (waitlist): navy on paper, quieter than the navy success mark. */
 export function WaitMark() {
   return (
-    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[var(--radius-control)] bg-sky text-ink" aria-hidden="true">
+    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[var(--radius-control)] border border-edge bg-paper text-ink" aria-hidden="true">
       <Glyph name="clock" size={40} />
     </div>
   );
@@ -49,7 +50,7 @@ export function ResultTitle({ children, className = '', size = 'md' }: { childre
   return (
     <h1 ref={ref} tabIndex={-1} className={cx(
         'font-display leading-tight outline-none',
-        size === 'xl' ? 'text-[2.6rem] sm:text-[3rem]' : 'text-[2.25rem] sm:text-[2.5rem]',
+        size === 'xl' ? 'text-[2.6rem] sm:text-[3rem]' : 'text-title sm:text-[2.5rem]',
         className,
       )}>
       {children}
@@ -57,14 +58,28 @@ export function ResultTitle({ children, className = '', size = 'md' }: { childre
   );
 }
 
+/** A list with the brand's triangle bullet ◀ (book p.41): at cap height, in the text colour, pointing the reading way. */
+export function TriList({ items, className = '' }: { items: ReactNode[]; className?: string }) {
+  return (
+    <ul className={cx('flex flex-col gap-1.5', className)}>
+      {items.map((it, i) => (
+        <li key={i} className="flex items-baseline gap-2.5">
+          <Tri className="shrink-0 text-ink" />
+          <span className="min-w-0">{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function SectionTitle({ children, id }: { children: ReactNode; id?: string }) {
-  return <h2 id={id} className="text-[1.1rem] font-bold">{children}</h2>;
+  return <h2 id={id} className="text-heading font-bold">{children}</h2>;
 }
 
 /** A quiet block on paper for one follow-up action (calendar, invite, personal link). */
 export function Block({ title, children, className = '' }: { title: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cx('rounded-[var(--radius-panel)] border border-line-soft bg-paper p-4 sm:p-5', className)}>
+    <section className={cx('rounded-[var(--radius-panel)] border border-edge bg-paper p-4 sm:p-5', className)}>
       <SectionTitle>{title}</SectionTitle>
       <div className="mt-2">{children}</div>
     </section>
@@ -84,11 +99,11 @@ export function inviteMessage(event: PublicEvent | null): string {
   if (event) {
     return `נרשמתי ל${event.title} של המשך תנועה, ${fmtDayLong(event.starts_at)} ב-${fmtTime(event.starts_at)}. בא לך להצטרף? הנה קישור להרשמה:`;
   }
-  return 'מכיר/ה את המשך תנועה? מפגשי שישי של תנועה, הרצאה, ארוחת בוקר וחברים. בא לך להצטרף? כל המפגשים הקרובים כאן:';
+  return 'שמעת על המשך תנועה? מפגשי שישי ללוחמים וללוחמות: תנועה, הרצאה, ארוחת בוקר וחברים. בא לך לבוא איתי? כל המפגשים הקרובים כאן:';
 }
 
 /** "Invite a friend": the personal link (so the friend counts as brought by you). Web Share when the phone has it. */
-export function InviteBlock({ url, message, title = 'הזמינו חבר/ה' }: { url: string; message: string; title?: ReactNode }) {
+export function InviteBlock({ url, message, title = 'הזמינו עוד חברים' }: { url: string; message: string; title?: ReactNode }) {
   const copy = useCopy();
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const share = async () => {
@@ -101,8 +116,8 @@ export function InviteBlock({ url, message, title = 'הזמינו חבר/ה' }: 
   };
   return (
     <Block title={title}>
-      <p className="text-[0.95rem] text-ink-soft">
-        מכירים עוד חברים מהמילואים? שלחו להם את קישור ההזמנה שלך, כך נדע שהגיעו דרכך.
+      <p className="text-[0.9375rem] text-ink-soft">
+        מכירים עוד לוחמים ולוחמות שכדאי שיבואו? שלחו להם את קישור ההזמנה שלכם, וכך נדע שהגיעו דרככם.
       </p>
       <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (
@@ -126,10 +141,10 @@ export function PersonalLink({ url, token, waitlist }: { url: string; token: str
   const copy = useCopy();
   return (
     <Block title="הקישור לניהול ההרשמה שלך">
-      <p className="text-[0.95rem] text-ink-soft">
+      <p className="text-[0.9375rem] text-ink-soft">
         {waitlist
-          ? 'שמרו את הקישור כדי לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה. הוא אישי: לא לשתף אותו.'
-          : 'שמרו את הקישור כדי לבטל או לתת משוב אחרי המפגש. הוא אישי: לא לשתף אותו.'}
+          ? 'כדאי לשמור את הקישור: דרכו אפשר לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה. הקישור אישי, לא לשתף.'
+          : 'כדאי לשמור את הקישור: דרכו אפשר לבטל, ואחרי המפגש לתת משוב. הקישור אישי, לא לשתף.'}
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -163,8 +178,8 @@ export function Honeypot({ value, onChange }: { value: string; onChange: (v: str
 /** Short privacy notice next to every form that collects personal details (Privacy Protection Law §11 style). */
 export function PrivacyNote({ children }: { children?: ReactNode }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-[var(--radius-control)] bg-mist-deep/70 px-3.5 py-3 text-sm leading-relaxed text-ink-soft">
-      <Icon name="shield" size={18} className="mt-0.5 text-tide" />
+    <div className="flex items-start gap-2.5 text-small text-ink-soft">
+      <Icon name="shield" size={18} className="mt-0.5 shrink-0 text-ink" />
       <p>
         {children ?? (
           <>

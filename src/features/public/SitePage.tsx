@@ -29,7 +29,7 @@ export function SitePage() {
   if (s.open.length > 1) {
     return (
       <div className="flex flex-col gap-5">
-        <h1 className="font-display text-[2rem] leading-tight">לאיזה מפגש הגעת?</h1>
+        <h1 className="font-display text-title">לאיזה מפגש הגעת?</h1>
         <div className="flex flex-col gap-3">
           {s.open.map((o) => (
             <ButtonLink key={o.checkin_code} to={`/c/${o.checkin_code}`} replace size="lg" className="h-auto! w-full flex-col py-4">
@@ -46,9 +46,9 @@ export function SitePage() {
     const when = rel === 'היום' || rel === 'מחר' ? rel : `ב${fmtDayLong(s.next.opens_at)}`;
     return (
       <div className="flex flex-col gap-5">
-        <h1 className="font-display text-[1.9rem] leading-tight">כרגע אין מפגש פתוח לצ׳ק־אין</h1>
+        <h1 className="font-display text-title">כרגע אין מפגש פתוח לצ׳ק־אין</h1>
         <EventTicket event={s.next.event} showStatus={false} />
-        <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
+        <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
           <p className="text-lg">
             הצ׳ק־אין למפגש הבא ב{s.site} ייפתח {when} בשעה <span className="num font-bold">{fmtTime(s.next.opens_at)}</span>.
           </p>

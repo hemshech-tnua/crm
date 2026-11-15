@@ -49,7 +49,7 @@ export function MfaPage() {
     <div className="mx-auto max-w-sm">
       <h1 className="font-display text-3xl">אימות דו־שלבי</h1>
       <p className="mt-1 mb-5 text-muted">
-        פתחו את אפליקציית האימות בטלפון (למשל Google Authenticator או Microsoft Authenticator) והקלידו את הקוד בן 6 הספרות של "המשך תנועה".
+        פתחו את אפליקציית האימות בטלפון (למשל Google Authenticator או Microsoft Authenticator) והקלידו את הקוד בן 6 הספרות של המשך תנועה.
       </p>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate aria-label="אישור הכניסה בקוד">
         <Input

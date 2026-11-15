@@ -60,24 +60,28 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const closed = e.status === 'cancelled' || !e.registration_open || (e.is_full && !e.waitlist_enabled);
 
   return (
-    <div className="flex flex-col gap-5">
-      {e.invited_by && (
-        <p className="flex items-center gap-2 self-start rounded-[var(--radius-control)] bg-tide-wash px-3.5 py-1.5 font-semibold text-tide-deep">
-          <Glyph name="heart" />
-          {e.invited_by} הזמין/ה אותך
-        </p>
-      )}
-      <h1 className="font-display text-[1.9rem] leading-tight">{closed ? 'המפגש' : 'הרשמה למפגש'}</h1>
-      <EventTicket event={e} highlight detailed />
-      {closed ? (
-        <ClosedState event={e} home={home} />
-      ) : sources.isError ? (
-        <ErrorBox error={errorMessage(sources.error)} onRetry={() => sources.refetch()} />
-      ) : sources.isPending ? (
-        <Skeleton lines={6} />
-      ) : (
-        <RegisterForm event={e} sources={sources.data} refCode={ref} utm={utm} onDone={setDone} />
-      )}
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)] lg:items-start lg:gap-10">
+      <div className="flex flex-col gap-5 lg:sticky lg:top-6">
+        {e.invited_by && (
+          <p className="flex items-center gap-2 self-start rounded-[var(--radius-control)] bg-ink px-3.5 py-1.5 font-semibold text-light">
+            <Glyph name="heart" />
+            הזמנה מ{e.invited_by}
+          </p>
+        )}
+        <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'המפגש' : 'שמרו לכם מקום'}</h1>
+        <EventTicket event={e} highlight detailed />
+      </div>
+      <div className="lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
+        {closed ? (
+          <ClosedState event={e} home={home} />
+        ) : sources.isError ? (
+          <ErrorBox error={errorMessage(sources.error)} onRetry={() => sources.refetch()} />
+        ) : sources.isPending ? (
+          <Skeleton lines={6} />
+        ) : (
+          <RegisterForm event={e} sources={sources.data} refCode={ref} utm={utm} onDone={setDone} />
+        )}
+      </div>
     </div>
   );
 }
@@ -90,8 +94,8 @@ function ClosedState({ event: e, home }: { event: PublicEvent; home: string }) {
         ? ['כל המקומות נתפסו', 'למפגש הזה אין רשימת המתנה. נשמח לראות אותך במפגש הבא.']
         : ['ההרשמה למפגש הזה נסגרה', 'אפשר להירשם לאחד המפגשים הבאים.'];
   return (
-    <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
-      <h2 className="text-lg font-bold">{title}</h2>
+    <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center lg:border-0 lg:p-0">
+      <h2 className="text-heading font-bold">{title}</h2>
       <p className="mt-1 text-muted">{body}</p>
       <ButtonLink to={home} className="mt-4">למפגשים הקרובים</ButtonLink>
     </section>
@@ -152,7 +156,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
           המפגש מלא כרגע. אפשר להצטרף לרשימת ההמתנה: אם יתפנה מקום, נחזור אליך. ההצטרפות לרשימה עוד לא מבטיחה מקום.
         </Notice>
       )}
-      <p className="-mb-1 text-[0.95rem] text-muted">ארבעה פרטים ושאלה אחת, וזהו.</p>
+      <p className="-mb-1 text-body text-ink-soft">ארבעה פרטים ושאלה אחת, וזהו.</p>
       <PersonFields form={form} sources={sources} invitedBy={event.invited_by} />
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
@@ -179,7 +183,7 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
 
   if (r.status === 'waitlisted' || r.status === 'already_waitlisted') {
     return (
-      <div className="flex flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
         <div className="pt-2 text-center">
           <WaitMark />
           <ResultTitle className="mt-4">{r.status === 'waitlisted' ? 'נכנסת לרשימת ההמתנה' : 'כבר ברשימת ההמתנה'}</ResultTitle>
@@ -201,7 +205,7 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
 
   const again = r.status === 'already_registered';
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
       <div className="pt-2 text-center">
         <SuccessMark />
         <ResultTitle className="mt-4">{again ? 'כבר נרשמת למפגש הזה' : 'נרשמת!'}</ResultTitle>

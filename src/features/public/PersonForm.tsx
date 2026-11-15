@@ -135,6 +135,11 @@ export function usePersonForm(initial: Partial<PersonValues> = {}) {
 
 export type PersonForm = ReturnType<typeof usePersonForm>;
 
+/** "for example 050-1234567": a hint under the phone field, not a placeholder that looks already filled in. */
+export function PhoneExample({ prefix = '' }: { prefix?: string }) {
+  return <>{prefix}למשל <span dir="ltr" className="num">050-1234567</span></>;
+}
+
 /** Name, phone, city, age and "how did you hear about us" (+ who brought you / details). */
 export function PersonFields({ form, sources, invitedBy, big = false }: {
   form: PersonForm;
@@ -171,38 +176,41 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
         enterKeyHint="next"
         ltr
         maxLength={20}
-        placeholder="050-1234567"
+        hint={<PhoneExample />}
         className={size}
         value={v.phone}
         onChange={(e) => set('phone', e.target.value)}
         error={errors.phone}
       />
-      <Input
-        id={ids.city}
-        label="עיר מגורים"
-        required
-        autoComplete="address-level2"
-        maxLength={60}
-        enterKeyHint="next"
-        className={size}
-        value={v.city}
-        onChange={(e) => set('city', e.target.value)}
-        error={errors.city}
-      />
-      <Input
-        id={ids.age}
-        label="גיל"
-        required
-        inputMode="numeric"
-        pattern="[0-9]*"
-        autoComplete="off"
-        maxLength={2}
-        enterKeyHint="next"
-        className={`max-w-32 ${size}`}
-        value={v.age}
-        onChange={(e) => set('age', e.target.value.replace(/[^\d]/g, ''))}
-        error={errors.age}
-      />
+      {/* city and age share a row from sm up; the age box stays short (two digits), on the right where Hebrew starts */}
+      <div className="flex flex-col gap-5 sm:grid sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-start sm:gap-3">
+        <Input
+          id={ids.city}
+          label="עיר מגורים"
+          required
+          autoComplete="address-level2"
+          maxLength={60}
+          enterKeyHint="next"
+          className={size}
+          value={v.city}
+          onChange={(e) => set('city', e.target.value)}
+          error={errors.city}
+        />
+        <Input
+          id={ids.age}
+          label="גיל"
+          required
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          maxLength={2}
+          enterKeyHint="next"
+          className={`w-32! sm:w-full! ${size}`}
+          value={v.age}
+          onChange={(e) => set('age', e.target.value.replace(/[^\d]/g, ''))}
+          error={errors.age}
+        />
+      </div>
       <div id={ids.source}>
         <ChoiceGroup
           legend="איך שמעת עלינו?"
@@ -218,7 +226,7 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
         <p className="-mt-2 text-sm text-muted">רשמנו שהגעת בהזמנה של {invitedBy}.</p>
       ) : (
         <Input
-          label="מי הביא/ה אותך? שם או טלפון"
+          label="דרך מי הגעת? שם או טלפון"
           hint="לא חובה. כך נדע להגיד תודה."
           maxLength={80}
           autoComplete="off"
@@ -245,7 +253,7 @@ export function ConsentFields({ form }: { form: PersonForm }) {
   const { values: v, set } = form;
   return (
     <>
-      <fieldset className="flex flex-col gap-4 border-t border-line pt-5">
+      <fieldset className="flex flex-col gap-4 border-t border-edge pt-5">
         <legend className="sr-only">העדפות (לא חובה)</legend>
         <Checkbox
           label="אשמח לקבל עדכונים והזמנות למפגשים בוואטסאפ"
@@ -254,7 +262,7 @@ export function ConsentFields({ form }: { form: PersonForm }) {
           onChange={(c) => set('consent_updates', c)}
         />
         <Checkbox
-          label="אני מעדיף/ה לא להופיע בתמונות מהמפגשים"
+          label="עדיף לי לא להופיע בתמונות מהמפגשים"
           hint="במפגשים מצלמים לפעמים לעמודים של העמותה. הצוות יראה את הבקשה שלך."
           checked={v.photo_opt_out}
           onChange={(c) => set('photo_opt_out', c)}

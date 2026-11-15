@@ -4,8 +4,8 @@ import { normalizePhone } from '@/lib/phone';
 import { Button, ButtonLink, ErrorBox, Input, Notice } from '@/ui/kit';
 import { requestMembership, type MembershipResult } from './api';
 import { forgetPerson, knownPeople, type KnownPerson } from './device';
-import { cleanText, nameError, phoneError } from './PersonForm';
-import { Honeypot, PrivacyNote, ResultTitle, SuccessMark } from './shared';
+import { PhoneExample, cleanText, nameError, phoneError } from './PersonForm';
+import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList } from './shared';
 
 /**
  * #/member — "I want to join the association". Linked from the thank-you message sent after a meeting.
@@ -20,30 +20,36 @@ export function MemberPage() {
 
   if (done) return <Done result={done} />;
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="font-display text-[2rem] leading-tight">הצטרפות לעמותה</h1>
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)] lg:items-start lg:gap-10">
+      <div className="lg:sticky lg:top-6">
+        <h1 className="font-display text-title">הצטרפו לעמותה</h1>
         <p className="mt-2 text-lg text-ink-soft">
-          המשך תנועה היא עמותה של לוחמים ולוחמות, ומי שמגיע/ה למפגשים מוזמן/ת להיות חלק ממנה. משאירים פרטים, ומישהו מהצוות חוזר אליך עם כל מה שצריך לדעת על ההצטרפות.
+          המשך תנועה היא הבית ללוחמים ולוחמות באזרחות, ואתם מוזמנים להיות חלק ממנה. השאירו פרטים, ומישהו מהצוות יחזור אליכם עם כל מה שצריך לדעת על ההצטרפות.
         </p>
-      </div>
-      {notice && <Notice tone="warn" icon="alert">{notice}</Notice>}
-      {!form && people.length > 0 ? (
-        <ByPhone
-          people={people}
-          onDone={setDone}
-          onForgotten={(device) => {
-            forgetPerson(device);
-            const rest = knownPeople();
-            setPeople(rest);
-            setNotice('הטלפון כבר לא זוכר אותך. אפשר להשאיר שם וטלפון.');
-            if (!rest.length) setForm(true);
-          }}
-          onOther={() => setForm(true)}
+        <TriList
+          className="mt-4"
+          items={['חלק מקהילה של לוחמים ולוחמות', 'עדכונים ראשונים על מפגשים ופעילויות', 'אפשר לעזור ולהתנדב']}
         />
-      ) : (
-        <ByForm onDone={setDone} />
-      )}
+      </div>
+      <div className="flex flex-col gap-5 lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
+        {notice && <Notice tone="warn" icon="alert">{notice}</Notice>}
+        {!form && people.length > 0 ? (
+          <ByPhone
+            people={people}
+            onDone={setDone}
+            onForgotten={(device) => {
+              forgetPerson(device);
+              const rest = knownPeople();
+              setPeople(rest);
+              setNotice('הטלפון כבר לא זוכר אותך. אפשר להשאיר שם וטלפון.');
+              if (!rest.length) setForm(true);
+            }}
+            onOther={() => setForm(true)}
+          />
+        ) : (
+          <ByForm onDone={setDone} />
+        )}
+      </div>
     </div>
   );
 }
@@ -81,7 +87,7 @@ function ByPhone({ people, onDone, onForgotten, onOther }: {
         </Button>
       ))}
       <button type="button" onClick={onOther} className="min-h-11 self-center px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
-        {one ? `לא ${one.name ?? 'את/ה'}? מילוי שם וטלפון` : 'מישהו אחר? מילוי שם וטלפון'}
+        {one?.name ? `לא ${one.name}? מילוי שם וטלפון` : 'מישהו אחר? מילוי שם וטלפון'}
       </button>
     </div>
   );
@@ -136,7 +142,7 @@ function ByForm({ onDone }: { onDone: (r: MembershipResult) => void }) {
         autoComplete="tel"
         ltr
         maxLength={20}
-        placeholder="050-1234567"
+        hint={<PhoneExample />}
         className="num"
         value={v.phone}
         onChange={(e) => { setV((x) => ({ ...x, phone: e.target.value })); setErrors((x) => ({ ...x, phone: undefined })); }}
@@ -154,12 +160,12 @@ function ByForm({ onDone }: { onDone: (r: MembershipResult) => void }) {
 
 function Done({ result: r }: { result: MembershipResult }) {
   const name = r.first_name ? `${r.first_name}, ` : '';
-  const title = r.result === 'already_member' ? `${name}את/ה כבר חבר/ת עמותה` : r.result === 'already_requested' ? `${name}הבקשה שלך כבר אצלנו` : `תודה${r.first_name ? `, ${r.first_name}` : ''}! קיבלנו`;
+  const title = r.result === 'already_member' ? `${name}כבר יש לך חברות בעמותה` : r.result === 'already_requested' ? `${name}הבקשה שלך כבר אצלנו` : `תודה${r.first_name ? `, ${r.first_name}` : ''}! קיבלנו`;
   const body = r.result === 'already_member'
-    ? 'תודה שאת/ה חלק מהעמותה. נתראה במפגש הבא!'
+    ? 'תודה שבחרת להיות חלק מהעמותה. נתראה במפגש הבא!'
     : 'מישהו מהצוות יחזור אליך בימים הקרובים עם כל הפרטים על ההצטרפות.';
   return (
-    <div className="flex flex-col items-center gap-3 pt-2 text-center">
+    <div className="mx-auto flex max-w-xl flex-col items-center gap-3 pt-2 text-center">
       <SuccessMark />
       <ResultTitle className="mt-2">{title}</ResultTitle>
       <p className="max-w-sm text-lg text-ink-soft">{body}</p>

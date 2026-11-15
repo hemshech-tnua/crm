@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router';
 import type { PublicEvent } from '@/lib/types';
 import { fmtDayLong, fmtTime, relativeDays } from '@/lib/dates';
@@ -8,7 +8,7 @@ import { checkIn, checkInKnown, undoCheckin, usePublicSources, useCheckinInfo, u
 import { forgetPerson, forgetToken, knownPeople, rememberPerson, saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { timeRange } from './eventText';
-import { ConsentFields, PersonFields, cleanText, nameError, phoneError, usePersonForm } from './PersonForm';
+import { ConsentFields, PersonFields, PhoneExample, cleanText, nameError, phoneError, usePersonForm } from './PersonForm';
 import { Honeypot, ResultTitle, SuccessMark } from './shared';
 
 /** #/c/:checkinCode — scanned from the QR sign at the entrance, on the participant's own phone. */
@@ -21,6 +21,7 @@ function Checkin({ code }: { code: string }) {
   const info = useCheckinInfo(code);
   const [welcome, setWelcome] = useState<CheckinResult | null>(null);
   const [undone, setUndone] = useState(false);
+  const [waited, setWaited] = useState(false);
 
   if (welcome) {
     return (
@@ -44,26 +45,43 @@ function Checkin({ code }: { code: string }) {
   }
 
   const i = info.data;
+  // someone waiting at the door when check-in opens: the new screen takes focus, so a screen reader announces it
+  if (i.window === 'not_open' && !waited) setWaited(true);
   if (i.window === 'not_open') return <NotOpen info={i} onRefresh={() => info.refetch()} refreshing={info.isFetching} />;
   if (i.window !== 'open') return <NoCheckin info={i} />;
-  return <CheckinFlow code={code} event={i.event} undone={undone} onWelcome={(r) => { setUndone(false); setWelcome(r); }} onWindowChanged={() => info.refetch()} />;
+  return <CheckinFlow code={code} event={i.event} undone={undone} announce={waited} onWelcome={(r) => { setUndone(false); setWelcome(r); }} onWindowChanged={() => info.refetch()} />;
 }
 
 function EventLine({ event }: { event: PublicEvent }) {
   return (
-    <p className="text-[1.05rem] text-ink-soft">
+    <p className="mt-1 text-[1.05rem] text-ink-soft">
       {event.title} · <span className="num">{timeRange(event)}</span>
       {event.location && <> · {event.location}</>}
     </p>
   );
 }
 
+/** "צ׳ק־אין" and the meeting. Takes focus when it replaces the "not open yet" screen while someone waits. */
+function CheckinTitle({ event, focus = false }: { event: PublicEvent; focus?: boolean }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focus) ref.current?.focus();
+  }, [focus]);
+  return (
+    <div>
+      <h1 ref={ref} tabIndex={-1} className="font-display text-title outline-none">צ׳ק־אין</h1>
+      <EventLine event={event} />
+    </div>
+  );
+}
+
 type Mode = 'token' | 'phone' | 'walkin';
 
-function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
+function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged }: {
   code: string;
   event: PublicEvent;
   undone: boolean;
+  announce: boolean;
   onWelcome: (r: CheckinResult) => void;
   onWindowChanged: () => void;
 }) {
@@ -146,15 +164,12 @@ function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
 
   const saved = onPhone(event.code);
   if (mode === 'token' && saved.length) {
-    return <SavedOnPhone event={event} saved={saved} busy={busy} error={error} onPick={(o) => run(o.kind === 'device' ? { device: o.value } : { token: o.value })} onOther={() => go('phone')} />;
+    return <SavedOnPhone event={event} announce={announce} saved={saved} busy={busy} error={error} onPick={(o) => run(o.kind === 'device' ? { device: o.value } : { token: o.value })} onOther={() => go('phone')} />;
   }
 
   return (
     <form onSubmit={byPhone} noValidate className="flex flex-col gap-5 pt-1" aria-label="צ׳ק־אין עם מספר טלפון">
-      <div>
-        <h1 className="font-display text-[2.1rem] leading-tight">צ׳ק־אין</h1>
-        <EventLine event={event} />
-      </div>
+      <CheckinTitle event={event} focus={announce && !switched} />
       {notice && <Notice tone="warn" icon="alert">{notice}</Notice>}
       <Input
         id="checkin-phone"
@@ -165,7 +180,7 @@ function CheckinFlow({ code, event, undone, onWelcome, onWindowChanged }: {
         enterKeyHint="go"
         ltr
         maxLength={20}
-        placeholder="050-1234567"
+        hint={<PhoneExample />}
         autoFocus={switched}
         className="num h-16! text-2xl tracking-wide"
         value={phone}
@@ -191,7 +206,7 @@ function Walkin({ code, phone, onBack, onResult }: {
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
-        <h1 className="font-display text-[1.9rem] leading-tight">ברוך/ה הבא/ה!</h1>
+        <h1 className="font-display text-title">עוד רגע בפנים</h1>
         <p className="mt-1 text-lg text-ink-soft">
           {name == null
             ? 'רק עוד דבר אחד: איך קוראים לך? (שם מלא, כמו בהרשמה)'
@@ -319,18 +334,17 @@ function onPhone(eventCode: string): PhoneOption[] {
 }
 
 /** One option: a single big button with the name. Several: "who arrived?". */
-function SavedOnPhone({ event, saved, busy, error, onPick, onOther }: {
-  event: PublicEvent; saved: PhoneOption[]; busy: boolean; error: string | null; onPick: (o: PhoneOption) => void; onOther: () => void;
+function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: {
+  event: PublicEvent; announce: boolean; saved: PhoneOption[]; busy: boolean; error: string | null; onPick: (o: PhoneOption) => void; onOther: () => void;
 }) {
+  // the spinner on the name that was tapped; the other names wait
+  const [picked, setPicked] = useState<string | null>(null);
   const status = useSavedStatuses(saved.filter((o) => o.kind === 'token').map((o) => o.value));
   const big = 'h-24! w-full rounded-[var(--radius-panel)]! font-display text-[2.2rem]! font-normal!';
   const one = saved.length === 1 ? saved[0] : null;
   return (
     <div className="flex flex-col gap-5 pt-1">
-      <div>
-        <h1 className="font-display text-[2.1rem] leading-tight">צ׳ק־אין</h1>
-        <EventLine event={event} />
-      </div>
+      <CheckinTitle event={event} focus={announce} />
       {one ? (
         <p className="text-lg">
           {one.kind === 'device'
@@ -338,28 +352,29 @@ function SavedOnPhone({ event, saved, busy, error, onPick, onOther }: {
             : (one.name ? `נרשמת מהטלפון הזה בשם ${one.name}, אז מספיקה לחיצה אחת.` : 'נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.')}
         </p>
       ) : (
-        <p className="text-lg">{saved.every((o) => o.kind === 'token') ? 'מהטלפון הזה נרשמו כמה אנשים. מי הגיע/ה?' : 'מהטלפון הזה נכנסו או נרשמו כמה אנשים. מי הגיע/ה?'}</p>
+        <p className="text-lg">{saved.every((o) => o.kind === 'token') ? 'מהטלפון הזה נרשמו כמה אנשים. על מי עושים צ׳ק־אין?' : 'מהטלפון הזה נכנסו או נרשמו כמה אנשים. על מי עושים צ׳ק־אין?'}</p>
       )}
       {error && <ErrorBox error={error} />}
       <div className="flex flex-col gap-3">
         {saved.map((o) => {
           const inside = o.kind === 'token' && status.data?.[o.value] === 'attended';
           return (
-            <Button key={o.value} size="lg" busy={busy} variant={inside ? 'secondary' : 'primary'} onClick={() => onPick(o)}
+            <Button key={o.value} size="lg" busy={busy && picked === o.value} disabled={busy && picked !== o.value} variant={inside ? 'secondary' : 'primary'}
+              onClick={() => { setPicked(o.value); onPick(o); }}
               className={one ? big : 'h-16! w-full text-xl!'}>
-              {inside ? `${o.name ?? 'את/ה'} כבר בפנים ✓` : one ? 'הגעתי' : `${o.name ?? 'הרשמה'} הגיע/ה`}
+              {inside ? `${o.name ? `${o.name} ` : ''}כבר בפנים ✓` : one ? 'הגעתי' : (o.name ?? 'הרשמה בלי שם')}
             </Button>
           );
         })}
       </div>
       <button type="button" onClick={onOther} className="min-h-11 self-center px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
-        {one ? `לא ${one.name ?? 'את/ה'}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
+        {one?.name ? `לא ${one.name}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
       </button>
     </div>
   );
 }
 
-const MILESTONES: Record<number, string> = { 5: 'זה השישי החמישי שלך!', 10: 'זה השישי העשירי שלך!' };
+const MILESTONES: Record<number, string> = { 5: 'המפגש החמישי שלך איתנו!', 10: 'המפגש העשירי שלך איתנו!' };
 
 function Welcome({ result: r, fallback, onUndone, onAnother }: { result: CheckinResult; fallback: PublicEvent | null; onUndone: () => void; onAnother: () => void }) {
   const event = r.event ?? fallback;
@@ -388,35 +403,38 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
       <ResultTitle size="xl" className="mt-2">
         {r.first_name ? (
           <>
-            <span className="block text-[2rem] sm:text-[2.25rem]">ברוך/ה הבא/ה,</span>{' '}
+            <span className="block text-title sm:text-[2.25rem]">טוב לראות אותך,</span>{' '}
             <span className="block text-[3.25rem] leading-none sm:text-[3.75rem]">{r.first_name}!</span>
           </>
         ) : (
-          'ברוך/ה הבא/ה!'
+          'טוב לראות אותך!'
         )}
       </ResultTitle>
       <p className="text-xl text-ink-soft">
         {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה!'}
       </p>
       {milestone && (
-        <p className="rounded-[var(--radius-control)] bg-light-wash px-5 py-2.5 font-display text-[1.4rem] text-ink">{milestone}</p>
+        <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2.5 font-display text-section text-ink">{milestone}</p>
       )}
       {!milestone && firstTime && <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>}
-      {r.membership === 'member' && <p className="rounded-[var(--radius-control)] bg-sky-wash px-5 py-2 text-[1.05rem] font-semibold text-ink">חבר/ת עמותה. תודה שאת/ה איתנו!</p>}
+      {r.membership === 'member' && <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2 text-[1.05rem] font-semibold text-ink">יש לך חברות בעמותה. תודה על השותפות!</p>}
       {r.can_undo && r.result === 'checked_in' && (
         <div className="mt-1 flex flex-col items-center gap-2">
           <button type="button" onClick={notMe} disabled={undoing} className="min-h-11 px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
-            {undoing ? 'מבטל…' : r.first_name ? `זה לא אני, אני לא ${r.first_name}` : 'זה לא אני'}
+            {undoing ? 'מבטלים…' : r.first_name ? `זה לא אני, אני לא ${r.first_name}` : 'זה לא אני'}
           </button>
           {undoError && <ErrorBox error={undoError} />}
         </div>
+      )}
+      {r.membership === 'none' && (
+        <ButtonLink to="/member" variant="secondary" className="mt-1">רוצים להצטרף לעמותה?</ButtonLink>
       )}
       <button type="button" onClick={onAnother} className="min-h-11 px-3 text-[0.95rem] font-semibold text-muted underline underline-offset-4">
         צ׳ק־אין של מישהו נוסף מהטלפון הזה
       </button>
       {r.photo_opt_out && (
         <div className="mt-2 w-full text-start">
-          <Notice icon="noCamera">רשמנו שאת/ה מעדיף/ה לא להופיע בתמונות. הצוות בכניסה רואה את זה.</Notice>
+          <Notice icon="noCamera">רשמנו שבחרת לא להופיע בתמונות. הצוות בכניסה רואה את זה.</Notice>
         </div>
       )}
     </div>
@@ -428,9 +446,9 @@ function NotOpen({ info, onRefresh, refreshing }: { info: CheckinInfo; onRefresh
   const when = rel === 'היום' || rel === 'מחר' ? rel : `ב${fmtDayLong(info.opens_at)}`;
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="font-display text-[1.9rem] leading-tight">הצ׳ק־אין עוד לא נפתח</h1>
+      <h1 className="font-display text-title">הצ׳ק־אין עוד לא נפתח</h1>
       <EventTicket event={info.event} showStatus={false} />
-      <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
+      <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
         <p className="text-lg">
           הצ׳ק־אין ייפתח {when} בשעה <span className="num font-bold">{fmtTime(info.opens_at)}</span>.
         </p>
@@ -446,9 +464,9 @@ function NoCheckin({ info }: { info: CheckinInfo }) {
   const cancelled = info.window === 'unavailable';
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="font-display text-[1.9rem] leading-tight">{cancelled ? 'אין צ׳ק־אין למפגש הזה' : 'הצ׳ק־אין נסגר'}</h1>
+      <h1 className="font-display text-title">{cancelled ? 'אין צ׳ק־אין למפגש הזה' : 'הצ׳ק־אין נסגר'}</h1>
       <EventTicket event={e} showStatus={e.status === 'cancelled'} />
-      <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
+      <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
         {cancelled ? (
           <>
             <p className="text-lg">{e.status === 'cancelled' ? 'המפגש הזה בוטל.' : 'המפגש הזה לא פעיל כרגע.'}</p>

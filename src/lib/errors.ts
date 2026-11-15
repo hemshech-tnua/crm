@@ -27,7 +27,7 @@ const MESSAGES: Record<string, string> = {
   not_found: 'הרשומה לא נמצאה. ייתכן שנמחקה.',
   not_started: 'אפשר לסגור מפגש רק אחרי שהתחיל.',
   event_not_active: 'המפגש לא פעיל (טיוטה או מבוטל).',
-  already_registered: 'כבר רשום/ה למפגש הזה.',
+  already_registered: 'כבר נרשמת למפגש הזה.',
   not_waitlisted: 'הרישום כבר לא ברשימת ההמתנה.',
   same_participant: 'אי אפשר למזג כרטיס עם עצמו.',
   invalid_email: 'כתובת האימייל לא תקינה.',
@@ -64,7 +64,7 @@ export function errorCode(err: unknown): string {
 }
 
 export function errorMessage(err: unknown): string {
-  return MESSAGES[errorCode(err)] ?? 'משהו השתבש. נסו שוב, ואם זה חוזר, פנו למנהל/ת המערכת.';
+  return MESSAGES[errorCode(err)] ?? 'משהו השתבש. נסו שוב, ואם זה חוזר, כתבו לצוות העמותה.';
 }
 
 /** Throws the Supabase error so React Query surfaces it. */

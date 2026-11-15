@@ -66,9 +66,9 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
   if (c.state === 'open' && !c.personal && !again && sentHere(code)) {
     return (
       <div className="flex flex-col gap-5">
-        <h1 className="font-display text-[1.9rem] leading-tight">משוב על המפגש</h1>
+        <h1 className="font-display text-title">משוב על המפגש</h1>
         <EventTicket event={c.event} showStatus={false} />
-        <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
+        <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
           <h2 className="text-lg font-bold">כבר שלחת מהטלפון הזה משוב על המפגש. תודה!</h2>
           <button type="button" onClick={() => setAgain(true)} className="mt-3 min-h-11 px-3 font-semibold text-tide underline underline-offset-4">
             משוב של מישהו אחר מאותו טלפון
@@ -80,9 +80,9 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
   if (c.state !== 'open') {
     return (
       <div className="flex flex-col gap-5">
-        <h1 className="font-display text-[1.9rem] leading-tight">משוב על המפגש</h1>
+        <h1 className="font-display text-title">משוב על המפגש</h1>
         <EventTicket event={c.event} showStatus={false} />
-        <section className="rounded-[var(--radius-panel)] bg-paper px-5 py-6 text-center">
+        <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
           <h2 className="text-lg font-bold">{c.state === 'not_yet' ? 'המשוב ייפתח כשהמפגש יתחיל' : 'תקופת המשוב למפגש הזה הסתיימה'}</h2>
           <p className="mt-1 text-muted">
             {c.state === 'not_yet' ? 'נשמח לשמוע ממך אחרי המפגש.' : 'תודה! נשמח לשמוע ממך אחרי המפגש הבא.'}
@@ -96,7 +96,7 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-display text-[1.9rem] leading-tight">{c.first_name ? `${c.first_name}, איך היה?` : 'איך היה במפגש?'}</h1>
+        <h1 className="font-display text-title">{c.first_name ? `${c.first_name}, איך היה?` : 'איך היה במפגש?'}</h1>
         <p className="mt-1 text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
       </div>
       <EventTicket event={c.event} showStatus={false} />

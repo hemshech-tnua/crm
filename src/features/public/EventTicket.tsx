@@ -35,7 +35,7 @@ function Row({ icon, glyph, children }: { icon?: IconName; glyph?: GlyphName; ch
 }
 
 /** One event = one ticket: the date stub, then when, where and what. */
-export function EventTicket({ event, highlight = false, level = 2, detailed = false, showStatus = true, children }: {
+export function EventTicket({ event, highlight = false, level = 2, detailed = false, showStatus = true, className, children }: {
   event: PublicEvent;
   /** navy date block: only for the one event the page is about (the next Friday) */
   highlight?: boolean;
@@ -44,6 +44,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
   detailed?: boolean;
   /** 'notable': only when it says something beyond "open" (few spots, waitlist, full) */
   showStatus?: boolean | 'notable';
+  className?: string;
   children?: ReactNode;
 }) {
   const H = level === 3 ? 'h3' : 'h2';
@@ -52,21 +53,21 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
   const lecture = lectureText(event);
   const status = availability(event);
   return (
-    <article className="flex overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper">
+    <article className={cx('flex overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper', className)}>
       {/* the date block: navy with beige type for the event the page is about, beige with navy type otherwise */}
       <div
         className={cx(
-          'relative flex w-[6.25rem] shrink-0 flex-col items-center justify-center overflow-hidden px-2 py-5 text-center sm:w-[7.5rem]',
-          highlight ? 'bg-ink text-light' : 'bg-sky text-ink',
+          'flex w-[5.75rem] shrink-0 flex-col items-center justify-center px-2 py-4 text-center sm:w-[7.5rem] sm:py-5',
+          highlight ? 'bg-ink text-light' : 'border-e border-edge bg-sky text-ink',
         )}
       >
-        <span className="relative text-[0.9rem] font-semibold">{fmtDay(start)}</span>
-        <span className="num relative mt-1 font-display text-[3.25rem] leading-[0.95]">{dayNum.format(start)}</span>
-        <span className="relative mt-1 text-[0.9rem] font-semibold">{monthName.format(start)}</span>
+        <span className="text-small font-semibold">{fmtDay(start)}</span>
+        <span className="num mt-1 font-display text-stat-lg">{dayNum.format(start)}</span>
+        <span className="mt-1 text-small font-semibold">{monthName.format(start)}</span>
       </div>
       <div className="min-w-0 flex-1 px-4 py-4 sm:px-5 sm:py-5">
-          <H className="text-[1.15rem] font-bold leading-snug">{event.title}</H>
-          <ul className="mt-2 flex flex-col gap-1.5 text-[0.95rem] text-ink-soft">
+          <H className="text-heading font-bold">{event.title}</H>
+          <ul className="mt-2 flex flex-col gap-1.5 text-[0.9375rem] text-ink-soft">
             <Row glyph="clock">
               <span className="num">{timeRange(event)}</span>
               <span className="text-muted"> · {relativeDays(start)}</span>
@@ -77,7 +78,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
           </ul>
           {detailed && event.speaker_bio && <p className="mt-2 text-sm leading-relaxed text-muted">{event.speaker_bio}</p>}
           {detailed && event.description && (
-            <p className="mt-3 whitespace-pre-line text-[0.95rem] leading-relaxed text-ink-soft">{event.description}</p>
+            <p className="mt-3 whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft">{event.description}</p>
           )}
           {(showStatus === true || (showStatus === 'notable' && !status.plain)) && (
             <div className="mt-3">

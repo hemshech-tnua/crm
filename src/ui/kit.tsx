@@ -341,7 +341,8 @@ export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => vo
 }
 
 export function Notice({ tone = 'tide', icon = 'shield', children }: { tone?: 'tide' | 'light' | 'warn'; icon?: IconName; children: ReactNode }) {
-  const t = tone === 'tide' ? 'bg-tide-wash text-tide-deep border-ink' : tone === 'light' ? 'bg-light-wash text-ink border-ink/40' : 'bg-warn-wash text-warn border-warn';
+  // on the beige ground a beige box disappears: notices are warm-white cards with a coloured edge on the start side
+  const t = tone === 'tide' ? 'bg-paper text-ink border-ink' : tone === 'light' ? 'bg-paper text-ink border-ink/40' : 'bg-warn-wash text-warn border-warn';
   return (
     <div className={cx('flex items-start gap-2.5 rounded-[var(--radius-control)] border-s-[3px] px-3.5 py-3 text-sm leading-relaxed', t)}>
       <Icon name={icon} size={18} className="mt-0.5" />

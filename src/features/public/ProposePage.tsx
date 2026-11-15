@@ -3,8 +3,8 @@ import { errorCode, errorMessage } from '@/lib/errors';
 import { normalizePhone } from '@/lib/phone';
 import { Button, ButtonLink, ChoiceGroup, ErrorBox, Input, Textarea } from '@/ui/kit';
 import { propose } from './api';
-import { cleanText, nameError, phoneError } from './PersonForm';
-import { Honeypot, PrivacyNote, ResultTitle, SuccessMark } from './shared';
+import { PhoneExample, cleanText, nameError, phoneError } from './PersonForm';
+import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList } from './shared';
 
 type Kind = 'speaker' | 'instructor';
 type Values = { kind: Kind | ''; full_name: string; phone: string; topic: string; bio_line: string; social_url: string; message: string; website: string };
@@ -89,7 +89,7 @@ export function ProposePage() {
 
   if (done) {
     return (
-      <div className="flex flex-col items-center gap-3 pt-2 text-center">
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-3 pt-2 text-center">
         <SuccessMark />
         <ResultTitle className="mt-2">תודה! קיבלנו את ההצעה</ResultTitle>
         <p className="max-w-sm text-lg text-ink-soft">צוות העמותה יעבור עליה ויחזור אליך בטלפון.</p>
@@ -100,15 +100,21 @@ export function ProposePage() {
 
   const instructor = v.kind === 'instructor';
   return (
-    <div>
-      <h1 className="font-display text-[1.9rem] leading-tight">רוצים להרצות או להדריך?</h1>
-      <p className="mt-1.5 text-[1.05rem] text-ink-soft">
-        בכל מפגש שישי יש פעילות תנועה והרצאת אורח. אם יש לך משהו לתת לחבר׳ה שחוזרים מהמילואים, נשמח להכיר.
-      </p>
-      <form onSubmit={submit} noValidate className="mt-6 flex flex-col gap-5" aria-label="הצעה להרצות או להדריך">
+    <div className="lg:grid lg:grid-cols-[24rem_minmax(0,1fr)] lg:items-start lg:gap-10">
+      <div className="lg:sticky lg:top-6">
+        <h1 className="font-display text-title">רוצים להרצות או להדריך?</h1>
+        <p className="mt-2 text-[1.0625rem] text-ink-soft">
+          בכל מפגש שישי יש פעילות תנועה והרצאת אורח. אם יש לכם משהו לתת ללוחמים וללוחמות באזרחות, נשמח להכיר.
+        </p>
+        <TriList
+          className="mt-4 text-ink-soft"
+          items={['ממלאים כמה פרטים על ההצעה', 'צוות העמותה עובר על כל הצעה', 'חוזרים אליכם בטלפון']}
+        />
+      </div>
+      <form onSubmit={submit} noValidate className="mt-6 flex flex-col gap-5 lg:mt-0 lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8" aria-label="הצעה להרצות או להדריך">
         <div id={`${ids}-kind`}>
           <ChoiceGroup<Kind>
-            legend="מה תרצה/י להציע?"
+            legend="מה בא לך להציע?"
             required
             columns={2}
             options={[
@@ -130,7 +136,7 @@ export function ProposePage() {
           autoComplete="tel"
           ltr
           maxLength={20}
-          placeholder="050-1234567"
+          hint={<PhoneExample />}
           value={v.phone}
           onChange={(e) => set('phone', e.target.value)}
           error={errors.phone}
@@ -155,13 +161,12 @@ export function ProposePage() {
         <Input
           id={`${ids}-social_url`}
           label="קישור לאתר או לעמוד ברשת"
-          hint="לא חובה."
+          hint="לא חובה. למשל עמוד אינסטגרם, לינקדאין או אתר."
           type="url"
           inputMode="url"
           autoComplete="url"
           ltr
           maxLength={300}
-          placeholder="https://"
           value={v.social_url}
           onChange={(e) => set('social_url', e.target.value)}
           error={errors.social_url}

@@ -1,30 +1,24 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { ContactLine } from './shared';
+import { ContactLine, TriList } from './shared';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-t border-line pt-5">
-      <h2 className="text-[1.15rem] font-bold">{title}</h2>
-      <div className="mt-2 flex flex-col gap-2.5 text-[0.98rem] leading-relaxed text-ink-soft">{children}</div>
+    <section className="border-t border-edge pt-5">
+      <h2 className="text-heading font-bold">{title}</h2>
+      <div className="mt-2 flex flex-col gap-2.5 text-body text-ink-soft">{children}</div>
     </section>
   );
 }
 
-function List({ items }: { items: ReactNode[] }) {
-  return (
-    <ul className="flex list-disc flex-col gap-1.5 ps-5 marker:text-tide">
-      {items.map((it, i) => <li key={i}>{it}</li>)}
-    </ul>
-  );
-}
+const List = TriList;
 
 /** Participant-facing privacy notice. A draft for legal review: it must not claim compliance nobody checked. */
 export function PrivacyPage() {
   return (
     <article className="flex flex-col gap-6">
       <header>
-        <h1 className="font-display text-[1.9rem] leading-tight">מדיניות פרטיות</h1>
+        <h1 className="font-display text-title">מדיניות פרטיות</h1>
         <p className="mt-1.5 text-[1.05rem] text-ink-soft">
           מה אנחנו שומרים עליך, למה, מי רואה את זה ומה הזכויות שלך. בקצרה ובשפה פשוטה.
         </p>
@@ -32,8 +26,8 @@ export function PrivacyPage() {
 
       <Section title="מי אנחנו">
         <p>
-          עמותת המשך תנועה מלווה משרתות ומשרתי מילואים בחזרה לשגרה, בין השאר במפגשי שישי בהולמס פלייס מודיעין: פעילות תנועה,
-          הרצאת אורח, ארוחת בוקר וזמן ביחד. העמותה אחראית למידע שנאסף במערכת ההרשמה והמפגשים.
+          עמותת המשך תנועה היא הבית ללוחמים ולוחמות באזרחות. בין השאר אנחנו מקיימים מפגשי שישי בהולמס פלייס מודיעין: פעילות
+          תנועה, הרצאת אורח, ארוחת בוקר וזמן ביחד. העמותה אחראית למידע שנאסף במערכת ההרשמה והמפגשים.
         </p>
       </Section>
 
@@ -45,7 +39,7 @@ export function PrivacyPage() {
             'הרשמות, ביטולים והגעה למפגשים (כולל צ׳ק־אין בכניסה).',
             'המשוב שנתת אחרי מפגשים.',
             'אם בחרת: הסכמה לקבל עדכונים בוואטסאפ, והעדפה לא להופיע בתמונות.',
-            'אם את/ה חבר/ת עמותה או ביקשת להצטרף: הסטטוס והתאריך.',
+            'חברות בעמותה או בקשה להצטרף: הסטטוס והתאריך.',
             'אם סיפרת לצוות: תאריך לידה או עיסוק, ותיעוד קצר של שיחות והודעות של הצוות איתך (מתי ובאיזה ערוץ).',
           ]}
         />
@@ -110,7 +104,7 @@ export function PrivacyPage() {
 
       <Section title="כמה זמן שומרים">
         <p>
-          את היסטוריית ההשתתפות שומרים כל עוד את/ה פעיל/ה איתנו. אחרי 36 חודשים בלי שום פעילות, או כשמבקשים, הכרטיס עובר
+          את היסטוריית ההשתתפות שומרים כל עוד יש לך קשר פעיל איתנו. אחרי 36 חודשים בלי שום פעילות, או כשמבקשים, הכרטיס עובר
           התממה: השם, הטלפון ושאר הפרטים המזהים נמחקים, ונשארים רק מספרים סטטיסטיים. תיעוד ההסכמה לעדכונים (מתי ובאיזה נוסח)
           נשמר גם אחרי התממה, בלי פרטים מזהים.
         </p>
@@ -120,13 +114,13 @@ export function PrivacyPage() {
         <p>
           ההסכמה לקבל עדכונים והזמנות היא לא חובה, ולא מסומנת מראש. אפשר לבטל אותה בכל רגע: עונים ״הסר״ להודעה שלנו, או
           מבקשים מהצוות. הודעות על מפגש שנרשמת אליו (אישור ותזכורת) והודעת תודה אחרי מפגש שהגעת אליו נשלחות גם בלי ההסכמה
-          הזו. הזמנה להצטרף לעמותה נשלחת רק למי שהסכים/ה. כל הודעה נשלחת על ידי איש/אשת צוות, אף פעם לא אוטומטית.
+          הזו. הזמנה להצטרף לעמותה נשלחת רק אם הסכמת לכך. כל הודעה נשלחת ידנית, על ידי מישהו מהצוות, אף פעם לא אוטומטית.
         </p>
       </Section>
 
       <Section title="צילום במפגשים">
         <p>
-          במפגשים מצלמים לפעמים לעמודים של העמותה. מי שמסמן/ת בהרשמה שמעדיף/ה לא להופיע בתמונות, הסימון מופיע לצוות ברשימת
+          במפגשים מצלמים לפעמים לעמודים של העמותה. אם סימנת בהרשמה שעדיף לך לא להופיע בתמונות, הצוות רואה את זה ברשימת
           הנוכחות. אפשר גם לבקש מהצוות להסיר תמונה שפורסמה.
         </p>
       </Section>
@@ -146,7 +140,7 @@ export function PrivacyPage() {
         </p>
       </Section>
 
-      <footer className="border-t border-line pt-5 text-sm text-muted">
+      <footer className="border-t border-edge pt-5 text-small text-muted">
         <p>עדכון אחרון: נובמבר 2026.</p>
         <Link to="/" className="mt-4 inline-flex min-h-11 items-center font-semibold text-tide hover:underline">למפגשים הקרובים</Link>
       </footer>

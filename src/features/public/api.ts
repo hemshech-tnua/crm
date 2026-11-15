@@ -115,7 +115,13 @@ export const useCheckinInfo = (code: string) =>
     queryKey: ['pub', 'checkin', code],
     retry,
     // waiting at the entrance before the window opens: the page opens by itself
-    refetchInterval: (q) => (q.state.data?.window === 'not_open' ? 60_000 : false),
+    // (checked again two seconds after the opening time, and once a minute in case the time was changed)
+    refetchInterval: (q) => {
+      const d = q.state.data;
+      if (d?.window !== 'not_open') return false;
+      const ms = new Date(d.opens_at).getTime() + 2000 - Date.now();
+      return ms > 0 && ms < 60_000 ? ms : 60_000;
+    },
     queryFn: () => rpc<CheckinInfo>('public_checkin_info', { p_code: code }),
   });
 

@@ -37,7 +37,7 @@ test('@phone a walk-in is remembered: the next meeting is one tap, and joining t
 
   // the link in the thank-you message: the same phone asks to join in one tap
   await page.goto('#/member');
-  await expect(page.getByRole('heading', { name: 'הצטרפות לעמותה' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'הצטרפו לעמותה' })).toBeVisible();
   await page.getByRole('button', { name: 'אני רוצה להצטרף' }).click();
   await expect(page.getByRole('heading', { name: 'תודה, שקד! קיבלנו' })).toBeVisible();
   const { data: card } = await coord.from('participants').select('id, membership').eq('phone', e164(who.p)).single();
