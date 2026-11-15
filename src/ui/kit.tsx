@@ -7,19 +7,21 @@ export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 
 // ───────────── buttons ─────────────
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'light';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'light' | 'onDark';
 type Size = 'sm' | 'md' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
   // brand book: a squared navy button with beige type (and the triangle ◀ on a call to action); outlined navy; beige on navy
-  primary: 'bg-tide text-light hover:bg-tide-deep active:bg-tide-deep disabled:bg-faint disabled:text-mist',
-  secondary: 'bg-paper text-ink border border-ink/35 hover:border-ink hover:bg-sky-wash disabled:text-faint disabled:border-line',
-  ghost: 'text-ink hover:bg-ink/[0.06] disabled:text-faint',
-  danger: 'bg-paper text-bad border border-bad/40 hover:bg-bad-wash disabled:text-faint',
-  light: 'bg-light text-ink hover:bg-[#f4e9cf] disabled:bg-faint',
+  primary: 'bg-tide text-light hover:bg-ink-soft active:bg-tide-deep disabled:bg-tide/40 disabled:text-light/80',
+  secondary: 'bg-transparent text-ink border border-control-line hover:border-ink hover:bg-ink/[0.06] active:bg-ink/10 disabled:text-ink/45 disabled:border-ink/25',
+  ghost: 'text-ink hover:bg-ink/[0.06] active:bg-ink/10 disabled:text-faint',
+  danger: 'bg-transparent text-bad border border-bad hover:bg-bad-wash disabled:text-faint disabled:border-line',
+  light: 'bg-light text-ink hover:bg-[#f4e9cf] disabled:bg-light/50',
+  /** outlined beige, for secondary actions on a navy area (the dashboard band, the door header) */
+  onDark: 'border border-light/60 text-light hover:bg-light/10 active:bg-light/15 disabled:text-light/50',
 };
 const SIZE: Record<Size, string> = {
-  sm: 'h-9 px-3 text-sm gap-1.5',
+  sm: 'h-9 pointer-coarse:h-11 px-3 text-sm gap-1.5',
   md: 'h-11 px-4 text-[0.95rem] gap-2',
   lg: 'h-14 px-6 text-lg gap-2.5',
 };
@@ -72,7 +74,7 @@ export function ExternalButton({ href, variant = 'secondary', size = 'md', icon,
 
 export function IconButton({ icon, label, className = '', ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { icon: IconName; label: string }) {
   return (
-    <button type="button" aria-label={label} title={label} className={cx('inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] text-ink-soft hover:bg-mist-deep hover:text-ink', className)} {...rest}>
+    <button type="button" aria-label={label} title={label} className={cx('inline-flex h-10 w-10 pointer-coarse:h-11 pointer-coarse:w-11 items-center justify-center rounded-[var(--radius-control)] text-ink-soft hover:bg-ink/[0.07] hover:text-ink', className)} {...rest}>
       <Icon name={icon} />
     </button>
   );
@@ -90,14 +92,14 @@ export function Spinner({ size = 18 }: { size?: number }) {
 // ───────────── form fields ─────────────
 
 const controlBase =
-  'w-full rounded-[var(--radius-control)] border border-line bg-paper px-3.5 text-ink placeholder:text-faint transition-colors hover:border-ink-soft/50 focus:border-tide focus:outline-none focus:ring-3 focus:ring-tide/40 disabled:bg-mist disabled:text-muted aria-[invalid=true]:border-bad';
+  'w-full rounded-[var(--radius-control)] border border-control-line bg-paper px-3.5 text-ink placeholder:text-faint transition-colors hover:border-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink disabled:border-line disabled:bg-mist disabled:text-muted aria-[invalid=true]:border-bad aria-[invalid=true]:focus:ring-bad';
 
 export function Field({ label, hint, error, children, htmlFor, required, className = '' }: {
   label: ReactNode; hint?: ReactNode; error?: string | null; children: ReactNode; htmlFor?: string; required?: boolean; className?: string;
 }) {
   return (
     <div className={cx('flex flex-col gap-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-sm font-semibold text-ink">
+      <label htmlFor={htmlFor} className="text-small font-medium text-ink">
         {label}
         {required && <span className="text-bad" aria-hidden="true"> *</span>}
       </label>
@@ -182,7 +184,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
   const errId = `${name}-err`;
   return (
     <fieldset className="flex flex-col gap-2" aria-describedby={error ? errId : undefined}>
-      <legend className="mb-1.5 text-sm font-semibold">
+      <legend className="mb-1.5 text-small font-medium">
         {legend}
         {required && <span className="text-bad" aria-hidden="true"> *</span>}
       </legend>
@@ -194,11 +196,12 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
               key={o.value}
               className={cx(
                 'flex min-h-12 cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border px-3.5 py-2.5 transition-colors',
-                on ? 'border-tide bg-tide-wash text-tide-deep' : 'border-line bg-paper hover:border-ink-soft/40',
+                // selected is told by a 2px navy frame and weight, not by colour alone
+                on ? 'border-2 border-ink bg-paper px-[13px] py-[9px] font-semibold text-ink' : 'border-control-line bg-paper hover:border-ink',
               )}
             >
               <input type="radio" name={name} value={o.value} checked={on} onChange={() => onChange(o.value)} aria-invalid={error ? true : undefined} className="h-5 w-5 accent-tide" />
-              <span className="font-medium leading-snug">{o.label}</span>
+              <span className="leading-snug">{o.label}</span>
             </label>
           );
         })}
@@ -209,11 +212,12 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
 }
 
 /** 1–5 rating as five big buttons (radio semantics). */
-export function Rating({ legend, value, onChange, required }: { legend: ReactNode; value: number | null; onChange: (v: number) => void; required?: boolean }) {
+export function Rating({ legend, value, onChange, required, error }: { legend: ReactNode; value: number | null; onChange: (v: number) => void; required?: boolean; error?: string | null }) {
   const name = useId();
+  const errId = `${name}-err`;
   const words = ['', 'חלש', 'בסדר', 'טוב', 'טוב מאוד', 'מצוין'];
   return (
-    <fieldset>
+    <fieldset aria-describedby={error ? errId : undefined}>
       <legend className="mb-2 text-[0.95rem] font-semibold">
         {legend}
         {required && <span className="text-bad" aria-hidden="true"> *</span>}
@@ -224,15 +228,16 @@ export function Rating({ legend, value, onChange, required }: { legend: ReactNod
           return (
             <label key={n} className={cx(
               'flex h-14 cursor-pointer flex-col items-center justify-center rounded-[var(--radius-control)] border transition-colors has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink',
-              on ? 'border-ink bg-ink text-light' : 'border-line bg-paper hover:border-ink/60',
+              on ? 'border-ink bg-ink text-light' : error ? 'border-bad bg-paper' : 'border-control-line bg-paper hover:border-ink',
             )}>
-              <input type="radio" name={name} value={n} checked={on} onChange={() => onChange(n)} className="sr-only" aria-label={`${n} – ${words[n]}`} />
+              <input type="radio" name={name} value={n} checked={on} onChange={() => onChange(n)} className="sr-only" aria-label={`${n} – ${words[n]}`} aria-invalid={error ? true : undefined} />
               <span className="font-display text-xl leading-none">{n}</span>
             </label>
           );
         })}
       </div>
       <div className="mt-1 flex justify-between text-xs text-muted"><span>מצוין</span><span>חלש</span></div>
+      {error && <p id={errId} className="mt-1.5 flex items-center gap-1 text-sm font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
     </fieldset>
   );
 }
@@ -240,33 +245,40 @@ export function Rating({ legend, value, onChange, required }: { legend: ReactNod
 // ───────────── display ─────────────
 
 type Tone = 'neutral' | 'tide' | 'light' | 'good' | 'bad' | 'warn' | 'ink';
+// Tones must be told apart at a glance: outline (neutral/tide), filled beige, filled navy, and the three status tones
+// with a ring (warn and bad also carry the alert icon where they are used).
 const TONE: Record<Tone, string> = {
-  neutral: 'bg-mist-deep text-ink-soft',
-  tide: 'bg-tide-wash text-tide-deep',
+  neutral: 'border border-ink/25 text-ink-soft',
+  tide: 'border border-ink/40 text-ink',
   light: 'bg-light text-ink',
-  good: 'bg-good-wash text-good',
-  bad: 'bg-bad-wash text-bad',
-  warn: 'bg-warn-wash text-warn',
-  ink: 'bg-ink text-mist',
+  good: 'bg-good-wash text-good ring-1 ring-inset ring-good/30',
+  bad: 'bg-bad-wash text-bad ring-1 ring-inset ring-bad/30',
+  warn: 'bg-warn-wash text-warn ring-1 ring-inset ring-warn/40',
+  ink: 'bg-ink text-light',
 };
 
 export function Badge({ tone = 'neutral', children, icon, title }: { tone?: Tone; children: ReactNode; icon?: IconName; title?: string }) {
   return (
-    <span title={title} className={cx('inline-flex items-center gap-1 rounded-[2px] px-2 py-0.5 text-[0.8rem] font-semibold leading-6 whitespace-nowrap', TONE[tone])}>
+    <span title={title} className={cx('inline-flex h-6 items-center gap-1 rounded-[2px] px-1.5 text-xs font-medium whitespace-nowrap', TONE[tone])}>
       {icon && <Icon name={icon} size={13} strokeWidth={2.2} />}
       {children}
     </span>
   );
 }
 
-export function Panel({ title, actions, children, className = '', padded = true, id }: {
-  title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; padded?: boolean; id?: string;
+export function Panel({ title, description, actions, children, className = '', padded = true, id }: {
+  title?: ReactNode; description?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; padded?: boolean; id?: string;
 }) {
   return (
-    <section id={id} className={cx('rounded-[var(--radius-panel)] border border-line-soft bg-paper', className)}>
+    <section id={id} className={cx('rounded-[var(--radius-panel)] border border-edge bg-paper', className)}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line-soft px-4 py-3 sm:px-5">
-          {title && <h2 className="flex items-center gap-2 text-[1.05rem] font-bold"><Tri className="text-ink" size="0.7em" />{title}</h2>}
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-3 sm:px-5">
+          {title && (
+            <div className="min-w-0">
+              <h2 className="text-heading font-semibold">{title}</h2>
+              {description && <p className="mt-0.5 text-small text-muted">{description}</p>}
+            </div>
+          )}
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
       )}
@@ -280,12 +292,12 @@ export function PageHeader({ title, subtitle, actions, back }: { title: ReactNod
     <header className="mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-7">
       <div className="min-w-0">
         {back && (
-          <Link to={back.to} className="mb-1 inline-flex items-center gap-1 text-sm font-medium text-tide hover:underline">
+          <Link to={back.to} className="mb-1 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-tide hover:underline">
             <Icon name="back" size={16} />
             {back.label}
           </Link>
         )}
-        <h1 className="font-display text-[1.75rem] leading-tight text-ink sm:text-[2rem]">{title}</h1>
+        <h1 className="font-display text-[1.75rem] leading-tight text-ink sm:text-title">{title}</h1>
         {subtitle && <div className="mt-1 text-[0.95rem] text-muted">{subtitle}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -296,10 +308,10 @@ export function PageHeader({ title, subtitle, actions, back }: { title: ReactNod
 export function EmptyState({ icon = 'sun', title, children, action }: { icon?: IconName; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center px-4 py-10 text-center">
-      {/* a navy square entered by beige stripes from one corner, the icon in the clear part */}
-      <div className="relative mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-[var(--radius-panel)] bg-ink text-light">
-        <Stripes width={64} height={64} unit={6} dir="rise" corner={{ at: 'bottom-left', size: 34 }} className="absolute inset-0 h-full w-full" />
-        <Icon name={icon} size={24} className="relative -translate-y-1 translate-x-1" />
+      {/* a navy tile, the icon above a run of beige stripes cut by the tile's bottom edge */}
+      <div className="relative mb-4 flex h-20 w-20 items-start justify-center overflow-hidden rounded-[var(--radius-panel)] bg-ink pt-4 text-light">
+        <Icon name={icon} size={26} />
+        <Stripes width={80} height={26} unit={12} dir="fall" count={3} offset={8} className="absolute inset-x-0 bottom-0 h-[26px] w-20" />
       </div>
       <p className="text-lg font-bold">{title}</p>
       {children && <div className="mt-1 max-w-md text-[0.95rem] text-muted">{children}</div>}
@@ -341,7 +353,7 @@ export function Notice({ tone = 'tide', icon = 'shield', children }: { tone?: 't
 /** Tabs driven by a URL search param, so a tab can be linked and survives reload. */
 export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs: { value: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void; label: string }) {
   return (
-    <div role="tablist" aria-label={label} className="-mx-4 mb-5 flex gap-1 overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0">
+    <div role="tablist" aria-label={label} className="-mx-4 mb-5 flex gap-1 overflow-x-auto border-b border-line px-4 [mask-image:linear-gradient(to_right,transparent,#000_28px)] sm:mx-0 sm:px-0 sm:[mask-image:none]">
       {tabs.map((t) => {
         const on = t.value === value;
         return (
@@ -352,7 +364,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs:
             aria-selected={on}
             onClick={() => onChange(t.value)}
             className={cx(
-              '-mb-px flex h-11 shrink-0 items-center gap-1.5 border-b-[3px] px-3 font-semibold transition-colors',
+              '-mb-px flex h-11 shrink-0 items-center gap-1.5 border-b-[3px] px-2.5 font-semibold transition-colors sm:px-3',
               on ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink',
             )}
           >
@@ -393,3 +405,84 @@ export function SearchInput({ value, onChange, placeholder, label }: { value: st
     </div>
   );
 }
+
+// ───────────── shared controls (one look for every filter, segment and table) ─────────────
+
+/** A segmented control: one choice out of a few (periods, kinds). Radio semantics via aria-pressed buttons. */
+export function Segmented<T extends string>({ options, value, onChange, label, className = '' }: {
+  options: { value: T; label: ReactNode }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
+}) {
+  return (
+    <div role="group" aria-label={label} className={cx('inline-flex rounded-[var(--radius-control)] border border-edge bg-paper p-0.5', className)}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(o.value)}
+            className={cx(
+              'h-10 pointer-coarse:h-11 shrink-0 rounded-[2px] px-3 text-small font-medium transition-colors',
+              on ? 'bg-ink text-light' : 'text-ink-soft hover:bg-ink/[0.05] hover:text-ink',
+            )}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Filter chips: a row of toggles with optional counts (participants, registrations, follow-ups). */
+export function FilterChips<T extends string>({ options, value, onChange, label, className = '' }: {
+  options: { value: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
+}) {
+  return (
+    <div role="group" aria-label={label} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0', className)}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(o.value)}
+            className={cx(
+              'inline-flex h-10 pointer-coarse:h-11 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-medium transition-colors',
+              on ? 'border-ink bg-ink text-light' : 'border-control-line text-ink-soft hover:border-ink hover:text-ink',
+            )}
+          >
+            {o.label}
+            {o.count != null && <span className={cx('num text-micro', on ? 'text-light/75' : 'text-muted')}>{o.count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Data tables: one wrapper, header and cell style everywhere. Numeric columns: `numeric` (left-aligned, tabular). */
+export function Table({ children, className = '', label }: { children: ReactNode; className?: string; label?: string }) {
+  return (
+    <div className={cx('overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper', className)}>
+      <table className="w-full border-collapse text-body" aria-label={label}>{children}</table>
+    </div>
+  );
+}
+export function Th({ children, numeric, className = '' }: { children?: ReactNode; numeric?: boolean; className?: string }) {
+  return (
+    <th scope="col" className={cx('h-10 bg-mist/70 px-3 text-micro font-medium text-muted first:ps-4 last:pe-4', numeric ? 'text-left' : 'text-right', className)}>
+      {children}
+    </th>
+  );
+}
+export function Td({ children, numeric, className = '' }: { children?: ReactNode; numeric?: boolean; className?: string }) {
+  return (
+    <td className={cx('h-12 border-t border-edge px-3 py-2 first:ps-4 last:pe-4', numeric && 'num text-left', className)}>
+      {children}
+    </td>
+  );
+}
+

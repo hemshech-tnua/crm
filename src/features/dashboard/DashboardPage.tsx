@@ -94,7 +94,7 @@ export function DashboardPage() {
           {/* the next meeting: a navy panel, the beige date as the one highlight on the page; stripes enter from the corner */}
           {events.isLoading ? <Skeleton lines={3} className="mb-6" /> : next ? (
             <section className="relative mb-6 overflow-hidden rounded-[var(--radius-panel)] bg-ink text-mist">
-              <Stripes width={88} height={88} unit={12} dir="fall" corner={{ at: 'top-left', size: 88 }} className="absolute top-0 left-0 h-[88px] w-[88px] text-light" />
+              <Stripes width={88} height={88} unit={12} dir="fall" count={2} offset={10} className="absolute top-0 left-0 h-[88px] w-[88px] text-light" />
               <div className="relative flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6 sm:pl-24">
                 <div className="flex items-center gap-4">
                   <div className="rounded-[var(--radius-control)] bg-light px-3.5 py-2 text-center text-ink">

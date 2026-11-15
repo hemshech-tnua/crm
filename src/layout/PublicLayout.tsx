@@ -12,7 +12,7 @@ export function PublicLayout() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="relative overflow-hidden bg-ink text-light">
-        <Stripes width={260} height={112} unit={24} dir="fall" corner={{ at: 'top-left', size: 200 }} className="absolute top-0 left-0 h-28 w-[260px]" />
+        <Stripes width={260} height={112} unit={24} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-28 w-[260px]" />
         <div className="relative mx-auto flex max-w-xl items-center px-5 pt-6 pb-7">
           <Link to="/" aria-label="המשך תנועה: המפגשים הקרובים">
             <Logo variant="full" height={64} />

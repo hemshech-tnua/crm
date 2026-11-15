@@ -14,7 +14,7 @@ export function Hero({ photo, kicker, title, children, position = 'center', clas
     <section className={cx('-mx-5 -mt-6 overflow-hidden bg-ink text-light sm:mx-0 sm:mt-0 sm:rounded-[var(--radius-panel)]', className)}>
       <div className="relative aspect-[16/10] overflow-hidden">
         <img src={photo} alt="" decoding="async" fetchPriority="high" className="h-full w-full object-cover" style={{ objectPosition: position }} />
-        <Stripes width={160} height={160} unit={18} dir="rise" corner={{ at: 'bottom-left', size: 150 }} className="absolute bottom-0 left-0 h-[42%] w-auto max-w-[45%] text-light" />
+        <Stripes width={200} height={90} unit={20} dir="fall" count={3} offset={0} className="absolute bottom-0 left-0 h-[30%] w-[38%] text-light" />
       </div>
       <div className="px-5 pt-5 pb-6 sm:px-6">
         {kicker && <div className="font-display text-[1.15rem] font-semibold">{kicker}</div>}

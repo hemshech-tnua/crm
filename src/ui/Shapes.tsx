@@ -1,4 +1,3 @@
-import { useId } from 'react';
 
 // The brand's shape system (brand book "מערך צורני"): built from one unit X, the right isosceles triangle.
 //  · the stripe: a band at exactly 45°, X wide, with a gap of X to the next one; it enters from an edge or a corner of
@@ -22,56 +21,25 @@ function band(k: number, w: number, dir: Dir, h: number) {
 }
 
 /**
- * Parallel 45° stripes over a box of `width`×`height` (viewBox units; the SVG slices to its CSS size).
- * `unit` is X (the stripe's width across, = the gap). `offset` shifts the run along the box; `count` limits it.
+ * A run of parallel 45° stripes in a `width`×`height` box (viewBox units; the SVG slices to its CSS size).
+ * The box's edges are the cut: every stripe is whole or cut only by the box, parallel to the format's edge, never
+ * across (book p.38). Put the box against an edge or a corner of the format. `unit` is X, the stripe's width across
+ * (= the gap); keep it ≥ 12 on screen, smaller reads as a hatch. `count` limits the run to whole stripes, `offset`
+ * slides it along the box. All stripes of one composition share one direction.
  */
-export function Stripes({ width = 400, height = 100, unit = 24, dir = 'fall', offset = 0, count, className, corner }: {
+export function Stripes({ width = 400, height = 100, unit = 24, dir = 'fall', offset = 0, count, className }: {
   width?: number; height?: number; unit?: number; dir?: Dir; offset?: number; count?: number; className?: string;
-  /** keep the stripes inside a right-isosceles triangle at this corner of the box (they "enter from the corner") */
-  corner?: { at: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'; size: number };
 }) {
-  const id = useId().replace(/:/g, '');
   const w = unit * R2; // horizontal extent of a stripe that is `unit` wide across
   const step = 2 * w;
   const span = width + height;
   const n = count ?? Math.ceil(span / step) + 2;
   const start = dir === 'fall' ? -height + offset : offset;
   const paths = Array.from({ length: n }, (_, i) => band(start + i * step, w, dir, height));
-  const tri = corner && (() => {
-    const s = corner.size;
-    switch (corner.at) {
-      case 'top-left': return `0,0 ${s},0 0,${s}`;
-      case 'top-right': return `${width},0 ${width - s},0 ${width},${s}`;
-      case 'bottom-left': return `0,${height} ${s},${height} 0,${height - s}`;
-      case 'bottom-right': return `${width},${height} ${width - s},${height} ${width},${height - s}`;
-    }
-  })();
   return (
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid slice" className={cx('pointer-events-none', className)} aria-hidden="true" focusable="false">
-      {tri && <defs><clipPath id={`c${id}`}><polygon points={tri} /></clipPath></defs>}
-      <g fill="currentColor" clipPath={tri ? `url(#c${id})` : undefined}>
-        {paths.map((d, i) => <path key={i} d={d} />)}
-      </g>
-    </svg>
-  );
-}
-
-/**
- * The cover composition of the book: two wide stripes and a chevron entering from the top edge, cut by a horizontal
- * line, on the left of the format (the logo and headline sit on the right). Fills its box; colour = currentColor.
- */
-export function ChevronField({ className }: { className?: string }) {
-  // drawn on a 1000×560 frame (16:9-ish), after the book's cover and section pages
-  const X = 120;
-  return (
-    <svg viewBox="0 0 1000 560" preserveAspectRatio="xMinYMid slice" className={cx('pointer-events-none', className)} aria-hidden="true" focusable="false">
       <g fill="currentColor">
-        {/* the chevron's top half: a stripe falling "\" from the top edge to the cut line */}
-        <polygon points={`240,0 ${240 + X * R2},0 ${240 + X * R2 + 105},105 ${240 + 105},105`} />
-        {/* the long rising stripe "/" that the chevron meets */}
-        <polygon points={`${640 - 0},0 ${640 + X * R2},0 ${640 + X * R2 - 560},560 ${640 - 560},560`} />
-        {/* the lower stripe, starting at the cut line and falling to the left edge */}
-        <polygon points={`${150},105 ${150 + X * R2},105 ${150 + X * R2 - 455},560 ${150 - 455},560`} />
+        {paths.map((d, i) => <path key={i} d={d} />)}
       </g>
     </svg>
   );

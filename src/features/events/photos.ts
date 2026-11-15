@@ -4,7 +4,7 @@
 // association has its own photographs of its people, those are better (pick "בחירה מהמכשיר").
 import bonfire from '@/assets/photos/bonfire.webp';
 import running from '@/assets/photos/running.webp';
-import circle from '@/assets/photos/circle.webp';
+import talk from '@/assets/photos/talk.webp';
 import walk from '@/assets/photos/walk.webp';
 import hills from '@/assets/photos/hills.webp';
 import training from '@/assets/photos/training.webp';
@@ -13,7 +13,7 @@ export type BrandPhoto = { key: string; label: string; url: string; focus: { x: 
 
 export const PHOTOS: BrandPhoto[] = [
   { key: 'training', label: 'אימון בוקר', url: training, focus: { x: 0.5, y: 0.45 } },
-  { key: 'circle', label: 'מעגל שיחה', url: circle, focus: { x: 0.5, y: 0.35 } },
+  { key: 'talk', label: 'הרצאה ושיחה', url: talk, focus: { x: 0.5, y: 0.4 } },
   { key: 'bonfire', label: 'ערב מדורה', url: bonfire, focus: { x: 0.5, y: 0.62 } },
   { key: 'running', label: 'ריצה בשבילים', url: running, focus: { x: 0.5, y: 0.3 } },
   { key: 'walk', label: 'מהמדים לאזרחות', url: walk, focus: { x: 0.5, y: 0.3 } },
@@ -22,6 +22,6 @@ export const PHOTOS: BrandPhoto[] = [
 
 /** The photograph that suits the kind of event best. */
 export function photoFor(type: 'friday' | 'bonfire' | 'other'): BrandPhoto {
-  const key = type === 'bonfire' ? 'bonfire' : type === 'friday' ? 'training' : 'circle';
+  const key = type === 'bonfire' ? 'bonfire' : type === 'friday' ? 'training' : 'talk';
   return PHOTOS.find((p) => p.key === key)!;
 }

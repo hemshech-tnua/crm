@@ -588,7 +588,7 @@ function EntranceSign({ e, url, qrSize }: { e: EventWithStats; url: string; qrSi
   return (
     <div className="overflow-hidden bg-white text-right text-ink">
       <div className="relative overflow-hidden bg-ink px-[1.6em] pt-[1.4em] pb-[1.6em] text-light">
-        <Stripes width={300} height={150} unit={28} dir="fall" corner={{ at: 'top-left', size: 230 }} className="absolute top-0 left-0 h-[9em] w-[18em]" />
+        <Stripes width={300} height={150} unit={28} dir="fall" count={3} className="absolute top-0 left-0 h-[9em] w-[18em]" />
         <div className="relative flex justify-start">
           <Logo variant="full" height="3.4em" label="המשך תנועה" />
         </div>

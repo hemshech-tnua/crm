@@ -46,7 +46,7 @@ export function StaffLayout() {
       {/* navy rail, beige type and logo; the brand's stripes enter from the bottom corner (brand book: two colours,
           one the ground, the other the shapes and the text) */}
       <nav aria-label="ניווט ראשי" className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-hidden bg-ink px-3 py-6 text-light md:flex">
-        <Stripes width={96} height={96} unit={13} dir="fall" corner={{ at: 'top-left', size: 96 }} className="pointer-events-none absolute top-0 left-0 h-24 w-24 text-light" />
+        <Stripes width={80} height={96} unit={13} dir="fall" count={2} offset={0} className="pointer-events-none absolute top-0 left-0 h-24 w-20 text-light" />
         <Link to="/app" className="relative mb-9 flex items-center px-2" aria-label="המשך תנועה: סקירה">
           <Logo variant="full" height={60} />
         </Link>
@@ -86,7 +86,7 @@ export function StaffLayout() {
 
       {/* mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between overflow-hidden bg-ink px-4 text-light md:hidden">
-        <Stripes width={56} height={56} unit={8} dir="fall" corner={{ at: 'top-left', size: 56 }} className="pointer-events-none absolute top-0 left-0 h-14 w-14 text-light" />
+        <Stripes width={64} height={56} unit={12} dir="fall" count={2} offset={0} className="pointer-events-none absolute top-0 left-0 h-14 w-16 text-light" />
         <Link to="/app" className="relative flex items-center" aria-label="המשך תנועה: ראשי">
           <Logo variant="lockup" height={34} />
         </Link>

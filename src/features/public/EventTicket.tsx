@@ -4,7 +4,6 @@ import { TZ, fmtDay, relativeDays } from '@/lib/dates';
 import { Badge, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
 import { Glyph, type GlyphName } from './marks';
-import { Stripes } from '@/ui/Shapes';
 import { activityText, lectureText, timeRange } from './eventText';
 
 const dayNum = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, day: 'numeric' });
@@ -61,7 +60,6 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
           highlight ? 'bg-ink text-light' : 'bg-sky text-ink',
         )}
       >
-        {highlight && <Stripes width={40} height={40} unit={6} dir="fall" corner={{ at: 'top-left', size: 40 }} className="absolute top-0 left-0 h-10 w-10" />}
         <span className="relative text-[0.9rem] font-semibold">{fmtDay(start)}</span>
         <span className="num relative mt-1 font-display text-[3.25rem] leading-[0.95]">{dayNum.format(start)}</span>
         <span className="relative mt-1 text-[0.9rem] font-semibold">{monthName.format(start)}</span>
