@@ -69,6 +69,23 @@ Principle broken: *anyone may know someone's phone number; typing it must not re
 
 **Verification after the fixes:** typecheck + lint clean; **108/108** unit+API tests (incl. new `tests/api/identity.test.ts`, claim/expiry/oracle/throttle and timing tests); **22/22** Playwright E2E (desktop + phone); red-team harness 44 attacks blocked (3 flagged items re-checked by hand and confirmed false positives: a lookup pattern absent from the fresh data, an unchanged settings row, and a meeting whose window had closed); production build has no source maps; anon surface still exactly 17 functions.
 
+### 2e. Follow-up, 15.11.2026 (security-spec gaps; live after owner approval)
+
+| Gap | Change | Status |
+|-----|--------|--------|
+| C2 leaked passwords | `staff-admin` checks every new password against Have I Been Pwned (k-anonymity, padded; fail-open if unreachable) → `pwned_password` | **Fixed (live)** |
+| O2 no MFA | TOTP via Supabase Auth, opt-in per member from the account page. Once on, `private.current_role()` returns a role only for an `aal2` session and `staff-admin` refuses with `mfa_required`; admins reset another member's factors (`reset_mfa`). Migration `20261106002100` | **Fixed (live)** |
+| No security alerting | `admin_security_overview()` + admin "אבטחה" tab + dashboard alert: non-staff accounts, throttles at their limit (24 h), MFA status, permission changes (30 days) | **Fixed (live)** |
+| Clickjacking on GitHub Pages | The app refuses to render inside a frame (shows only an "open in its own window" link); headers still need Cloudflare | **Mitigated (live)** |
+| Token in localStorage | CSP adds `require-trusted-types-for 'script'` (DOM-XSS sinks refuse strings) | **Reduced (live)** |
+| CORS allow-list | Production reflects only `https://hemshech-tnua.github.io` (dev origins only when the function runs locally); verified live | **Fixed (live)** |
+| D7 private grants | `authenticated` may execute 12 private helpers (policies, defaults, invoker functions) instead of all 52. Migration `20261106009100` | **Fixed (live)** |
+| `client_key` fallback | Right-most X-Forwarded-For hop when no Cloudflare header | **Fixed (live)** |
+| O3 dependency updates | `.github/dependabot.yml` (npm + GitHub Actions, weekly) | **Fixed** |
+| C1 open sign-up, backups, MFA on GitHub org / Supabase account | Settings only the owner can change | **Open — you** |
+
+Verification: 114 API tests (incl. `tests/api/mfa.test.ts`), 26 Playwright E2E (incl. `tests/e2e/security-gaps.spec.ts`), attack harness 44 blocked; production checked read-only and in rolled-back transactions (an admin still sees all data; anon surface 17; private grants 12).
+
 ## 3. What was tested and held (defense in depth confirmed)
 
 Live attacks were run against a **local copy** (never destructive tests on production); production was checked read-only.
