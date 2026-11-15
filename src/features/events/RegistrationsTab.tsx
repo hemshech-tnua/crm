@@ -203,7 +203,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
               aria-pressed={filter === f.value}
               onClick={() => setFilter(f.value)}
               className={cx(
-                'flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors',
+                'flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 text-sm font-semibold transition-colors',
                 filter === f.value ? 'border-tide bg-tide text-white' : 'border-line bg-paper text-ink-soft hover:border-tide',
               )}
             >
@@ -276,7 +276,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                       <div className="flex items-center justify-end gap-1.5">
                         {r.status === 'waitlisted' && <Button size="sm" icon="userPlus" busy={promote.isPending && promote.variables?.id === r.id} onClick={() => promote.mutate(r)}>קידום</Button>}
                         {r.participant?.phone && (
-                          <button type="button" onClick={() => openComposer(r)} title="הודעת וואטסאפ" aria-label={`הודעת וואטסאפ ל${r.participant.full_name ?? ''}`} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-tide hover:bg-tide-wash">
+                          <button type="button" onClick={() => openComposer(r)} title="הודעת וואטסאפ" aria-label={`הודעת וואטסאפ ל${r.participant.full_name ?? ''}`} className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] text-tide hover:bg-tide-wash">
                             <Icon name="message" />
                           </button>
                         )}

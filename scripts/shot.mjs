@@ -16,9 +16,9 @@ for (const s of sizes) {
   page.on('pageerror', (e) => errors.push(String(e)));
   if (role) {
     await page.goto(base + '#/login');
-    await page.getByLabel('אימייל').fill(`${role}@example.test`);
-    await page.getByLabel('סיסמה').fill('Local-Test-2026');
-    await page.getByRole('button', { name: 'כניסה' }).click();
+    await page.getByLabel('טלפון נייד או אימייל').fill(`${role}@example.test`);
+    await page.locator('input[autocomplete="current-password"]').fill(process.env.PW_PASSWORD ?? 'Local-Test-2026');
+    await page.getByRole('button', { name: 'כניסה', exact: true }).click();
     await page.waitForURL(/#\/app/);
   }
   await page.goto(base + '#' + route);

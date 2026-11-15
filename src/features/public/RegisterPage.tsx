@@ -62,7 +62,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   return (
     <div className="flex flex-col gap-5">
       {e.invited_by && (
-        <p className="flex items-center gap-2 self-start rounded-full bg-tide-wash px-3.5 py-1.5 font-semibold text-tide-deep">
+        <p className="flex items-center gap-2 self-start rounded-[var(--radius-control)] bg-tide-wash px-3.5 py-1.5 font-semibold text-tide-deep">
           <Glyph name="heart" />
           {e.invited_by} הזמין/ה אותך
         </p>

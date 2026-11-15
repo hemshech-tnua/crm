@@ -1,9 +1,10 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { PublicEvent } from '@/lib/types';
 import { TZ, fmtDay, relativeDays } from '@/lib/dates';
 import { Badge, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
 import { Glyph, type GlyphName } from './marks';
+import { Stripes } from '@/ui/Shapes';
 import { activityText, lectureText, timeRange } from './eventText';
 
 const dayNum = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, day: 'numeric' });
@@ -25,23 +26,6 @@ export function availability(e: PublicEvent): { tone: Tone; text: ReactNode; pla
   return { tone: 'good', text: 'הרשמה פתוחה', plain: true };
 }
 
-// Two half-circle notches cut where the stub meets the ticket (RTL: the stub is on the right).
-const notch = (y: string) => `radial-gradient(circle 11px at calc(100% - var(--stub)) ${y}, transparent 10px, #000 10.5px)`;
-const TICKET_SHAPE: CSSProperties = {
-  WebkitMaskImage: `${notch('0')}, ${notch('100%')}`,
-  maskImage: `${notch('0')}, ${notch('100%')}`,
-  WebkitMaskSize: '100% 51%',
-  maskSize: '100% 51%',
-  WebkitMaskPosition: 'top, bottom',
-  maskPosition: 'top, bottom',
-  WebkitMaskRepeat: 'no-repeat',
-  maskRepeat: 'no-repeat',
-};
-// The outline follows the cut shape (a border would be clipped by the notches).
-const TICKET_EDGE: CSSProperties = {
-  filter: 'drop-shadow(0 0 0.6px rgba(18, 52, 59, 0.5)) drop-shadow(0 2px 4px rgba(18, 52, 59, 0.05))',
-};
-
 function Row({ icon, glyph, children }: { icon?: IconName; glyph?: GlyphName; children: ReactNode }) {
   return (
     <li className="flex items-start gap-2">
@@ -54,7 +38,7 @@ function Row({ icon, glyph, children }: { icon?: IconName; glyph?: GlyphName; ch
 /** One event = one ticket: the date stub, then when, where and what. */
 export function EventTicket({ event, highlight = false, level = 2, detailed = false, showStatus = true, children }: {
   event: PublicEvent;
-  /** saffron date stub: only for the one event the page is about (the next Friday) */
+  /** navy date block: only for the one event the page is about (the next Friday) */
   highlight?: boolean;
   level?: 2 | 3;
   /** speaker line and description (the registration page) */
@@ -69,22 +53,20 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
   const lecture = lectureText(event);
   const status = availability(event);
   return (
-    <div style={TICKET_EDGE}>
-      <article
-        style={TICKET_SHAPE}
-        className="flex overflow-hidden rounded-[var(--radius-panel)] bg-paper [--stub:6.25rem] sm:[--stub:7.5rem]"
+    <article className="flex overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper">
+      {/* the date block: navy with beige type for the event the page is about, beige with navy type otherwise */}
+      <div
+        className={cx(
+          'relative flex w-[6.25rem] shrink-0 flex-col items-center justify-center overflow-hidden px-2 py-5 text-center sm:w-[7.5rem]',
+          highlight ? 'bg-ink text-light' : 'bg-sky text-ink',
+        )}
       >
-        <div
-          className={cx(
-            'flex w-[var(--stub)] shrink-0 flex-col items-center justify-center px-2 py-5 text-center text-ink',
-            highlight ? 'bg-light' : 'bg-mist-deep',
-          )}
-        >
-          <span className="text-[0.9rem] font-semibold">{fmtDay(start)}</span>
-          <span className="num mt-1 font-display text-[3.25rem] leading-[0.95]">{dayNum.format(start)}</span>
-          <span className="mt-1 text-[0.9rem] font-semibold">{monthName.format(start)}</span>
-        </div>
-        <div className="min-w-0 flex-1 border-s-2 border-dashed border-line px-4 py-4 sm:px-5 sm:py-5">
+        {highlight && <Stripes width={40} height={40} unit={6} dir="fall" corner={{ at: 'top-left', size: 40 }} className="absolute top-0 left-0 h-10 w-10" />}
+        <span className="relative text-[0.9rem] font-semibold">{fmtDay(start)}</span>
+        <span className="num relative mt-1 font-display text-[3.25rem] leading-[0.95]">{dayNum.format(start)}</span>
+        <span className="relative mt-1 text-[0.9rem] font-semibold">{monthName.format(start)}</span>
+      </div>
+      <div className="min-w-0 flex-1 px-4 py-4 sm:px-5 sm:py-5">
           <H className="text-[1.15rem] font-bold leading-snug">{event.title}</H>
           <ul className="mt-2 flex flex-col gap-1.5 text-[0.95rem] text-ink-soft">
             <Row glyph="clock">
@@ -105,8 +87,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
             </div>
           )}
           {children}
-        </div>
-      </article>
-    </div>
+      </div>
+    </article>
   );
 }

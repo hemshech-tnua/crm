@@ -46,7 +46,7 @@ export function FilterBar({ filters, set, showType = true, custom = false }: {
 }) {
   const sites = useSites();
   const seg = 'flex rounded-[var(--radius-control)] border border-line bg-paper p-1';
-  const segBtn = (on: boolean) => cx('h-9 rounded-lg px-3 text-sm font-semibold transition-colors', on ? 'bg-ink text-mist' : 'text-ink-soft hover:bg-mist');
+  const segBtn = (on: boolean) => cx('h-9 rounded-[var(--radius-panel)] px-3 text-sm font-semibold transition-colors', on ? 'bg-ink text-mist' : 'text-ink-soft hover:bg-mist');
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className={seg} role="group" aria-label="תקופה">

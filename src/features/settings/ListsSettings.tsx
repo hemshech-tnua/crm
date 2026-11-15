@@ -177,7 +177,7 @@ function SiteSignDialog({ site, onClose }: { site: Site; onClose: () => void }) 
         <p className="text-[0.95rem] text-ink-soft">
           ברקוד אחד לכל המפגשים במתחם. מי שסורק/ת מגיע/ה לצ׳ק־אין של המפגש שפתוח באותו רגע. אם אין מפגש פתוח, מופיע מתי ייפתח הבא.
         </p>
-        <div className="flex justify-center"><QrImage value={url} size={220} label={`ברקוד קבוע לכניסה, ${site.name}`} className="rounded-lg border border-line-soft" /></div>
+        <div className="flex justify-center"><QrImage value={url} size={220} label={`ברקוד קבוע לכניסה, ${site.name}`} className="rounded-[var(--radius-panel)] border border-line-soft" /></div>
         <div className="flex items-center gap-2">
           <code dir="ltr" className="num min-w-0 flex-1 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2 text-sm">{url}</code>
           <Button size="sm" variant="ghost" icon="copy" onClick={() => copy(url, 'הקישור הועתק')}>העתקה</Button>

@@ -65,7 +65,7 @@ function DoorCard({ e, now, manager }: { e: DoorEvent; now: number; manager: boo
   const live = now >= new Date(e.starts_at).getTime() - 2 * 3600_000 && now <= new Date(e.ends_at).getTime();
 
   const body = (
-    <div className={cx('rounded-[var(--radius-panel)] border bg-paper p-5 transition-colors', live && !cancelled ? 'border-light' : 'border-line-soft', open && !cancelled && 'hover:border-tide')}>
+    <div className={cx('rounded-[var(--radius-panel)] border bg-paper p-5 transition-colors', live && !cancelled ? 'border-ink' : 'border-line-soft', open && !cancelled && 'hover:border-tide')}>
       <div className="flex flex-wrap items-center gap-2">
         <TypeBadge type={e.type} />
         {live && !cancelled ? <Badge tone="light">עכשיו</Badge> : <StatusBadge status={e.status} endsAt={e.ends_at} />}

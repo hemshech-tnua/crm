@@ -7,7 +7,7 @@ import { Icon } from './Icon';
 
 /**
  * The Friday line: the identity of the dashboard. Each meeting is a station on one continuous line;
- * the stem under it is split into returning (ink) and new (saffron) attendees; the line connects the tops.
+ * the stem under it is split into returning (navy) and new (navy tint) attendees; the line connects the tops.
  * Time runs right to left, like the Hebrew line. The next meeting is an open ring with its registrations.
  */
 export type LineStation = { id: string; starts_at: string; attended: number; new_count: number; returning_count: number; title: string };
@@ -56,7 +56,7 @@ export function FridayLine({ stations, next, goal }: { stations: LineStation[]; 
             <g key={s.id}>
               <title>{`${fmtShortDate(s.starts_at)}: הגיעו ${s.attended} (${s.new_count} חדשים, ${s.returning_count} חוזרים)`}</title>
               <line x1={px} x2={px} y1={base} y2={ret} stroke="var(--color-ink)" strokeWidth="10" strokeLinecap="butt" opacity="0.85" />
-              {s.new_count > 0 && <line x1={px} x2={px} y1={ret} y2={py} stroke="var(--color-light)" strokeWidth="10" />}
+              {s.new_count > 0 && <line x1={px} x2={px} y1={ret} y2={py} stroke="var(--color-tint)" strokeWidth="10" />}
             </g>
           );
         })}
@@ -70,17 +70,17 @@ export function FridayLine({ stations, next, goal }: { stations: LineStation[]; 
         ))}
         {next && nextPt && (
           <Link to={`/app/events/${next.id}`} aria-description={`המפגש הבא, ${fmtShortDate(next.starts_at)}: ${next.registered} נרשמו`}>
-            <circle cx={nextPt.x} cy={nextPt.y} r="10" fill="var(--color-light-wash)" stroke="var(--color-light)" strokeWidth="3" strokeDasharray="3 3" />
-            <text x={nextPt.x} y={nextPt.y - 17} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--color-light-deep)" style={{ fontFamily: 'var(--font-display)' }}>{next.registered}</text>
-            <text x={nextPt.x} y={base + 22} textAnchor="middle" fontSize="12.5" fontWeight="700" fill="var(--color-light-deep)">{fmtShortDate(next.starts_at)}</text>
+            <circle cx={nextPt.x} cy={nextPt.y} r="10" fill="var(--color-light)" stroke="var(--color-ink)" strokeWidth="3" strokeDasharray="3 3" />
+            <text x={nextPt.x} y={nextPt.y - 17} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--color-ink)" style={{ fontFamily: 'var(--font-display)' }}>{next.registered}</text>
+            <text x={nextPt.x} y={base + 22} textAnchor="middle" fontSize="12.5" fontWeight="700" fill="var(--color-ink)">{fmtShortDate(next.starts_at)}</text>
             <text x={nextPt.x} y={base + 40} textAnchor="middle" fontSize="11.5" fill="var(--color-muted)">נרשמו</text>
           </Link>
         )}
       </svg>
       <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
         <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-2.5 rounded-sm bg-ink/85" />חוזרים</span>
-        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-2.5 rounded-sm bg-light" />חדשים</span>
-        {next && <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full border-2 border-dashed border-light" />נרשמו למפגש הבא</span>}
+        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-2.5 rounded-sm bg-tint" />חדשים</span>
+        {next && <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-[var(--radius-control)] border-2 border-dashed border-ink bg-light" />נרשמו למפגש הבא</span>}
       </div>
     </div>
   );
@@ -101,8 +101,8 @@ export function GoalStat({ label, value, display, goal, goalDisplay, hint, onOpe
       <div className="mt-2 flex items-baseline gap-2">
         <span className="num font-display text-[2.1rem] leading-none text-ink">{display}</span>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-mist-deep" aria-hidden="true">
-        <div className={cx('h-full rounded-full', met ? 'bg-good' : 'bg-tide')} style={{ width: `${Math.min(100, (p ?? 0) * 100)}%` }} />
+      <div className="mt-3 h-2 overflow-hidden rounded-[var(--radius-control)] bg-mist-deep" aria-hidden="true">
+        <div className={cx('h-full rounded-[var(--radius-control)]', met ? 'bg-good' : 'bg-tide')} style={{ width: `${Math.min(100, (p ?? 0) * 100)}%` }} />
       </div>
       <div className="mt-2 flex items-center justify-between gap-2 text-sm">
         <span className="text-muted">יעד <span className="num">{goalDisplay}</span></span>
@@ -133,7 +133,7 @@ export function SplitBars({ rows, totalLabel, partLabel }: {
               <span className="font-medium">{r.label}</span>
               <span className="num shrink-0 text-sm text-muted">{r.total} · {r.total ? pct(r.part / r.total) : '—'} {partLabel}</span>
             </div>
-            <div className="flex h-3 overflow-hidden rounded-full bg-mist-deep" aria-hidden="true">
+            <div className="flex h-3 overflow-hidden rounded-[var(--radius-control)] bg-mist-deep" aria-hidden="true">
               <div className="h-full bg-tide" style={{ width: `${(r.part / max) * 100}%` }} />
               <div className="h-full bg-tide/30" style={{ width: `${((r.total - r.part) / max) * 100}%` }} />
             </div>
@@ -159,7 +159,7 @@ export function Columns({ data }: { data: { key: string; label: string; total: n
           <div key={d.key} className="flex min-w-10 flex-1 flex-col items-center gap-1.5" title={d.title}>
             <span className="num font-display text-sm">{d.total}</span>
             <div className="flex w-full max-w-14 flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${(d.total / max) * 150 + 2}px` }}>
-              <div className="bg-light" style={{ height: `${d.total ? (d.highlight / d.total) * 100 : 0}%` }} />
+              <div className="bg-tint" style={{ height: `${d.total ? (d.highlight / d.total) * 100 : 0}%` }} />
               <div className="flex-1 bg-ink/85" />
             </div>
             <span className="text-center text-xs leading-tight text-muted">{d.label}</span>

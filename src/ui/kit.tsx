@@ -1,7 +1,7 @@
 import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Link, type LinkProps } from 'react-router';
 import { Icon, type IconName } from './Icon';
-import { EllipseRing } from './Ellipse';
+import { Stripes, Tri } from './Shapes';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -11,12 +11,12 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'light';
 type Size = 'sm' | 'md' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
-  // brand book: earth-brown pill with cream type; outlined pill; orange (community) pill for the one highlighted call
-  primary: 'bg-tide text-mist hover:bg-tide-deep active:bg-tide-deep disabled:bg-faint',
-  secondary: 'bg-paper text-ink border border-ink/30 hover:border-ink hover:bg-sky-wash disabled:text-faint disabled:border-line',
-  ghost: 'text-ink hover:bg-sky-wash disabled:text-faint',
+  // brand book: a squared navy button with beige type (and the triangle ◀ on a call to action); outlined navy; beige on navy
+  primary: 'bg-tide text-light hover:bg-tide-deep active:bg-tide-deep disabled:bg-faint disabled:text-mist',
+  secondary: 'bg-paper text-ink border border-ink/35 hover:border-ink hover:bg-sky-wash disabled:text-faint disabled:border-line',
+  ghost: 'text-ink hover:bg-ink/[0.06] disabled:text-faint',
   danger: 'bg-paper text-bad border border-bad/40 hover:bg-bad-wash disabled:text-faint',
-  light: 'bg-light text-ink hover:bg-[#f0744f] disabled:bg-faint',
+  light: 'bg-light text-ink hover:bg-[#f4e9cf] disabled:bg-faint',
 };
 const SIZE: Record<Size, string> = {
   sm: 'h-9 px-3 text-sm gap-1.5',
@@ -26,31 +26,35 @@ const SIZE: Record<Size, string> = {
 
 export function buttonClass(variant: Variant = 'primary', size: Size = 'md', extra = '') {
   return cx(
-    'inline-flex items-center justify-center rounded-full font-semibold transition-colors select-none whitespace-nowrap',
+    'inline-flex items-center justify-center rounded-[var(--radius-control)] font-semibold transition-colors select-none whitespace-nowrap',
     VARIANT[variant], SIZE[size], extra,
   );
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant; size?: Size; icon?: IconName; busy?: boolean;
+  /** the brand's call-to-action mark: a triangle ◀ after the label, pointing the way forward */
+  cta?: boolean;
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', icon, busy, className = '', children, disabled, type = 'button', ...rest }, ref,
+  { variant = 'primary', size = 'md', icon, busy, cta, className = '', children, disabled, type = 'button', ...rest }, ref,
 ) {
   return (
     <button ref={ref} type={type} className={buttonClass(variant, size, className)} disabled={disabled || busy} aria-busy={busy || undefined} {...rest}>
       {busy ? <Spinner size={size === 'lg' ? 20 : 16} /> : icon ? <Icon name={icon} size={size === 'sm' ? 16 : 18} /> : null}
       {children}
+      {cta && !busy && <Tri className="ms-1" />}
     </button>
   );
 });
 
-export function ButtonLink({ variant = 'primary', size = 'md', icon, className = '', children, ...rest }: LinkProps & { variant?: Variant; size?: Size; icon?: IconName }) {
+export function ButtonLink({ variant = 'primary', size = 'md', icon, cta, className = '', children, ...rest }: LinkProps & { variant?: Variant; size?: Size; icon?: IconName; cta?: boolean }) {
   return (
     <Link className={buttonClass(variant, size, className)} {...rest}>
       {icon && <Icon name={icon} size={size === 'sm' ? 16 : 18} />}
       {children}
+      {cta && <Tri className="ms-1" />}
     </Link>
   );
 }
@@ -68,7 +72,7 @@ export function ExternalButton({ href, variant = 'secondary', size = 'md', icon,
 
 export function IconButton({ icon, label, className = '', ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { icon: IconName; label: string }) {
   return (
-    <button type="button" aria-label={label} title={label} className={cx('inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-soft hover:bg-mist-deep hover:text-ink', className)} {...rest}>
+    <button type="button" aria-label={label} title={label} className={cx('inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] text-ink-soft hover:bg-mist-deep hover:text-ink', className)} {...rest}>
       <Icon name={icon} />
     </button>
   );
@@ -219,8 +223,8 @@ export function Rating({ legend, value, onChange, required }: { legend: ReactNod
           const on = value === n;
           return (
             <label key={n} className={cx(
-              'flex h-14 cursor-pointer flex-col items-center justify-center rounded-[var(--radius-control)] border transition-colors has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-light',
-              on ? 'border-light-deep bg-light text-ink' : 'border-line bg-paper hover:border-light-deep/60',
+              'flex h-14 cursor-pointer flex-col items-center justify-center rounded-[var(--radius-control)] border transition-colors has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink',
+              on ? 'border-ink bg-ink text-light' : 'border-line bg-paper hover:border-ink/60',
             )}>
               <input type="radio" name={name} value={n} checked={on} onChange={() => onChange(n)} className="sr-only" aria-label={`${n} – ${words[n]}`} />
               <span className="font-display text-xl leading-none">{n}</span>
@@ -239,7 +243,7 @@ type Tone = 'neutral' | 'tide' | 'light' | 'good' | 'bad' | 'warn' | 'ink';
 const TONE: Record<Tone, string> = {
   neutral: 'bg-mist-deep text-ink-soft',
   tide: 'bg-tide-wash text-tide-deep',
-  light: 'bg-light-wash text-light-deep',
+  light: 'bg-light text-ink',
   good: 'bg-good-wash text-good',
   bad: 'bg-bad-wash text-bad',
   warn: 'bg-warn-wash text-warn',
@@ -248,7 +252,7 @@ const TONE: Record<Tone, string> = {
 
 export function Badge({ tone = 'neutral', children, icon, title }: { tone?: Tone; children: ReactNode; icon?: IconName; title?: string }) {
   return (
-    <span title={title} className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[0.8rem] font-semibold leading-6 whitespace-nowrap', TONE[tone])}>
+    <span title={title} className={cx('inline-flex items-center gap-1 rounded-[2px] px-2 py-0.5 text-[0.8rem] font-semibold leading-6 whitespace-nowrap', TONE[tone])}>
       {icon && <Icon name={icon} size={13} strokeWidth={2.2} />}
       {children}
     </span>
@@ -262,7 +266,7 @@ export function Panel({ title, actions, children, className = '', padded = true,
     <section id={id} className={cx('rounded-[var(--radius-panel)] border border-line-soft bg-paper', className)}>
       {(title || actions) && (
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line-soft px-4 py-3 sm:px-5">
-          {title && <h2 className="text-[1.05rem] font-bold">{title}</h2>}
+          {title && <h2 className="flex items-center gap-2 text-[1.05rem] font-bold"><Tri className="text-ink" size="0.7em" />{title}</h2>}
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
       )}
@@ -292,9 +296,10 @@ export function PageHeader({ title, subtitle, actions, back }: { title: ReactNod
 export function EmptyState({ icon = 'sun', title, children, action }: { icon?: IconName; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center px-4 py-10 text-center">
-      <div className="relative mb-4 flex h-14 w-20 items-center justify-center text-ink">
-        <EllipseRing className="absolute inset-0 h-full w-full text-light" weight={1.5} />
-        <Icon name={icon} size={24} />
+      {/* a navy square entered by beige stripes from one corner, the icon in the clear part */}
+      <div className="relative mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-[var(--radius-panel)] bg-ink text-light">
+        <Stripes width={64} height={64} unit={6} dir="rise" corner={{ at: 'bottom-left', size: 34 }} className="absolute inset-0 h-full w-full" />
+        <Icon name={icon} size={24} className="relative -translate-y-1 translate-x-1" />
       </div>
       <p className="text-lg font-bold">{title}</p>
       {children && <div className="mt-1 max-w-md text-[0.95rem] text-muted">{children}</div>}
@@ -324,9 +329,9 @@ export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => vo
 }
 
 export function Notice({ tone = 'tide', icon = 'shield', children }: { tone?: 'tide' | 'light' | 'warn'; icon?: IconName; children: ReactNode }) {
-  const t = tone === 'tide' ? 'bg-tide-wash text-tide-deep' : tone === 'light' ? 'bg-light-wash text-ink' : 'bg-warn-wash text-warn';
+  const t = tone === 'tide' ? 'bg-tide-wash text-tide-deep border-ink' : tone === 'light' ? 'bg-light-wash text-ink border-ink/40' : 'bg-warn-wash text-warn border-warn';
   return (
-    <div className={cx('flex items-start gap-2.5 rounded-[var(--radius-control)] px-3.5 py-3 text-sm leading-relaxed', t)}>
+    <div className={cx('flex items-start gap-2.5 rounded-[var(--radius-control)] border-s-[3px] px-3.5 py-3 text-sm leading-relaxed', t)}>
       <Icon name={icon} size={18} className="mt-0.5" />
       <div>{children}</div>
     </div>
@@ -348,11 +353,11 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs:
             onClick={() => onChange(t.value)}
             className={cx(
               '-mb-px flex h-11 shrink-0 items-center gap-1.5 border-b-[3px] px-3 font-semibold transition-colors',
-              on ? 'border-light text-ink' : 'border-transparent text-muted hover:text-ink',
+              on ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink',
             )}
           >
             {t.label}
-            {t.count != null && <span className="num rounded-full bg-mist-deep px-1.5 text-xs font-bold text-ink-soft">{t.count}</span>}
+            {t.count != null && <span className={cx('num rounded-[2px] px-1.5 text-xs font-bold', on ? 'bg-ink text-light' : 'bg-mist-deep text-ink-soft')}>{t.count}</span>}
           </button>
         );
       })}

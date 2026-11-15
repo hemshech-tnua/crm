@@ -399,10 +399,10 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
         {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה!'}
       </p>
       {milestone && (
-        <p className="rounded-full bg-light-wash px-5 py-2.5 font-display text-[1.4rem] text-ink">{milestone}</p>
+        <p className="rounded-[var(--radius-control)] bg-light-wash px-5 py-2.5 font-display text-[1.4rem] text-ink">{milestone}</p>
       )}
       {!milestone && firstTime && <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>}
-      {r.membership === 'member' && <p className="rounded-full bg-sky-wash px-5 py-2 text-[1.05rem] font-semibold text-ink">חבר/ת עמותה. תודה שאת/ה איתנו!</p>}
+      {r.membership === 'member' && <p className="rounded-[var(--radius-control)] bg-sky-wash px-5 py-2 text-[1.05rem] font-semibold text-ink">חבר/ת עמותה. תודה שאת/ה איתנו!</p>}
       {r.can_undo && r.result === 'checked_in' && (
         <div className="mt-1 flex flex-col items-center gap-2">
           <button type="button" onClick={notMe} disabled={undoing} className="min-h-11 px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">

@@ -180,7 +180,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                     aria-pressed={group === g.value}
                     onClick={() => setPickedGroup(g.value)}
                     className={cx(
-                      'h-10 rounded-full border px-3.5 text-sm font-semibold transition-colors',
+                      'h-10 rounded-[var(--radius-control)] border px-3.5 text-sm font-semibold transition-colors',
                       group === g.value ? 'border-tide bg-tide text-white' : 'border-line bg-paper text-ink-soft hover:border-tide',
                     )}
                   >
@@ -199,8 +199,8 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
           padded={false}
         >
           <div className="px-4 pt-3 sm:px-5">
-            <div className="h-2 overflow-hidden rounded-full bg-mist-deep" role="progressbar" aria-valuemin={0} aria-valuemax={eligibleCount} aria-valuenow={doneCount} aria-label="התקדמות השליחה">
-              <div className="h-full rounded-full bg-tide transition-[width]" style={{ width: eligibleCount ? `${(doneCount / eligibleCount) * 100}%` : '0%' }} />
+            <div className="h-2 overflow-hidden rounded-[var(--radius-control)] bg-mist-deep" role="progressbar" aria-valuemin={0} aria-valuemax={eligibleCount} aria-valuenow={doneCount} aria-label="התקדמות השליחה">
+              <div className="h-full rounded-[var(--radius-control)] bg-tide transition-[width]" style={{ width: eligibleCount ? `${(doneCount / eligibleCount) * 100}%` : '0%' }} />
             </div>
             {blocked > 0 && <p className="mt-2 text-sm text-warn">{blocked === 1 ? 'נמען/ת אחד/ת לא אישר/ה' : `${blocked} נמענים לא אישרו`} לקבל עדכונים, ולכן ההודעה הזו לא נשלחת {blocked === 1 ? 'אליו/ה' : 'אליהם'}.</p>}
           </div>

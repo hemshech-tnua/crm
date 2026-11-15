@@ -89,7 +89,7 @@ function EditTemplate({ t, onClose }: { t: Template | null; onClose: () => void 
             <div className="mb-1.5 text-sm font-semibold">הוספת פרט שמתמלא לבד</div>
             <div className="flex flex-wrap gap-1.5">
               {PLACEHOLDERS.map((p) => (
-                <button key={p.key} type="button" title={p.label} onClick={() => insert(p.key)} className="rounded-full border border-line bg-paper px-2.5 py-1 text-sm hover:border-tide hover:text-tide">{p.label}</button>
+                <button key={p.key} type="button" title={p.label} onClick={() => insert(p.key)} className="rounded-[var(--radius-control)] border border-line bg-paper px-2.5 py-1 text-sm hover:border-tide hover:text-tide">{p.label}</button>
               ))}
             </div>
             <p className="mt-2 text-sm text-muted">שורה שיש בה פרט חסר (למשל עוד אין מרצה) לא תופיע בהודעה.</p>

@@ -1,16 +1,26 @@
-// Marketing post (1080×1080) and story (1080×1920) drawn locally on a <canvas> in the brand: no AI, no cost,
-// no external service. Text is drawn right-to-left with the app's own fonts (bundled, so the CSP allows them).
-// Brand book ("פוסט תחום"): the domain colour fills the frame (community = orange), the official logo top right,
-// heavy earth-brown headline, the brand ellipse as the graphic element, a brown pill for the call to action.
+// Event invitations, drawn locally on a <canvas> by the brand book "Moving Forward / המשך תנועה" (October 2026):
+// no AI at run time, no cost, no external service. Text is drawn right-to-left with the site's own bundled typeface.
+//
+// The book's grid: every format has an image zone (a photograph or the brand's shapes) and a content zone; the
+// Hebrew logo sits in the top-right corner, everything Hebrew is right-aligned, margins are equal on all sides, and
+// only photographs and shapes run to the edge of the format. Three grid types, as on its page "סוגי גריד":
+//   photo    02, short content on a photograph: stripes enter the photo from a corner, a navy content zone below
+//   shapes   01, no photograph: the stripes and chevron fill the image zone and carry the message
+//   program  03, a lot of content: a thin stripe band at the edges, a schedule with triangle bullets ◀
+// Shapes: 45° only, stripe width = gap, all stripes in one composition parallel, one colour on the ground.
 import { LOGO_PATHS } from '@/ui/Logo';
 
-export type PostFormat = 'square' | 'story';
-/** orange: the community domain colour (default for meetings) · sky: the calm brand base colour */
-export type PostTheme = 'orange' | 'sky';
+export type PostFormat = 'portrait' | 'square' | 'story';
+export type PostLayout = 'photo' | 'shapes' | 'program';
+/** navy: navy ground, beige shapes and type · beige: the reverse. The book gives both equal status. */
+export type PostTheme = 'navy' | 'beige';
 
 export type PostContent = {
   org: string;
+  /** the headline: up to five words, an action verb where possible */
   title: string;
+  /** a short line above the headline ("בואו איתנו"); optional */
+  kicker: string;
   /** "יום שישי, 13 בנובמבר" */
   date: string;
   /** "9:00–11:30" (drawn left-to-right) */
@@ -25,43 +35,49 @@ export type PostContent = {
   link: string;
 };
 
+export type PostDesign = {
+  layout: PostLayout;
+  theme: PostTheme;
+  /** the photograph for the photo layout (already loaded) */
+  photo?: HTMLImageElement | null;
+  /** where the photograph's subject is, 0–1 from the left and from the top (what the crop keeps) */
+  focus?: { x: number; y: number };
+};
+
 export const POST_SIZE: Record<PostFormat, { w: number; h: number }> = {
+  portrait: { w: 1080, h: 1350 },
   square: { w: 1080, h: 1080 },
   story: { w: 1080, h: 1920 },
 };
 
-const DISPLAY = '"Heebo Variable", "Heebo", sans-serif';
-const SANS = '"Heebo Variable", "Heebo", system-ui, sans-serif';
-const font = (weight: number, size: number, family = SANS) => `${weight} ${Math.round(size)}px ${family}`;
+export const NAVY = '#142837';
+export const BEIGE = '#EBDCB9';
+const FAMILY = '"Google Sans Variable", "Google Sans", system-ui, sans-serif';
+const font = (weight: number, size: number, family = FAMILY) => `${weight} ${Math.round(size)}px ${family}`;
+const SANS = FAMILY;
+const R2 = Math.SQRT2;
 
 /** Fonts must be loaded before drawing, or the canvas silently falls back to a system font. */
 export async function loadPostFonts(timeoutMs = 4000): Promise<boolean> {
   if (typeof document === 'undefined' || !document.fonts) return false;
   const he = 'מפגש שישי יום הרשמה בקישור בביו אבגדהוזחטיכלמנסעפצקרשתךםןףץ';
   const latin = '0123456789:–·-/.,abcdefghijklmnopqrstuvwxyz';
-  const loads = Promise.all([
-    document.fonts.load(font(800, 100, DISPLAY), he + latin),
-    document.fonts.load(font(400, 40), he + latin),
-    document.fonts.load(font(600, 40), he + latin),
-    document.fonts.load(font(700, 40), he + latin),
-  ]).then(() => true, () => false);
+  const loads = Promise.all([400, 500, 600, 700].map((w) => document.fonts.load(font(w, 60), he + latin)))
+    .then(() => true, () => false);
   const timeout = new Promise<boolean>((r) => setTimeout(() => r(false), timeoutMs));
   return Promise.race([loads, timeout]);
 }
 
-type Palette = { bg: string; fg: string; soft: string; accent: string; accentText: string; logo: string; pillText: string; rings: string; marker: string };
-const BROWN = '#402223';
-const CREAM = '#F5F5EE';
-const PALETTE: Record<PostTheme, Palette> = {
-  orange: {
-    bg: '#F68867', fg: BROWN, soft: 'rgba(64,34,35,0.86)', accent: BROWN, accentText: BROWN,
-    logo: BROWN, pillText: CREAM, rings: 'rgba(245,245,238,0.62)', marker: BROWN,
-  },
-  sky: {
-    bg: '#CDE7F4', fg: BROWN, soft: '#5A3B3C', accent: BROWN, accentText: BROWN,
-    logo: BROWN, pillText: CREAM, rings: CREAM, marker: '#F68867',
-  },
-};
+/** Loads an image (a bundled photograph or one the coordinator picked from the device). */
+export function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('image'));
+    img.src = src;
+  });
+}
 
 /** Greedy word wrap by measured width (works for Hebrew; words never split). */
 export function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines = Infinity): string[] {
@@ -127,9 +143,9 @@ function ltr(ctx: CanvasRenderingContext2D, align: CanvasTextAlign = 'right') {
   ctx.textAlign = align;
 }
 
-/** The official logo (figure + name), from the same vector paths as the app. `h` is the drawn height. Returns width. */
+/** The official logo with its tagline, from the same vector paths as the app. `h` = drawn height; returns width. */
 function drawLogo(ctx: CanvasRenderingContext2D, right: number, top: number, h: number, color: string) {
-  const v = LOGO_PATHS.VARIANTS.lockup;
+  const v = LOGO_PATHS.VARIANTS.full;
   const [vx, vy, vw, vh] = v.viewBox.split(' ').map(Number);
   const k = h / vh;
   ctx.save();
@@ -142,172 +158,357 @@ function drawLogo(ctx: CanvasRenderingContext2D, right: number, top: number, h: 
   return vw * k;
 }
 
-/** One brand ellipse: an outline whose weight changes smoothly (outer ellipse minus a slightly offset inner one). */
-function ring(ctx: CanvasRenderingContext2D, cx0: number, cy0: number, rx: number, ry: number, weight: number, tilt: number, color: string) {
+type Pt = [number, number];
+
+/**
+ * Rising "/" stripes (all parallel, 45°), `unit` wide across with a gap of `unit`, inside the polygon `clip`.
+ * `edge` is a value of x + y where a stripe begins, so a composition can line its stripes up with a corner.
+ */
+function stripes(ctx: CanvasRenderingContext2D, clip: Pt[], unit: number, color: string, edge: number) {
+  const w = unit * R2; // the stripe's width measured along a horizontal line
+  const step = 2 * w;
+  const xs = clip.map((p) => p[0]);
+  const ys = clip.map((p) => p[1]);
+  const lo = Math.min(...xs) + Math.min(...ys);
+  const hi = Math.max(...xs) + Math.max(...ys);
+  const y0 = Math.min(...ys) - 10;
+  const y1 = Math.max(...ys) + 10;
   ctx.save();
-  ctx.translate(cx0, cy0);
-  ctx.rotate(tilt);
-  const path = new Path2D();
-  path.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-  path.ellipse(weight * 0.6, weight * 0.45, rx - weight * 1.6, ry - weight * 1.25, 0, 0, Math.PI * 2);
+  ctx.beginPath();
+  clip.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+  ctx.clip();
   ctx.fillStyle = color;
-  ctx.fill(path, 'evenodd');
+  let k = edge - Math.ceil((edge - lo) / step + 1) * step;
+  for (; k < hi; k += step) {
+    ctx.beginPath();
+    ctx.moveTo(k - y0, y0);
+    ctx.lineTo(k + w - y0, y0);
+    ctx.lineTo(k + w - y1, y1);
+    ctx.lineTo(k - y1, y1);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }
 
-/** The elliptical pattern (concentric rings around one centre), placed off-canvas so it never sits under the text. */
-function drawRings(ctx: CanvasRenderingContext2D, cx0: number, cy0: number, base: number, color: string) {
-  for (let i = 0; i < 4; i++) ring(ctx, cx0 + i * 10, cy0 + i * 7, base + i * base * 0.42, (base + i * base * 0.42) * 0.62, 7 + i * 2.5, -0.5, color);
+/** The triangle bullet ◀ : a right isosceles triangle, `h` tall, its point at `tipX`, pointing left (reading direction). */
+function tri(ctx: CanvasRenderingContext2D, rightX: number, cy: number, h: number, color: string) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(rightX, cy - h / 2);
+  ctx.lineTo(rightX, cy + h / 2);
+  ctx.lineTo(rightX - h / 2, cy);
+  ctx.closePath();
+  ctx.fill();
 }
 
-type Block = { lines: string[]; weight: number; size: number; color: string; gap: number; lineHeight: number; family?: string; marker?: boolean };
-
-function blockHeight(b: Block) {
-  return b.gap + b.lines.length * b.size * b.lineHeight;
+/** Draws the photograph to cover the box, keeping the focus point in view. */
+function cover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number, focus = { x: 0.5, y: 0.4 }) {
+  const s = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const dw = img.naturalWidth * s;
+  const dh = img.naturalHeight * s;
+  const dx = Math.min(0, Math.max(w - dw, w / 2 - dw * focus.x));
+  const dy = Math.min(0, Math.max(h - dh, h / 2 - dh * focus.y));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.drawImage(img, x + dx, y + dy, dw, dh);
+  ctx.restore();
 }
 
-/** Draws the post or story into the canvas (sets its size). */
-export function drawPost(canvas: HTMLCanvasElement, c: PostContent, format: PostFormat, theme: PostTheme) {
+/**
+ * The book's cover composition (its section pages): a chevron at the top edge, a long rising stripe it meets, and a
+ * lower stripe from the cut line to the side, all one width. Drawn in the zone, clear of the logo's top-right corner.
+ */
+function chevronField(ctx: CanvasRenderingContext2D, zx: number, zy: number, zw: number, zh: number, color: string) {
+  // measured from the book (a 2000×1124 page): stripe 385 wide (horizontally), the cut line at 209
+  const k = zh / 1124;
+  const ox = zx + zw * 0.66 - 1657 * k; // the long stripe's top-right corner sits two thirds across the zone
+  const P = (x: number, y: number): Pt => [ox + x * k, zy + y * k];
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(zx, zy, zw, zh);
+  ctx.clip();
+  ctx.fillStyle = color;
+  const poly = (pts: Pt[]) => {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+    ctx.fill();
+  };
+  poly([P(478, 0), P(868, 0), P(1077, 209), P(687, 209)]); // the chevron's top half: falling from the top edge
+  poly([P(1272, 0), P(1657, 0), P(1657 - 1124 - 600, 1124 + 600), P(1272 - 1124 - 600, 1124 + 600)]); // long rising stripe
+  poly([P(307, 209), P(692, 209), P(692 - 1500, 209 + 1500), P(307 - 1500, 209 + 1500)]); // the lower stripe
+  ctx.restore();
+}
+
+type Line = { text: string; weight: number; size: number; color: string; ltrText?: boolean; bullet?: boolean };
+
+/** Lines of one column, right-aligned at `right`, starting at `top`. Returns the y after the last line. */
+function drawLines(ctx: CanvasRenderingContext2D, lines: Line[][], right: number, top: number, lineHeight = 1.32, groupGap = 0.55) {
+  let y = top;
+  lines.forEach((group, gi) => {
+    if (gi) y += group[0].size * groupGap;
+    group.forEach((l) => {
+      const base = y + l.size * 1.0;
+      ctx.font = font(l.weight, l.size);
+      ctx.fillStyle = l.color;
+      let x = right;
+      if (l.bullet) {
+        tri(ctx, right, base - l.size * 0.36, l.size * 0.62, l.color);
+        x = right - l.size * 0.75;
+      }
+      if (l.ltrText) ltr(ctx, 'right');
+      else rtl(ctx);
+      ctx.fillText(l.text, x, base);
+      y += l.size * lineHeight;
+    });
+  });
+  return y;
+}
+
+const linesHeight = (groups: Line[][], lineHeight = 1.32, groupGap = 0.55) =>
+  groups.reduce((h, g, i) => h + (i ? g[0].size * groupGap : 0) + g.reduce((a, l) => a + l.size * lineHeight, 0), 0);
+
+/** The details (when, where, what, who), as groups of lines that wrap within `width`; shrinks until they fit `maxH`. */
+function details(ctx: CanvasRenderingContext2D, c: PostContent, width: number, maxH: number, base: number, fg: string, soft: string, bullets: boolean): Line[][] {
+  for (const [scale, topicLines, withProgram] of [[1, 2, true], [0.92, 2, true], [0.86, 1, true], [0.86, 1, false], [0.78, 1, false]] as [number, number, boolean][]) {
+    const sz = base * scale;
+    const groups: Line[][] = [];
+    const wrapped = (text: string, weight: number, size: number, color: string, max: number, bullet = false): Line[] => {
+      ctx.font = font(weight, size);
+      return wrapBalanced(ctx, text, width - (bullet ? size * 0.75 : 0), max).map((t, i) => ({ text: t, weight, size, color, bullet: bullet && i === 0 }));
+    };
+    // date and time: one line when the column is wide enough, otherwise each on its own line (never broken between)
+    const when: Line[] = [];
+    ctx.font = font(600, sz);
+    const both = c.date && c.time ? `${c.date} · ⁦${c.time}⁩` : '';
+    if (both && ctx.measureText(both).width <= width - (bullets ? sz * 0.75 : 0)) when.push({ text: both, weight: 600, size: sz, color: fg, bullet: bullets });
+    else {
+      if (c.date) when.push(...wrapped(c.date, 600, sz, fg, 2, bullets));
+      if (c.time) when.push({ text: c.time, weight: 600, size: sz, color: fg, ltrText: true });
+    }
+    if (when.length) groups.push(when);
+    if (c.place) groups.push(wrapped(c.place, 500, sz, fg, 2, bullets));
+    if (c.program && withProgram) groups.push(wrapped(c.program.replace(/\s*·\s*/g, ' · '), 400, sz, soft, 2, bullets));
+    if (c.speakerName || c.topic) {
+      const g: Line[] = [];
+      if (c.speakerName) g.push(...wrapped(`הרצאת אורח: ${c.speakerName}`, 600, sz, fg, 1, bullets));
+      if (c.topic) g.push(...wrapped(c.topic, 400, sz, soft, topicLines, bullets && !c.speakerName));
+      groups.push(g);
+    }
+    if (linesHeight(groups) <= maxH) return groups;
+    if (scale === 0.78) {
+      // still too much: leave out the least important lines (from the end) rather than overlap the call to action
+      while (groups.length > 1 && linesHeight(groups) > maxH) {
+        const last = groups[groups.length - 1];
+        if (last.length > 1) last.pop();
+        else groups.pop();
+      }
+      return groups;
+    }
+  }
+  return [];
+}
+
+/** The call to action: on the ground, in the type colour, ending with the triangle ◀ (as the book's buttons). */
+function ctaRow(ctx: CanvasRenderingContext2D, c: PostContent, right: number, baseline: number, size: number, color: string, maxW: number) {
+  if (!c.cta) return;
+  ctx.font = font(700, size);
+  rtl(ctx);
+  const tw = Math.min(ctx.measureText(c.cta).width, maxW - size);
+  ctx.fillStyle = color;
+  ctx.fillText(c.cta, right, baseline, tw);
+  tri(ctx, right - tw - size * 0.3, baseline - size * 0.36, size * 0.62, color);
+}
+
+/** The headline block: kicker (Semibold), title (Bold, tight). Returns the y under it. */
+function headline(ctx: CanvasRenderingContext2D, c: PostContent, right: number, top: number, width: number, size: number, maxLines: number, color: string) {
+  let y = top;
+  if (c.kicker) {
+    const ks = Math.round(size * 0.42);
+    ctx.font = font(600, ks);
+    ctx.fillStyle = color;
+    rtl(ctx);
+    ctx.fillText(c.kicker, right, y + ks);
+    y += ks * 1.35;
+  }
+  let s = size;
+  let lines: string[] = [];
+  for (; s >= size * 0.55; s -= 4) {
+    ctx.font = font(700, s);
+    lines = wrapBalanced(ctx, c.title, width, maxLines);
+    if (lines.every((l) => ctx.measureText(l).width <= width) && !lines[lines.length - 1].endsWith('…')) break;
+  }
+  ctx.font = font(700, s);
+  ctx.fillStyle = color;
+  rtl(ctx);
+  lines.forEach((l, i) => ctx.fillText(l, right, y + s * 0.92 + i * s * 1.02));
+  return y + s * (0.92 + (lines.length - 1) * 1.02) + s * 0.18;
+}
+
+/** Draws the invitation into the canvas (sets its size). */
+export function drawPost(canvas: HTMLCanvasElement, c: PostContent, format: PostFormat, design: PostDesign) {
   const { w: W, h: H } = POST_SIZE[format];
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  const p = PALETTE[theme];
-  const story = format === 'story';
-  const M = story ? 96 : 84;
-  const right = W - M;
-  const maxW = W - 2 * M;
-
-  ctx.fillStyle = p.bg;
-  ctx.fillRect(0, 0, W, H);
-  // the brand's elliptical pattern, bleeding off the top-left corner, away from the logo and the text
-  drawRings(ctx, story ? 40 : 10, story ? 120 : 40, story ? 300 : 230, p.rings);
-
   ctx.textBaseline = 'alphabetic';
+  const ground = design.theme === 'navy' ? NAVY : BEIGE;
+  const fg = design.theme === 'navy' ? BEIGE : NAVY;
+  const soft = design.theme === 'navy' ? 'rgba(235,220,185,0.86)' : 'rgba(20,40,55,0.84)';
+  const story = format === 'story';
+  const M = story ? 84 : 72; // one margin on all four sides (the book's "M")
+  const right = W - M;
+  const inner = W - 2 * M;
+  ctx.fillStyle = ground;
+  ctx.fillRect(0, 0, W, H);
+  if (design.layout === 'program') return drawProgram(ctx, c, format, { W, H, M, ground, fg, soft });
 
-  // header: the official logo, top right (c.org is the organization's own name; the logo already carries it)
-  const top = story ? 200 : M;
-  drawLogo(ctx, right, top, story ? 118 : 96, p.logo);
-
-  // title, date, time
-  let y = story ? 640 : 312;
-  const titleSize = fitSize(ctx, c.title, 800, story ? 160 : 120, 64, maxW, DISPLAY);
-  ctx.font = font(800, titleSize, DISPLAY);
-  ctx.fillStyle = p.fg;
-  rtl(ctx);
-  ctx.fillText(c.title, right, y);
-
-  y += story ? 118 : 88;
-  const dateSize = fitSize(ctx, c.date, 700, story ? 80 : 60, 40, maxW, DISPLAY);
-  ctx.font = font(700, dateSize, DISPLAY);
-  ctx.fillStyle = p.accentText;
-  rtl(ctx);
-  ctx.fillText(c.date, right, y);
-
-  if (c.time) {
-    y += story ? 86 : 62;
-    ctx.font = font(600, story ? 60 : 44);
-    ctx.fillStyle = p.fg;
-    ltr(ctx, 'right');
-    ctx.fillText(c.time, right, y);
+  // ── image zone ──
+  const zoneH = Math.round(H * (story ? 0.45 : format === 'square' ? 0.54 : 0.58));
+  const photo = design.layout === 'photo' && design.photo;
+  if (photo) {
+    cover(ctx, photo, 0, 0, W, zoneH, design.focus);
+    // a soft navy shade under the top edge, so the beige logo reads on any sky (the book: a light logo on dark photos)
+    const g = ctx.createLinearGradient(0, 0, 0, zoneH * 0.42);
+    g.addColorStop(0, 'rgba(20,40,55,0.62)');
+    g.addColorStop(1, 'rgba(20,40,55,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, zoneH * 0.42);
+    // stripes enter the photograph from its lower-left corner, cut by the content zone's edge. Kept small and low
+    // (the book: at most a third of the area, never over faces; the photographs keep faces in the upper half)
+    const s = Math.round(zoneH * (story ? 0.3 : 0.36));
+    const unit = Math.round(s / 5.2);
+    stripes(ctx, [[0, zoneH], [s, zoneH], [0, zoneH - s]], unit, design.theme === 'navy' ? BEIGE : NAVY, zoneH - s);
+  } else {
+    chevronField(ctx, 0, 0, W, zoneH, fg);
   }
+  drawLogo(ctx, right, story ? 150 : M, story ? 150 : format === 'square' ? 112 : 124, photo ? BEIGE : fg);
 
-  // the brand ellipse as a short accent under the date block
-  y += story ? 70 : 44;
-  ring(ctx, right - (story ? 110 : 84), y, story ? 110 : 84, story ? 26 : 20, story ? 6 : 5, -0.08, p.fg);
-  const detailsTop = y + (story ? 80 : 52);
-
-  // call to action area (bottom)
-  const ctaSize = story ? 50 : 40;
-  const pillH = ctaSize * 1.9;
-  const linkSize = story ? 34 : 28;
-  const bottom = story ? H - 300 : H - M;
-  const pillTop = bottom - pillH - (c.link && story ? linkSize * 1.9 : 0);
-
-  // details: program, speaker, topic, place. Keep them readable: shrink a little, then trim the topic,
-  // then drop the generic program line (the full text is in the caption anyway).
-  const limit = pillTop - (story ? 70 : 40);
-  const build = (scale: number, topicLines: number, withProgram: boolean): Block[] => {
-    const out: Block[] = [];
-    const sz = (n: number) => n * scale * (story ? 1.3 : 1);
-    if (c.program && withProgram) {
-      ctx.font = font(600, sz(38));
-      out.push({ lines: wrapBalanced(ctx, c.program, maxW, 2).map((l) => l.replace(/^\s*·\s*|\s*·\s*$/g, '')), weight: 600, size: sz(38), color: p.fg, gap: 0, lineHeight: 1.3 });
+  // ── content zone ──
+  const top = zoneH + (story ? 70 : 56);
+  const bottom = H - (story ? 210 : M); // a story keeps clear of the app's own bars
+  if (story) {
+    let y = headline(ctx, c, right, top, inner, 150, 3, fg);
+    const ctaSize = 46;
+    const linkH = c.link ? 44 : 0;
+    const ctaTop = bottom - ctaSize * 2 - linkH;
+    const groups = details(ctx, c, inner, ctaTop - (y + 44) - 40, 46, fg, soft, true);
+    y = drawLines(ctx, groups, right, y + 44);
+    // the call to action as the book's button: a beige block, navy type, the triangle ◀
+    if (c.cta) {
+      ctx.font = font(700, ctaSize);
+      const tw = Math.min(ctx.measureText(c.cta).width, inner - ctaSize * 2);
+      const bw = tw + ctaSize * 2.1;
+      const bh = ctaSize * 2;
+      ctx.fillStyle = fg;
+      ctx.fillRect(right - bw, ctaTop, bw, bh);
+      ctaRow(ctx, c, right - ctaSize * 0.7, ctaTop + bh / 2 + ctaSize * 0.36, ctaSize, ground, inner);
     }
-    if (c.speakerName) {
-      ctx.font = font(600, sz(30));
-      out.push({ lines: ['הרצאת אורח'], weight: 600, size: sz(30), color: p.accentText, gap: out.length ? sz(26) : 0, lineHeight: 1.25 });
-      ctx.font = font(700, sz(48));
-      out.push({ lines: wrapText(ctx, c.speakerName, maxW, 1), weight: 700, size: sz(48), color: p.fg, gap: sz(4), lineHeight: 1.2 });
-    }
-    if (c.topic) {
-      ctx.font = font(400, sz(38));
-      out.push({ lines: wrapBalanced(ctx, c.topic, maxW, topicLines), weight: 400, size: sz(38), color: p.soft, gap: c.speakerName ? sz(8) : out.length ? sz(26) : 0, lineHeight: 1.3 });
-    }
-    if (c.place) {
-      ctx.font = font(600, sz(34));
-      out.push({ lines: wrapText(ctx, c.place, maxW - sz(34), 2), weight: 600, size: sz(34), color: p.soft, gap: out.length ? sz(30) : 0, lineHeight: 1.3, marker: true });
-    }
-    return out;
-  };
-  const fits = (bs: Block[]) => detailsTop + bs.reduce((sum, b) => sum + blockHeight(b), 0) <= limit;
-  let blocks: Block[] = [];
-  search: for (const [topicLines, withProgram] of [[story ? 4 : 3, true], [story ? 4 : 3, false], [2, false], [1, false]] as [number, boolean][]) {
-    for (const scale of [1, 0.94, 0.88, 0.82]) {
-      blocks = build(scale, topicLines, withProgram);
-      if (fits(blocks)) break search;
-    }
-  }
-  y = detailsTop;
-  rtl(ctx);
-  blocks.forEach((b) => {
-    y += b.gap;
-    ctx.font = font(b.weight, b.size, b.family);
-    ctx.fillStyle = b.color;
-    const indent = b.marker ? b.size * 0.85 : 0;
-    b.lines.forEach((line, li) => {
-      const base = y + b.size * (li + 1) * b.lineHeight - b.size * (b.lineHeight - 1) * 0.5;
-      if (b.marker && li === 0) {
-        // a small marker before the place
-        ctx.save();
-        ctx.fillStyle = p.marker;
-        ctx.beginPath();
-        ctx.arc(right - b.size * 0.25, base - b.size * 0.34, b.size * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-      ctx.fillText(line, right - indent, base);
-    });
-    y += b.lines.length * b.size * b.lineHeight;
-  });
-
-  // pill with the call to action
-  if (c.cta) {
-    ctx.font = font(700, ctaSize);
-    const tw = Math.min(ctx.measureText(c.cta).width, maxW - ctaSize * 1.6);
-    const pw = tw + ctaSize * 1.6;
-    ctx.fillStyle = p.accent;
-    ctx.beginPath();
-    ctx.roundRect(right - pw, pillTop, pw, pillH, pillH / 2);
-    ctx.fill();
-    ctx.fillStyle = p.pillText;
-    rtl(ctx);
-    ctx.fillText(c.cta, right - ctaSize * 0.8, pillTop + pillH / 2 + ctaSize * 0.36, tw);
-  }
-  if (c.link) {
-    ctx.fillStyle = p.soft;
-    if (story) {
-      ctx.font = font(400, fitSize(ctx, c.link, 400, linkSize, 20, maxW));
+    if (c.link) {
+      ctx.font = font(500, fitSize(ctx, c.link, 500, 34, 20, inner));
+      ctx.fillStyle = soft;
       ltr(ctx, 'right');
-      ctx.fillText(c.link, right, bottom - 8);
-    } else {
-      ctx.font = font(400, linkSize);
-      ltr(ctx, 'left');
-      // next to the pill, on the left; shrink if it would collide
-      ctx.font = font(400, fitSize(ctx, c.link, 400, linkSize, 18, maxW * 0.48));
-      ctx.fillText(c.link, M, pillTop + pillH / 2 + linkSize * 0.36);
+      ctx.fillText(c.link, right, bottom);
     }
+    void y;
+    return;
+  }
+  // post and square: the headline on the right, the details in a column on the left (as "לרוץ אל הלב")
+  const gap = 44;
+  const headW = Math.round(inner * 0.5);
+  const colW = inner - headW - gap;
+  const colRight = M + colW;
+  headline(ctx, c, right, top, headW, format === 'square' ? 96 : 112, 3, fg);
+  const ctaSize = 32;
+  const linkH = c.link ? 34 : 0;
+  const ctaBase = bottom - linkH - 4;
+  const groups = details(ctx, c, colW, ctaBase - ctaSize * 1.6 - top, format === 'square' ? 27 : 30, fg, soft, false);
+  drawLines(ctx, groups, colRight, top + 6);
+  ctaRow(ctx, c, colRight, ctaBase, ctaSize, fg, colW);
+  if (c.link) {
+    ctx.font = font(500, fitSize(ctx, c.link, 500, 26, 16, colW));
+    ctx.fillStyle = soft;
+    ltr(ctx, 'right');
+    ctx.fillText(c.link, colRight, bottom);
+  }
+}
+
+/** Grid type 03: a lot of content on the ground, a stripe band at the top and bottom edges, a schedule with ◀. */
+function drawProgram(ctx: CanvasRenderingContext2D, c: PostContent, format: PostFormat, p: { W: number; H: number; M: number; ground: string; fg: string; soft: string }) {
+  const { W, H, M, fg, soft } = p;
+  const story = format === 'story';
+  const right = W - M;
+  const inner = W - 2 * M;
+  // top band: the reverse colour, with stripes entering from the left edge; the logo on it, top right
+  const bandH = Math.round(H * (story ? 0.13 : 0.15));
+  ctx.fillStyle = fg;
+  ctx.fillRect(0, 0, W, bandH);
+  const unit = Math.round(bandH / 3.2);
+  stripes(ctx, [[0, 0], [W * 0.42, 0], [W * 0.42 - bandH, bandH], [0, bandH]], unit, p.ground, 0);
+  const logoH = Math.round(bandH * 0.62);
+  drawLogo(ctx, right, Math.round((bandH - logoH) / 2) + (story ? 30 : 0), logoH, p.ground);
+  // bottom: short stripes entering from the lower-left corner (the text stays right-aligned, clear of them)
+  const s = Math.round(H * (story ? 0.2 : 0.22));
+  stripes(ctx, [[0, H], [s, H], [0, H - s]], Math.round(s / 5.2), fg, H - s);
+
+  let y = bandH + (story ? 120 : 64);
+  const kick = c.kicker || 'בואו איתנו';
+  y = headline(ctx, { ...c, kicker: kick }, right, y, inner, story ? 140 : format === 'square' ? 92 : 108, 2, fg);
+  y += story ? 60 : 36;
+
+  // the schedule: a bold label column on the right, the triangle, then the value (as the book's poster)
+  const size = story ? 50 : format === 'square' ? 34 : 38;
+  const labelW = size * 3;
+  const valRight = right - labelW - size * 0.9;
+  const valW = valRight - M;
+  const rows: [string, string, boolean][] = [];
+  if (c.date || c.time) rows.push(['מתי', [c.date, c.time && `⁦${c.time}⁩`].filter(Boolean).join('\n'), false]);
+  if (c.place) rows.push(['איפה', c.place, false]);
+  if (c.program) rows.push(['מה', c.program.replace(/\s*·\s*/g, ' · '), false]);
+  if (c.speakerName) rows.push(['מרצה', c.speakerName + (c.topic ? `: ${c.topic}` : ''), false]);
+  else if (c.topic) rows.push(['הרצאה', c.topic, false]);
+  const bottomLimit = H - (story ? 260 : M) - size * 3;
+  for (const scale of [1, 0.92, 0.84, 0.76]) {
+    const sz = size * scale;
+    const layout = rows.map(([label, value]) => {
+      ctx.font = font(400, sz);
+      // a value can hold its own line breaks (date, then time), each part wraps on its own
+      const lines = value.split('\n').flatMap((part) => wrapBalanced(ctx, part, valW, 3));
+      ctx.font = font(700, sz);
+      const labelLines = wrapBalanced(ctx, label, labelW, 2);
+      return { labelLines, lines, h: Math.max(lines.length, labelLines.length) * sz * 1.3 };
+    });
+    const total = layout.reduce((a, r) => a + r.h + sz * 0.9, 0);
+    if (y + total <= bottomLimit || scale === 0.76) {
+      y += Math.max(0, (bottomLimit - y - total) * 0.3); // settle the schedule a little lower when there is room
+      layout.forEach((r) => {
+        rtl(ctx);
+        ctx.fillStyle = fg;
+        ctx.font = font(700, sz);
+        r.labelLines.forEach((l, i) => ctx.fillText(l, right, y + sz + i * sz * 1.3));
+        tri(ctx, right - labelW, y + sz * 0.64, sz * 0.62, fg);
+        ctx.font = font(400, sz);
+        ctx.fillStyle = fg;
+        r.lines.forEach((l, i) => ctx.fillText(l, valRight, y + sz + i * sz * 1.3));
+        y += r.h + sz * 0.9;
+      });
+      break;
+    }
+  }
+  // the call to action and the link, bottom right, clear of the stripes
+  const ctaSize = story ? 46 : 32;
+  const bottom = H - (story ? 240 : M);
+  ctaRow(ctx, c, right, bottom - (c.link ? ctaSize * 1.3 : 0), ctaSize, fg, inner * 0.62);
+  if (c.link) {
+    ctx.font = font(500, fitSize(ctx, c.link, 500, story ? 32 : 24, 16, inner * 0.6));
+    ctx.fillStyle = soft;
+    ltr(ctx, 'right');
+    ctx.fillText(c.link, right, bottom);
   }
 }
 
@@ -373,7 +574,7 @@ export function instagramCaption(c: CaptionInput, cta = 'ההרשמה בקישו
     speakerLine(c),
     c.description && c.type !== 'friday' ? c.description : '',
     '',
-    `מפגש של ${c.org} למשרתות ולמשרתי מילואים: חוזרים לשגרה, ממשיכים לנוע. ביחד.`,
+    `מפגש של ${c.org} ללוחמים וללוחמות אחרי השירות. בואו איתנו.`,
     cta,
     '',
     hashtags(c),

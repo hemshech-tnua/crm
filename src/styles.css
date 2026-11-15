@@ -1,54 +1,84 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/heebo/index.css';
+/*
+  Typeface. The brand book (Moving Forward / המשך תנועה, October 2026) sets Polin; its approved substitute is Google Sans
+  (Hebrew and English). Google Sans is open (SIL OFL, licence next to the files) and served from our own origin, so the
+  content-security policy (font-src 'self') stays closed. Only the three subsets this site uses are bundled.
+*/
+@font-face {
+  font-family: 'Google Sans Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('./assets/fonts/google-sans-hebrew-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face {
+  font-family: 'Google Sans Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('./assets/fonts/google-sans-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Google Sans Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('./assets/fonts/google-sans-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /*
-  Hemshech Tnua design tokens, from the brand book (Alef / Hemshech Tnua, September 2026).
-  Brand base colours:  cream (שמנת) #F5F5EE · sky blue (תכלת שמיים) #CDE7F4 · earth brown (חום אדמה) #402223.
-  Domain colour: community orange (כתום, "קהילה") #F68867, the one domain colour of this system (meetings and community);
-  the book allows a single domain colour per application.
-  mist   cream      page background
-  paper  white      surfaces (cards, inputs)
-  sky    sky blue   navigation, selection, calm panels
-  ink    earth brown text, the brand, primary actions (brown pill buttons)
-  tide   = earth brown for actions and links (kept as its own token so actions can be re-tuned in one place)
-  light  orange     only for today / the next meeting / the Friday line / highlights
-  Text colours are checked against WCAG AA (4.5:1) on paper, mist and sky; see docs/07-qa-report.md.
-  Typeface: the book's typeface is "Polin" (פולין). Until its licensed web files are added, Heebo stands in (see docs/02).
+  Design tokens, from the brand book "Moving Forward / המשך תנועה" (October 2026).
+  Two brand colours of equal status, one the ground and the other the shapes and text:
+    navy   כחול כהה  #142837  (Pantone 539 C)
+    beige  בז׳       #EBDCB9  (Pantone 7506 C)
+  Everything else here is a tint of those two, needed for a working screen (surfaces, lines, quiet text), plus the three
+  functional colours for status (good / bad / warn), which the book leaves to the product.
+  Token names are kept from the previous system so every screen follows the new palette:
+  mist   light beige  page ground           paper   warm white   cards, inputs
+  sky    brand beige  calm brand panels     ink     navy         text, the brand, primary actions
+  tide   navy         actions and links     light   brand beige  highlights on navy (today, the next meeting)
+  light-deep = navy, the highlight on light ground.  All text pairs are AA (4.5:1) or better on mist, sky and paper.
 */
 @theme {
-  --color-mist: #f5f5ee;
-  --color-mist-deep: #eae7de;
-  --color-paper: #ffffff;
-  --color-sky: #cde7f4;
-  --color-sky-deep: #a8d2e9;
-  --color-sky-wash: #e6f3fa;
-  --color-ink: #402223;
-  --color-ink-soft: #5a3b3c;
-  --color-muted: #6b4f50;
-  --color-faint: #765a5b;
-  --color-line: #ddd4cd;
-  --color-line-soft: #ebe6df;
-  --color-tide: #402223;
-  --color-tide-deep: #2a1516;
-  --color-tide-wash: #e6f3fa;
-  --color-light: #f68867;
-  --color-light-deep: #8c3a1d;
-  --color-light-wash: #fde5dc;
+  --color-mist: #f2e9d4;
+  --color-mist-deep: #e6d8b6;
+  --color-paper: #fffdf8;
+  --color-sky: #ebdcb9;
+  --color-sky-deep: #d6c397;
+  --color-sky-wash: #f6efdf;
+  --color-ink: #142837;
+  --color-ink-soft: #2e4152;
+  --color-muted: #4a5764;
+  --color-faint: #59646e;
+  --color-line: #d9caa6;
+  --color-line-soft: #e8dec6;
+  --color-tide: #142837;
+  --color-tide-deep: #0a1621;
+  --color-tide-wash: #efe5cc;
+  --color-light: #ebdcb9;
+  --color-light-deep: #142837;
+  --color-light-wash: #f3e8cd;
+  /* a navy tint for the second series of a chart (new people), 3.5:1 on paper: the book has no third colour */
+  --color-tint: #7a8691;
   --color-good: #2f6a2c;
-  --color-good-wash: #e8f1d6;
+  --color-good-wash: #e5ecd2;
   --color-bad: #a8322a;
-  --color-bad-wash: #fbe3de;
+  --color-bad-wash: #f8e0d6;
   --color-warn: #7a5200;
-  --color-warn-wash: #fcf2cc;
+  --color-warn-wash: #f7ebc4;
 
-  --font-sans: 'Heebo Variable', 'Heebo', system-ui, 'Segoe UI', Arial, sans-serif;
-  --font-display: 'Heebo Variable', 'Heebo', system-ui, sans-serif;
+  --font-sans: 'Google Sans Variable', 'Google Sans', system-ui, 'Segoe UI', Arial, sans-serif;
+  --font-display: 'Google Sans Variable', 'Google Sans', system-ui, sans-serif;
 
-  --radius-control: 12px;
-  --radius-panel: 14px;
+  /* the brand's geometry is straight-edged: squared controls, no pills, no circles */
+  --radius-control: 3px;
+  --radius-panel: 4px;
 
   --text-display: 2rem;
-  --text-display--line-height: 1.15;
+  --text-display--line-height: 1.1;
 }
 
 @layer base {
@@ -69,7 +99,7 @@
     line-height: 1.2;
     text-wrap: balance;
   }
-  /* focus: earth brown on light surfaces, community orange on the dark ones */
+  /* focus: navy on light ground, beige on navy */
   :focus-visible {
     outline: 3px solid var(--color-ink);
     outline-offset: 2px;
@@ -105,11 +135,11 @@
     direction: ltr;
     unicode-bidi: isolate;
   }
-  /* headline weight, as the book's "Polin" headlines: heavy and tight */
+  /* headlines: the book's Bold, tight (Polin Bold → Google Sans 700) */
   .font-display {
     font-family: var(--font-display);
-    font-weight: 800;
-    letter-spacing: -0.012em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
@@ -156,4 +186,6 @@
 @media print {
   nav, .no-print { display: none !important; }
   body { background: #fff; }
+  /* the brand's navy and beige areas are part of the sign: print them */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

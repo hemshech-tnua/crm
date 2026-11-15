@@ -24,7 +24,7 @@ export const CREATED_VIA_LABEL: Record<string, string> = {
   membership_form: 'ביקש/ה להצטרף לעמותה בטופס',
 };
 
-// Saffron (`light`) stays reserved for "today / the next meeting" (docs/02); statuses use the semantic tones.
+// The beige highlight (`light`) stays reserved for "today / the next meeting" (docs/02); statuses use the semantic tones.
 const ENGAGEMENT_TONE: Record<Engagement, 'neutral' | 'tide' | 'good' | 'warn'> = {
   registered: 'neutral',
   first_timer: 'tide',

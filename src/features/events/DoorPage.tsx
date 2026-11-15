@@ -307,7 +307,7 @@ function Row({ r, friday, disabled, onToggle, menu }: {
           on ? 'border-good bg-good text-white' : 'border-tide/50 bg-paper text-tide hover:bg-tide-wash',
         )}
       >
-        {on ? <Icon name="check" size={30} strokeWidth={3} /> : <span aria-hidden="true" className="h-7 w-7 rounded-full border-[3px] border-current" />}
+        {on ? <Icon name="check" size={30} strokeWidth={3} /> : <span aria-hidden="true" className="h-7 w-7 rounded-[var(--radius-control)] border-[3px] border-current" />}
       </button>
       <div className="min-w-0 flex-1">
         <div className={cx('truncate text-[1.1rem] font-bold leading-snug', r.status === 'cancelled' && 'text-muted')}>{r.display_name}</div>

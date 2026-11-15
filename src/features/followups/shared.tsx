@@ -180,7 +180,7 @@ export function CompleteTaskDialog({ task, onClose }: {
           <Textarea label="מה עלה בשיחה?" required value={outcome} onChange={(e) => setOutcome(e.target.value)} maxLength={1000} rows={4} error={err} placeholder="למשל: מרגיש טוב, עבר לעבוד בבוקר בשישי" />
           <div className="flex flex-wrap gap-2">
             {QUICK_OUTCOMES.map((q) => (
-              <button key={q} type="button" onClick={() => setOutcome(q)} className="min-h-9 rounded-full border border-line bg-paper px-3 text-sm font-medium text-ink-soft hover:border-tide hover:text-tide">
+              <button key={q} type="button" onClick={() => setOutcome(q)} className="min-h-9 rounded-[var(--radius-control)] border border-line bg-paper px-3 text-sm font-medium text-ink-soft hover:border-tide hover:text-tide">
                 {q}
               </button>
             ))}

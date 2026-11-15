@@ -65,8 +65,8 @@ def main() -> None:
     paths = ''.join(f'<path fill-rule="{r}" d="{d}"/>' for r, d, _ in sym)
     (ROOT / 'public/favicon.svg').write_text(
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{ox:.1f} {oy:.1f} {side:.1f} {side:.1f}">'
-        f'<rect x="{ox:.1f}" y="{oy:.1f}" width="{side:.1f}" height="{side:.1f}" rx="{side * 0.22:.1f}" fill="#F5F5EE"/>'
-        f'<g fill="#402223">{paths}</g></svg>\n')
+        f'<rect x="{ox:.1f}" y="{oy:.1f}" width="{side:.1f}" height="{side:.1f}" rx="{side * 0.063:.1f}" fill="#142837"/>'
+        f'<g fill="#EBDCB9">{paths}</g></svg>\n')
     print(f'logo: {len(sym)} symbol, {len(title)} name, {len(tag)} tagline paths')
 
 

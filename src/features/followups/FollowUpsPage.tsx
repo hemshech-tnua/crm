@@ -96,7 +96,7 @@ export function FollowUpsPage() {
         <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="סינון לפי סוג משימה">
           {[{ v: null, l: 'הכול', n: allOpen.length }, ...Object.entries(FOLLOWUP_TYPE_LABEL).filter(([k]) => typeCounts[k]).map(([k, l]) => ({ v: k, l, n: typeCounts[k] }))].map((o) => (
             <button key={o.v ?? 'all'} type="button" aria-pressed={typeFilter === o.v} onClick={() => setType(o.v)}
-              className={`min-h-10 rounded-full border px-3.5 text-sm font-semibold ${typeFilter === o.v ? 'border-ink bg-ink text-mist' : 'border-line bg-paper text-ink-soft hover:border-tide'}`}>
+              className={`min-h-10 rounded-[var(--radius-control)] border px-3.5 text-sm font-semibold ${typeFilter === o.v ? 'border-ink bg-ink text-mist' : 'border-line bg-paper text-ink-soft hover:border-tide'}`}>
               {o.l} <span className="num">{o.n}</span>
             </button>
           ))}
@@ -156,7 +156,7 @@ function TaskGroups({ tasks, nextEvent, showAssignee, empty }: { tasks: TaskRow[
         <section key={g.key} aria-labelledby={`g-${g.key}`}>
           <h2 id={`g-${g.key}`} className={cx('mb-2 flex items-center gap-2 text-sm font-bold', g.key === 'late' ? 'text-bad' : 'text-muted')}>
             {g.title}
-            <span className="num rounded-full bg-mist-deep px-1.5 text-xs text-ink-soft">{g.items.length}</span>
+            <span className="num rounded-[var(--radius-control)] bg-mist-deep px-1.5 text-xs text-ink-soft">{g.items.length}</span>
           </h2>
           <ul className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-panel)] border border-line-soft bg-paper">
             {g.items.map((t) => (

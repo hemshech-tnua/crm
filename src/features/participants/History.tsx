@@ -101,10 +101,10 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
           {i < items.length - 1 && <span className="absolute top-9 bottom-0 right-[17px] w-px bg-line" aria-hidden="true" />}
           <span
             className={cx(
-              'relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2',
+              'relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] border-2',
               it.dot === 'attended' && 'border-tide bg-tide text-white',
               it.dot === 'missed' && 'border-bad/50 bg-paper text-bad',
-              it.dot === 'next' && 'border-light bg-light-wash text-light-deep',
+              it.dot === 'next' && 'border-ink bg-light text-ink',
               it.dot === 'contact' && 'border-line bg-mist text-ink-soft',
               it.dot === 'plain' && 'border-line bg-paper text-muted',
             )}

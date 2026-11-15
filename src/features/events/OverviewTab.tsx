@@ -15,7 +15,7 @@ import { Badge, Button, ButtonLink, Input, KeyValue, Notice, Panel, Select, Text
 import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { Logo } from '@/ui/Logo';
-import { EllipseRing } from '@/ui/Ellipse';
+import { Stripes, Tri } from '@/ui/Shapes';
 import type { EventTab } from './EventPage';
 import { dataUrlToBlob, type EventPeople } from './context';
 import { useInvalidateEvent } from './queries';
@@ -465,7 +465,7 @@ function QrBlock({ value, label, filename, size }: { value: string; label: strin
   const toast = useToast();
   const download = async () => {
     try {
-      const url = await QRCode.toDataURL(value, { width: 1024, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#402223', light: '#FFFFFF' } });
+      const url = await QRCode.toDataURL(value, { width: 1024, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#142837', light: '#FFFFFF' } });
       downloadFile(filename, dataUrlToBlob(url));
     } catch {
       toast.error('לא הצלחנו ליצור את הקוד. נסו שוב.');
@@ -473,7 +473,7 @@ function QrBlock({ value, label, filename, size }: { value: string; label: strin
   };
   return (
     <div className="flex shrink-0 flex-col items-center gap-1.5">
-      <QrImage value={value} size={size} label={label} className="rounded-lg border border-line-soft" />
+      <QrImage value={value} size={size} label={label} className="rounded-[var(--radius-panel)] border border-line-soft" />
       <button type="button" onClick={download} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] px-2 text-sm font-semibold text-tide hover:bg-tide-wash">
         <Icon name="download" size={16} />
         הורדת QR
@@ -579,19 +579,33 @@ function EntrancePanel({ e }: { e: EventWithStats }) {
   );
 }
 
+/**
+ * The entrance sign, on the brand book's poster grid: a navy image zone with the logo in the top-right corner and
+ * beige stripes entering from the opposite corner; the headline right-aligned; the content zone below on white, with
+ * the QR code (navy on white, so every phone camera reads it) and the triangle bullets for the steps.
+ */
 function EntranceSign({ e, url, qrSize }: { e: EventWithStats; url: string; qrSize: string }) {
   return (
-    <div className="flex flex-col items-center gap-[0.6em] text-center text-ink">
-      <Logo variant="full" height="4.2em" label="המשך תנועה" />
-      <div className="font-display text-[2.4em] leading-tight">ברוכים הבאים!</div>
-      <div className="text-[1.15em] font-semibold">{e.title} · {fmtDayLong(e.starts_at)}</div>
-      <EllipseRing className="h-[0.9em] w-[6em] text-light" weight={1.6} />
-      <div className="text-[1.5em] font-bold">הגעתם? סורקים ומסמנים הגעה</div>
-      <SignQr url={url} size={qrSize} />
-      <div className="max-w-[26em] text-[1em] leading-relaxed text-ink-soft">
-        פותחים את המצלמה בטלפון, מכוונים לקוד ולוחצים על הקישור שמופיע.
-        <br />
-        לא נרשמתם מראש? אפשר להירשם במקום אחרי הסריקה.
+    <div className="overflow-hidden bg-white text-right text-ink">
+      <div className="relative overflow-hidden bg-ink px-[1.6em] pt-[1.4em] pb-[1.6em] text-light">
+        <Stripes width={300} height={150} unit={28} dir="fall" corner={{ at: 'top-left', size: 230 }} className="absolute top-0 left-0 h-[9em] w-[18em]" />
+        <div className="relative flex justify-start">
+          <Logo variant="full" height="3.4em" label="המשך תנועה" />
+        </div>
+        <div className="relative mt-[1.6em] font-display text-[1.25em] font-semibold">{e.title} · {fmtDayLong(e.starts_at)}</div>
+        <div className="relative font-display text-[2.9em] leading-[1.02]">ברוכים הבאים!</div>
+      </div>
+      <div className="flex flex-col items-center gap-[0.9em] px-[1.6em] pt-[1.4em] pb-[1.2em]">
+        <div className="self-stretch font-display text-[1.55em] leading-tight">הגעתם? סורקים ומסמנים הגעה</div>
+        <SignQr url={url} size={qrSize} />
+        <ul className="flex flex-col gap-[0.35em] self-stretch text-[1em] leading-snug">
+          <li className="flex items-center gap-[0.6em]"><Tri />פותחים את המצלמה בטלפון ומכוונים לקוד</li>
+          <li className="flex items-center gap-[0.6em]"><Tri />לוחצים על הקישור שמופיע ומסמנים הגעתי</li>
+          <li className="flex items-center gap-[0.6em]"><Tri />לא נרשמתם מראש? נרשמים במקום, אחרי הסריקה</li>
+        </ul>
+      </div>
+      <div className="relative h-[2.2em] overflow-hidden bg-ink" aria-hidden="true">
+        <Stripes width={200} height={36} unit={11} dir="fall" count={4} offset={6} className="absolute top-0 left-0 h-full w-[12em] text-light" />
       </div>
     </div>
   );
@@ -601,7 +615,7 @@ function SignQr({ url, size }: { url: string; size: string }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    QRCode.toDataURL(url, { width: 1200, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#402223', light: '#FFFFFF' } })
+    QRCode.toDataURL(url, { width: 1200, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#142837', light: '#FFFFFF' } })
       .then((u) => { if (alive) setSrc(u); })
       .catch(() => undefined);
     return () => { alive = false; };
@@ -632,13 +646,13 @@ function PrintSignDialog({ open, onClose, e, url }: { open: boolean; onClose: ()
         }
       >
         <p className="mb-3 text-sm text-muted">מדפיסים בדף A4 ותולים בכניסה, בגובה העיניים. הקוד עובד רק למפגש הזה.</p>
-        <div className="rounded-[var(--radius-panel)] border border-line bg-white p-6 text-[13px] sm:text-[15px]">
+        <div className="overflow-hidden rounded-[var(--radius-panel)] border border-line text-[13px] sm:text-[15px]">
           <EntranceSign e={e} url={url} qrSize="min(16rem, 60vw)" />
         </div>
       </Dialog>
       {open && createPortal(
-        <div className={cx('hidden print:flex', 'min-h-[260mm] items-center justify-center bg-white p-[10mm] text-[16pt]')}>
-          <EntranceSign e={e} url={url} qrSize="120mm" />
+        <div className={cx('hidden print:block', 'bg-white text-[16pt]')}>
+          <EntranceSign e={e} url={url} qrSize="110mm" />
         </div>,
         document.body,
       )}

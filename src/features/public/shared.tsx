@@ -9,11 +9,11 @@ import { Glyph } from './marks';
 import { useOrgInfo } from './api';
 import { formatPhone, whatsappLink } from '@/lib/phone';
 
-/** The one saffron moment of a screen: a check that draws itself (static when reduced motion is on). */
+/** The one highlighted moment of a screen: a beige check that draws itself on navy (static when reduced motion is on). */
 export function SuccessMark({ size = 'md' }: { size?: 'md' | 'lg' }) {
   const box = size === 'lg' ? 'h-24 w-24' : 'h-20 w-20';
   return (
-    <div className={cx('mx-auto flex items-center justify-center rounded-full bg-light text-ink', box)} aria-hidden="true">
+    <div className={cx('mx-auto flex items-center justify-center rounded-[var(--radius-control)] bg-ink text-light', box)} aria-hidden="true">
       <svg width={size === 'lg' ? 48 : 40} height={size === 'lg' ? 48 : 40} viewBox="0 0 24 24">
         <path
           d="M20 6 9 17l-5-5"
@@ -30,10 +30,10 @@ export function SuccessMark({ size = 'md' }: { size?: 'md' | 'lg' }) {
   );
 }
 
-/** A calm, non-saffron mark for "noted, but not final" (waitlist). */
+/** A calm, beige mark for "noted, but not final" (waitlist). */
 export function WaitMark() {
   return (
-    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-tide-wash text-tide-deep" aria-hidden="true">
+    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[var(--radius-control)] bg-sky text-ink" aria-hidden="true">
       <Glyph name="clock" size={40} />
     </div>
   );

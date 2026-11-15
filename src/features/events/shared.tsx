@@ -48,12 +48,12 @@ export const inDoorWindow = (e: Pick<EventRow, 'starts_at' | 'ends_at'>, now = D
 export const isUnclosed = (e: Pick<EventRow, 'ends_at' | 'status'>, now = Date.now()) =>
   (e.status === 'open' || e.status === 'closed') && hasEnded(e, now);
 
-/** A big number with its label. `highlight` uses the saffron accent: only for the one live/next number. */
+/** A big number with its label. `highlight` uses the brand highlight: only for the one live/next number. */
 export function BigStat({ label, value, sub, highlight, className = '' }: {
   label: ReactNode; value: ReactNode; sub?: ReactNode; highlight?: boolean; className?: string;
 }) {
   return (
-    <div className={cx('rounded-[var(--radius-control)] border px-4 py-3', highlight ? 'border-light/50 bg-light-wash' : 'border-line-soft bg-paper', className)}>
+    <div className={cx('rounded-[var(--radius-control)] border px-4 py-3', highlight ? 'border-ink/60 bg-light-wash' : 'border-line-soft bg-paper', className)}>
       <div className="text-sm font-medium text-muted">{label}</div>
       <div className="num mt-0.5 text-right font-display text-[2rem] leading-tight text-ink">{value}</div>
       {sub && <div className="mt-0.5 text-sm text-muted">{sub}</div>}
@@ -75,7 +75,7 @@ export function useQrDataUrl(value: string, size: number) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    QRCode.toDataURL(value, { width: size * 2, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#402223', light: '#FFFFFF' } })
+    QRCode.toDataURL(value, { width: size * 2, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#142837', light: '#FFFFFF' } })
       .then((url) => { if (alive) setSrc(url); })
       .catch(() => { if (alive) setSrc(null); });
     return () => { alive = false; };
@@ -132,7 +132,7 @@ export function RowMenu({ items, label = 'פעולות נוספות', big = fals
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={cx('inline-flex items-center justify-center rounded-full text-ink-soft hover:bg-mist-deep hover:text-ink', big ? 'h-12 w-12' : 'h-10 w-10')}
+        className={cx('inline-flex items-center justify-center rounded-[var(--radius-control)] text-ink-soft hover:bg-mist-deep hover:text-ink', big ? 'h-12 w-12' : 'h-10 w-10')}
       >
         <Icon name="more" size={big ? 24 : 20} />
       </button>

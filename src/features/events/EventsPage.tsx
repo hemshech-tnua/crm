@@ -31,7 +31,7 @@ export function EventsPage() {
   const upcoming = useMemo(() => (upcomingQ.data ?? []).filter((e) => new Date(e.ends_at).getTime() >= now), [upcomingQ.data, now]);
   const past = useMemo(() => (pastQ.data ?? []).filter((e) => new Date(e.ends_at).getTime() < now), [pastQ.data, now]);
   const unclosed = past.filter((e) => isUnclosed(e, now)).length;
-  // the next real meeting gets the single saffron highlight
+  // the next real meeting gets the single highlight (navy edge)
   const nextId = upcoming.find((e) => e.status === 'open' || e.status === 'closed')?.id;
 
   const q = show === 'upcoming' ? upcomingQ : pastQ;
@@ -50,7 +50,7 @@ export function EventsPage() {
         onChange={(v) => setParams(v === 'past' ? { show: 'past' } : {}, { replace: true })}
         tabs={[
           { value: 'upcoming', label: 'קרובים', count: upcomingQ.data ? upcoming.length : undefined },
-          { value: 'past', label: unclosed ? <span className="flex items-center gap-1.5">קודמים<span className="h-2 w-2 rounded-full bg-warn" aria-label={`${unclosed} לא נסגרו`} /></span> : 'קודמים' },
+          { value: 'past', label: unclosed ? <span className="flex items-center gap-1.5">קודמים<span className="h-2 w-2 rounded-[var(--radius-control)] bg-warn" aria-label={`${unclosed} לא נסגרו`} /></span> : 'קודמים' },
         ]}
       />
 
@@ -114,7 +114,7 @@ function WhenCell({ e, highlight }: { e: EventWithStats; highlight?: boolean }) 
   const today = ilParts(e.starts_at).date === todayIl();
   return (
     <div className="flex items-stretch gap-3">
-      <span className={cx('w-1 shrink-0 rounded-full', highlight ? 'bg-light' : 'bg-transparent')} aria-hidden="true" />
+      <span className={cx('w-1 shrink-0 rounded-[var(--radius-control)]', highlight ? 'bg-ink' : 'bg-transparent')} aria-hidden="true" />
       <div>
         <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span></div>
         <div className="flex items-center gap-1.5 text-sm text-muted">
@@ -140,7 +140,7 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
                 to={`/app/events/${e.id}`}
                 className={cx(
                   'block rounded-[var(--radius-panel)] border bg-paper p-4 transition-colors hover:border-tide',
-                  e.id === nextId ? 'border-light' : 'border-line-soft',
+                  e.id === nextId ? 'border-ink' : 'border-line-soft',
                   e.status === 'cancelled' && 'opacity-70',
                 )}
               >
@@ -330,7 +330,7 @@ function NewReturning({ n, r }: { n: number; r: number }) {
 
 function MiniStat({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex flex-col-reverse rounded-lg bg-mist px-1 py-1.5">
+    <div className="flex flex-col-reverse rounded-[var(--radius-panel)] bg-mist px-1 py-1.5">
       <dt className="text-[0.72rem] leading-tight text-muted">{label}</dt>
       <dd className="font-display text-lg leading-tight tabular-nums">{value}</dd>
     </div>

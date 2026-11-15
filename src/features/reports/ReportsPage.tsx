@@ -170,7 +170,7 @@ function MonthlyReport({ filters }: { filters: Filters }) {
       <Panel title="הגעות לפי חודש" className="mb-5">
         <Columns data={rows.map((r) => ({ key: r.month, label: fmtMonth(r.month), total: r.attendances, highlight: r.new_attendees, title: `${r.attendances} הגעות, ${r.new_attendees} חדשים` }))} />
         <div className="mt-2 flex gap-5 text-sm text-muted">
-          <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm bg-light" />חדשים באותו חודש</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm bg-tint" />חדשים באותו חודש</span>
           <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm bg-ink/85" />שאר ההגעות</span>
         </div>
       </Panel>

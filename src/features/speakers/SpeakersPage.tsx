@@ -303,7 +303,7 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
               <span className="text-muted">קבוע/ה ל:</span>
               {bookings.slice(0, 4).map((b) => (
-                <Link key={b.id} to={`/app/events/${b.id}`} className="inline-flex min-h-8 items-center gap-1 rounded-full bg-tide-wash px-2.5 font-medium text-tide-deep hover:underline">
+                <Link key={b.id} to={`/app/events/${b.id}`} className="inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-control)] bg-tide-wash px-2.5 font-medium text-tide-deep hover:underline">
                   <span className="num">{fmtShortDate(b.starts_at)}</span> {b.title}{b.status === 'draft' ? ' (טיוטה)' : ''}
                 </Link>
               ))}

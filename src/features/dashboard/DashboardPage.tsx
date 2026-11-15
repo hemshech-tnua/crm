@@ -12,7 +12,7 @@ import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, PageHeader, Pa
 import { useCopy } from '@/ui/feedback';
 import { Icon, type IconName } from '@/ui/Icon';
 import { FridayLine, GoalStat, SplitBars } from '@/ui/charts';
-import { EllipsePattern } from '@/ui/Ellipse';
+import { Stripes } from '@/ui/Shapes';
 import { FilterBar, rpcArgs, useFilters } from '@/features/reports/period';
 import { Drilldown, type DrillKind } from '@/features/reports/Drilldown';
 import { securityAlerts, useSecurityOverview } from '@/features/settings/SecuritySettings';
@@ -91,11 +91,11 @@ export function DashboardPage() {
         </Panel>
       ) : (
         <>
-          {/* the next meeting: an earth-brown panel, the orange (community) date as the one highlight on the page */}
+          {/* the next meeting: a navy panel, the beige date as the one highlight on the page; stripes enter from the corner */}
           {events.isLoading ? <Skeleton lines={3} className="mb-6" /> : next ? (
             <section className="relative mb-6 overflow-hidden rounded-[var(--radius-panel)] bg-ink text-mist">
-              <EllipsePattern className="absolute -top-28 -left-24 h-80 w-80 text-mist/12" rings={4} />
-              <div className="relative flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6">
+              <Stripes width={88} height={88} unit={12} dir="fall" corner={{ at: 'top-left', size: 88 }} className="absolute top-0 left-0 h-[88px] w-[88px] text-light" />
+              <div className="relative flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6 sm:pl-24">
                 <div className="flex items-center gap-4">
                   <div className="rounded-[var(--radius-control)] bg-light px-3.5 py-2 text-center text-ink">
                     <div className="text-xs font-bold">{relativeDays(next.starts_at)}</div>
@@ -252,7 +252,7 @@ function AttentionList({ a }: { a: Attention }) {
     <ul className="flex flex-col divide-y divide-line-soft">
       {items.map((it, i) => (
         <li key={i} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${toneCls[it.tone]}`}><Icon name={it.icon} size={17} /></span>
+          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] ${toneCls[it.tone]}`}><Icon name={it.icon} size={17} /></span>
           <span className="flex-1 text-[0.95rem] leading-snug">{it.text}</span>
           <Link to={it.to} className="shrink-0 text-sm font-semibold text-tide hover:underline">{it.action}</Link>
         </li>

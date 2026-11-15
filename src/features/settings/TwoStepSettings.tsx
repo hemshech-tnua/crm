@@ -100,7 +100,7 @@ export function TwoStepSettings() {
             <li>באפליקציה בוחרים "הוספה" וסורקים את הברקוד.</li>
             <li>מקלידים כאן את הקוד בן 6 הספרות שמופיע באפליקציה.</li>
           </ol>
-          <div className="self-center rounded-lg bg-white p-3"><img src={enroll.qr} alt="ברקוד להוספת המשתמש לאפליקציית האימות" width={200} height={200} /></div>
+          <div className="self-center rounded-[var(--radius-panel)] bg-white p-3"><img src={enroll.qr} alt="ברקוד להוספת המשתמש לאפליקציית האימות" width={200} height={200} /></div>
           <p className="text-sm text-muted">אי אפשר לסרוק? מקלידים באפליקציה את המפתח: <span className="num select-all break-all" dir="ltr">{enroll.secret}</span></p>
           <Input label="קוד מהאפליקציה" inputMode="numeric" autoComplete="one-time-code" maxLength={7} ltr className="num text-xl tracking-[0.3em]"
             value={code} onChange={(e) => setCode(e.target.value)} />

@@ -1,15 +1,18 @@
 import { Link, Outlet } from 'react-router';
 import { Logo } from '@/ui/Logo';
-import { EllipsePattern } from '@/ui/Ellipse';
+import { Stripes } from '@/ui/Shapes';
 import { ContactLine } from '@/features/public/shared';
 
-/** Participant-facing pages: one calm column, works one-handed on a phone. Brand book: sky band, cream page, brown type. */
+/**
+ * Participant-facing pages: one calm column, works one-handed on a phone.
+ * Brand book grid: the logo in the top-right corner of a navy band, beige stripes entering from the opposite corner and
+ * cut by the format's edges; content on beige below; the band of short stripes closes the page, as on the posters.
+ */
 export function PublicLayout() {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="relative overflow-hidden bg-sky text-ink">
-        {/* the elliptical pattern from the brand book, in cream, off to one side so the logo stays clear */}
-        <EllipsePattern className="absolute -top-24 -left-28 h-80 w-80 text-mist/80 sm:-left-10" rings={4} />
+      <header className="relative overflow-hidden bg-ink text-light">
+        <Stripes width={260} height={112} unit={24} dir="fall" corner={{ at: 'top-left', size: 200 }} className="absolute top-0 left-0 h-28 w-[260px]" />
         <div className="relative mx-auto flex max-w-xl items-center px-5 pt-6 pb-7">
           <Link to="/" aria-label="המשך תנועה: המפגשים הקרובים">
             <Logo variant="full" height={64} />
@@ -28,6 +31,9 @@ export function PublicLayout() {
         </div>
         <div className="pt-1"><ContactLine /></div>
       </footer>
+      <div className="relative h-9 overflow-hidden bg-ink" aria-hidden="true">
+        <Stripes width={180} height={36} unit={11} dir="fall" count={4} offset={6} className="absolute top-0 left-0 h-9 w-[180px] text-light" />
+      </div>
     </div>
   );
 }

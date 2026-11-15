@@ -184,7 +184,7 @@ export function ParticipantsPage() {
             >
               <Icon name="filter" size={18} />
               סינון
-              {activeExtra > 0 && <span className="num rounded-full bg-tide px-1.5 text-xs text-white">{activeExtra}</span>}
+              {activeExtra > 0 && <span className="num rounded-[var(--radius-control)] bg-tide px-1.5 text-xs text-white">{activeExtra}</span>}
             </button>
           </div>
         </div>
@@ -278,7 +278,7 @@ function StatusChips({ value, counts, onChange }: { value: Engagement | ''; coun
               title={c.hint}
               onClick={() => onChange(c.v)}
               className={cx(
-                'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[0.9rem] font-semibold transition-colors',
+                'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3.5 text-[0.9rem] font-semibold transition-colors',
                 on ? 'border-ink bg-ink text-mist' : 'border-line bg-paper text-ink-soft hover:border-ink-soft/50',
               )}
             >

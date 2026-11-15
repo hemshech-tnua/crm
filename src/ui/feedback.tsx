@@ -104,7 +104,7 @@ export function Dialog({ open, onClose, title, children, footer, size = 'md' }: 
         <div className="flex max-h-[88vh] flex-col">
           <header className="flex items-center justify-between gap-3 border-b border-line-soft px-5 py-4">
             <h2 id="dialog-title" className="text-lg font-bold">{title}</h2>
-            <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-2 text-muted hover:bg-mist hover:text-ink">
+            <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-[var(--radius-control)] p-2 text-muted hover:bg-mist hover:text-ink">
               <Icon name="close" />
             </button>
           </header>

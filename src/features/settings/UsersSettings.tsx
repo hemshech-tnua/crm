@@ -232,7 +232,7 @@ function InviteDialog({ invite, onClose }: { invite: { staff: Staff; url: string
           <code dir="ltr" className="num block break-all rounded-[var(--radius-control)] bg-mist p-3 text-sm">{invite.url}</code>
           <div className="flex flex-wrap gap-2">
             {invite.staff.phone && (
-              <a href={whatsappLink(invite.staff.phone, text)} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-full bg-tide px-5 font-semibold text-mist">שליחה בוואטסאפ</a>
+              <a href={whatsappLink(invite.staff.phone, text)} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-[var(--radius-control)] bg-tide px-5 font-semibold text-mist">שליחה בוואטסאפ</a>
             )}
             <Button variant="secondary" icon="copy" onClick={() => copy(text, 'ההודעה הועתקה')}>העתקה</Button>
             <Button variant="ghost" onClick={onClose}>סגירה</Button>
