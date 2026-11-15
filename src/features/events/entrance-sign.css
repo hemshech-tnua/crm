@@ -1,0 +1,12 @@
+/* The entrance sign prints alone on one A4 page, edge to edge (its navy areas reach the paper's edge). A named page,
+   so the A4 size and zero margin apply to the sign only, never to the app's other prints (summary, attendance). */
+@page entrance-sign {
+  size: A4 portrait;
+  margin: 0;
+}
+@media print {
+  .entrance-sign-page {
+    page: entrance-sign;
+    break-inside: avoid;
+  }
+}

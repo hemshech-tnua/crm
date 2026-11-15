@@ -294,7 +294,7 @@ function fitTitle(ctx: CanvasRenderingContext2D, title: string, width: number, s
   return { s: min, lines: wrapText(ctx, title, width, maxLines), ok: false };
 }
 
-function headlineBlock(ctx: CanvasRenderingContext2D, c: PostContent, right: number, width: number, size: number, maxLines: number, color: string, minK = 0.6): Block & { s: number; widths: number[]; tops: number[] } {
+function headlineBlock(ctx: CanvasRenderingContext2D, c: PostContent, right: number, width: number, size: number, maxLines: number, color: string, minK = 0.6): Block & { s: number } {
   const ks = Math.round(Math.max(30, size * 0.36));
   const kick = c.kicker.trim();
   let kickSize = ks;
@@ -311,18 +311,8 @@ function headlineBlock(ctx: CanvasRenderingContext2D, c: PostContent, right: num
   const lead = s * 1.0;
   const tH = lines.length ? s * 0.74 + (lines.length - 1) * lead + s * 0.12 : 0;
   ctx.font = font(700, s);
-  // the width and line top of every line, the kicker first (what a shape beside the headline must clear)
-  const widths = lines.map((l) => ctx.measureText(l).width);
-  const tops = lines.map((_, i) => kH + i * lead);
-  if (kick) {
-    ctx.font = font(600, kickSize);
-    widths.unshift(ctx.measureText(kick).width);
-    tops.unshift(0);
-  }
   return {
     s,
-    widths,
-    tops,
     h: kH + tH,
     draw: (top) => {
       ctx.fillStyle = color;
@@ -523,6 +513,8 @@ function onPhoto(lum: number) {
   return { color: cb >= cn ? BEIGE : NAVY, contrast: Math.max(cb, cn) };
 }
 
+const cropMemo = new WeakMap<HTMLImageElement, Map<string, { dy: number; run: Pt[][] | null }>>();
+
 /**
  * The photograph in the image zone: cropped so the band stays in view and every face is whole and clear of the logo,
  * then a run of stripes in the largest size that fits a free corner. Returns the logo colour.
@@ -596,18 +588,25 @@ function photoZone(ctx: CanvasRenderingContext2D, img: HTMLImageElement, art: Ph
     }
     return null;
   };
-  let dy = cands[0]?.dy ?? 0;
-  let run: Pt[][] | null = null;
-  let rank = Infinity;
-  const pool = cands.filter((x) => x.p <= (cands[0]?.p ?? 0) + 25);
-  for (let i = 0; i < pool.length && rank > 0; i += Math.max(1, Math.floor(pool.length / 40))) {
-    const r = fitRun(pool[i].dy);
-    if (r && r.rank < rank) {
-      rank = r.rank;
-      run = r.polys;
-      dy = pool[i].dy;
+  // the choice depends only on the photograph and the zone, not on the text: remembered, so typing stays quick
+  const memoKey = `${W}|${Z}|${safeTop}|${logo.join(',')}|${art.mirror ? 1 : 0}`;
+  const memo = cropMemo.get(img) ?? new Map<string, { dy: number; run: Pt[][] | null }>();
+  cropMemo.set(img, memo);
+  let chosen = memo.get(memoKey);
+  if (!chosen) {
+    chosen = { dy: cands[0]?.dy ?? 0, run: null };
+    let rank = Infinity;
+    const pool = cands.filter((x) => x.p <= (cands[0]?.p ?? 0) + 25);
+    for (let i = 0; i < pool.length && rank > 0; i += Math.max(1, Math.floor(pool.length / 40))) {
+      const r = fitRun(pool[i].dy);
+      if (r && r.rank < rank) {
+        rank = r.rank;
+        chosen = { dy: pool[i].dy, run: r.polys };
+      }
     }
+    memo.set(memoKey, chosen);
   }
+  const { dy, run } = chosen;
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, W, Z);
@@ -722,7 +721,7 @@ export function drawPost(canvas: HTMLCanvasElement, c: PostContent, format: Post
 function detailGroups(ctx: CanvasRenderingContext2D, c: PostContent, width: number, size: number, opts: { program: boolean; topicLines: number; bullets?: boolean }): Line[][] {
   const groups: Line[][] = [];
   const b = !!opts.bullets;
-  if (c.place) groups.push(wrapped(ctx, c.place, 500, size, width, 2, b));
+  if (c.place) groups.push(wrapped(ctx, c.place, 500, size, width, 3, b));
   if (c.program && opts.program) {
     ctx.font = font(400, size);
     const lines = wrapItems(ctx, splitItems(c.program), width - (b ? size * 0.72 : 0), 2);
@@ -731,7 +730,11 @@ function detailGroups(ctx: CanvasRenderingContext2D, c: PostContent, width: numb
   if (c.speakerName || c.topic) {
     const g: Line[] = [];
     if (c.speakerName) g.push(...wrapped(ctx, `הרצאת אורח: ${c.speakerName}`, 600, size, width, 2, b));
-    if (c.topic && opts.topicLines) g.push(...wrapped(ctx, c.topic, 400, size, width, opts.topicLines, b && !c.speakerName));
+    // a topic is shown whole or not at all (it is in the caption): an invitation never ends a line with "…"
+    if (c.topic && opts.topicLines) {
+      const t = wrapped(ctx, c.topic, 400, size, width, opts.topicLines, b && !c.speakerName);
+      if (!t[t.length - 1]?.text.endsWith('…')) g.push(...t);
+    }
     if (g.length) groups.push(g);
   }
   return groups;
@@ -858,7 +861,7 @@ function drawShapesPost(ctx: CanvasRenderingContext2D, c: PostContent, f: Frame)
   for (const k of [1, 0.92, 0.85, 0.78]) {
     const ds = (square ? 31 : 34) * k;
     const when = linesBlock(ctx, [whenLines(ctx, c, (square ? 38 : 42) * k, 28, detW)], right, fg);
-    const det = linesBlock(ctx, detailGroups(ctx, c, detW, ds, { program: !square, topicLines: square ? 0 : 1 }), right, fg);
+    const det = linesBlock(ctx, detailGroups(ctx, c, detW, ds, { program: !square, topicLines: square ? 0 : 2 }), right, fg);
     body = stack([[when, 0], [det, Math.round(ds * 0.7)]]);
     side = stack([[ctaBlock(ctx, c.cta, colRight, 36 * Math.max(k, 0.85), colW, fg, ground), 0], [linkBlock(ctx, c.link, colRight, 28, colW, fg), 16]]);
     zoneH = H - M - Math.max(body.h, side.h) - 56;
@@ -965,7 +968,7 @@ function drawProgram(ctx: CanvasRenderingContext2D, c: PostContent, f: Frame) {
   else if (c.topic) rows.push(['הרצאה', c.topic]);
   const space = footTop - afterHead - (story ? 80 : 48) * 2;
   const base = story ? 50 : square ? 33 : 38;
-  for (const k of [1, 0.93, 0.86, 0.8, 0.74, 0.68]) {
+  for (const k of [1.2, 1.1, 1, 0.93, 0.86, 0.8, 0.74, 0.68]) {
     const sz = base * k;
     ctx.font = font(700, sz);
     const labelW = Math.max(...rows.map(([l]) => ctx.measureText(l).width));

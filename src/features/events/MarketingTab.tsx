@@ -163,7 +163,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
         מכינים הזמנה בשלושה צעדים: בוחרים עיצוב, בודקים את הטקסט, מורידים ומפרסמים. מקבלים פוסט, סטורי וריבועי, טקסט לאינסטגרם והודעה לוואטסאפ.
       </p>
 
-      <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr]">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr]">
         {/* 1 · design */}
         <Panel title="1 · עיצוב" className="min-w-0 lg:col-start-1 lg:row-start-1">
           <div className="flex flex-col gap-5">

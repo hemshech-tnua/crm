@@ -53,7 +53,7 @@ export const PHOTOS: BrandPhoto[] = [
     key: 'walk', label: 'מהמדים לאזרחות', url: walk,
     band: { top: 0.1, bottom: 0.52 },
     faces: [[0.275, 0.175, 0.385, 0.285], [0.56, 0.125, 0.695, 0.245]],
-    corners: ['bottom-right', 'bottom-left', 'top-left'],
+    corners: ['bottom-left', 'top-left', 'bottom-right'],
     mirror: true,
   },
   {

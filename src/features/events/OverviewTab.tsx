@@ -20,6 +20,7 @@ import type { EventTab } from './EventPage';
 import { dataUrlToBlob, type EventPeople } from './context';
 import { useInvalidateEvent } from './queries';
 import { BigStat, LinkRow, QrImage, hasEnded, hasStarted, isUnclosed, timeRange } from './shared';
+import './entrance-sign.css';
 
 type Props = { event: EventWithStats; people: EventPeople; onTab: (t: EventTab, extra?: Record<string, string>) => void };
 
@@ -581,30 +582,39 @@ function EntrancePanel({ e }: { e: EventWithStats }) {
 
 /**
  * The entrance sign, on the brand book's poster grid: a navy image zone with the logo in the top-right corner and
- * beige stripes entering from the opposite corner; the headline right-aligned; the content zone below on white, with
- * the QR code (navy on white, so every phone camera reads it) and the triangle bullets for the steps.
+ * beige stripes entering from the opposite corner; the headline is the action ("סרקו לצ׳ק־אין"); the content zone below
+ * on white, with the QR code (navy on white, so every phone camera reads it), the short link for anyone without a
+ * camera, and the triangle bullets for the steps. `page`: the printed A4 sheet (fixed size, the footer band at the foot).
  */
-function EntranceSign({ e, url, qrSize }: { e: EventWithStats; url: string; qrSize: string }) {
+function EntranceSign({ e, url, qrSize, page = false }: { e: EventWithStats; url: string; qrSize: string; page?: boolean }) {
+  const short = url.replace(/^https?:\/\//, '');
+  const steps = [
+    'פותחים את המצלמה בטלפון ומכוונים לקוד',
+    'לוחצים על הקישור ומקלידים מספר טלפון',
+    'לא נרשמתם מראש? אפשר להירשם במקום',
+    'אין מצלמה או קליטה? פונים לצוות בכניסה',
+  ];
   return (
-    <div className="overflow-hidden bg-white text-right text-ink">
-      <div className="relative overflow-hidden bg-ink px-[1.6em] pt-[1.4em] pb-[1.6em] text-light">
+    <div className={cx('flex flex-col overflow-hidden bg-white text-right text-ink', page && 'entrance-sign-page h-[297mm] w-[210mm]')}>
+      <div className={cx('relative overflow-hidden bg-ink pt-[1.4em] pb-[1.5em] text-light', page ? 'px-[12mm]' : 'px-[1.6em]')}>
         <Stripes width={300} height={150} unit={28} dir="fall" count={3} className="absolute top-0 left-0 h-[9em] w-[18em]" />
         <div className="relative flex justify-start">
           <Logo variant="full" height="3.4em" label="המשך תנועה" />
         </div>
-        <div className="relative mt-[1.6em] font-display text-[1.25em] font-semibold">{e.title} · {fmtDayLong(e.starts_at)}</div>
-        <div className="relative font-display text-[2.9em] leading-[1.02]">ברוכים הבאים!</div>
+        <div className="relative mt-[1.4em] text-[1.25em] font-semibold">טוב שבאתם · {e.title}</div>
+        <div className="relative mt-[0.1em] font-display text-[2.9em] leading-[1.05]">סרקו לצ׳ק־אין</div>
+        <div className="relative mt-[0.3em] text-[1.1em]">{fmtDayLong(e.starts_at)} · <span dir="ltr" className="num">{timeRange(e)}</span></div>
       </div>
-      <div className="flex flex-col items-center gap-[0.9em] px-[1.6em] pt-[1.4em] pb-[1.2em]">
-        <div className="self-stretch font-display text-[1.55em] leading-tight">הגעתם? סורקים ומסמנים הגעה</div>
+      <div className={cx('flex flex-col items-center gap-[0.8em] pt-[1.3em] pb-[1.2em]', page ? 'flex-1 justify-center px-[12mm]' : 'px-[1.6em]')}>
         <SignQr url={url} size={qrSize} />
-        <ul className="flex flex-col gap-[0.35em] self-stretch text-[1em] leading-snug">
-          <li className="flex items-center gap-[0.6em]"><Tri />פותחים את המצלמה בטלפון ומכוונים לקוד</li>
-          <li className="flex items-center gap-[0.6em]"><Tri />לוחצים על הקישור שמופיע ומסמנים הגעתי</li>
-          <li className="flex items-center gap-[0.6em]"><Tri />לא נרשמתם מראש? נרשמים במקום, אחרי הסריקה</li>
+        <div dir="ltr" className={cx('num -mt-[0.4em] font-medium tracking-wide break-all text-center', page ? 'text-[14pt]' : 'text-[0.9em]')}>{short}</div>
+        <ul className="mt-[0.3em] flex flex-col gap-[0.4em] self-stretch text-[1.25em] leading-snug">
+          {steps.map((s) => (
+            <li key={s} className="flex items-start gap-[0.55em]"><Tri className="mt-[0.34em]" />{s}</li>
+          ))}
         </ul>
       </div>
-      <div className="relative h-[2.2em] overflow-hidden bg-ink" aria-hidden="true">
+      <div className="relative mt-auto h-[2.2em] shrink-0 overflow-hidden bg-ink" aria-hidden="true">
         <Stripes width={200} height={36} unit={11} dir="fall" count={4} offset={6} className="absolute top-0 left-0 h-full w-[12em] text-light" />
       </div>
     </div>
@@ -623,7 +633,7 @@ function SignQr({ url, size }: { url: string; size: string }) {
   return src ? <img src={src} alt="קוד QR לצ׳ק־אין" style={{ width: size, height: size }} /> : <div className="skeleton" style={{ width: size, height: size }} />;
 }
 
-/** Preview + print. While open, the app itself is hidden from print and only the sign is printed. */
+/** Preview + print. While open, the app itself is hidden from print and only the sign is printed, on one A4 page. */
 function PrintSignDialog({ open, onClose, e, url }: { open: boolean; onClose: () => void; e: EventWithStats; url: string }) {
   useEffect(() => {
     if (!open) return;
@@ -645,14 +655,18 @@ function PrintSignDialog({ open, onClose, e, url }: { open: boolean; onClose: ()
           </>
         }
       >
-        <p className="mb-3 text-sm text-muted">מדפיסים בדף A4 ותולים בכניסה, בגובה העיניים. הקוד עובד רק למפגש הזה.</p>
+        <p className="mb-3 text-sm text-muted">
+          מדפיסים ותולים בכניסה, בגובה העיניים. הקוד עובד רק למפגש הזה.
+          <br />
+          בהגדרות ההדפסה: A4, גרפיקת רקע מסומנת.
+        </p>
         <div className="overflow-hidden rounded-[var(--radius-panel)] border border-line text-[13px] sm:text-[15px]">
-          <EntranceSign e={e} url={url} qrSize="min(16rem, 60vw)" />
+          <EntranceSign e={e} url={url} qrSize="min(15rem, 56vw)" />
         </div>
       </Dialog>
       {open && createPortal(
-        <div className={cx('hidden print:block', 'bg-white text-[16pt]')}>
-          <EntranceSign e={e} url={url} qrSize="110mm" />
+        <div className="hidden bg-white text-[16pt] print:block">
+          <EntranceSign e={e} url={url} qrSize="96mm" page />
         </div>,
         document.body,
       )}
