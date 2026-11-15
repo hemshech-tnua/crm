@@ -304,7 +304,7 @@ function SecretDialog({ secret, onClose }: { secret: { name: string; email: stri
             <div className="text-small text-muted">שם משתמש (טלפון או אימייל)</div>
             <div className="num font-semibold" dir="ltr" style={{ textAlign: 'right' }}>{secret.email}</div>
             <div className="mt-2 text-small text-muted">סיסמה זמנית</div>
-            <div className="num text-section font-bold tracking-wider" dir="ltr" style={{ textAlign: 'right' }}>{secret.password}</div>
+            <div className="num font-display text-section tracking-wider" dir="ltr" style={{ textAlign: 'right' }}>{secret.password}</div>
           </div>
           <Notice>בכניסה הראשונה המערכת תבקש לבחור סיסמה אישית, ועד אז לא מוצגים שום נתונים.</Notice>
           <div className="flex gap-2">
