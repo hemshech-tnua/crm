@@ -9,3 +9,4 @@ supabase/functions/.env
 test-results/
 playwright-report/
 *.log
+.*.tmp.mjs
