@@ -8,8 +8,9 @@ import { SourcesSettings, SitesSettings } from './ListsSettings';
 import { LinksSettings } from './LinksSettings';
 import { PrivacySettings, AuditLog } from './PrivacySettings';
 import { AccountSettings } from './AccountSettings';
+import { SecuritySettings } from './SecuritySettings';
 
-type Tab = 'general' | 'users' | 'templates' | 'sources' | 'links' | 'sites' | 'privacy' | 'audit' | 'account';
+type Tab = 'general' | 'users' | 'templates' | 'sources' | 'links' | 'sites' | 'privacy' | 'audit' | 'security' | 'account';
 
 export function SettingsPage() {
   const role = useRole();
@@ -25,6 +26,7 @@ export function SettingsPage() {
         { value: 'sites', label: 'מתחמים' },
         { value: 'privacy', label: 'פרטיות' },
         { value: 'audit', label: 'יומן פעולות' },
+        { value: 'security', label: 'אבטחה' },
         { value: 'account', label: 'החשבון שלי' },
       ]
     : [
@@ -47,6 +49,7 @@ export function SettingsPage() {
       {tab === 'sites' && <SitesSettings />}
       {tab === 'privacy' && <PrivacySettings />}
       {tab === 'audit' && <AuditLog />}
+      {tab === 'security' && <SecuritySettings />}
       {tab === 'account' && <AccountSettings />}
     </>
   );

@@ -8,6 +8,8 @@
 //   invite           admin: a one-time first-entry link for a staff member (48 hours)
 //   claim_invite     no session: the link's owner types their email and gets a sign-in token (no email is sent)
 //   phone login      no session (?login=1): phone + password; accounts without an email get an internal one
+//   reset_mfa        admin: removes another member's two-step sign-in factors (lost phone)
+// A member who turned on two-step sign-in must call with a verified session (aal2), like the database requires.
 // Runs with the service role. The caller's session is verified here, and every action is written to audit_log.
 
 // No third-party imports: plain fetch against the project's Auth and REST APIs (smaller attack surface, no install step).
@@ -98,7 +100,38 @@ function inviteToken(): string {
 function svcHeaders(extra: HeadersInit = {}): HeadersInit {
   return { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json', ...extra };
 }
-async function authGetUser(jwt: string): Promise<{ id: string; email?: string } | null> {
+// Claims of a JWT that GoTrue has just accepted (authGetUser): read only after that check, never trusted alone.
+function jwtClaims(jwt: string): Record<string, unknown> {
+  try {
+    const p = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(p + '='.repeat((4 - (p.length % 4)) % 4)));
+  } catch {
+    return {};
+  }
+}
+
+// Leaked-password check (Have I Been Pwned, k-anonymity: only the first 5 hex characters of the SHA-1 leave the server,
+// with padding). An extra layer on top of the password rules: if the service cannot be reached the change goes ahead.
+async function pwnedPassword(pw: string): Promise<boolean> {
+  try {
+    const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(pw));
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    const r = await fetch(`https://api.pwnedpasswords.com/range/${hash.slice(0, 5)}`, {
+      headers: { 'Add-Padding': 'true', 'User-Agent': 'password-check' },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!r.ok) return false;
+    const suffix = hash.slice(5);
+    return (await r.text()).split('\n').some((line) => {
+      const [s, count] = line.trim().split(':');
+      return s === suffix && Number(count) > 0;
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function authGetUser(jwt: string): Promise<{ id: string; email?: string; factors?: { status: string }[] } | null> {
   const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${jwt}` } });
   if (!r.ok) return null;
   return await r.json();
@@ -212,6 +245,10 @@ Deno.serve(async (req) => {
   const meRes = await rest('GET', `staff?user_id=eq.${encodeURIComponent(caller.id)}&select=*`);
   const me = meRes.ok ? meRes.data?.[0] : null;
   if (!me || !me.is_active) return reply(req, 403, { error: 'forbidden' });
+  // two-step sign-in turned on → this session must have passed it (the database applies the same rule)
+  if ((caller.factors ?? []).some((f) => f.status === 'verified') && jwtClaims(jwt).aal !== 'aal2') {
+    return reply(req, 403, { error: 'mfa_required' });
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -229,6 +266,7 @@ Deno.serve(async (req) => {
   // ── any staff member: change own password ──
   if (action === 'change_password') {
     if (!validPassword(body.new_password, caller.email ?? undefined)) return reply(req, 400, { error: 'weak_password' });
+    if (await pwnedPassword(body.new_password)) return reply(req, 400, { error: 'pwned_password' });
     const res = await authAdmin('PUT', `/${caller.id}`, { password: body.new_password });
     if (!res.ok) return reply(req, 400, { error: 'weak_password' });
     await setStaff(caller.id, { must_change_password: false });
@@ -293,6 +331,19 @@ Deno.serve(async (req) => {
     if (!ins.ok) return reply(req, 400, { error: 'update_failed' });
     await audit('staff_invite', targetId);
     return reply(req, 200, { token, expires_at: expiresAt });
+  }
+
+  if (action === 'reset_mfa') {
+    // for a member who lost the phone with the authenticator; one's own factors are managed from one's own account page
+    if (targetId.toLowerCase() === caller.id.toLowerCase()) return reply(req, 400, { error: 'cannot_change_self' });
+    const factors = await authAdmin('GET', `/${targetId}/factors`);
+    if (!factors.ok) return reply(req, 400, { error: 'update_failed' });
+    for (const f of (Array.isArray(factors.data) ? factors.data : []) as { id: string }[]) {
+      const del = await authAdmin('DELETE', `/${targetId}/factors/${f.id}`);
+      if (!del.ok) return reply(req, 400, { error: 'update_failed' });
+    }
+    await audit('mfa_reset', targetId);
+    return reply(req, 200, { ok: true });
   }
 
   if (action === 'reset_password') {

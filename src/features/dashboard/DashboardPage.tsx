@@ -8,13 +8,14 @@ import { derived, num, pct, type Kpis } from '@/lib/metrics';
 import { fmtDate, fmtDayLong, fmtTime, relativeDays, todayIl, ilParts } from '@/lib/dates';
 import { registerUrl } from '@/lib/links';
 import { useMe } from '@/lib/auth';
-import { Badge, Button, ButtonLink, EmptyState, ErrorBox, PageHeader, Panel, Skeleton } from '@/ui/kit';
+import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import { Icon, type IconName } from '@/ui/Icon';
 import { FridayLine, GoalStat, SplitBars } from '@/ui/charts';
 import { EllipsePattern } from '@/ui/Ellipse';
 import { FilterBar, rpcArgs, useFilters } from '@/features/reports/period';
 import { Drilldown, type DrillKind } from '@/features/reports/Drilldown';
+import { securityAlerts, useSecurityOverview } from '@/features/settings/SecuritySettings';
 
 type Attention = {
   lapsed: { participant_id: string; full_name: string; last_attended_at: string; friday_count: number; fridays_missed: number; has_open_task: boolean }[];
@@ -76,6 +77,7 @@ export function DashboardPage() {
         subtitle="מה קורה במפגשים, מול היעדים לשנה, ומה דורש טיפול."
         actions={<ButtonLink to="/app/events/new" icon="plus">מפגש חדש</ButtonLink>}
       />
+      {me.data?.role === 'admin' && <SecurityAlert />}
 
       {firstRun ? (
         <Panel>
@@ -257,5 +259,20 @@ function AttentionList({ a }: { a: Attention }) {
       ))}
       {a.followups_open > 0 && <li className="pt-3 text-sm text-muted">סה״כ <Badge>{a.followups_open}</Badge> משימות מעקב פתוחות</li>}
     </ul>
+  );
+}
+
+/** Admins only: unknown accounts (open sign-up) or staff sign-in lockouts / invite-link probing in the last 24 hours. */
+function SecurityAlert() {
+  const q = useSecurityOverview();
+  const n = securityAlerts(q.data);
+  if (!n) return null;
+  return (
+    <div className="mb-5">
+      <Notice tone="warn" icon="alert">
+        יש {n === 1 ? 'התראת אבטחה אחת' : <><span className="num">{n}</span> התראות אבטחה</>} לבדיקה: חשבונות שאינם צוות, או חסימות בכניסת הצוות.{' '}
+        <Link to="/app/settings?tab=security" className="font-semibold underline">למסך האבטחה</Link>
+      </Notice>
+    </div>
   );
 }

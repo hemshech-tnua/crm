@@ -27,6 +27,28 @@ function EnvBanner() {
   );
 }
 
+/**
+ * Clickjacking guard. GitHub Pages cannot send X-Frame-Options / frame-ancestors, so a page that loads this site inside
+ * a frame gets no app at all, only a link that opens it on its own. (A sandboxed frame without scripts shows nothing.)
+ */
+const framed = (() => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true; // a cross-origin parent throws on access: still framed
+  }
+})();
+
+function Framed() {
+  return (
+    <div className="mx-auto max-w-lg p-8 text-center">
+      <h1 className="font-display text-2xl">האתר נפתח בתוך אתר אחר</h1>
+      <p className="mt-2 text-muted">לביטחונך, המערכת עובדת רק כשהיא פתוחה ישירות.</p>
+      <a href={window.location.href} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block font-semibold underline">פתיחת המערכת בחלון נפרד</a>
+    </div>
+  );
+}
+
 function Misconfigured() {
   return (
     <div className="mx-auto max-w-lg p-8 text-center">
@@ -39,7 +61,9 @@ function Misconfigured() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <EnvBanner />
-    {configured ? (
+    {framed ? (
+      <Framed />
+    ) : configured ? (
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <ConfirmProvider>

@@ -18,6 +18,7 @@ export function PasswordPage() {
   const [error, setError] = useState<string | null>(null);
 
   if (ready && !session) return <Navigate to="/login" replace />;
+  if (me.data?.mfa_enrolled && me.data.aal !== 'aal2') return <Navigate to="/mfa" replace state={{ from: '/password' }} />;
 
   const strong = pw.length >= 10 && /\d/.test(pw) && /[A-Za-z֐-׿]/.test(pw);
   const submit = async (e: FormEvent) => {

@@ -23,6 +23,7 @@ const PrivacyPage = page(() => import('@/features/public/PrivacyPage'), 'Privacy
 // auth
 const LoginPage = page(() => import('@/features/auth/LoginPage'), 'LoginPage');
 const PasswordPage = page(() => import('@/features/auth/PasswordPage'), 'PasswordPage');
+const MfaPage = page(() => import('@/features/auth/MfaPage'), 'MfaPage');
 // staff
 const DashboardPage = page(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage');
 const EventsPage = page(() => import('@/features/events/EventsPage'), 'EventsPage');
@@ -66,6 +67,7 @@ export const router = createHashRouter([
       { path: '/login', element: wait(<LoginPage />) },
       { path: '/welcome/:token', element: wait(<FirstEntryPage />) },
       { path: '/password', element: wait(<PasswordPage />) },
+      { path: '/mfa', element: wait(<MfaPage />) },
     ],
   },
   {

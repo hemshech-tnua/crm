@@ -22,6 +22,8 @@ function csp(supabaseUrl: string): Plugin {
     "base-uri 'self'",
     "form-action 'self'",
     "manifest-src 'self'",
+    // DOM XSS sinks (innerHTML, document.write, javascript: URLs…) refuse plain strings: defence in depth for the session token
+    "require-trusted-types-for 'script'",
   ].join('; ');
   return {
     name: 'csp-meta',

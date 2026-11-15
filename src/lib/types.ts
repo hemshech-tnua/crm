@@ -16,6 +16,9 @@ export type Staff = {
   is_active: boolean;
   must_change_password: boolean;
   created_at?: string;
+  /** staff_me only: two-step sign-in is on, and the level this session reached ('aal2' = passed it). */
+  mfa_enrolled?: boolean;
+  aal?: string;
 };
 
 export type Site = { id: string; name: string; address: string | null; is_active: boolean; /** Code on the permanent entrance sign (#/s/…). */ checkin_code: string };

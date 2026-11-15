@@ -2,11 +2,13 @@ import { formatPhone } from '@/lib/phone';
 import { useMe } from '@/lib/auth';
 import { ROLE_HINT, ROLE_LABEL } from '@/lib/labels';
 import { ButtonLink, KeyValue, Panel } from '@/ui/kit';
+import { TwoStepSettings } from './TwoStepSettings';
 
 export function AccountSettings() {
   const me = useMe();
   if (!me.data) return null;
   return (
+    <div className="flex flex-col gap-5">
     <Panel title="החשבון שלי">
       <KeyValue items={[
         ['שם', me.data.full_name],
@@ -17,5 +19,7 @@ export function AccountSettings() {
       {me.data.email && <div className="mt-5"><ButtonLink to="/password" variant="secondary" icon="shield">החלפת סיסמה</ButtonLink></div>}
       <p className="mt-3 text-sm text-muted">משתמשים במכשיר משותף? בסוף העבודה לוחצים "יציאה". המערכת מנתקת לבד אחרי 12 שעות בלי פעילות.</p>
     </Panel>
+    <TwoStepSettings />
+    </div>
   );
 }

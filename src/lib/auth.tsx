@@ -154,6 +154,8 @@ export function RequireStaff({ roles, children }: { roles?: Role[]; children: Re
   }
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   if (!me.data || !me.data.is_active) return <Navigate to="/login?denied=1" replace />;
+  // two-step sign-in turned on: the database gives this session no role until the code is entered
+  if (me.data.mfa_enrolled && me.data.aal !== 'aal2') return <Navigate to="/mfa" replace state={{ from: location.pathname + location.search }} />;
   if (me.data.must_change_password) return <Navigate to="/password" replace />;
   if (roles && !roles.includes(me.data.role)) return <Navigate to="/app" replace />;
   return <>{children}</>;

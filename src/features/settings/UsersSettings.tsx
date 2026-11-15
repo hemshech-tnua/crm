@@ -88,6 +88,14 @@ export function UsersSettings() {
                             if (r && 'token' in r) setInvite({ staff: s, url: firstEntryUrl(String((r as { token: string }).token)) });
                           } }] : []),
                           { label: 'סיסמה זמנית', icon: 'shield' as const, onClick: () => reset(s) },
+                          ...(!self ? [{ label: 'איפוס אימות דו־שלבי', icon: 'shield' as const, onClick: async () => {
+                            const ok = await confirm({
+                              title: `לאפס את האימות הדו־שלבי של ${s.full_name}?`,
+                              body: 'מתאים כשהטלפון עם אפליקציית האימות אבד או הוחלף. הכניסה תחזור להיות בסיסמה בלבד, עד ש' + s.full_name.split(' ')[0] + ' יפעיל/תפעיל אותו מחדש מ"החשבון שלי". אם לא הוגדר אימות, לא ישתנה כלום.',
+                              confirm: 'איפוס',
+                            });
+                            if (ok) await run(s.user_id, { action: 'reset_mfa', user_id: s.user_id }, 'האימות הדו־שלבי אופס');
+                          } }] : []),
                           { label: s.phone ? 'שינוי טלפון' : 'הוספת טלפון', icon: 'phone' as const, onClick: () => setPhoneFor(s) },
                           { label: s.email ? 'שינוי אימייל' : 'הוספת אימייל', icon: 'message' as const, onClick: () => setEmailFor(s) },
                           ...(!self ? [{ label: s.is_active ? 'חסימה' : 'הפעלה מחדש', icon: (s.is_active ? 'close' : 'check') as 'close' | 'check', danger: s.is_active, onClick: () => toggle(s) }] : []),
