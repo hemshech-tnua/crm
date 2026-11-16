@@ -279,7 +279,7 @@ export type PrepTemplate = {
 export type EventTask = {
   id: string; event_id: string; template_id: string | null; kind: PrepKind; category: PrepCategory; title: string;
   due_date: string | null; due_time: string | null; due_manual: boolean; hours: number | null; assignee_id: string | null;
-  notes: string | null; sort_order: number; done_at: string | null; done_by: string | null; created_at: string;
+  notes: string | null; sort_order: number; done_at: string | null; done_by: string | null; dismissed: boolean; created_at: string;
 };
 export type Supplier = {
   id: string; name: string; what: string | null; contact_name: string | null; phone: string | null; cost_note: string | null;

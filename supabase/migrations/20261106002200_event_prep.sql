@@ -59,6 +59,8 @@ create table public.event_tasks (
   sort_order int not null default 100,
   done_at timestamptz,
   done_by uuid references auth.users(id) on delete set null,
+  -- a template task removed from this meeting: kept hidden, so "add from the template" does not bring it back
+  dismissed boolean not null default false,
   created_by uuid default auth.uid() references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -179,6 +181,19 @@ begin
 end $$;
 create trigger event_tasks_done_stamp before insert or update of done_at on public.event_tasks
   for each row execute function private.event_task_done_stamp();
+-- deleting a task that came from the template hides it instead (a delete straight from the app, not the cascade when
+-- the whole meeting is deleted), so that re-applying the template does not resurrect it
+create or replace function private.event_task_dismiss()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if old.template_id is not null and pg_trigger_depth() = 1 then
+    update public.event_tasks set dismissed = true where id = old.id;
+    return null;
+  end if;
+  return old;
+end $$;
+create trigger event_tasks_dismiss before delete on public.event_tasks
+  for each row execute function private.event_task_dismiss();
 
 -- ── a meeting's checklist from the templates ──
 create or replace function private.prep_due(p_event_day date, p_week int, p_weekday int, p_day int)

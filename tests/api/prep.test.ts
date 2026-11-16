@@ -41,16 +41,42 @@ describe('a meeting gets its checklist', () => {
     expect(by[open.id].due_date).toBe(addDays(open.due_date, 7));
   });
 
-  it('a meeting from before the feature can get its checklist, without duplicates', async () => {
+  it('items added to the template later can be picked up by an existing meeting, without duplicates', async () => {
     const coord = await staff('coord');
     const ev = await makeEvent({ type: 'bonfire', startsInMinutes: 20 * 24 * 60 });
     const { count: first } = await coord.from('event_tasks').select('id', { count: 'exact', head: true }).eq('event_id', ev.id);
-    await coord.from('event_tasks').delete().eq('event_id', ev.id).eq('kind', 'equipment');
-    const { data: added, error } = await coord.rpc('staff_prep_init', { p_event_id: ev.id });
+    const { data: tpl, error: e1 } = await coord.from('prep_templates')
+      .insert({ event_type: 'bonfire', kind: 'equipment', category: 'equipment', title: 'פריט בדיקה לתבנית', week_offset: 0, weekday: 2 }).select('id').single();
+    expect(e1).toBeNull();
+    try {
+      const { data: added, error } = await coord.rpc('staff_prep_init', { p_event_id: ev.id });
+      expect(error).toBeNull();
+      expect(added).toBe(1);
+      expect((await coord.rpc('staff_prep_init', { p_event_id: ev.id })).data).toBe(0);
+      const { count: again } = await coord.from('event_tasks').select('id', { count: 'exact', head: true }).eq('event_id', ev.id);
+      expect(again).toBe((first ?? 0) + 1);
+    } finally {
+      await coord.from('prep_templates').delete().eq('id', tpl!.id);
+    }
+  });
+
+  it('a template task deleted from a meeting stays gone; a one-off task is really deleted; deleting the meeting clears all', async () => {
+    const coord = await staff('coord');
+    const admin = await staff('admin');
+    const ev = await makeEvent({ startsInMinutes: 25 * 24 * 60 });
+    const { data: tasks } = await coord.from('event_tasks').select('id').eq('event_id', ev.id).eq('kind', 'task').limit(1);
+    const tid = tasks![0].id;
+    await coord.from('event_tasks').delete().eq('id', tid);
+    const { data: hidden } = await coord.from('event_tasks').select('dismissed').eq('id', tid).single();
+    expect(hidden!.dismissed).toBe(true);
+    expect((await coord.rpc('staff_prep_init', { p_event_id: ev.id })).data).toBe(0);
+    const { data: own } = await coord.from('event_tasks').insert({ event_id: ev.id, title: 'משימה חד־פעמית' }).select('id').single();
+    await coord.from('event_tasks').delete().eq('id', own!.id);
+    expect((await coord.from('event_tasks').select('id').eq('id', own!.id)).data).toEqual([]);
+    const { error } = await admin.from('events').delete().eq('id', ev.id);
     expect(error).toBeNull();
-    expect(added).toBe(12); // nine general items and three for a bonfire came back; the tasks were not doubled
-    const { count: again } = await coord.from('event_tasks').select('id', { count: 'exact', head: true }).eq('event_id', ev.id);
-    expect(again).toBe(first);
+    const { count } = await admin.from('event_tasks').select('id', { count: 'exact', head: true }).eq('event_id', ev.id);
+    expect(count).toBe(0);
   });
 
   it('the door team and visitors see none of it', async () => {

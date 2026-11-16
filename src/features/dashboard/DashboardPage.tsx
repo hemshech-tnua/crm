@@ -16,6 +16,7 @@ import { Stripes } from '@/ui/Shapes';
 import { FilterBar, rpcArgs, useFilters } from '@/features/reports/period';
 import { Drilldown, type DrillKind } from '@/features/reports/Drilldown';
 import { securityAlerts, useSecurityOverview } from '@/features/settings/SecuritySettings';
+import { MyWeekPanel } from '@/features/prep/MyWeekPanel';
 
 type Attention = {
   lapsed: { participant_id: string; full_name: string; last_attended_at: string; friday_count: number; fridays_missed: number; has_open_task: boolean }[];
@@ -146,6 +147,8 @@ export function DashboardPage() {
               </EmptyState>
             </Panel>
           )}
+
+          <MyWeekPanel className="mb-6" />
 
           <Panel title="קו השישי" className="mb-6" description="כל נקודה היא מפגש. לחיצה פותחת את הסיכום שלו.">
             {events.isLoading ? <Skeleton lines={4} /> : past.length === 0 && !next ? (
