@@ -282,7 +282,7 @@ begin
     'shifts', coalesce((
       select jsonb_agg(jsonb_build_object(
                'id', s.id, 'role', s.role, 'status', s.status,
-               'title', e.title, 'starts_at', e.starts_at, 'ends_at', e.ends_at, 'location', e.location)
+               'title', e.title, 'type', e.type, 'starts_at', e.starts_at, 'ends_at', e.ends_at, 'location', e.location)
              order by e.starts_at, s.role)
       from public.volunteer_shifts s join public.events e on e.id = s.event_id
       where s.volunteer_id = v.id and s.status in ('invited', 'confirmed', 'declined')

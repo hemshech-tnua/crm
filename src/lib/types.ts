@@ -298,5 +298,5 @@ export type VolunteerShift = {
 /** What a volunteer sees from their personal link (public_volunteer). */
 export type PublicVolunteer = {
   first_name: string;
-  shifts: { id: string; role: VolunteerRole; status: Exclude<ShiftStatus, 'cancelled'>; title: string; starts_at: string; ends_at: string; location: string | null }[];
+  shifts: { id: string; role: VolunteerRole; status: Exclude<ShiftStatus, 'cancelled'>; title: string; type: EventType; starts_at: string; ends_at: string; location: string | null }[];
 };

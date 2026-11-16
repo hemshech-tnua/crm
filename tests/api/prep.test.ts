@@ -105,7 +105,7 @@ describe('volunteers book ahead from a personal link', () => {
     expect(e2).toBeNull();
     expect(page.first_name).toBe(full.split(' ')[0]);
     expect(page.shifts.map((s: { status: string }) => s.status)).toEqual(['invited', 'invited']);
-    expect(Object.keys(page.shifts[0]).sort()).toEqual(['ends_at', 'id', 'location', 'role', 'starts_at', 'status', 'title']);
+    expect(Object.keys(page.shifts[0]).sort()).toEqual(['ends_at', 'id', 'location', 'role', 'starts_at', 'status', 'title', 'type']);
 
     expect((await v.rpc('public_volunteer_respond', { p_token: token, p_shift_id: shifts[0].id, p_answer: 'confirmed' })).data).toBe('confirmed');
     expect((await v.rpc('public_volunteer_respond', { p_token: token, p_shift_id: shifts[1].id, p_answer: 'declined' })).data).toBe('declined');
