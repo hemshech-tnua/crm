@@ -9,10 +9,12 @@ import { OverviewTab } from './OverviewTab';
 import { RegistrationsTab } from './RegistrationsTab';
 import { MessagesTab } from './MessagesTab';
 import { MarketingTab } from './MarketingTab';
+import { EventPrepTab } from '@/features/prep/EventPrepTab';
+import { EventVolunteersTab } from '@/features/volunteers/EventVolunteersTab';
 import { SummaryTab } from './SummaryTab';
 
-export type EventTab = 'overview' | 'registrations' | 'messages' | 'marketing' | 'summary';
-const TABS: EventTab[] = ['overview', 'registrations', 'messages', 'marketing', 'summary'];
+export type EventTab = 'overview' | 'prep' | 'volunteers' | 'registrations' | 'messages' | 'marketing' | 'summary';
+const TABS: EventTab[] = ['overview', 'prep', 'volunteers', 'registrations', 'messages', 'marketing', 'summary'];
 
 export function EventPage() {
   const { id } = useParams();
@@ -73,6 +75,8 @@ export function EventPage() {
         onChange={(t) => go(t)}
         tabs={[
           { value: 'overview', label: 'סקירה' },
+          { value: 'prep', label: 'הכנות' },
+          { value: 'volunteers', label: 'מתנדבים' },
           { value: 'registrations', label: 'נרשמים', count: s ? s.registered_count + s.walk_in_count + s.waitlisted_count : undefined },
           { value: 'messages', label: 'הודעות' },
           { value: 'marketing', label: 'שיווק' },
@@ -85,6 +89,8 @@ export function EventPage() {
       {tab === 'messages' && <MessagesTab event={e} people={people} initialGroup={params.get('group')} />}
       {tab === 'marketing' && <MarketingTab event={e} people={people} />}
       {tab === 'summary' && <SummaryTab event={e} />}
+      {tab === 'prep' && <EventPrepTab event={e} />}
+      {tab === 'volunteers' && <EventVolunteersTab event={e} />}
     </>
   );
 }

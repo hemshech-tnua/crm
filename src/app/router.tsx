@@ -20,6 +20,7 @@ const MemberPage = page(() => import('@/features/public/MemberPage'), 'MemberPag
 const SitePage = page(() => import('@/features/public/SitePage'), 'SitePage');
 const FirstEntryPage = page(() => import('@/features/auth/FirstEntryPage'), 'FirstEntryPage');
 const PrivacyPage = page(() => import('@/features/public/PrivacyPage'), 'PrivacyPage');
+const VolunteerPage = page(() => import('@/features/public/VolunteerPage'), 'VolunteerPage');
 // auth
 const LoginPage = page(() => import('@/features/auth/LoginPage'), 'LoginPage');
 const PasswordPage = page(() => import('@/features/auth/PasswordPage'), 'PasswordPage');
@@ -39,6 +40,8 @@ const FollowUpsPage = page(() => import('@/features/followups/FollowUpsPage'), '
 const SpeakersPage = page(() => import('@/features/speakers/SpeakersPage'), 'SpeakersPage');
 const ReportsPage = page(() => import('@/features/reports/ReportsPage'), 'ReportsPage');
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
+const PrepPage = page(() => import('@/features/prep/PrepPage'), 'PrepPage');
+const VolunteersPage = page(() => import('@/features/volunteers/VolunteersPage'), 'VolunteersPage');
 
 const wait = (el: ReactNode) => (
   <Suspense fallback={<div className="py-8"><Skeleton lines={6} /></div>}>{el}</Suspense>
@@ -64,6 +67,7 @@ export const router = createHashRouter([
       { path: '/join', element: wait(<ProposePage />) },
       { path: '/member', element: wait(<MemberPage />) },
       { path: '/privacy', element: wait(<PrivacyPage />) },
+      { path: '/v/:token', element: wait(<VolunteerPage />) },
       { path: '/login', element: wait(<LoginPage />) },
       { path: '/welcome/:token', element: wait(<FirstEntryPage />) },
       { path: '/password', element: wait(<PasswordPage />) },
@@ -87,6 +91,8 @@ export const router = createHashRouter([
       { path: 'participants/duplicates', element: <RequireStaff roles={[...MANAGE]}>{wait(<DuplicatesPage />)}</RequireStaff> },
       { path: 'participants/:id', element: <RequireStaff roles={[...MANAGE]}>{wait(<ParticipantPage />)}</RequireStaff> },
       { path: 'followups', element: <RequireStaff roles={[...MANAGE]}>{wait(<FollowUpsPage />)}</RequireStaff> },
+      { path: 'prep', element: <RequireStaff roles={[...MANAGE]}>{wait(<PrepPage />)}</RequireStaff> },
+      { path: 'volunteers', element: <RequireStaff roles={[...MANAGE]}>{wait(<VolunteersPage />)}</RequireStaff> },
       { path: 'speakers', element: <RequireStaff roles={[...MANAGE]}>{wait(<SpeakersPage />)}</RequireStaff> },
       { path: 'reports', element: <RequireStaff roles={[...MANAGE]}>{wait(<ReportsPage />)}</RequireStaff> },
       { path: 'settings', element: <RequireStaff roles={[...MANAGE]}>{wait(<SettingsPage />)}</RequireStaff> },

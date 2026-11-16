@@ -26,6 +26,8 @@ grant execute on function public.public_checkin_undo(text) to anon;
 grant execute on function public.public_membership(jsonb) to anon;
 grant execute on function public.public_checkin_known(jsonb) to anon;
 grant execute on function public.public_site_checkin(text) to anon;
+grant execute on function public.public_volunteer(text) to anon;
+grant execute on function public.public_volunteer_respond(text, uuid, text) to anon;
 
 -- the stats views are for signed-in staff only
 revoke all on public.participant_stats, public.event_stats from anon, public;

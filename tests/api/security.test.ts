@@ -263,7 +263,7 @@ describe('privilege surface (defense in depth)', () => {
     expect(fns.split(',')).toEqual([
       'public_cancel', 'public_checkin', 'public_checkin_info', 'public_checkin_known', 'public_checkin_undo', 'public_feedback_context', 'public_get_event',
       'public_list_events', 'public_membership', 'public_org_info', 'public_propose', 'public_register', 'public_registration', 'public_site_checkin', 'public_sources',
-      'public_submit_feedback', 'public_walkin',
+      'public_submit_feedback', 'public_volunteer', 'public_volunteer_respond', 'public_walkin',
     ]);
     expect(sql("select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','v') and has_table_privilege('anon', c.oid, 'select')")).toBe('0');
   });

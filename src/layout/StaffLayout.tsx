@@ -17,6 +17,8 @@ const ITEMS: Item[] = [
   { to: '/app/events', label: 'מפגשים', icon: 'calendar', roles: ['admin', 'coordinator'], mobile: true },
   { to: '/app/participants', label: 'לוחמים', icon: 'people', roles: ['admin', 'coordinator'], mobile: true },
   { to: '/app/followups', label: 'מעקב', icon: 'task', roles: ['admin', 'coordinator'], mobile: true },
+  { to: '/app/prep', label: 'הכנות', icon: 'checkCircle', roles: ['admin', 'coordinator'] },
+  { to: '/app/volunteers', label: 'מתנדבים', icon: 'shield', roles: ['admin', 'coordinator'] },
   { to: '/app/speakers', label: 'מרצים ומדריכים', icon: 'mic', roles: ['admin', 'coordinator'] },
   { to: '/app/reports', label: 'דוחות', icon: 'chart', roles: ['admin', 'coordinator'] },
   { to: '/app/settings', label: 'הגדרות', icon: 'settings', roles: ['admin', 'coordinator'] },

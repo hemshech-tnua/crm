@@ -265,3 +265,38 @@ export type PublicEvent = {
   invited_by?: string | null;
   ref_source?: string | null;
 };
+
+// ── event preparation and volunteers (migration 20261106002200_event_prep.sql) ──
+export type PrepCategory = 'venue' | 'program' | 'food' | 'equipment' | 'marketing' | 'registrations' | 'volunteers' | 'payments' | 'setup' | 'after' | 'general';
+export type PrepKind = 'task' | 'equipment';
+/** The standing checklist per kind of meeting. Due: `weekday` (0 = Sunday) of the week `week_offset` weeks from the
+ *  meeting's week; with no weekday, the meeting day + `day_offset`. */
+export type PrepTemplate = {
+  id: string; event_type: EventType | 'all'; kind: PrepKind; category: PrepCategory; title: string;
+  week_offset: number; weekday: number | null; day_offset: number; fixed_time: string | null; hours: number | null;
+  notes: string | null; sort_order: number; is_active: boolean;
+};
+export type EventTask = {
+  id: string; event_id: string; template_id: string | null; kind: PrepKind; category: PrepCategory; title: string;
+  due_date: string | null; due_time: string | null; due_manual: boolean; hours: number | null; assignee_id: string | null;
+  notes: string | null; sort_order: number; done_at: string | null; done_by: string | null; created_at: string;
+};
+export type Supplier = {
+  id: string; name: string; what: string | null; contact_name: string | null; phone: string | null; cost_note: string | null;
+  notes: string | null; is_active: boolean;
+};
+export type EventPayment = {
+  id: string; event_id: string; supplier_id: string | null; supplier: string; description: string | null; amount: number | null;
+  due_date: string | null; invoice_received: boolean; paid_on: string | null; notes: string | null;
+};
+export type VolunteerRole = 'entrance' | 'food' | 'setup' | 'teardown' | 'photo' | 'other';
+export type Volunteer = { id: string; full_name: string; phone: string | null; roles: VolunteerRole[]; notes: string | null; is_active: boolean; created_at: string };
+export type ShiftStatus = 'invited' | 'confirmed' | 'declined' | 'cancelled';
+export type VolunteerShift = {
+  id: string; event_id: string; volunteer_id: string; role: VolunteerRole; status: ShiftStatus; responded_at: string | null; notes: string | null;
+};
+/** What a volunteer sees from their personal link (public_volunteer). */
+export type PublicVolunteer = {
+  first_name: string;
+  shifts: { id: string; role: VolunteerRole; status: Exclude<ShiftStatus, 'cancelled'>; title: string; starts_at: string; ends_at: string; location: string | null }[];
+};
