@@ -13,7 +13,7 @@ import {
   POST_SIZE, canvasToPng, drawPost, instagramCaption, loadImage, loadPostFonts, programItems, whatsappGroupMessage,
   type CaptionInput, type PostContent, type PostFormat, type PostLayout, type PostTheme,
 } from './marketing';
-import { DEVICE_ART, PHOTOS, photoFor } from './photos';
+import { DEVICE_ART, PHOTOS } from './photos';
 
 const CTA_OPTIONS = ['הירשמו בקישור בביו', 'הירשמו בקישור', 'שמרו לכם מקום בקישור'];
 /** The headline is an action line (the book: up to five words, a verb); the event's name goes in the line above it. */
@@ -55,9 +55,10 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
 
   const [edits, setEdits] = useState<Partial<PostContent>>({});
   const [theme, setTheme] = useState<PostTheme>('navy');
-  const [layout, setLayout] = useState<PostLayout>('photo');
+  // no bundled photographs of people: the default invitation is carried by the brand's shapes (grid type 01)
+  const [layout, setLayout] = useState<PostLayout>('shapes');
   const [format, setFormat] = useState<PostFormat>('portrait');
-  const [photoKey, setPhotoKey] = useState<string>(() => photoFor(e.type).key);
+  const [photoKey, setPhotoKey] = useState<string>(PHOTOS[0].key);
   const [ownPhoto, setOwnPhoto] = useState<string | null>(null);
   const [photo, setPhoto] = useState<HTMLImageElement | null>(null);
   const picked = PHOTOS.find((x) => x.key === photoKey) ?? PHOTOS[0];
@@ -222,7 +223,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
                     <span>בחירה מהמכשיר</span>
                   </label>
                 </div>
-                <p className="mt-1.5 text-sm text-muted">הצילומים כאן הם הדמיה שנוצרה לעמותה. צילום אמיתי של הלוחמים והלוחמות שלנו תמיד עדיף. צילום מהמכשיר נשאר במכשיר ולא עולה לשום מקום.</p>
+                <p className="mt-1.5 text-sm text-muted">תמונת הנוף היא הדמיה שנוצרה לעמותה. לצילום של אנשים בוחרים צילום אמיתי מהמכשיר: הוא נשאר במכשיר ולא עולה לשום מקום.</p>
               </fieldset>
             )}
             <fieldset>

@@ -9,7 +9,7 @@ import { EventTicket, availability } from './EventTicket';
 import { activityText, lectureText, timeRange } from './eventText';
 import { trackingQuery } from './tracking';
 import { Hero } from './Hero';
-import running from '@/assets/photos/running.webp';
+import hills from '@/assets/photos/hills.webp';
 
 const dayNum = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, day: 'numeric' });
 const monthShort = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, month: 'short' });
@@ -28,7 +28,7 @@ export function PublicHome() {
 
   return (
     <div>
-      <Hero photo={running} position="50% 28%" kicker="בואו איתנו" title="להמשיך תנועה">
+      <Hero photo={hills} position="50% 62%" kicker="בואו איתנו" title="להמשיך תנועה">
         מפגשי שישי ללוחמים וללוחמות: יוגה, הרצאת אורח, ארוחת בוקר וזמן ביחד.
       </Hero>
 
