@@ -65,7 +65,7 @@ test('a priced meeting: price and link, pay after registering, staff mark it pai
   await page.goto(`#/app/events/${eventId}?tab=registrations`);
   await page.getByRole('button', { name: /^לא שילמו/ }).click();
   const row = page.locator('tr', { hasText: name });
-  await expect(row.getByText('לא שילם/ה')).toBeVisible();
+  await expect(row.getByText('לא שולם')).toBeVisible();
   await row.getByRole('button', { name: 'סימון תשלום' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel('סכום (₪)')).toHaveValue('20');

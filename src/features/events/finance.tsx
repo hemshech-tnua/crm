@@ -42,8 +42,8 @@ export const showsPayment = (status: RegStatus, payment: PaymentStatus) =>
 
 export function PaymentBadge({ status }: { status: PaymentStatus }) {
   if (status === 'paid') return <Badge tone="good" icon="check">שולם</Badge>;
-  if (status === 'pending') return <Badge tone="warn" icon="alert">לא שילם/ה</Badge>;
-  if (status === 'waived') return <Badge tone="neutral">פטור/ה מתשלום</Badge>;
+  if (status === 'pending') return <Badge tone="warn" icon="alert">לא שולם</Badge>;
+  if (status === 'waived') return <Badge tone="neutral">פטור מתשלום</Badge>;
   if (status === 'refunded') return <Badge tone="neutral">התשלום הוחזר</Badge>;
   return null;
 }
@@ -82,7 +82,7 @@ function PaymentForm({ target: t, event, onClose }: { target: PaymentTarget; eve
   const options: { value: PaymentStatus; label: string }[] = [
     { value: 'paid', label: 'שולם' },
     { value: 'pending', label: 'לא שולם' },
-    { value: 'waived', label: 'פטור/ה מתשלום' },
+    { value: 'waived', label: 'פטור מתשלום' },
     ...(wasPaid ? [{ value: 'refunded' as const, label: 'התשלום הוחזר' }] : []),
   ];
 
@@ -175,7 +175,7 @@ export function FinancePanel({ e, onUnpaid, onExpenses }: { e: Pick<EventRow, 'i
       description={priced ? <>דמי השתתפות <span className="num">{fmtMoney(f.price)}</span>{f.has_payment_link ? ' · עם קישור לתשלום' : ' · בלי קישור לתשלום (משלמים בכניסה)'}</> : 'מפגש בלי דמי השתתפות'}
       actions={
         <>
-          {priced && i.pending_count > 0 && onUnpaid && <Button size="sm" variant="ghost" icon="filter" onClick={onUnpaid}>מי לא שילם/ה</Button>}
+          {priced && i.pending_count > 0 && onUnpaid && <Button size="sm" variant="ghost" icon="filter" onClick={onUnpaid}>מי עוד לא שילמו</Button>}
           {onExpenses && <Button size="sm" variant="ghost" icon="task" onClick={onExpenses}>הוצאות</Button>}
         </>
       }
@@ -201,7 +201,7 @@ export function FinancePanel({ e, onUnpaid, onExpenses }: { e: Pick<EventRow, 'i
         <BigStat
           label="נטו"
           value={<span className={f.net < 0 ? 'text-bad' : undefined}>{fmtMoney(f.net)}</span>}
-          sub={<>נגבה פחות הוצאות ששולמו · צפי <span className="num">{fmtMoney(f.projected_net)}</span></>}
+          sub={<>נגבה פחות הוצאות ששולמו · צפי <span className="num" dir="ltr">{fmtMoney(f.projected_net)}</span></>}
         />
       </section>
     </Panel>

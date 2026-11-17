@@ -186,7 +186,7 @@ function FinanceReport({ filters }: { filters: Filters }) {
     <State q={q} empty={!rows.length}>
       {t && (
         <section aria-label="סיכום כספי" className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {([['נגבה', t.collected, `${t.paid_count} תשלומים`], ['עוד לא שולם', t.expected - t.collected, `${t.pending_count} רשומים`], ['הוצאות', t.expenses, `שולם ${fmtMoney(t.expenses_paid)}`], ['נטו', t.net, `צפי ${fmtMoney(t.projected_net)}`]] as const).map(([label, v, sub]) => (
+          {([['נגבה', t.collected, `${t.paid_count} תשלומים`], ['עוד לא שולם', t.expected - t.collected, `${t.pending_count} רשומים`], ['הוצאות', t.expenses, `שולם ${fmtMoney(t.expenses_paid)}`], ['נטו', t.net, `צפי \u2066${fmtMoney(t.projected_net)}\u2069`]] as const).map(([label, v, sub]) => (
             <div key={label} className="rounded-[var(--radius-panel)] border border-edge bg-paper px-4 py-3">
               <div className="text-small font-medium text-muted">{label}</div>
               <div className="num mt-1 text-right font-display text-stat text-ink">{money(v)}</div>

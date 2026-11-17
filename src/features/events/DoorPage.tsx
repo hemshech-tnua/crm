@@ -356,7 +356,7 @@ function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
           {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
           {r.status === 'waitlisted' && r.waitlist_position && <span>בהמתנה <span className="num">#{r.waitlist_position}</span></span>}
           {r.attendance === 'no_show' && <Badge tone="bad" icon="alert">סומן/ה לא הגיע/ה</Badge>}
-          {owes && <Badge tone="warn" icon="alert">לא שילם/ה</Badge>}
+          {owes && <Badge tone="warn" icon="alert">לא שולם</Badge>}
           {price != null && r.payment_status === 'paid' && <Badge tone="good" icon="check">שולם</Badge>}
           {on && r.checked_in_at && (
             <span>
@@ -369,7 +369,7 @@ function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
           <button
             type="button"
             onClick={onPaid}
-            aria-label={`${r.display_name} שילם/ה במקום ${fmtMoney(price)} במזומן`}
+            aria-label={`תשלום במקום במזומן, ${fmtMoney(price)}, עבור ${r.display_name}`}
             className="mt-1.5 inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 text-small font-semibold text-ink hover:border-ink hover:bg-ink/[0.06] active:scale-95"
           >
             <span aria-hidden="true" className="font-display">₪</span>

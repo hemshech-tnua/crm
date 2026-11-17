@@ -43,7 +43,7 @@ export const MEMBERSHIP_LABEL: Record<Membership, string> = { none: 'לא חבר
 export const CHANNEL_LABEL = { whatsapp: 'וואטסאפ', phone: 'שיחת טלפון', in_person: 'פנים אל פנים', other: 'אחר' } as const;
 
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
-  none: 'לא נדרש תשלום', pending: 'לא שילם/ה', paid: 'שילם/ה', waived: 'פטור/ה מתשלום', refunded: 'הוחזר',
+  none: 'לא נדרש תשלום', pending: 'לא שולם', paid: 'שולם', waived: 'פטור מתשלום', refunded: 'הוחזר',
 };
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   card: 'כרטיס אשראי', bit: 'Bit', paybox: 'PayBox', cash: 'מזומן', transfer: 'העברה בנקאית', other: 'אחר',
