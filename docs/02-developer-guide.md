@@ -85,6 +85,9 @@ tests/e2e/             בדיקות דפדפן (Playwright)
 | `staff_merge_participants(p_keep, p_merge)` | מנהל, רכז | מיזוג |
 | `staff_dismiss_duplicate(p_a, p_b)` | מנהל, רכז | "אלה שני אנשים שונים" |
 | `staff_walkin_suggest(p_event_id, p_query)` / `staff_checkin_existing(p_event_id, p_participant_id)` | כולם (סביב זמן המפגש) | הצעת אדם מוכר בכניסה (שם + 4 ספרות) וסימון הגעה שלו |
+| `staff_set_payment(p_registration_id, p_status, p_amount?, p_method?, p_ref?)` | מנהל, רכז | תשלום משתתף: `none/pending/paid/waived/refunded` (paid: הסכום ברירת מחדל = מחיר המפגש). עמודות התשלום משתנות רק דרך הפונקציות האלה |
+| `staff_door_payment(p_registration_id, p_paid?)` | כולם (סביב זמן המפגש) | "שולם במקום" (מזומן, במחיר המפגש); `p_paid=false` מבטל סימון מזומן מ-15 הדקות האחרונות |
+| `staff_event_finance(p_event_id)` / `staff_finance_summary(p_from, p_to, p_type?, p_site?)` | מנהל, רכז | כספי מפגש (צפי, נגבה, ממתין, הוצאות מ-`event_payments`, נטו) ולפי תקופה. ראו …2300_payments.sql |
 | `admin_anonymize_participant(p_id)` | מנהל | התממה |
 | `admin_retention_candidates()` | מנהל | לוחמים בלי פעילות מעבר לתקופת השמירה |
 | `log_export(p_kind, p_rows)` | מנהל, רכז (רשימות אישיות: מנהל) | רישום ייצוא ביומן |
@@ -92,6 +95,8 @@ tests/e2e/             בדיקות דפדפן (Playwright)
 | `report_events(...)`, `report_monthly(...)`, `report_sources(p_from,p_to)`, `report_links(...)`, `report_referrers(...)`, `report_presenters(...)`, `report_distribution(p_type,p_site)`, `report_drilldown(p_kind,...)`, `attention_items()` | מנהל, רכז | ראו supabase/migrations/…0600_reporting.sql |
 
 Edge Function `staff-admin` (דרך `staffAdmin()` ב-lib/auth): `change_password`, `create`, `reset_password`, `update`.
+
+**תשלומים (…2300_payments.sql):** `events.price/payment_url/payment_note` נכנסים ל-PublicEvent, ו-`public_registration` מחזיר `payment_status`. התשלום עצמו תמיד בדף של ספק הסליקה (קישור רגיל), לעולם לא במערכת. Webhook עתידי של ספק קורא ל-`private.mark_paid_by_provider` עם service role.
 
 **מיגרציות:** מיגרציה חדשה מקבלת מספר **לפני** `…9000_privilege_hardening.sql`, שנשארת אחרונה. פונקציה ציבורית חדשה צריכה `grant … to anon` שם, ועדכון ברשימה שב-tests/api/security.test.ts.
 
