@@ -21,6 +21,7 @@ const SitePage = page(() => import('@/features/public/SitePage'), 'SitePage');
 const FirstEntryPage = page(() => import('@/features/auth/FirstEntryPage'), 'FirstEntryPage');
 const PrivacyPage = page(() => import('@/features/public/PrivacyPage'), 'PrivacyPage');
 const VolunteerPage = page(() => import('@/features/public/VolunteerPage'), 'VolunteerPage');
+const FridayPage = page(() => import('@/features/public/FridayPage'), 'FridayPage');
 // auth
 const LoginPage = page(() => import('@/features/auth/LoginPage'), 'LoginPage');
 const PasswordPage = page(() => import('@/features/auth/PasswordPage'), 'PasswordPage');
@@ -68,6 +69,7 @@ export const router = createHashRouter([
       { path: '/member', element: wait(<MemberPage />) },
       { path: '/privacy', element: wait(<PrivacyPage />) },
       { path: '/v/:token', element: wait(<VolunteerPage />) },
+      { path: '/friday', element: wait(<FridayPage />) },
       { path: '/login', element: wait(<LoginPage />) },
       { path: '/welcome/:token', element: wait(<FirstEntryPage />) },
       { path: '/password', element: wait(<PasswordPage />) },

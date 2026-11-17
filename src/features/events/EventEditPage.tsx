@@ -9,6 +9,7 @@ import { EVENT_STATUS_LABEL, EVENT_TYPE_LABEL } from '@/lib/labels';
 import type { EventRow, EventStatus, EventType, Settings, Site, Speaker } from '@/lib/types';
 import { Button, ButtonLink, ChoiceGroup, ErrorBox, Input, Notice, PageHeader, Panel, Select, Skeleton, Textarea, Checkbox, cx } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
+import { isPaymentUrl, parseAmount } from '@/lib/money';
 import { DEFAULT_TIMES, DEFAULT_TITLE, useInvalidateEvent } from './queries';
 import { StatusBadge, hasStarted } from './shared';
 
@@ -32,6 +33,9 @@ type Form = {
   description: string;
   internal_notes: string;
   status: EventStatus;
+  price: string;
+  payment_url: string;
+  payment_note: string;
 };
 type Errors = Partial<Record<keyof Form | 'form', string>>;
 
@@ -68,6 +72,9 @@ function newForm(settings: Settings | undefined, sites: Site[], taken: Set<strin
     description: '',
     internal_notes: '',
     status: 'draft',
+    price: '',
+    payment_url: '',
+    payment_note: '',
   };
 }
 
@@ -95,6 +102,9 @@ function formFromEvent(e: EventRow): Form {
     description: e.description ?? '',
     internal_notes: e.internal_notes ?? '',
     status: e.status,
+    price: e.price != null && Number(e.price) > 0 ? String(Number(e.price)) : '',
+    payment_url: e.payment_url ?? '',
+    payment_note: e.payment_note ?? '',
   };
 }
 
@@ -151,6 +161,13 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   if (f.lecture_topic.length > 160) errors.lecture_topic = 'עד 160 תווים.';
   if (f.description.length > 2000) errors.description = 'עד 2000 תווים.';
   if (f.internal_notes.length > 2000) errors.internal_notes = 'עד 2000 תווים.';
+  const price = parseAmount(f.price);
+  if (price != null && (!/^\d+(\.\d{1,2})?$/.test(f.price.replace(/[,₪\s]/g, '')) || price > 10000)) {
+    errors.price = 'סכום בשקלים, למשל 20. ריק = בלי תשלום.';
+  }
+  if (f.payment_url.trim() && !isPaymentUrl(f.payment_url)) errors.payment_url = 'הקישור צריך להתחיל ב-https:// (עד 500 תווים).';
+  if (f.payment_url.trim() && !price && !errors.price) errors.price = 'יש קישור לתשלום: צריך גם סכום.';
+  if (f.payment_note.length > 200) errors.payment_note = 'עד 200 תווים.';
   if (errors.date || errors.start || errors.end) return { errors };
 
   const starts = fromIl(f.date, f.start);
@@ -239,6 +256,9 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
         lecture_topic: f.lecture_topic.trim() || null,
         description: f.description.trim() || null,
         internal_notes: f.internal_notes.trim() || null,
+        price: parseAmount(f.price) || null,
+        payment_url: f.payment_url.trim() || null,
+        payment_note: f.payment_note.trim() || null,
         ...(lockedStatus ? {} : { status: f.status }),
       };
       if (event) {
@@ -412,6 +432,48 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               ))}
             </Select>
           )}
+        </div>
+      </Panel>
+
+      <Panel title="תשלום" description="דמי השתתפות. התשלום עצמו נעשה בדף של ספק הסליקה, לא במערכת.">
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-[10rem_minmax(0,1fr)]">
+            <Input
+              label="מחיר (₪)"
+              inputMode="decimal"
+              ltr
+              className="num"
+              value={f.price}
+              onChange={(e) => set('price', e.target.value)}
+              error={errors.price}
+              placeholder="20"
+              hint="ריק = בלי תשלום"
+            />
+            <Input
+              label="קישור לתשלום"
+              type="url"
+              inputMode="url"
+              ltr
+              value={f.payment_url}
+              onChange={(e) => set('payment_url', e.target.value)}
+              error={errors.payment_url}
+              maxLength={500}
+              placeholder="https://"
+              hint="קישור לדף התשלום של ספק הסליקה, Bit או PayBox. בלי קישור, משלמים בכניסה."
+            />
+          </div>
+          <Input
+            label="הערה על התשלום"
+            value={f.payment_note}
+            onChange={(e) => set('payment_note', e.target.value)}
+            error={errors.payment_note}
+            maxLength={200}
+            placeholder="אפשר לשלם גם במקום"
+            hint="מוצג למשתתפים ליד המחיר"
+          />
+          {event && !Number(event.price) && parseAmount(f.price) ? (
+            <Notice tone="light" icon="alert">הנרשמים הקיימים יסומנו כממתינים לתשלום.</Notice>
+          ) : null}
         </div>
       </Panel>
 

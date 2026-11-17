@@ -12,7 +12,8 @@ import { EventTicket } from './EventTicket';
 import { Glyph } from './marks';
 import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
-import { CalendarButtons, InviteBlock, PersonalLink, ResultTitle, SuccessMark, WaitMark, inviteMessage } from './shared';
+import { CalendarButtons, InviteBlock, PayBlock, PersonalLink, ResultTitle, SuccessMark, WaitMark, inviteMessage } from './shared';
+import { fmtMoney, isPriced } from '@/lib/money';
 
 const UTM_KEYS = ['source', 'medium', 'campaign'] as const;
 
@@ -156,6 +157,15 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
           המפגש מלא כרגע. אפשר להצטרף לרשימת ההמתנה: אם יתפנה מקום, נחזור אליך. ההצטרפות לרשימה עוד לא מבטיחה מקום.
         </Notice>
       )}
+      {isPriced(event.price) && (
+        <p className="flex flex-wrap items-baseline gap-x-2 rounded-[var(--radius-control)] border-s-[3px] border-ink bg-mist px-3.5 py-2.5">
+          <span className="font-bold">השתתפות: <span className="num">{fmtMoney(event.price)}</span></span>
+          <span className="text-small text-ink-soft">
+            {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים אחרי ההרשמה, בקישור לתשלום.' : 'משלמים בכניסה למפגש.'}
+          </span>
+          {event.payment_note && <span className="basis-full text-small text-muted">{event.payment_note}</span>}
+        </p>
+      )}
       <p className="-mb-1 text-body text-ink-soft">ארבעה פרטים ושאלה אחת, וזהו.</p>
       <PersonFields form={form} sources={sources} invitedBy={event.invited_by} />
       <ConsentFields form={form} />
@@ -216,6 +226,7 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted">צריך לבטל? דרך הקישור לניהול ההרשמה שקיבלת כשנרשמת. אין אותו? <ContactLine inline /></p>
         )}
       </div>
+      {!again && <PayBlock event={event} />}
       <EventTicket event={event} showStatus={false}>
         <div className="mt-4">
           <CalendarButtons event={event} />

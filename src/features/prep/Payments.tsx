@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { parseAmount } from '@/lib/money';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { todayIl } from '@/lib/dates';
@@ -8,7 +9,6 @@ import { Badge, Button, Checkbox, EmptyState, ErrorBox, IconButton, Input, Panel
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
 import { TickBox, dm, fmtMoney, useSuppliers } from './shared';
 
-const parseAmount = (v: string) => (v.trim() ? Number(v.replace(/[,₪\s]/g, '')) : null);
 const PAY_COLS = 'id,event_id,supplier_id,supplier,description,amount,due_date,invoice_received,paid_on,notes';
 
 export const useEventPayments = (eventId: string) =>

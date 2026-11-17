@@ -9,6 +9,7 @@ import { downloadIcs, googleCalendarUrl } from './calendar';
 import { Glyph } from './marks';
 import { useOrgInfo } from './api';
 import { formatPhone, whatsappLink } from '@/lib/phone';
+import { fmtMoney, isPriced } from '@/lib/money';
 
 /** The one highlighted moment of a screen: a beige check that draws itself on navy (static when reduced motion is on). */
 export function SuccessMark({ size = 'md', className = 'mx-auto' }: { size?: 'md' | 'lg'; className?: string }) {
@@ -206,4 +207,32 @@ export function ContactLine({ inline = false }: { inline?: boolean }) {
     </a>
   );
   return inline ? link : <p className="text-sm text-muted">שאלות או בקשות? {link}</p>;
+}
+
+/**
+ * The participation fee after registering (and on the personal page while it is unpaid). Payment happens only on the
+ * provider's own secure page, opened as a normal link: no card details ever pass through this site. Without a link,
+ * the fee is paid at the entrance. Nothing is shown for a free meeting.
+ */
+export function PayBlock({ event, className = '' }: { event: PublicEvent; className?: string }) {
+  if (!isPriced(event.price)) return null;
+  const amount = fmtMoney(event.price);
+  return (
+    <section aria-label="תשלום" className={cx('rounded-[var(--radius-panel)] border-2 border-ink bg-paper p-4 sm:p-5', className)}>
+      <SectionTitle>דמי השתתפות: <span className="num">{amount}</span></SectionTitle>
+      {event.payment_url ? (
+        <>
+          <ExternalButton href={event.payment_url} variant="primary" size="lg" cta className="mt-3 w-full sm:w-auto">
+            לתשלום <span className="num">{amount}</span>
+          </ExternalButton>
+          <p className="mt-3 text-[0.9375rem] text-ink-soft">
+            התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך מהקישור האישי או בכניסה למפגש.
+          </p>
+        </>
+      ) : (
+        <p className="mt-2 text-[0.9375rem] text-ink-soft">משלמים בכניסה למפגש.</p>
+      )}
+      {event.payment_note && <p className="mt-1 text-sm text-muted">{event.payment_note}</p>}
+    </section>
+  );
 }

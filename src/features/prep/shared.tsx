@@ -67,8 +67,8 @@ export function fmtHours(h: number | string | null | undefined): string {
 export const sumHours = (list: { hours: number | null }[]) => list.reduce((s, t) => s + (Number(t.hours) || 0), 0);
 export const fmtTotal = (h: number) => h.toLocaleString('he-IL', { maximumFractionDigits: 1 });
 
-const money = new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 2, minimumFractionDigits: 0 });
-export const fmtMoney = (v: number | null | undefined) => (v == null ? '—' : money.format(Number(v)));
+// one money format for the whole app (lib/money); re-exported for the prep screens
+export { fmtMoney } from '@/lib/money';
 
 export const isOverdue = (t: Pick<EventTask, 'done_at' | 'due_date'>, today = todayIl()) => !t.done_at && !!t.due_date && t.due_date < today;
 

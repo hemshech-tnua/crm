@@ -7,11 +7,12 @@ import { useSources } from '@/lib/data';
 import { errorCode, errorMessage, must } from '@/lib/errors';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { normalizePhone } from '@/lib/phone';
+import { fmtMoney, isPriced } from '@/lib/money';
 import { Badge, Button, EmptyState, ErrorBox, Input, Notice, Panel, SearchInput, Select, Skeleton, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { eventKeys, fetchCheckinList, useDoorEvent, useInvalidateEvent, type CheckinRow } from './queries';
-import { RowMenu, inDoorWindow, timeRange } from './shared';
+import { RowMenu, inDoorWindow, timeRange, type MenuItem } from './shared';
 
 const firstName = (n: string) => n.split(' ')[0];
 /** The 5th, 10th, 20th… Friday is a milestone worth greeting at the door. */
@@ -87,6 +88,36 @@ export function DoorPage() {
     },
   });
 
+  // "paid at the entrance": one tap, cash, at the meeting's price (undo from the toast or the row menu)
+  const doorPay = useMutation({
+    mutationKey: ['door', id],
+    mutationFn: async (v: { row: CheckinRow; paid: boolean }) => {
+      const { error } = await supabase.rpc('staff_door_payment', { p_registration_id: v.row.registration_id, p_paid: v.paid });
+      if (error) throw error;
+      return v;
+    },
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<CheckinRow[]>(key);
+      qc.setQueryData<CheckinRow[]>(key, (rows) =>
+        rows?.map((r) => (r.registration_id !== v.row.registration_id ? r : { ...r, payment_status: v.paid ? 'paid' : 'pending', cash_just_marked: v.paid })),
+      );
+      return { prev };
+    },
+    onError: (err, v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+      toast.error(`${firstName(v.row.display_name)}: לא נשמר. ${errorMessage(err)}`);
+    },
+    onSuccess: (v) => {
+      if (v.paid) toast.success(`${v.row.display_name}: שולם במקום`, { label: 'ביטול', run: () => doorPay.mutate({ row: v.row, paid: false }) });
+      else toast.success(`${v.row.display_name}: הסימון "שולם" הוסר`);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ['event_payments', 'finance', id] });
+    },
+  });
+
   const cancelReg = useMutation({
     mutationKey: ['door', id],
     mutationFn: async (row: CheckinRow) => {
@@ -131,12 +162,18 @@ export function DoorPage() {
   const inactive = e && (e.status === 'draft' || e.status === 'cancelled');
   const forbidden = outside || (list.isError && errorCode(list.error) === 'forbidden');
 
+  const price = isPriced(e?.price) ? Number(e!.price) : null;
   const rowProps = (r: CheckinRow) => ({
     r,
     friday: e?.type === 'friday',
     disabled: !!inactive,
+    price,
     onToggle: () => setAttendance.mutate({ row: r, attendance: r.attendance === 'attended' ? 'unknown' : 'attended' }),
-    menu: r.status !== 'cancelled' && r.attendance !== 'attended' ? [{ label: 'סימון ביטל/ה', icon: 'close' as const, danger: true, onClick: () => askCancel(r) }] : [],
+    onPaid: () => doorPay.mutate({ row: r, paid: true }),
+    menu: [
+      ...(price && r.payment_status === 'paid' && r.cash_just_marked ? [{ label: 'ביטול "שולם במקום"', icon: 'undo' as const, onClick: () => doorPay.mutate({ row: r, paid: false }) }] : []),
+      ...(r.status !== 'cancelled' && r.attendance !== 'attended' ? [{ label: 'סימון ביטל/ה', icon: 'close' as const, danger: true, onClick: () => askCancel(r) }] : []),
+    ],
   });
 
   return (
@@ -280,11 +317,13 @@ function Section({ title, count, hint, children }: { title: string; count: numbe
   );
 }
 
-function Row({ r, friday, disabled, onToggle, menu }: {
-  r: CheckinRow; friday: boolean; disabled: boolean; onToggle: () => void; menu: { label: string; icon: 'close'; danger: boolean; onClick: () => void }[];
+function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
+  r: CheckinRow; friday: boolean; disabled: boolean; price: number | null; onToggle: () => void; onPaid: () => void; menu: MenuItem[];
 }) {
   const on = r.attendance === 'attended';
   const nth = r.prior_fridays + 1;
+  // a priced meeting: who still owes the fee (a registered place, or a walk-in); a waitlisted place pays once it is in
+  const owes = price != null && r.status === 'registered' && r.payment_status === 'pending';
   return (
     <li className={cx('flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border bg-paper py-2.5 pr-2.5 pl-1.5', on ? 'border-ink/50' : 'border-edge')}>
       <button
@@ -317,6 +356,8 @@ function Row({ r, friday, disabled, onToggle, menu }: {
           {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
           {r.status === 'waitlisted' && r.waitlist_position && <span>בהמתנה <span className="num">#{r.waitlist_position}</span></span>}
           {r.attendance === 'no_show' && <Badge tone="bad" icon="alert">סומן/ה לא הגיע/ה</Badge>}
+          {owes && <Badge tone="warn" icon="alert">לא שילם/ה</Badge>}
+          {price != null && r.payment_status === 'paid' && <Badge tone="good" icon="check">שולם</Badge>}
           {on && r.checked_in_at && (
             <span>
               <span className="num">{fmtTime(r.checked_in_at)}</span>
@@ -324,6 +365,17 @@ function Row({ r, friday, disabled, onToggle, menu }: {
             </span>
           )}
         </div>
+        {owes && !disabled && (
+          <button
+            type="button"
+            onClick={onPaid}
+            aria-label={`${r.display_name} שילם/ה במקום ${fmtMoney(price)} במזומן`}
+            className="mt-1.5 inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 text-small font-semibold text-ink hover:border-ink hover:bg-ink/[0.06] active:scale-95"
+          >
+            <span aria-hidden="true" className="font-display">₪</span>
+            שולם במקום · <span className="num">{fmtMoney(price)}</span>
+          </button>
+        )}
       </div>
       {menu.length > 0 && !disabled && <RowMenu items={menu} big label={`פעולות נוספות ל${r.display_name}`} />}
     </li>

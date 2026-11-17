@@ -7,7 +7,8 @@ import type { EventWithStats } from '@/lib/data';
 import { errorMessage, must } from '@/lib/errors';
 import { fmtDateTime } from '@/lib/dates';
 import { formatPhone } from '@/lib/phone';
-import { ATTENDANCE_LABEL, REG_STATUS_LABEL } from '@/lib/labels';
+import { ATTENDANCE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, REG_STATUS_LABEL } from '@/lib/labels';
+import { isPriced } from '@/lib/money';
 import { downloadFile, toCsv } from '@/lib/csv';
 import type { RegStatus } from '@/lib/types';
 import { Badge, Button, ButtonLink, Checkbox, EmptyState, ErrorBox, FilterChips, IconButton, Notice, Panel, SearchInput, Skeleton, Spinner, Td, Th, cx } from '@/ui/kit';
@@ -17,12 +18,16 @@ import { MessageComposer } from '@/ui/MessageComposer';
 import type { EventPeople } from './context';
 import { cleanSearch, useEventRegistrations, useInvalidateEvent, type RegRow } from './queries';
 import { RowMenu, hasStarted, useDebounced, type MenuItem } from './shared';
+import { PaymentBadge, PaymentDialog, showsPayment, type PaymentTarget } from './finance';
 
-type Filter = 'active' | 'registered' | 'waitlisted' | 'attended' | 'no_show' | 'cancelled' | 'all';
+type Filter = 'active' | 'registered' | 'waitlisted' | 'unpaid' | 'attended' | 'no_show' | 'cancelled' | 'all';
+/** Owes the fee: a registered place, not paid, and not a no-show (a waitlisted place pays only once it is registered). */
+const owes = (r: RegRow) => r.status === 'registered' && r.payment_status === 'pending' && r.attendance !== 'no_show';
 const FILTERS: { value: Filter; label: string; test: (r: RegRow) => boolean }[] = [
   { value: 'active', label: 'רשומים והמתנה', test: (r) => r.status !== 'cancelled' },
   { value: 'registered', label: 'רשומים', test: (r) => r.status === 'registered' },
   { value: 'waitlisted', label: 'בהמתנה', test: (r) => r.status === 'waitlisted' },
+  { value: 'unpaid', label: 'לא שילמו', test: owes },
   { value: 'attended', label: 'הגיעו', test: (r) => r.attendance === 'attended' },
   { value: 'no_show', label: 'לא הגיעו', test: (r) => r.attendance === 'no_show' },
   { value: 'cancelled', label: 'ביטלו', test: (r) => r.status === 'cancelled' },
@@ -43,7 +48,13 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   const [search, setSearch] = useState('');
   const [composer, setComposer] = useState<ComposerState | null>(null);
   const [adding, setAdding] = useState(false);
+  const [paying, setPaying] = useState<PaymentTarget | null>(null);
   const started = hasStarted(e);
+  const priced = isPriced(e.price);
+  const payFor = (r: RegRow) => setPaying({
+    id: r.id, name: r.participant?.full_name ?? null, payment_status: r.payment_status, paid_amount: r.paid_amount,
+    payment_method: r.payment_method, payment_ref: r.payment_ref,
+  });
 
   const rows = useMemo(
     () => [...(q.data ?? [])].sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.registered_at.localeCompare(b.registered_at)),
@@ -156,6 +167,12 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       { header: 'הופנה/תה על ידי', value: (r) => r.referrer?.full_name ?? r.referrer_name },
       { header: 'קישור', value: (r) => r.link?.label },
       { header: 'צ׳ק־אין', value: (r) => (r.checkin_method === 'self_qr' ? 'עצמי (QR)' : r.checkin_method === 'staff' ? 'צוות' : '') },
+      ...(priced || rows.some((r) => r.payment_status !== 'none') ? [
+        { header: 'תשלום', value: (r: RegRow) => (r.payment_status === 'none' ? '' : PAYMENT_STATUS_LABEL[r.payment_status]) },
+        { header: 'סכום ששולם', value: (r: RegRow) => r.paid_amount },
+        { header: 'אמצעי תשלום', value: (r: RegRow) => (r.payment_method ? PAYMENT_METHOD_LABEL[r.payment_method] : '') },
+        { header: 'אסמכתה', value: (r: RegRow) => r.payment_ref },
+      ] : []),
     ]);
     downloadFile(`registrations-${e.public_code}-${e.starts_at.slice(0, 10)}.csv`, csv);
     toast.success('הקובץ ירד. הייצוא נרשם ביומן הפעולות.');
@@ -166,6 +183,9 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     if (r.participant && !r.participant.anonymized_at) items.push({ label: 'כרטיס הלוחם/ת', icon: 'people', onClick: () => navigate(`/app/participants/${r.participant_id}`) });
     if (started && r.status === 'registered' && r.attendance !== 'attended') items.push({ label: 'סימון הגיע/ה', icon: 'check', onClick: () => attendance.mutate({ r, attendance: 'attended' }) });
     if (started && r.status === 'registered' && r.attendance !== 'no_show') items.push({ label: 'סימון לא הגיע/ה', icon: 'close', onClick: () => attendance.mutate({ r, attendance: 'no_show' }) });
+    if ((priced && r.status !== 'cancelled') || r.payment_status === 'paid' || r.payment_status === 'refunded' || r.payment_status === 'waived') {
+      items.push({ label: owes(r) ? 'סימון תשלום' : 'עדכון תשלום', icon: 'check', onClick: () => payFor(r) });
+    }
     if (r.status === 'cancelled' && canRegister) items.push({ label: 'רישום מחדש', icon: 'undo', onClick: () => reRegister.mutate(r) });
     if (r.status !== 'cancelled') items.push({ label: 'ביטול ההרשמה', icon: 'close', danger: true, onClick: () => askCancel(r) });
     return items;
@@ -196,7 +216,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <FilterChips label="סינון לפי סטטוס" value={filter} onChange={setFilter} className="min-w-0 flex-1"
-          options={FILTERS.map((f) => ({ value: f.value, label: f.label, count: counts[f.value] }))} />
+          options={FILTERS.filter((f) => f.value !== 'unpaid' || priced || counts.unpaid > 0).map((f) => ({ value: f.value, label: f.label, count: counts[f.value] }))} />
         <div className="shrink-0 sm:mr-auto sm:w-64">
           <SearchInput value={search} onChange={setSearch} placeholder="שם או טלפון" label="חיפוש בנרשמים" />
         </div>
@@ -228,6 +248,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                 <div className="mt-3 flex items-center gap-2">
                   {r.participant?.phone && <Button size="sm" variant="secondary" icon="message" onClick={() => openComposer(r)}>וואטסאפ</Button>}
                   {r.status === 'waitlisted' && <Button size="sm" icon="userPlus" busy={promote.isPending && promote.variables?.id === r.id} onClick={() => promote.mutate(r)}>קידום לרשומים</Button>}
+                  {owes(r) && <Button size="sm" variant="secondary" icon="check" onClick={() => payFor(r)}>סימון תשלום</Button>}
                   <div className="mr-auto"><RowMenu items={menuFor(r)} /></div>
                 </div>
               </li>
@@ -261,6 +282,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                     <Td>
                       <div className="flex items-center justify-end gap-1">
                         {r.status === 'waitlisted' && <Button size="sm" icon="userPlus" busy={promote.isPending && promote.variables?.id === r.id} onClick={() => promote.mutate(r)}>קידום</Button>}
+                        {owes(r) && <Button size="sm" variant="secondary" onClick={() => payFor(r)}>סימון תשלום</Button>}
                         {r.participant?.phone && (
                           <IconButton icon="message" label={`הודעת וואטסאפ ל${r.participant.full_name ?? ''}`} title="הודעת וואטסאפ" onClick={() => openComposer(r)} />
                         )}
@@ -293,6 +315,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
           registrationId={composer.reg.id}
         />
       )}
+      <PaymentDialog target={paying} event={e} onClose={() => setPaying(null)} />
       <ManualRegisterDialog
         open={adding}
         onClose={() => setAdding(false)}
@@ -342,6 +365,7 @@ function StatusCell({ r, pos, started }: { r: RegRow; pos?: number; started: boo
       ) : (
         <Badge tone="tide">{started ? 'רשום/ה, טרם סומן/ה' : 'רשום/ה'}</Badge>
       )}
+      {showsPayment(r.status, r.payment_status) && !(r.payment_status === 'pending' && r.attendance === 'no_show') && <PaymentBadge status={r.payment_status} />}
     </div>
   );
 }

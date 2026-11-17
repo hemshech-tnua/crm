@@ -20,6 +20,8 @@ import type { EventTab } from './EventPage';
 import { dataUrlToBlob, type EventPeople } from './context';
 import { useInvalidateEvent } from './queries';
 import { BigStat, LinkRow, QrImage, hasEnded, hasStarted, isUnclosed, timeRange } from './shared';
+import { FinancePanel } from './finance';
+import { fmtMoney, isPriced } from '@/lib/money';
 import './entrance-sign.css';
 
 type Props = { event: EventWithStats; people: EventPeople; onTab: (t: EventTab, extra?: Record<string, string>) => void };
@@ -30,7 +32,10 @@ export function OverviewTab({ event: e, people, onTab }: Props) {
       <Actions e={e} onTab={onTab} />
       <Counters e={e} />
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-        <Facts e={e} people={people} />
+        <div className="flex flex-col gap-5">
+          <Facts e={e} people={people} />
+          <FinancePanel e={e} onUnpaid={() => onTab('registrations', { filter: 'unpaid' })} onExpenses={() => onTab('prep')} />
+        </div>
         <div className="flex flex-col gap-5">
           <LinksPanel e={e} />
           <EntrancePanel e={e} />
@@ -93,6 +98,11 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
           ) : e.type === 'friday' ? <Badge key="s" tone="warn" icon="mic">עוד לא נקבע/ה</Badge> : null],
           ['נושא', e.lecture_topic],
           ['מקומות', e.capacity != null ? <span key="c"><span className="num">{e.capacity}</span>{e.waitlist_enabled ? ' · עם רשימת המתנה' : ' · בלי רשימת המתנה'}</span> : 'בלי הגבלה'],
+          ['השתתפות', isPriced(e.price) ? (
+            <span key="pr"><span className="num">{fmtMoney(e.price)}</span>{e.payment_url
+              ? <> · <a href={e.payment_url} target="_blank" rel="noopener noreferrer" className="text-tide hover:underline">קישור לתשלום</a></>
+              : <span className="text-muted"> · משלמים בכניסה</span>}{e.payment_note ? <span className="text-muted"> · {e.payment_note}</span> : null}</span>
+          ) : 'בלי תשלום'],
           ['סגירת הרשמה', e.registration_closes_at ? <span key="r" className="num">{fmtDateTime(e.registration_closes_at)}</span> : 'כשהמפגש מתחיל'],
           ['תיאור', e.description ? <span key="d" className="whitespace-pre-line">{e.description}</span> : null],
           ['הערות לצוות', e.internal_notes ? <span key="n" className="whitespace-pre-line">{e.internal_notes}</span> : null],

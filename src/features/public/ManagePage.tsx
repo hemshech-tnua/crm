@@ -9,7 +9,8 @@ import { cancelRegistration, useFeedbackContext, useRegistration, type Registrat
 import { forgetToken, saveToken } from './device';
 import { EventTicket } from './EventTicket';
 import { FeedbackForm } from './FeedbackForm';
-import { Block, CalendarButtons, InviteBlock, inviteMessage } from './shared';
+import { Block, CalendarButtons, InviteBlock, PayBlock, inviteMessage } from './shared';
+import { isPriced } from '@/lib/money';
 
 /** #/m/:token — the participant's own registration, from the personal link they got when registering. */
 export function ManagePage() {
@@ -76,6 +77,10 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
   const upcoming = new Date(e.starts_at).getTime() > Date.now();
   const active = r.status !== 'cancelled' && e.status !== 'cancelled';
   const waitlisted = r.status === 'waitlisted';
+  // the fee is asked only of a registered place (a waitlisted one pays if a place opens up)
+  const priced = isPriced(e.price) && active && r.status === 'registered';
+  const unpaid = priced && r.payment_status === 'pending' && r.attendance !== 'no_show';
+  const paid = priced && r.payment_status === 'paid';
 
   const cancel = async () => {
     setError(null);
@@ -123,12 +128,18 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="font-display text-title">{r.first_name ? `היי ${r.first_name}` : 'ההרשמה שלך'}</h1>
-        <div className="mt-2 flex flex-wrap items-center gap-2">{line.badge}</div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {line.badge}
+          {unpaid && <Badge tone="warn" icon="alert">ממתין לתשלום</Badge>}
+          {paid && <Badge tone="good" icon="check">שולם, תודה</Badge>}
+        </div>
         <p className="mt-2 text-[1.05rem] text-ink-soft">{line.text}</p>
         {r.status === 'cancelled' && e.registration_open && e.status !== 'cancelled' && (
           <ButtonLink to={`/r/${e.code}`} className="mt-3">להירשם שוב</ButtonLink>
         )}
       </div>
+
+      {unpaid && <PayBlock event={e} />}
 
       <EventTicket event={e} highlight={active && upcoming} showStatus={false}>
         {active && upcoming && r.status === 'registered' && (

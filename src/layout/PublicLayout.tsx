@@ -5,7 +5,7 @@ import { cx } from '@/ui/kit';
 import { ContactLine } from '@/features/public/shared';
 
 /** Pages that open into two columns on a wide screen (the home page's schedule, the forms beside their ticket). */
-const WIDE = /^\/(?:$|r\/|member$|join$)/;
+const WIDE = /^\/(?:$|r\/|member$|join$|friday$)/;
 
 /**
  * Participant-facing pages: phone first, one hand, one column; on a wide screen the forms sit beside their ticket.

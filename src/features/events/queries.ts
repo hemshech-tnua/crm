@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
 import type { EventWithStats } from '@/lib/data';
-import type { Attendance, ContactLog, EventRow, EventStats, EventType, Feedback, Membership, RegStatus, Registration } from '@/lib/types';
+import type { Attendance, ContactLog, EventRow, EventStats, EventType, Feedback, Membership, PaymentStatus, RegStatus, Registration } from '@/lib/types';
 
 export const eventKeys = {
   registrations: (id: string) => ['event-registrations', id] as const,
@@ -25,6 +25,9 @@ export function useInvalidateEvent() {
       qc.invalidateQueries({ queryKey: eventKeys.checkin(id) }),
       qc.invalidateQueries({ queryKey: ['event-audience', id] }),
       qc.invalidateQueries({ queryKey: eventKeys.door() }),
+      // the meeting's finance snapshot and the finance report (events/finance.tsx)
+      qc.invalidateQueries({ queryKey: ['event_payments', 'finance', id] }),
+      qc.invalidateQueries({ queryKey: ['event_payments', 'summary'] }),
       // screens of other areas that show registrations or tasks
       qc.invalidateQueries({ queryKey: ['participant'] }),
       qc.invalidateQueries({ queryKey: ['participants'] }),
@@ -139,6 +142,10 @@ export type CheckinRow = {
   first_time: boolean;
   status_rank: number;
   waitlist_position: number | null;
+  /** Whether they paid (a priced meeting); the door never sees amounts or references. */
+  payment_status: PaymentStatus;
+  /** Marked "paid at the entrance" in the last 15 minutes: the door may still undo it. */
+  cash_just_marked: boolean;
 };
 
 export async function fetchCheckinList(eventId: string): Promise<CheckinRow[]> {
@@ -148,8 +155,8 @@ export async function fetchCheckinList(eventId: string): Promise<CheckinRow[]> {
 }
 
 /** The basic event fields every staff role may read (the door team cannot read event_stats rows). */
-export type DoorEvent = Pick<EventRow, 'id' | 'title' | 'type' | 'starts_at' | 'ends_at' | 'status' | 'location'>;
-const DOOR_FIELDS = 'id, title, type, starts_at, ends_at, status, location';
+export type DoorEvent = Pick<EventRow, 'id' | 'title' | 'type' | 'starts_at' | 'ends_at' | 'status' | 'location' | 'price'>;
+const DOOR_FIELDS = 'id, title, type, starts_at, ends_at, status, location, price';
 
 export function useDoorEvent(id: string | undefined) {
   return useQuery({

@@ -3,6 +3,9 @@ export type EventType = 'friday' | 'bonfire' | 'other';
 export type EventStatus = 'draft' | 'open' | 'closed' | 'completed' | 'cancelled';
 export type RegStatus = 'registered' | 'waitlisted' | 'cancelled';
 export type Attendance = 'unknown' | 'attended' | 'no_show';
+/** none: a free meeting (or before fees); pending: owes the fee; waived: let in free; refunded: paid and given back. */
+export type PaymentStatus = 'none' | 'pending' | 'paid' | 'waived' | 'refunded';
+export type PaymentMethod = 'card' | 'bit' | 'paybox' | 'cash' | 'transfer' | 'other';
 export type Engagement = 'registered' | 'first_timer' | 'returning' | 'regular' | 'lapsed';
 
 export type Staff = {
@@ -64,6 +67,11 @@ export type EventRow = {
   internal_notes: string | null;
   completed_at: string | null;
   created_at: string;
+  /** Participation fee in ₪; null or 0 = free. */
+  price: number | null;
+  /** The provider's hosted payment page (https). Payment never happens in this app. */
+  payment_url: string | null;
+  payment_note: string | null;
 };
 
 export type EventStats = {
@@ -157,6 +165,12 @@ export type Registration = {
   utm_campaign: string | null;
   submitted_name: string | null;
   created_via: string;
+  /** Set only by the database (staff_set_payment, staff_door_payment, the provider hook). */
+  payment_status: PaymentStatus;
+  paid_amount: number | null;
+  paid_at: string | null;
+  payment_method: PaymentMethod | null;
+  payment_ref: string | null;
 };
 
 export type FollowUp = {
@@ -262,6 +276,10 @@ export type PublicEvent = {
   is_full: boolean;
   spots_left: number | null;
   waitlist_enabled: boolean;
+  /** Only when the meeting has a fee (> 0); the link and note come with it. */
+  price?: number | null;
+  payment_url?: string | null;
+  payment_note?: string | null;
   invited_by?: string | null;
   ref_source?: string | null;
 };

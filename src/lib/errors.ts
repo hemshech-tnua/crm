@@ -49,6 +49,12 @@ const MESSAGES: Record<string, string> = {
   duplicate_phone: 'כבר יש כרטיס עם מספר הטלפון הזה.',
   duplicate: 'הרשומה הזו כבר קיימת.',
   network: 'אין חיבור לשרת. בודקים את האינטרנט ומנסים שוב.',
+  invalid_payment_status: 'סטטוס תשלום לא תקין.',
+  invalid_payment_method: 'אמצעי תשלום לא תקין.',
+  invalid_amount: 'הסכום לא תקין. כותבים מספר חיובי, למשל 20.',
+  not_paid: 'אפשר לסמן החזר רק אחרי שסומן תשלום.',
+  not_priced: 'במפגש הזה אין דמי השתתפות.',
+  payment_not_pending: 'אין כאן תשלום פתוח לסימון. משנים מעמוד המפגש.',
 };
 
 export type AppError = { message?: string; code?: string; details?: string | null; status?: number } | null | undefined;

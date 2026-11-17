@@ -6,6 +6,7 @@ import { errorMessage, must } from '@/lib/errors';
 import { fmtDate, fmtMonth } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
 import { toCsv, downloadFile, type Column } from '@/lib/csv';
+import { fmtMoney } from '@/lib/money';
 import { EVENT_TYPE_LABEL } from '@/lib/labels';
 import type { EventType } from '@/lib/types';
 import { Badge, Button, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, Tabs } from '@/ui/kit';
@@ -15,7 +16,7 @@ import { Columns, SplitBars } from '@/ui/charts';
 import { FilterBar, rpcArgs, useFilters, type Filters } from './period';
 import { Drilldown, type DrillKind } from './Drilldown';
 
-type Tab = 'events' | 'monthly' | 'sources' | 'presenters' | 'retention' | 'definitions';
+type Tab = 'events' | 'monthly' | 'sources' | 'presenters' | 'retention' | 'finance' | 'definitions';
 
 export function ReportsPage() {
   const [params, setParams] = useSearchParams();
@@ -36,6 +37,7 @@ export function ReportsPage() {
           { value: 'sources', label: 'מקורות והפניות' },
           { value: 'presenters', label: 'מרצים ומדריכים' },
           { value: 'retention', label: 'התמדה' },
+          { value: 'finance', label: 'כספים' },
           { value: 'definitions', label: 'איך מחשבים' },
         ]}
       />
@@ -45,6 +47,7 @@ export function ReportsPage() {
       {tab === 'sources' && <SourcesReport filters={filters} />}
       {tab === 'presenters' && <PresentersReport filters={filters} />}
       {tab === 'retention' && <RetentionReport filters={filters} />}
+      {tab === 'finance' && <FinanceReport filters={filters} />}
       {tab === 'definitions' && <Definitions />}
     </>
   );
@@ -139,6 +142,103 @@ function EventsReport({ filters }: { filters: Filters }) {
                 );
               })}
             </tbody>
+          </table>
+        </div>
+      </Panel>
+    </State>
+  );
+}
+
+// ───────────── money ─────────────
+
+type FinanceRow = {
+  event_id: string; starts_at: string; title: string; type: EventType; status: string; price: number | null;
+  registered: number; paid_count: number; pending_count: number; collected: number; expected: number;
+  expenses: number; expenses_paid: number; net: number; projected_net: number;
+};
+type FinanceTotals = Omit<FinanceRow, 'event_id' | 'starts_at' | 'title' | 'type' | 'status' | 'price'> & { events: number };
+
+function FinanceReport({ filters }: { filters: Filters }) {
+  const q = useQuery({
+    // under ['event_payments', …]: a supplier payment or a marked fee refreshes the report too
+    queryKey: ['event_payments', 'summary', filters],
+    queryFn: async () => must(await supabase.rpc('staff_finance_summary', rpcArgs(filters))) as { rows: FinanceRow[]; totals: FinanceTotals },
+  });
+  const exp = useExport();
+  const rows = [...(q.data?.rows ?? [])].reverse();
+  const t = q.data?.totals;
+  const cols: Column<FinanceRow>[] = [
+    { header: 'תאריך', value: (r) => fmtDate(r.starts_at) },
+    { header: 'סוג', value: (r) => EVENT_TYPE_LABEL[r.type] },
+    { header: 'כותרת', value: (r) => r.title },
+    { header: 'מחיר', value: (r) => r.price },
+    { header: 'נרשמו', value: (r) => r.registered },
+    { header: 'שילמו', value: (r) => r.paid_count },
+    { header: 'לא שילמו', value: (r) => r.pending_count },
+    { header: 'נגבה', value: (r) => r.collected },
+    { header: 'צפי הכנסות', value: (r) => r.expected },
+    { header: 'הוצאות', value: (r) => r.expenses },
+    { header: 'הוצאות ששולמו', value: (r) => r.expenses_paid },
+    { header: 'נטו', value: (r) => r.net },
+  ];
+  const money = (v: number) => <span className={v < 0 ? 'text-bad' : undefined}>{fmtMoney(v)}</span>;
+  return (
+    <State q={q} empty={!rows.length}>
+      {t && (
+        <section aria-label="סיכום כספי" className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {([['נגבה', t.collected, `${t.paid_count} תשלומים`], ['עוד לא שולם', t.expected - t.collected, `${t.pending_count} רשומים`], ['הוצאות', t.expenses, `שולם ${fmtMoney(t.expenses_paid)}`], ['נטו', t.net, `צפי ${fmtMoney(t.projected_net)}`]] as const).map(([label, v, sub]) => (
+            <div key={label} className="rounded-[var(--radius-panel)] border border-edge bg-paper px-4 py-3">
+              <div className="text-small font-medium text-muted">{label}</div>
+              <div className="num mt-1 text-right font-display text-stat text-ink">{money(v)}</div>
+              <div className="num mt-1 text-right text-small text-muted">{sub}</div>
+            </div>
+          ))}
+        </section>
+      )}
+      <Panel padded={false} title={`כספים: ${rows.length} מפגשים`} description="מפגשים עם דמי השתתפות, הוצאות או תשלום, בתקופה שנבחרה"
+        actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('finance', 'ksafim', rows, cols)}>ייצוא לאקסל</Button>}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-body" aria-label="כספים לפי מפגש">
+            <thead className="border-b border-edge">
+              <tr>
+                <th className={th}>מפגש</th><th className={th}>נרשמו</th><th className={th}>שילמו</th>
+                <th className={th}>נגבה</th><th className={th}>הוצאות</th><th className={th}>נטו</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-edge">
+              {rows.map((r) => (
+                <tr key={r.event_id} className="hover:bg-mist/60">
+                  <td className={td}>
+                    <Link to={`/app/events/${r.event_id}`} className="font-semibold text-ink hover:text-tide hover:underline">{r.title}</Link>
+                    <div className="text-small text-muted">
+                      <span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}
+                      {r.price ? <> · <span className="num">{fmtMoney(r.price)}</span></> : ' · בלי תשלום'}
+                      {r.status === 'cancelled' && <> · <Badge tone="bad" icon="alert">בוטל</Badge></>}
+                    </div>
+                  </td>
+                  <td className={`${td} num`}>{r.registered}</td>
+                  <td className={`${td} num`}>
+                    {r.paid_count}
+                    {r.pending_count > 0 && <span className="text-micro text-warn"> (<span className="num">{r.pending_count}</span> לא שילמו)</span>}
+                  </td>
+                  <td className={`${td} num font-bold`}>{fmtMoney(r.collected)}</td>
+                  <td className={`${td} num`}>{fmtMoney(r.expenses)}</td>
+                  <td className={`${td} num font-bold`}>{money(r.net)}</td>
+                </tr>
+              ))}
+            </tbody>
+            {t && (
+              <tfoot className="border-t-2 border-ink">
+                <tr className="font-bold">
+                  <td className={td}>סה״כ</td>
+                  <td className={`${td} num`}>{t.registered}</td>
+                  <td className={`${td} num`}>{t.paid_count}</td>
+                  <td className={`${td} num`}>{fmtMoney(t.collected)}</td>
+                  <td className={`${td} num`}>{fmtMoney(t.expenses)}</td>
+                  <td className={`${td} num`}>{money(t.net)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </Panel>
@@ -398,6 +498,9 @@ function Definitions() {
     ['הפסיק/ה להגיע', 'מי שהיה קבוע בעבר, ומאז ביקורו האחרון התקיימו 3 מפגשי שישי במתחם שלו בלי שהגיע (ניתן לשינוי).'],
     ['שלושה סוגי מקור', 'מקור ההיכרות נשמר בכרטיס הלוחם בהרשמה הראשונה ולא משתנה. "מי הפנה" וקישור הערוץ/הקמפיין נשמרים בכל הרשמה בנפרד.'],
     ['כשאין נתונים', 'מוצג "—" ולא 0%.'],
+    ['כספים: נגבה', 'סכום התשלומים שסומנו "שולם" (בקישור לתשלום, בכניסה או ידנית), גם של מי שביטל אחרי ששילם, עד שסומן החזר.'],
+    ['כספים: צפי', 'מה שנגבה ועוד דמי ההשתתפות של רשומים שעוד לא שילמו. ממתינים ברשימת ההמתנה, מי שלא הגיע ולא שילם ופטורים לא נספרים.'],
+    ['כספים: נטו', 'נגבה פחות ההוצאות ששולמו לספקים ולמרצים (לשונית ההכנות של המפגש). מפגשים מכל סטטוס חוץ מטיוטה, כשיש בהם מחיר, הוצאה או תשלום.'],
     ['מפגש שלא נסגר', 'היעדים והדוחות סופרים רק מפגשים שנסגרו ("סגירת המפגש"), כי רק אז הנוכחות סופית. מפגש שהסתיים ולא נסגר מופיע ברשימות עם סימון, ובסקירה יש תזכורת לסגור אותו.'],
   ];
   return (

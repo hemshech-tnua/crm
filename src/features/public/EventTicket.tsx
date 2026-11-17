@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PublicEvent } from '@/lib/types';
 import { TZ, fmtDay, relativeDays } from '@/lib/dates';
 import { Badge, cx } from '@/ui/kit';
+import { fmtMoney, isPriced } from '@/lib/money';
 import { Icon, type IconName } from '@/ui/Icon';
 import { Glyph, type GlyphName } from './marks';
 import { activityText, lectureText, timeRange } from './eventText';
@@ -25,10 +26,13 @@ export function availability(e: PublicEvent): { tone: Tone; text: ReactNode; pla
   return { tone: 'good', text: 'הרשמה פתוחה', plain: true };
 }
 
-function Row({ icon, glyph, children }: { icon?: IconName; glyph?: GlyphName; children: ReactNode }) {
+function Row({ icon, glyph, mark, children }: { icon?: IconName; glyph?: GlyphName; mark?: string; children: ReactNode }) {
   return (
     <li className="flex items-start gap-2">
-      <span className="mt-[3px] text-tide">{glyph ? <Glyph name={glyph} /> : <Icon name={icon ?? 'sun'} size={18} />}</span>
+      <span className="mt-[3px] text-tide">
+        {mark ? <span aria-hidden="true" className="flex h-[18px] w-[18px] items-center justify-center font-display text-[1.05rem] leading-none">{mark}</span>
+          : glyph ? <Glyph name={glyph} /> : <Icon name={icon ?? 'sun'} size={18} />}
+      </span>
       <span className="min-w-0">{children}</span>
     </li>
   );
@@ -75,6 +79,12 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
             {event.location && <Row glyph="pin">{event.location}</Row>}
             {activity && <Row icon="sun">{activity}</Row>}
             {lecture && <Row icon="mic">{lecture}</Row>}
+            {isPriced(event.price) && (
+              <Row mark="₪">
+                <span className="font-semibold text-ink">השתתפות: <span className="num">{fmtMoney(event.price)}</span></span>
+                {detailed && event.payment_note && <span className="block text-sm text-muted">{event.payment_note}</span>}
+              </Row>
+            )}
           </ul>
           {detailed && event.speaker_bio && <p className="mt-2 text-sm leading-relaxed text-muted">{event.speaker_bio}</p>}
           {detailed && event.description && (

@@ -1,4 +1,4 @@
-import type { Attendance, Engagement, EventStatus, EventType, Membership, RegStatus, Role } from './types';
+import type { Attendance, Engagement, EventStatus, EventType, Membership, PaymentMethod, PaymentStatus, RegStatus, Role } from './types';
 
 export const ROLE_LABEL: Record<Role, string> = { admin: 'מנהל/ת', coordinator: 'רכז/ת', volunteer: 'צוות כניסה' };
 export const ROLE_HINT: Record<Role, string> = {
@@ -41,3 +41,10 @@ export const FOLLOWUP_TYPE_LABEL = {
 export const MEMBERSHIP_LABEL: Record<Membership, string> = { none: 'לא חבר/ה בעמותה', requested: 'ביקש/ה להצטרף לעמותה', member: 'חבר/ת עמותה' };
 
 export const CHANNEL_LABEL = { whatsapp: 'וואטסאפ', phone: 'שיחת טלפון', in_person: 'פנים אל פנים', other: 'אחר' } as const;
+
+export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
+  none: 'לא נדרש תשלום', pending: 'לא שילם/ה', paid: 'שילם/ה', waived: 'פטור/ה מתשלום', refunded: 'הוחזר',
+};
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  card: 'כרטיס אשראי', bit: 'Bit', paybox: 'PayBox', cash: 'מזומן', transfer: 'העברה בנקאית', other: 'אחר',
+};

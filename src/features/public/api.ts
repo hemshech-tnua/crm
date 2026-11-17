@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorCode, must } from '@/lib/errors';
-import type { Attendance, Membership, PublicEvent, RegStatus } from '@/lib/types';
+import type { Attendance, Membership, PaymentStatus, PublicEvent, RegStatus } from '@/lib/types';
 
 export type PublicSource = { key: string; label: string; is_friend: boolean; asks_detail: boolean };
 
@@ -25,6 +25,8 @@ export type RegistrationInfo = {
   can_cancel: boolean;
   feedback_open: boolean;
   feedback_given: boolean;
+  /** 'pending' at a priced meeting until the team (or the provider) marks it paid. */
+  payment_status?: PaymentStatus;
   event: PublicEvent;
 };
 

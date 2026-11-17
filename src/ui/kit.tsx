@@ -61,13 +61,16 @@ export function ButtonLink({ variant = 'primary', size = 'md', icon, cta, classN
   );
 }
 
-export function ExternalButton({ href, variant = 'secondary', size = 'md', icon, className = '', children, label }: {
+export function ExternalButton({ href, variant = 'secondary', size = 'md', icon, className = '', children, label, cta }: {
   href: string; variant?: Variant; size?: Size; icon?: IconName; className?: string; children?: ReactNode; label?: string;
+  /** the call-to-action triangle ◀ after the label (as on Button) */
+  cta?: boolean;
 }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={buttonClass(variant, size, className)} aria-label={label}>
       {icon && <Icon name={icon} size={size === 'sm' ? 16 : 18} />}
       {children}
+      {cta && <Tri className="ms-1" />}
     </a>
   );
 }
