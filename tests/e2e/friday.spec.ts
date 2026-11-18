@@ -40,27 +40,24 @@ test('shows the next Friday meeting and the CTA leads to /r/<code> with the refe
   expect(errors).toEqual([]);
 });
 
-test('copy that depends on an unconfirmed fact stays off the page while the fact is unset', async ({ page }) => {
+test('copy that depends on a fact shows exactly when the fact is confirmed', async ({ page }) => {
   await makeEvent({ title: 'שישי עובדות E2E', location: 'הולמס פלייס, מודיעין' });
   await page.goto('#/friday');
   await expect(page.getByTestId('friday-cta')).toBeVisible();
   // open every question, so hidden answers are checked too
   for (const s of await page.locator('details summary').all()) await s.click();
 
-  const absent = async (text: string) => expect(page.getByText(text, { exact: false })).toHaveCount(0);
-  if (!FRIDAY_FACTS.greeter) {
-    await absent('מחכה לכם בכניסה');
-    await absent('מחכה בכניסה');
-    await expect(page.getByRole('heading', { name: 'מי מקבל אתכם' })).toHaveCount(0);
-  }
-  if (!FRIDAY_FACTS.allLevels) {
-    await absent('גרסה קלה יותר');
-    await absent('כל רמת כושר');
-    await absent('נדרשת רמת כושר');
-  }
-  if (!FRIDAY_FACTS.lateOk) await absent('להצטרף באיחור');
-  if (!FRIDAY_FACTS.showers) await absent('להחליף בגדים');
-  if (!FRIDAY_FACTS.frequency) await absent('שישי בבוקר,');
+  // each fact: present on the page when it is set, absent when it is not
+  const shown = async (on: unknown, text: string) =>
+    expect(page.getByText(text, { exact: false }).first()).toHaveCount(on ? 1 : 0);
+  await shown(FRIDAY_FACTS.greeter, 'מחכה בכניסה');
+  await expect(page.getByRole('heading', { name: 'מי מקבל אתכם' })).toHaveCount(FRIDAY_FACTS.greeter ? 1 : 0);
+  await shown(FRIDAY_FACTS.allLevels, 'לכל רמות הכושר');
+  await shown(FRIDAY_FACTS.allLevels, 'נדרשת רמת כושר');
+  await shown(FRIDAY_FACTS.partialOk, 'אפשר להגיע רק לחלק מהבוקר?');
+  await shown(FRIDAY_FACTS.showers, 'יש מקום להחליף בגדים');
+  await shown(FRIDAY_FACTS.frequency, 'שישי בבוקר,');
+  if (FRIDAY_FACTS.greeter) await expect(page.getByText(FRIDAY_FACTS.greeter, { exact: false }).first()).toBeVisible();
   if (Object.values(FRIDAY_FACTS).every((v) => !v)) await expect(page.locator('[data-fact]')).toHaveCount(0);
   // the questions every first-timer gets, whatever the facts
   for (const g of ['על המפגש', 'הגעה והכנה', 'הרשמה, תשלום ופרטיות']) await expect(page.getByRole('heading', { name: g, level: 3 })).toBeVisible();
@@ -121,6 +118,8 @@ test('after registering for a Friday meeting: how to get there and what to bring
   await expect(page.getByRole('heading', { level: 2, name: 'השתנו התוכניות?' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'באים ביחד?' })).toBeVisible();
   if (!FRIDAY_FACTS.reminder && !FRIDAY_FACTS.greeter) await expect(page.getByRole('heading', { name: 'מה הלאה' })).toHaveCount(0);
+  else await expect(page.getByRole('heading', { name: 'מה הלאה' })).toBeVisible();
+  if (FRIDAY_FACTS.reminder) await expect(page.getByText(FRIDAY_FACTS.reminder)).toBeVisible();
 });
 
 test('after registering for a meeting that is not a Friday morning: no Friday packing list', async ({ page }) => {

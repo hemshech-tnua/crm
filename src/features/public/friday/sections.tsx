@@ -306,7 +306,7 @@ export function Faq({ event }: { event: PublicEvent | null }) {
           </Question>
           {f.allLevels && (
             <Question q="נדרשת רמת כושר מסוימת?">
-              לא. לכל תרגיל יש גרסה קלה יותר, וכל אחד ואחת מתאמנים בקצב&nbsp;שלהם.
+              לא. האימון מתאים לכל רמות&nbsp;הכושר.
             </Question>
           )}
           <Question q="אפשר להביא חבר או חברה?">
@@ -333,9 +333,9 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             בגדי ספורט ונעליים נוחות לאימון, ובקבוק מים. קפה ונשנושים מחכים&nbsp;במקום.
           </Question>
           {f.showers && <Question q="יש מקום להחליף בגדים או להתקלח?">{f.showers}</Question>}
-          {f.lateOk && (
-            <Question q="אפשר להצטרף באיחור?">
-              כן. מצטרפים בכל שלב של הבוקר, גם רק להרצאה ולארוחת&nbsp;הבוקר.
+          {f.partialOk && (
+            <Question q="אפשר להגיע רק לחלק מהבוקר?">
+              כן, אפשר להגיע רק לאימון או רק להרצאה. גם השתתפות בחלק מהבוקר היא&nbsp;בתשלום.
             </Question>
           )}
         </QuestionGroup>

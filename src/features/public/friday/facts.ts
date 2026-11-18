@@ -1,10 +1,13 @@
-/** Facts about Friday mornings that the team confirms. Copy that depends on one appears only once it is set. */
+/**
+ * Facts about Friday mornings that the team confirms. Copy that depends on one appears only once it is set.
+ * Confirmed by the coordinator (Itai), November 2026.
+ */
 export const FRIDAY_FACTS = {
-  greeter: null as string | null,          // first name of the person who meets first-timers at the entrance
-  allLevels: false,                         // the coach confirmed every exercise has an easier version
-  lateOk: false,                            // latecomers join wherever we are; lecture + breakfast alone is fine
-  reminder: null as string | null,          // e.g. 'יום לפני המפגש נשלחת תזכורת בוואטסאפ עם כל הפרטים.'
-  showers: null as string | null,           // answer to "יש איפה להחליף בגדים או להתקלח?"
-  parking: null as string | null,           // a line about parking / the place
-  frequency: null as string | null,         // e.g. 'כל שבוע' / 'פעמיים בחודש'
+  greeter: 'איתי' as string | null,                                    // who meets first-timers at the entrance
+  allLevels: true,                                                     // the workout suits every fitness level
+  partialOk: true,                                                     // coming only to the workout or only to the lecture is fine (paid)
+  reminder: 'יומיים לפני המפגש נשלחת תזכורת לכל מי שנרשם.' as string | null,
+  showers: 'כן. אפשר להחליף בגדים ולהתקלח במלתחות של הולמס\u00a0פלייס.' as string | null,
+  parking: null as string | null,                                      // a line about parking / the place
+  frequency: 'שלושה מפגשים בחודש' as string | null,
 };

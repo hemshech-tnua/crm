@@ -50,7 +50,7 @@ export type ProgramItem = { time: string | null; until?: boolean; title: string;
 /**
  * A Friday morning for participants (the team's 08:15 setup is not shown). Start and end come from the meeting when
  * there is one; the activity and the guest lecture too. The times in between are not published, so they are not guessed.
- * The line about easier versions of the exercises appears only once the coach has confirmed it (FRIDAY_FACTS.allLevels).
+ * The line about fitness levels appears only once it is confirmed (FRIDAY_FACTS.allLevels).
  */
 export function program(e: PublicEvent | null, facts = FRIDAY_FACTS): ProgramItem[] {
   return [
@@ -59,7 +59,7 @@ export function program(e: PublicEvent | null, facts = FRIDAY_FACTS): ProgramIte
       title: 'אימון',
       // the row is already titled 'אימון': drop it from the start of the activity ("אימון קרוספיט…" → "קרוספיט…")
       detail: (e && activityText(e)?.replace(/^אימון\s+/, '')) || 'יוגה או אימון פונקציונלי',
-      note: facts.allLevels ? 'לכל תרגיל יש גרסה קלה יותר. הולכים לפי הקצב שלכם.' : null,
+      note: facts.allLevels ? 'מתאים לכל רמות הכושר.' : null,
     },
     { time: null, title: 'הרצאת אורח', detail: (e && lectureText(e)) ?? null },
     { time: e ? fmtTime(e.ends_at) : '11:30', until: true, title: 'קפה, ארוחת בוקר וזמן ביחד', detail: 'בלי לחץ. יושבים, מדברים, מכירים.' },
@@ -71,7 +71,7 @@ export function lowThreshold(facts = FRIDAY_FACTS): string[] {
   return [
     'בלי דרגות, בלי מסדרים',
     'בלי התחייבות',
-    ...(facts.allLevels ? ['לכל רמת כושר'] : []),
+    ...(facts.allLevels ? ['לכל רמות הכושר'] : []),
     'ביטול בקישור האישי',
     ...(facts.frequency ? [`שישי בבוקר, ${facts.frequency}`] : []),
   ];
