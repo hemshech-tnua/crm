@@ -3,7 +3,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTemplates } from '@/lib/data';
 import { fmtDate, fmtDateTime, fmtDayLong, fmtTime } from '@/lib/dates';
-import { CHANNEL_LABEL, EVENT_TYPE_LABEL, FOLLOWUP_TYPE_LABEL, taskTitle } from '@/lib/labels';
+import { CHANNEL_LABEL, EVENT_TYPE_LABEL, FOLLOWUP_TYPE_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
 import type { ContactLog } from '@/lib/types';
 import { Badge, EmptyState, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
@@ -82,7 +82,7 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
           <div>
             <p className="font-semibold">{t.status === 'done' ? 'משימה הושלמה' : 'משימה בוטלה'}: <span className="font-normal">{taskTitle(t.title)}</span></p>
             <p className="text-small text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</p>
-            {t.outcome && <p className="mt-0.5 whitespace-pre-line text-ink-soft">{t.outcome}</p>}
+            {t.outcome && <p className="mt-0.5 whitespace-pre-line text-ink-soft">{taskOutcome(t.outcome)}</p>}
             <Meta>{[t.completed_by ? staffName.get(t.completed_by) : null, t.completed_at ? fmtDate(t.completed_at) : null]}</Meta>
           </div>
         ),

@@ -90,7 +90,7 @@ export const useTasksBetween = (from: string, to: string) =>
     queryKey: ['event_tasks', 'range', from, to],
     queryFn: async () => must(await supabase.from('event_tasks').select(WITH_EVENT).eq('kind', 'task').eq('dismissed', false)
       .gte('due_date', from).lte('due_date', to).neq('event.status', 'cancelled')
-      .order('due_date').order('sort_order').limit(500)) as unknown as TaskWithEvent[],
+      .order('due_date').order('sort_order').limit(3000)) as unknown as TaskWithEvent[],
   });
 
 /** How far back "left open from before" looks: older loose ends belong to meetings long gone. */

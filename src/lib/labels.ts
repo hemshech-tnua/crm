@@ -57,8 +57,21 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 const LEGACY_TASK_TITLES: [string, string][] = [
   ['נרשם/ה ולא הגיע/ה:', 'הרשמה בלי הגעה:'],
   ['קבוע/ה שהפסיק/ה להגיע: לשאול מה שלומו/ה', 'הגעה קבועה שנפסקה: לשאול מה נשמע'],
+  ['הגיע/ה בפעם הראשונה:', 'פעם ראשונה:'],
+  ['ביקש/ה להצטרף לעמותה:', 'הצטרפות לעמותה:'],
 ];
 export function taskTitle(title: string): string {
   for (const [old, now] of LEGACY_TASK_TITLES) if (title.startsWith(old)) return now + title.slice(old.length);
   return title;
+}
+
+/** The same for outcomes the database writes when it closes a task by itself ("נסגר אוטומטית: …"). */
+const LEGACY_OUTCOMES: [string, string][] = [
+  ['נסגר אוטומטית: סומן/ה כמי שהגיע/ה', 'נסגר אוטומטית: סומנה הגעה'],
+  ['נסגר אוטומטית: סומן/ה כחבר/ת עמותה', 'נסגר אוטומטית: סומנה חברות בעמותה'],
+  ['נסגר אוטומטית: הגיע/ה ל', 'נסגר אוטומטית: הגעה ל'],
+];
+export function taskOutcome(outcome: string): string {
+  for (const [old, now] of LEGACY_OUTCOMES) if (outcome.startsWith(old)) return now + outcome.slice(old.length);
+  return outcome;
 }

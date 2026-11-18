@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
 import { fmtDate, fmtShortDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
-import { FOLLOWUP_TYPE_LABEL, taskTitle } from '@/lib/labels';
+import { FOLLOWUP_TYPE_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
 import { Badge, Button, EmptyState, ErrorBox, FilterChips, IconButton, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
@@ -244,7 +244,7 @@ function DoneList({ q }: { q: { data?: TaskRow[]; isLoading: boolean; isError: b
               <span className="text-small text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</span>
             </div>
             <p className="mt-0.5 text-body">{taskTitle(t.title)}</p>
-            {t.outcome && <p className="mt-1 whitespace-pre-line rounded-[var(--radius-control)] bg-mist px-3 py-2 text-body text-ink-soft">{t.outcome}</p>}
+            {t.outcome && <p className="mt-1 whitespace-pre-line rounded-[var(--radius-control)] bg-mist px-3 py-2 text-body text-ink-soft">{taskOutcome(t.outcome)}</p>}
             <p className="mt-1 text-small text-muted">
               {[t.completed_by ? name.get(t.completed_by) : null, t.completed_at ? fmtDate(t.completed_at) : null].filter(Boolean).join(' · ')}
             </p>
