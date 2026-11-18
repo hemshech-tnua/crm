@@ -154,13 +154,13 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
     <div className="flex min-w-0 flex-col gap-5">
       {missingSpeaker && (
         <Notice tone="warn" icon="alert">
-          {!people.speaker && !e.lecture_topic ? 'עוד לא נקבעו מרצה ונושא.' : !people.speaker ? 'עוד לא נקבע/ה מרצה.' : 'עוד לא נקבע נושא להרצאה.'}{' '}
+          {!people.speaker && !e.lecture_topic ? 'עוד לא נקבעו מרצה ונושא.' : !people.speaker ? 'עוד אין מרצה.' : 'עוד לא נקבע נושא להרצאה.'}{' '}
           אפשר ליצור הזמנה גם עכשיו, אבל הזמנה עם מרצה ונושא מביאה יותר נרשמים.{' '}
           <ButtonLink to={`/app/events/${e.id}/edit`} variant="ghost" size="sm">עריכת המפגש</ButtonLink>
         </Notice>
       )}
       {people.speaker && people.speaker.status !== 'approved' && (
-        <Notice tone="warn" icon="alert">{people.speaker.full_name} עדיין ממתין/ה לאישור. כדאי לאשר לפני שמפרסמים.</Notice>
+        <Notice tone="warn" icon="alert">{people.speaker.full_name}: עדיין אין אישור. כדאי לאשר לפני שמפרסמים.</Notice>
       )}
       {e.status === 'draft' && <Notice tone="light" icon="alert">המפגש עדיין טיוטה. הקישור יעבוד רק אחרי פתיחת ההרשמה (בלשונית ״סקירה״).</Notice>}
 
@@ -290,7 +290,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
             </div>
             <Input label="מה בתוכנית" hint="מפרידים בנקודה: יוגה · ארוחת בוקר" value={content.program} onChange={(x) => set('program', x.target.value)} maxLength={90} />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input label="מרצה אורח/ת" value={content.speakerName} onChange={(x) => set('speakerName', x.target.value)} maxLength={60} />
+              <Input label="שם המרצה" value={content.speakerName} onChange={(x) => set('speakerName', x.target.value)} maxLength={60} />
               <Input label="מקום" value={content.place} onChange={(x) => set('place', x.target.value)} maxLength={60} />
             </div>
             <Input label="נושא ההרצאה" value={content.topic} onChange={(x) => set('topic', x.target.value)} maxLength={160} />

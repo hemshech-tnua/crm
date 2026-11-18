@@ -14,7 +14,7 @@ test.describe('scenario 1: a new staff user', () => {
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('שם מלא').fill(fullName);
     await dialog.getByLabel('אימייל (לכניסה בקוד למייל)').fill(email);
-    await dialog.getByRole('radio', { name: /^רכז\/ת/ }).check();
+    await dialog.getByRole('radio', { name: /^ריכוז/ }).check();
     await dialog.getByRole('button', { name: 'יצירת המשתמש' }).click();
     // a new account signs in with a code by email; here the admin also gives a temporary password
     const created = page.getByRole('dialog', { name: 'המשתמש נוצר' });

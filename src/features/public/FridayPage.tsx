@@ -2,14 +2,15 @@ import { useSearchParams } from 'react-router';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import { appBase } from '@/lib/links';
-import { ButtonLink, ErrorBox, Skeleton } from '@/ui/kit';
+import { ButtonLink, ErrorBox, Skeleton, cx } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import hills from '@/assets/photos/hills.webp';
 import { usePublicEvents } from './api';
 import { trackingQuery } from './tracking';
-import { Hero } from './Hero';
+import { Hero, Slogan } from './Hero';
+import { usePageTitle } from './shared';
 import { ctaLabel, fridayPlan } from './friday/model';
-import { Faq, FlyerSection, ForWhom, H2, MoreMeetings, NextTicket, NoMeeting, Program, ShareBand } from './friday/sections';
+import { AskUs, Faq, FlyerSection, ForWhom, H2, MoreMeetings, NextTicket, NoMeeting, Program, ShareBand } from './friday/sections';
 
 /*
   The flyer slot. When the coordinator's flyer arrives, put the file in src/assets/flyers/ and import it here:
@@ -40,11 +41,12 @@ export function FridayPage() {
   const pageUrl = `${appBase()}#/friday`;
   const copyLink = () => void copy(pageUrl, 'הקישור לדף הועתק');
   const about = plan.next ?? plan.known;
+  usePageTitle('מפגשי שישי');
 
   return (
     <div>
-      <Hero photo={hills} position="50% 74%" kicker="מפגשי שישי" title="בואו להמשיך תנועה">
-        <p>בוקר של אימון, הרצאת אורח וארוחת בוקר ביחד, ללוחמים וללוחמות אחרי השירות.</p>
+      <Hero photo={hills} position="50% 74%" kicker="מפגשי שישי" title={<Slogan />}>
+        <p>בוקר של אימון, הרצאת&nbsp;אורח וארוחת&nbsp;בוקר ביחד, ללוחמים וללוחמות אחרי&nbsp;השירות.</p>
         {plan.next && (
           <p className="mt-4 hidden font-display text-section text-light sm:block">
             {fmtDayLong(plan.next.starts_at)} · <span className="num">{fmtTime(plan.next.starts_at)}</span>
@@ -87,9 +89,11 @@ export function FridayPage() {
         </div>
       )}
 
-      <div className={plan.later.length ? 'mt-12 grid grid-cols-[minmax(0,1fr)] gap-12 lg:mt-16 lg:grid-cols-2 lg:gap-10' : 'mt-12 lg:mt-16 lg:max-w-2xl'}>
+      {/* two columns on a wide screen: the later meetings beside the questions, or (with none) a way to ask beside them */}
+      <div className={cx('mt-12 grid grid-cols-[minmax(0,1fr)] gap-12 lg:mt-16 lg:gap-10', plan.later.length ? 'lg:grid-cols-2' : 'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]')}>
         {plan.later.length > 0 && <MoreMeetings events={plan.later} query={query} />}
         <Faq event={about} />
+        {plan.later.length === 0 && <AskUs />}
       </div>
 
       <div className="mt-12 lg:mt-16">

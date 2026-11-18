@@ -225,7 +225,7 @@ function PaymentDialog({ payment, eventId, onClose }: { payment: EventPayment | 
     >
       <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <Input
-          label="ספק או מקבל/ת התשלום"
+          label="למי משלמים"
           required
           list={listId}
           autoComplete="off"

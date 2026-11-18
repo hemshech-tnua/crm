@@ -97,14 +97,14 @@ export function SecuritySettings() {
       </Panel>
 
       <Panel title="אימות דו־שלבי לאנשי הצוות">
-        {noMfa.length > 0 && <div className="mb-3"><Notice>מומלץ שכל מנהל/ת יפעיל/תפעיל אימות דו־שלבי ב"החשבון שלי".</Notice></div>}
+        {noMfa.length > 0 && <div className="mb-3"><Notice>מומלץ שכל המנהלים יפעילו אימות דו־שלבי ב"החשבון שלי".</Notice></div>}
         <ul className="divide-y divide-edge">
           {s.staff.map((m) => (
             <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <div>
                 <span className="font-semibold">{m.full_name}</span>
-                <span className="ms-2 text-small text-muted">{ROLE_LABEL[m.role]}{!m.is_active ? ' · חסום/ה' : ''}</span>
-                <div className="text-small text-muted">כניסה אחרונה: {m.last_sign_in_at ? <span className="num">{fmtDateTime(m.last_sign_in_at)}</span> : 'עוד לא נכנס/ה'}</div>
+                <span className="ms-2 text-small text-muted">{ROLE_LABEL[m.role]}{!m.is_active ? ' · חשבון חסום' : ''}</span>
+                <div className="text-small text-muted">כניסה אחרונה: {m.last_sign_in_at ? <span className="num">{fmtDateTime(m.last_sign_in_at)}</span> : 'עוד לא הייתה כניסה'}</div>
               </div>
               {m.mfa ? <Badge tone="good" icon="check">אימות דו־שלבי</Badge> : <Badge>סיסמה בלבד</Badge>}
             </li>

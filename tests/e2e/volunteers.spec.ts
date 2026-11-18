@@ -15,7 +15,7 @@ test('a coordinator books a volunteer ahead, the volunteer confirms from the per
   // 1. the pool: add a volunteer who likes the entrance
   await loginAs(page, 'coord');
   await page.goto('#/app/volunteers?tab=pool');
-  await page.getByRole('button', { name: 'מתנדב/ת חדש/ה' }).first().click();
+  await page.getByRole('button', { name: 'הוספה למאגר' }).first().click();
   const add = page.getByRole('dialog');
   await add.getByLabel('שם מלא').fill(full);
   await add.getByLabel('טלפון נייד').fill(phone());
@@ -31,7 +31,7 @@ test('a coordinator books a volunteer ahead, the volunteer confirms from the per
   await pick.getByRole('button', { name: new RegExp(full) }).click();
   await expect(pick).toBeHidden();
   const slot = page.getByRole('button', { name: new RegExp(`${full} · קבלת פנים ב${title}`) });
-  await expect(slot).toContainText('מוזמן/ת');
+  await expect(slot).toContainText('בהמתנה');
 
   // 3. the personal link, from the "waiting for an answer" list, ready for WhatsApp
   await page.getByRole('button', { name: `שליחת קישור ל${full}` }).click();
@@ -60,6 +60,6 @@ test('a coordinator books a volunteer ahead, the volunteer confirms from the per
 
   // 5. back in the planner: confirmed
   await page.reload();
-  await expect(page.getByRole('button', { name: new RegExp(`${full} · קבלת פנים ב${title}`) })).toContainText('אישר/ה');
+  await expect(page.getByRole('button', { name: new RegExp(`${full} · קבלת פנים ב${title}`) })).toContainText('הגעה אושרה');
   expect(errors, errors.join('\n')).toEqual([]);
 });

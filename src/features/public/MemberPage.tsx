@@ -5,7 +5,7 @@ import { Button, ButtonLink, ErrorBox, Input, Notice } from '@/ui/kit';
 import { requestMembership, type MembershipResult } from './api';
 import { forgetPerson, knownPeople, type KnownPerson } from './device';
 import { PhoneExample, cleanText, nameError, phoneError } from './PersonForm';
-import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList } from './shared';
+import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList, usePageTitle } from './shared';
 
 /**
  * #/member — "I want to join the association". Linked from the thank-you message sent after a meeting.
@@ -13,6 +13,7 @@ import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList } from './shar
  * task to call back with the details: joining itself is decided by the association, not by this form.
  */
 export function MemberPage() {
+  usePageTitle('הצטרפות לעמותה');
   const [people, setPeople] = useState<KnownPerson[]>(() => knownPeople());
   const [form, setForm] = useState(people.length === 0);
   const [done, setDone] = useState<MembershipResult | null>(null);

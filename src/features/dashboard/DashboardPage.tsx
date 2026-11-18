@@ -250,7 +250,7 @@ function AttentionList({ a }: { a: Attention }) {
     (n) => ({ icon: 'calendar', tone: 'tide', text: <><span className="num font-bold">{n}</span> מפגשים בשבוע הקרוב עדיין טיוטה, וההרשמה אליהם סגורה</>, to: '/app/events', action: 'למפגשים' }));
   const mism = a.name_mismatches ?? [];
   capped(mism,
-    (m) => ({ icon: 'alert', tone: 'warn', text: <>נרשם/ה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
+    (m) => ({ icon: 'alert', tone: 'warn', text: <>הרשמה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
     (n) => ({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: '/app/events', action: 'למפגשים' }));
   if (a.proposals_pending) items.push({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{a.proposals_pending}</span> הצעות להרצאה או הדרכה מחכות לאישור</>, to: '/app/speakers?tab=proposed', action: 'לצפייה' });
   if (a.followups_mine) items.push({ icon: 'task', tone: 'tide', text: <><span className="num font-bold">{a.followups_mine}</span> משימות פתוחות משויכות אליך</>, to: '/app/followups', action: 'למשימות שלי' });

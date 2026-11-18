@@ -76,7 +76,7 @@ export function DoorPage() {
     },
     onSuccess: (v) => {
       if (v.attendance === 'attended') {
-        toast.success(`${v.row.display_name} הגיע/ה`, { label: 'ביטול', run: () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }) });
+        toast.success(`${v.row.display_name}: ההגעה סומנה`, { label: 'ביטול', run: () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }) });
       } else {
         toast.success(`הסימון של ${v.row.display_name} הוסר`, { label: 'החזרה', run: () => setAttendance.mutate({ row: v.row, attendance: 'attended' }) });
       }
@@ -127,7 +127,7 @@ export function DoorPage() {
     },
     onSuccess: async (row) => {
       await invalidate(id);
-      toast.success(`${firstName(row.display_name)} סומן/ה כמי שביטל/ה`);
+      toast.success(`${firstName(row.display_name)}: הביטול סומן`);
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -135,8 +135,8 @@ export function DoorPage() {
   const askCancel = async (row: CheckinRow) => {
     const ok = await confirm({
       title: 'סימון ביטול',
-      body: <>לסמן ש<b>{row.display_name}</b> ביטל/ה ולא יגיע/תגיע? המקום יתפנה. אם בכל זאת יגיע/תגיע, מסמנים הגעה כרגיל.</>,
-      confirm: 'סימון ביטל/ה',
+      body: <>לסמן ביטול של <b>{row.display_name}</b>? המקום יתפנה. אם בסוף תהיה הגעה, מסמנים אותה כרגיל.</>,
+      confirm: 'סימון ביטול',
       cancel: 'חזרה',
       danger: true,
     });
@@ -172,7 +172,7 @@ export function DoorPage() {
     onPaid: () => doorPay.mutate({ row: r, paid: true }),
     menu: [
       ...(price && r.payment_status === 'paid' && r.cash_just_marked ? [{ label: 'ביטול "שולם במקום"', icon: 'undo' as const, onClick: () => doorPay.mutate({ row: r, paid: false }) }] : []),
-      ...(r.status !== 'cancelled' && r.attendance !== 'attended' ? [{ label: 'סימון ביטל/ה', icon: 'close' as const, danger: true, onClick: () => askCancel(r) }] : []),
+      ...(r.status !== 'cancelled' && r.attendance !== 'attended' ? [{ label: 'סימון ביטול', icon: 'close' as const, danger: true, onClick: () => askCancel(r) }] : []),
     ],
   });
 
@@ -210,7 +210,7 @@ export function DoorPage() {
               className="flex h-12 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] bg-tide px-3 font-semibold text-light hover:bg-ink-soft active:bg-tide-deep disabled:bg-tide/40 disabled:text-light/80"
             >
               <Icon name="userPlus" size={20} />
-              <span className="text-right text-small leading-tight">הגיע/ה<br />בלי הרשמה</span>
+              <span className="text-right text-small leading-tight">הגעה<br />בלי הרשמה</span>
             </button>
           </div>
         )}
@@ -235,16 +235,16 @@ export function DoorPage() {
           <ErrorBox error={errorMessage(list.error)} onRetry={() => list.refetch()} />
         ) : rows.length === 0 ? (
           <Panel>
-            <EmptyState icon="people" title="עוד אין רשומים" action={!inactive ? <Button size="lg" icon="userPlus" onClick={() => setWalkin('')}>הגיע/ה בלי הרשמה</Button> : undefined}>
-              מי שמגיע/ה בלי הרשמה נרשם/ת כאן בשנייה.
+            <EmptyState icon="people" title="עוד אין רשומים" action={!inactive ? <Button size="lg" icon="userPlus" onClick={() => setWalkin('')}>הגעה בלי הרשמה</Button> : undefined}>
+              מי שמגיע בלי הרשמה נרשם כאן בשנייה.
             </EmptyState>
           </Panel>
         ) : (
           <div className="flex flex-col gap-6">
             {term && shown.length === 0 && (
               <Panel>
-                <EmptyState icon="search" title={`אין ברשימה את "${term}"`} action={!inactive ? <Button size="lg" icon="userPlus" onClick={() => setWalkin(/\d/.test(term) ? '' : term)}>הגיע/ה בלי הרשמה</Button> : undefined}>
-                  אולי נרשם/ה בשם אחר? אפשר לחפש לפי 4 הספרות האחרונות של הטלפון.
+                <EmptyState icon="search" title={`אין ברשימה את "${term}"`} action={!inactive ? <Button size="lg" icon="userPlus" onClick={() => setWalkin(/\d/.test(term) ? '' : term)}>הגעה בלי הרשמה</Button> : undefined}>
+                  אולי ההרשמה בשם אחר? אפשר לחפש לפי 4 הספרות האחרונות של הטלפון.
                 </EmptyState>
               </Panel>
             )}
@@ -331,7 +331,7 @@ function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
         onClick={onToggle}
         disabled={disabled}
         aria-pressed={on}
-        aria-label={on ? `${r.display_name} הגיע/ה. לחיצה מבטלת` : `סימון ש${r.display_name} הגיע/ה`}
+        aria-label={on ? `${r.display_name}: הגעה מסומנת. לחיצה מבטלת` : `סימון הגעה של ${r.display_name}`}
         className={cx(
           'flex h-14 w-14 shrink-0 items-center justify-center rounded-[var(--radius-control)] border-2 transition-colors active:scale-95 disabled:opacity-50',
           on ? 'border-ink bg-ink text-light' : 'border-control-line bg-paper text-ink hover:border-ink hover:bg-ink/[0.06]',
@@ -344,24 +344,24 @@ function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-small text-muted">
           {r.phone_last4 && <span className="num" aria-label={`טלפון שמסתיים ב-${r.phone_last4}`}>••{r.phone_last4}</span>}
           {r.first_time && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
-          {friday && !r.first_time && isMilestone(nth) && <Badge tone="good" icon="star" title={`מפגש השישי ה-${nth} שלו/ה. כדאי לברך!`}>מפגש שישי {nth}</Badge>}
+          {friday && !r.first_time && isMilestone(nth) && <Badge tone="good" icon="star" title={`מפגש שישי מספר ${nth}. כדאי לברך!`}>מפגש שישי {nth}</Badge>}
           {r.photo_opt_out && (
-            <span className="inline-flex items-center gap-1 font-semibold text-bad" title="לא מעוניין/ת להופיע בתמונות">
+            <span className="inline-flex items-center gap-1 font-semibold text-bad" title="בקשה לא להופיע בתמונות">
               <Icon name="noCamera" size={17} label="לא מצלמים" />
               בלי צילום
             </span>
           )}
-          {r.is_member && <Badge tone="good" title="חבר/ת עמותה">חבר/ת עמותה</Badge>}
-          {r.invited_by && <span title="מי הזמין/ה">בהזמנת {r.invited_by}</span>}
+          {r.is_member && <Badge tone="good" title="חברות בעמותה">חברות בעמותה</Badge>}
+          {r.invited_by && <span title="מי הזמין">בהזמנת {r.invited_by}</span>}
           {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
           {r.status === 'waitlisted' && r.waitlist_position && <span>בהמתנה <span className="num">#{r.waitlist_position}</span></span>}
-          {r.attendance === 'no_show' && <Badge tone="bad" icon="alert">סומן/ה לא הגיע/ה</Badge>}
+          {r.attendance === 'no_show' && <Badge tone="bad" icon="alert">סומנה אי־הגעה</Badge>}
           {owes && <Badge tone="warn" icon="alert">לא שולם</Badge>}
           {price != null && r.payment_status === 'paid' && <Badge tone="good" icon="check">שולם</Badge>}
           {on && r.checked_in_at && (
             <span>
               <span className="num">{fmtTime(r.checked_in_at)}</span>
-              {r.checkin_method === 'self_qr' ? ' · סרק/ה QR' : ''}
+              {r.checkin_method === 'self_qr' ? ' · סריקת QR' : ''}
             </span>
           )}
         </div>
@@ -388,7 +388,7 @@ function WalkinDialog({ open, initialName, onClose, eventId, onDone }: {
   open: boolean; initialName: string; onClose: () => void; eventId: string; onDone: () => void;
 }) {
   return (
-    <Dialog open={open} onClose={onClose} title="הגיע/ה בלי הרשמה" size="sm">
+    <Dialog open={open} onClose={onClose} title="הגעה בלי הרשמה" size="sm">
       {open && <WalkinForm key={initialName} initialName={initialName} onClose={onClose} eventId={eventId} onDone={onDone} />}
     </Dialog>
   );
@@ -426,7 +426,7 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
     },
     onSuccess: async (p) => {
       await invalidate(eventId);
-      toast.success(`${p.full_name} מוכר/ת ממפגשים קודמים, וסומן/ה שהגיע/ה`);
+      toast.success(`${p.full_name}: כרטיס מוכר ממפגשים קודמים, וההגעה סומנה`);
       onDone();
       onClose();
     },
@@ -446,10 +446,10 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
       await invalidate(eventId);
       const first = firstName(name.trim());
       toast.success(
-        r.card_name ? `המספר הזה שייך ל${r.card_name}. ההגעה נרשמה בכרטיס שלו/ה, והצוות יראה שנכתב שם אחר.`
-        : r.already_registered ? `${first} כבר היה/תה ברשימה, וסומן/ה שהגיע/ה`
-          : r.participant_is_new ? `${first} נוסף/ה וסומן/ה שהגיע/ה. ברוך/ה הבא/ה!`
-            : `${first} מוכר/ת ממפגשים קודמים, וסומן/ה שהגיע/ה`,
+        r.card_name ? `המספר הזה שייך ל${r.card_name}. ההגעה נרשמה בכרטיס הזה, והצוות יראה שנכתב שם אחר.`
+        : r.already_registered ? `${first} כבר ברשימה, וההגעה סומנה`
+          : r.participant_is_new ? `${first}: נפתח כרטיס חדש וההגעה סומנה. פעם ראשונה!`
+            : `${first}: כרטיס מוכר ממפגשים קודמים, וההגעה סומנה`,
       );
       onDone();
       onClose();
@@ -467,7 +467,7 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
     ev.preventDefault();
     const errs: typeof errors = {};
     if (name.trim().length < 2 || /[0-9<>@/\\{}=;]/.test(name)) errs.name = 'צריך שם מלא (אותיות בלבד).';
-    if (!normalizePhone(phone)) errs.phone = 'מספר הטלפון לא נראה תקין. כותבים כמו 050-1234567.';
+    if (!normalizePhone(phone)) errs.phone = 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.';
     if (age.trim() && !(Number(age) >= 16 && Number(age) <= 99)) errs.age = 'גיל בין 16 ל-99, או להשאיר ריק.';
     setErrors(errs);
     if (Object.keys(errs).length) return;
@@ -498,7 +498,7 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
         <>
           <Input label="עיר" value={city} onChange={(x) => setCity(x.target.value)} maxLength={60} autoComplete="off" />
           <Input label="גיל" type="number" inputMode="numeric" ltr value={age} onChange={(x) => setAge(x.target.value)} error={errors.age} min={16} max={99} />
-          <Select label="איך שמע/ה עלינו" value={source} onChange={(x) => setSource(x.target.value)}>
+          <Select label="איך שמעו עלינו" value={source} onChange={(x) => setSource(x.target.value)}>
             <option value="">לא ידוע</option>
             {(sources.data ?? []).filter((s) => s.is_active).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </Select>

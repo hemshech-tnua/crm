@@ -50,7 +50,7 @@ test('a coordinator prepares a Friday meeting: checklist, equipment, payment, th
   // a payment, then "paid today"
   await page.getByRole('button', { name: 'הוספת תשלום' }).first().click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('ספק או מקבל/ת התשלום').fill('קייטרינג E2E');
+  await dialog.getByLabel('למי משלמים').fill('קייטרינג E2E');
   await dialog.getByLabel('עבור מה').fill('ארוחת בוקר ל-30');
   await dialog.getByLabel('סכום (₪)').fill('1200');
   await dialog.getByRole('button', { name: 'הוספה', exact: true }).click();

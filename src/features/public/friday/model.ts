@@ -54,6 +54,6 @@ export function program(e: PublicEvent | null): ProgramItem[] {
   return [
     { time: e ? fmtTime(e.starts_at) : '09:00', title: 'אימון', detail: (e && activityText(e)) ?? 'יוגה או אימון פונקציונלי' },
     { time: null, title: 'הרצאת אורח', detail: (e && lectureText(e)) ?? null },
-    { time: e ? fmtTime(e.ends_at) : '11:30', until: true, title: 'ארוחת בוקר וזמן ביחד', detail: null },
+    { time: e ? fmtTime(e.ends_at) : '11:30', until: true, title: 'ארוחת בוקר וזמן ביחד', detail: 'קפה, נשנושים ושיחה' },
   ];
 }

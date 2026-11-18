@@ -43,7 +43,7 @@ export function PasswordPage() {
     <div className="mx-auto max-w-sm">
       <h1 className="font-display text-3xl">בחירת סיסמה</h1>
       {me.data?.must_change_password ? (
-        <div className="mt-3 mb-5"><Notice>נכנסת עם סיסמה זמנית. כדי להמשיך צריך לבחור סיסמה אישית שרק את/ה יודע/ת.</Notice></div>
+        <div className="mt-3 mb-5"><Notice>נכנסת עם סיסמה זמנית. כדי להמשיך צריך לבחור סיסמה אישית, שרק לך ידועה.</Notice></div>
       ) : (
         <p className="mt-1 mb-5 text-muted">החלפת הסיסמה של {me.data?.full_name}.</p>
       )}

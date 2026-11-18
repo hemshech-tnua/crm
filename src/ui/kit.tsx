@@ -22,13 +22,15 @@ const VARIANT: Record<Variant, string> = {
 };
 const SIZE: Record<Size, string> = {
   sm: 'h-9 pointer-coarse:h-11 px-3 text-sm gap-1.5',
-  md: 'h-11 px-4 text-[0.95rem] gap-2',
+  md: 'h-11 px-4 text-[0.9375rem] gap-2',
   lg: 'h-14 px-6 text-lg gap-2.5',
 };
 
-export function buttonClass(variant: Variant = 'primary', size: Size = 'md', extra = '') {
+/** `cta`: a call to action is set in bold (cx does not merge classes, so the weight is chosen here, not overridden). */
+export function buttonClass(variant: Variant = 'primary', size: Size = 'md', extra = '', cta = false) {
   return cx(
-    'inline-flex items-center justify-center rounded-[var(--radius-control)] font-semibold transition-colors select-none whitespace-nowrap',
+    'inline-flex items-center justify-center rounded-[var(--radius-control)] transition-colors select-none whitespace-nowrap',
+    cta ? 'font-bold' : 'font-semibold',
     VARIANT[variant], SIZE[size], extra,
   );
 }
@@ -43,7 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   { variant = 'primary', size = 'md', icon, busy, cta, className = '', children, disabled, type = 'button', ...rest }, ref,
 ) {
   return (
-    <button ref={ref} type={type} className={buttonClass(variant, size, className)} disabled={disabled || busy} aria-busy={busy || undefined} {...rest}>
+    <button ref={ref} type={type} className={buttonClass(variant, size, className, cta)} disabled={disabled || busy} aria-busy={busy || undefined} {...rest}>
       {busy ? <Spinner size={size === 'lg' ? 20 : 16} /> : icon ? <Icon name={icon} size={size === 'sm' ? 16 : 18} /> : null}
       {children}
       {cta && !busy && <Tri className="ms-1" />}
@@ -53,7 +55,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
 export function ButtonLink({ variant = 'primary', size = 'md', icon, cta, className = '', children, ...rest }: LinkProps & { variant?: Variant; size?: Size; icon?: IconName; cta?: boolean }) {
   return (
-    <Link className={buttonClass(variant, size, className)} {...rest}>
+    <Link className={buttonClass(variant, size, className, cta)} {...rest}>
       {icon && <Icon name={icon} size={size === 'sm' ? 16 : 18} />}
       {children}
       {cta && <Tri className="ms-1" />}
@@ -67,9 +69,10 @@ export function ExternalButton({ href, variant = 'secondary', size = 'md', icon,
   cta?: boolean;
 }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={buttonClass(variant, size, className)} aria-label={label}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className={buttonClass(variant, size, className, cta)} aria-label={label}>
       {icon && <Icon name={icon} size={size === 'sm' ? 16 : 18} />}
       {children}
+      <span className="sr-only"> (נפתח בחלון חדש)</span>
       {cta && <Tri className="ms-1" />}
     </a>
   );
@@ -107,11 +110,15 @@ export function Field({ label, hint, error, children, htmlFor, required, classNa
         {required && <span className="text-bad" aria-hidden="true"> *</span>}
       </label>
       {children}
-      {hint && !error && <p id={htmlFor ? `${htmlFor}-hint` : undefined} className="text-sm text-muted">{hint}</p>}
+      {/* with an error the hint stays for screen readers (the field points at both), so "for example …" is not lost */}
+      {hint && <p id={htmlFor ? `${htmlFor}-hint` : undefined} className={error ? 'sr-only' : 'text-sm text-muted'}>{hint}</p>}
       {error && <p id={htmlFor ? `${htmlFor}-err` : undefined} className="flex items-center gap-1 text-sm font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
     </div>
   );
 }
+
+const describedBy = (fid: string, hint: ReactNode, error: string | null | undefined) =>
+  cx(hint ? `${fid}-hint` : null, error ? `${fid}-err` : null) || undefined;
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & { label?: ReactNode; hint?: ReactNode; error?: string | null; ltr?: boolean };
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ label, hint, error, ltr, className = '', id, required, ...rest }, ref) {
@@ -123,7 +130,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ l
       id={fid}
       required={required}
       aria-invalid={error ? true : undefined}
-      aria-describedby={label ? (error ? `${fid}-err` : hint ? `${fid}-hint` : undefined) : undefined}
+      aria-describedby={label ? describedBy(fid, hint, error) : undefined}
       dir={ltr ? 'ltr' : undefined}
       className={cx(controlBase, 'h-12', ltr && 'text-left', className)}
       {...rest}
@@ -138,7 +145,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   const fid = id ?? auto;
   const el = (
     <select ref={ref} id={fid} required={required} aria-invalid={error ? true : undefined}
-      aria-describedby={label ? (error ? `${fid}-err` : hint ? `${fid}-hint` : undefined) : undefined} className={cx(controlBase, 'h-12 pl-8', className)} {...rest}>
+      aria-describedby={label ? describedBy(fid, hint, error) : undefined} className={cx(controlBase, 'h-12 pl-8', className)} {...rest}>
       {children}
     </select>
   );
@@ -151,7 +158,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const fid = id ?? auto;
   const el = (
     <textarea ref={ref} id={fid} required={required} aria-invalid={error ? true : undefined}
-      aria-describedby={label ? (error ? `${fid}-err` : hint ? `${fid}-hint` : undefined) : undefined} className={cx(controlBase, 'min-h-24 py-2.5 leading-relaxed', className)} {...rest} />
+      aria-describedby={label ? describedBy(fid, hint, error) : undefined} className={cx(controlBase, 'min-h-24 py-2.5 leading-relaxed', className)} {...rest} />
   );
   return label ? <Field label={label} hint={hint} error={error} htmlFor={fid} required={required}>{el}</Field> : el;
 });
@@ -159,22 +166,23 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 export function Checkbox({ label, hint, checked, onChange, disabled, name }: {
   label: ReactNode; hint?: ReactNode; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; name?: string;
 }) {
-  const id = useId();
+  const hintId = useId();
+  // the whole row (box, gap and words) is one tap target; the hint describes the box but is not part of its name
   return (
-    <div className="flex items-start gap-3">
-      <input
-        id={id}
-        name={name}
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-md border-line accent-tide"
-      />
-      <label htmlFor={id} className="cursor-pointer leading-snug">
+    <div>
+      <label className="flex cursor-pointer items-start gap-3 leading-snug">
+        <input
+          name={name}
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.checked)}
+          aria-describedby={hint ? hintId : undefined}
+          className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-md border-line accent-tide"
+        />
         <span className="text-[0.95rem]">{label}</span>
-        {hint && <span className="mt-0.5 block text-sm text-muted">{hint}</span>}
       </label>
+      {hint && <p id={hintId} className="mt-0.5 ps-9 text-sm leading-snug text-muted">{hint}</p>}
     </div>
   );
 }
@@ -203,7 +211,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
                 on ? 'border-2 border-ink bg-paper px-[13px] py-[9px] font-semibold text-ink' : 'border-control-line bg-paper hover:border-ink',
               )}
             >
-              <input type="radio" name={name} value={o.value} checked={on} onChange={() => onChange(o.value)} aria-invalid={error ? true : undefined} className="h-5 w-5 accent-tide" />
+              <input type="radio" name={name} value={o.value} checked={on} onChange={() => onChange(o.value)} required={required} aria-invalid={error ? true : undefined} className="h-5 w-5 accent-tide" />
               <span className="leading-snug">{o.label}</span>
             </label>
           );
@@ -334,7 +342,7 @@ export function Skeleton({ lines = 3, className = '' }: { lines?: number; classN
   );
 }
 
-export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => void }) {
+export function ErrorBox({ error, onRetry }: { error: ReactNode; onRetry?: () => void }) {
   return (
     <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] border border-bad/30 bg-bad-wash px-4 py-3 text-bad">
       <Icon name="alert" />

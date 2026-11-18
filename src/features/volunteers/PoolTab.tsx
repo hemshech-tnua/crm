@@ -29,7 +29,7 @@ function useSetActive() {
     onSuccess: (_d, { v, active, cancel }) => {
       void qc.invalidateQueries({ queryKey: ['volunteers'] });
       void qc.invalidateQueries({ queryKey: ['volunteer_shifts'] });
-      toast.success(active ? `${v.full_name} חזר/ה למאגר הפעיל` : `${v.full_name} הועבר/ה ללא פעילים${cancel.length ? ` ו-${cancel.length} שיבוצים בוטלו` : ''}`);
+      toast.success(active ? `${v.full_name} שוב במאגר הפעיל` : `${v.full_name} ברשימת הלא פעילים עכשיו${cancel.length ? ` ו-${cancel.length} שיבוצים בוטלו` : ''}`);
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
@@ -71,8 +71,8 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
     const ok = await confirm({
       title: `להעביר את ${r.v.full_name} ללא פעילים?`,
       body: n
-        ? `יש לו/ה ${n === 1 ? 'שיבוץ קרוב אחד' : `${n} שיבוצים קרובים`}. הם יבוטלו, והמקומות יסומנו "חסר". הקישור האישי יפסיק לעבוד.`
-        : 'לא יופיע/תופיע ברשימת השיבוץ, והקישור האישי יפסיק לעבוד. אפשר להחזיר בכל עת.',
+        ? `יש ${n === 1 ? 'שיבוץ קרוב אחד' : `${n} שיבוצים קרובים`}. הם יבוטלו, והמקומות יסומנו "חסר". הקישור האישי יפסיק לעבוד.`
+        : 'השם לא יופיע ברשימת השיבוץ, והקישור האישי יפסיק לעבוד. אפשר להחזיר בכל עת.',
       confirm: 'העברה ללא פעילים',
       cancel: 'חזרה',
       danger: n > 0,
@@ -103,7 +103,7 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
     return (
       <Link to={`/app/events/${s.event_id}?tab=volunteers`} className="hover:underline">
         <span className="num">{dayAndDate(s.event.starts_at)}</span> · {roleLabel(s.event.type, s.role)}
-        {s.status === 'invited' && <span className="text-muted"> (מוזמן/ת)</span>}
+        {s.status === 'invited' && <span className="text-muted"> (בהמתנה)</span>}
       </Link>
     );
   };
@@ -121,9 +121,9 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
               <Th>שם</Th>
               <Th>טלפון</Th>
               <Th>תפקידים מועדפים</Th>
-              <Th numeric><span title="מפגשים שהוא/היא משובץ/ת אליהם (מוזמן/ת או אישר/ה)">משובץ/ת ל־</span></Th>
+              <Th numeric><span title="מפגשים קרובים עם שיבוץ (בהמתנה או הגעה אושרה)">שיבוצים</span></Th>
               <Th>המפגש הבא</Th>
-              <Th numeric><span title="מפגשים בשנה האחרונה שבהם אישר/ה הגעה">בשנה האחרונה</span></Th>
+              <Th numeric><span title="מפגשים בשנה האחרונה עם אישור הגעה">בשנה האחרונה</span></Th>
               <Th><span className="sr-only">פעולות</span></Th>
             </tr>
           </thead>
@@ -161,7 +161,7 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
               </div>
               <div className="text-center">
                 <div className="num font-display text-section leading-none">{new Set(r.upcoming.map((s) => s.event_id)).size}</div>
-                <div className="text-micro text-muted">משובץ/ת</div>
+                <div className="text-micro text-muted">שיבוצים</div>
               </div>
             </div>
             {r.v.roles.length > 0 && <div className="mt-1 flex flex-wrap gap-1">{r.v.roles.map((x) => <Badge key={x}>{ROLE_LABEL[x]}</Badge>)}</div>}
@@ -176,14 +176,14 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
 
   return (
     <div className="flex flex-col gap-4">
-      <SearchInput value={q} onChange={setQ} label="חיפוש מתנדב/ת" placeholder="שם, טלפון או תפקיד" />
+      <SearchInput value={q} onChange={setQ} label="חיפוש במאגר" placeholder="שם, טלפון או תפקיד" />
       {active.length ? list(active) : (
         <Panel>
           {term ? (
-            <EmptyState icon="search" title="לא נמצא/ה">אין במאגר מתנדב/ת שמתאים/ה לחיפוש.</EmptyState>
+            <EmptyState icon="search" title="אין תוצאות">אין במאגר שם שמתאים לחיפוש.</EmptyState>
           ) : (
-            <EmptyState icon="people" title="המאגר ריק" action={<Button icon="userPlus" onClick={() => onEdit('new')}>מתנדב/ת חדש/ה</Button>}>
-              מוסיפים כאן את מי שעוזר/ת במפגשים: קבלת פנים, הקמה, פירוק, צילום. אחר כך משבצים אותם מראש בלשונית "שיבוץ".
+            <EmptyState icon="people" title="המאגר ריק" action={<Button icon="userPlus" onClick={() => onEdit('new')}>הוספה למאגר</Button>}>
+              מוסיפים כאן את מי שעוזר במפגשים: קבלת פנים, הקמה, פירוק, צילום. אחר כך משבצים אותם מראש בלשונית "שיבוץ".
             </EmptyState>
           )}
         </Panel>

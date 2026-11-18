@@ -16,7 +16,7 @@ export type TemplateContext = {
 };
 
 export const PLACEHOLDERS: { key: string; label: string }[] = [
-  { key: 'שם_פרטי', label: 'השם הפרטי של הלוחם/ת' },
+  { key: 'שם_פרטי', label: 'השם הפרטי מהכרטיס' },
   { key: 'שם_המפגש', label: 'כותרת המפגש' },
   { key: 'תאריך', label: 'יום ותאריך' },
   { key: 'שעה', label: 'שעת התחלה' },
@@ -27,7 +27,7 @@ export const PLACEHOLDERS: { key: string; label: string }[] = [
   { key: 'קישור_הרשמה', label: 'קישור להרשמה למפגש' },
   { key: 'קישור_משוב', label: 'קישור למשוב על המפגש' },
   { key: 'קישור_הצטרפות', label: 'קישור להצטרפות לעמותה' },
-  { key: 'קישור_אישי', label: 'קישור אישי של הנרשם/ת: פתיחה אחת, ובכניסה צ׳ק־אין בלחיצה' },
+  { key: 'קישור_אישי', label: 'קישור אישי להרשמה: פתיחה אחת, ובכניסה צ׳ק־אין בלחיצה' },
 ];
 
 /** True when a template needs the registrant's personal link (made on demand, per message). */

@@ -11,6 +11,21 @@ import { useOrgInfo } from './api';
 import { formatPhone, whatsappLink } from '@/lib/phone';
 import { fmtMoney, isPriced } from '@/lib/money';
 
+/**
+ * The browser tab's title on a public page: "מפגשי שישי | המשך תנועה". Without one (null) the default title of
+ * index.html stays; leaving the page puts back the title it found.
+ */
+export function usePageTitle(title: string | null | undefined) {
+  useEffect(() => {
+    if (!title) return;
+    const before = document.title;
+    document.title = `${title} | המשך תנועה`;
+    return () => {
+      document.title = before;
+    };
+  }, [title]);
+}
+
 /** The one highlighted moment of a screen: a beige check that draws itself on navy (static when reduced motion is on). */
 export function SuccessMark({ size = 'md', className = 'mx-auto' }: { size?: 'md' | 'lg'; className?: string }) {
   const box = size === 'lg' ? 'h-24 w-24' : 'h-20 w-20';
@@ -89,16 +104,18 @@ export function Block({ title, children, className = '' }: { title: ReactNode; c
 
 export function CalendarButtons({ event }: { event: PublicEvent }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid gap-2 sm:flex sm:flex-wrap">
       <Button variant="secondary" icon="calendar" onClick={() => downloadIcs(event)}>הוספה ליומן</Button>
-      <ExternalButton href={googleCalendarUrl(event)} variant="ghost" icon="external">ביומן Google</ExternalButton>
+      <ExternalButton href={googleCalendarUrl(event)} variant="ghost" icon="external">הוספה ליומן Google</ExternalButton>
     </div>
   );
 }
 
 export function inviteMessage(event: PublicEvent | null): string {
   if (event) {
-    return `נרשמתי ל${event.title} של המשך תנועה, ${fmtDayLong(event.starts_at)} ב-${fmtTime(event.starts_at)}. בא לך להצטרף? הנה קישור להרשמה:`;
+    // a title that already names the association ("ערב לוחמות - "המשך תנועה"") does not get it twice
+    const of = /המשך תנועה/.test(event.title) ? '' : ' של המשך תנועה';
+    return `נרשמתי ל${event.title}${of}, ${fmtDayLong(event.starts_at)} ב-${fmtTime(event.starts_at)}. בא לך להצטרף? הנה קישור להרשמה:`;
   }
   return 'שמעת על המשך תנועה? מפגשי שישי ללוחמים וללוחמות: תנועה, הרצאה, ארוחת בוקר וחברים. בא לך לבוא איתי? כל המפגשים הקרובים כאן:';
 }
@@ -119,7 +136,7 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
     <Block title={title}>
       <p className="text-[0.9375rem] text-ink-soft">
         מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
-        <span className="block">שלחו להם את קישור ההזמנה שלכם, וכך נדע שהגיעו&nbsp;דרככם.</span>
+        <span className="block">שלחו להם את קישור ההזמנה שלכם. כך נדע שהגיעו&nbsp;דרככם.</span>
       </p>
       <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (
@@ -142,15 +159,16 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
 export function PersonalLink({ url, token, waitlist }: { url: string; token: string; waitlist?: boolean }) {
   const copy = useCopy();
   return (
-    <Block title="הקישור לניהול ההרשמה שלך">
+    <Block title="הקישור האישי שלך">
       <p className="text-[0.9375rem] text-ink-soft">
         {waitlist
-          ? 'כדאי לשמור את הקישור: דרכו אפשר לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה. הקישור אישי, לא\u00a0לשתף.'
-          : 'כדאי לשמור את הקישור: דרכו אפשר לבטל, ואחרי המפגש לתת משוב. הקישור אישי, לא\u00a0לשתף.'}
+          ? 'כדאי לשמור את הקישור: דרכו אפשר לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה.'
+          : 'כדאי לשמור את הקישור: דרכו אפשר לבטל את ההרשמה או לתת משוב אחרי המפגש.'}
+        <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור הועתק. כדאי לשמור אותו.')}>העתקת קישור הניהול</Button>
+        <Button variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור האישי הועתק. כדאי לשמור אותו.')}>העתקת הקישור האישי</Button>
         <ButtonLink to={`/m/${token}`} variant="ghost">לעמוד ההרשמה שלי</ButtonLink>
       </div>
     </Block>
@@ -191,6 +209,7 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
         )}
         <a href="#/privacy" target="_blank" rel="noopener" className="font-semibold text-tide underline underline-offset-2">
           מדיניות הפרטיות
+          <span className="sr-only"> (נפתח בחלון חדש)</span>
         </a>
       </p>
     </div>
@@ -205,6 +224,7 @@ export function ContactLine({ inline = false }: { inline?: boolean }) {
   const link = (
     <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="inline-block py-3 leading-5 font-semibold text-tide underline underline-offset-2">
       כתבו לנו בוואטסאפ (<span dir="ltr" className="num whitespace-nowrap">{formatPhone(phone)}</span>)
+      <span className="sr-only"> (נפתח בחלון חדש)</span>
     </a>
   );
   return inline ? link : <p className="text-sm text-muted">שאלות או בקשות? {link}</p>;

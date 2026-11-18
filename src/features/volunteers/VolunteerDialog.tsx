@@ -68,7 +68,7 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
     },
     onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: ['volunteers'] });
-      if (!onSaved) toast.success(volunteer ? 'הפרטים נשמרו' : `${f.full_name.trim()} נוסף/ה למאגר`);
+      if (!onSaved) toast.success(volunteer ? 'הפרטים נשמרו' : `${f.full_name.trim()} במאגר עכשיו`);
       onSaved?.(id, f.full_name.trim());
       onClose();
     },
@@ -78,7 +78,7 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
   const submit = () => {
     const next = {
       full_name: nameError(f.full_name),
-      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. כותבים כמו 050-1234567.' : null,
+      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.' : null,
     };
     setErrors(next);
     setFormError(null);
@@ -90,7 +90,7 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
     <Dialog
       open
       onClose={onClose}
-      title={volunteer ? `עריכה: ${volunteer.full_name}` : 'מתנדב/ת חדש/ה'}
+      title={volunteer ? `עריכה: ${volunteer.full_name}` : 'הוספה למאגר המתנדבים'}
       footer={<>
         <Button busy={save.isPending} onClick={submit}>{volunteer ? 'שמירה' : onSaved ? 'הוספה ושיבוץ' : 'הוספה למאגר'}</Button>
         <Button variant="ghost" onClick={onClose}>ביטול</Button>
@@ -110,7 +110,7 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
           autoComplete="off"
         />
         <RoleChips label="תפקידים מועדפים" value={f.roles} onChange={(roles) => setF({ ...f, roles })} />
-        <Textarea label="הערות" value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} maxLength={500} rows={2} hint={`למשל: זמין/ה רק בשישי בבוקר. ${NOTES_GUIDANCE}`} />
+        <Textarea label="הערות" value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} maxLength={500} rows={2} hint={`למשל: רק בשישי בבוקר. ${NOTES_GUIDANCE}`} />
         {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
       </form>

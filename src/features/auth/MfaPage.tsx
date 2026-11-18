@@ -68,7 +68,7 @@ export function MfaPage() {
         <Button type="submit" size="lg" busy={busy}>אישור</Button>
         <Button variant="ghost" onClick={async () => { await signOut(); navigate('/login'); }}>יציאה</Button>
       </form>
-      <p className="mt-5 text-sm text-muted">איבדת את הטלפון עם האפליקציה? מנהל/ת אחר/ת יכול/ה לאפס את האימות הדו־שלבי שלך במסך המשתמשים.</p>
+      <p className="mt-5 text-sm text-muted">איבדת את הטלפון עם האפליקציה? מנהלים אחרים יכולים לאפס את האימות הדו־שלבי שלך במסך המשתמשים.</p>
     </div>
   );
 }

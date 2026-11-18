@@ -29,7 +29,7 @@ export function PrivacySettings() {
   const ask = async (c: Candidate) => {
     const ok = await confirm({
       title: `מחיקת הפרטים של ${c.full_name}`,
-      body: 'השם, הטלפון, העיר, ההערות, יומן השיחות והמשימות יימחקו לצמיתות. נשארים רק נתונים אנונימיים (שהגיע/ה למפגש מסוים), כדי שהסטטיסטיקה של העבר לא תשתנה. אי אפשר לבטל.',
+      body: 'השם, הטלפון, העיר, ההערות, יומן השיחות והמשימות יימחקו לצמיתות. נשארים רק נתונים אנונימיים (הגעה למפגש מסוים), כדי שהסטטיסטיקה של העבר לא תשתנה. אי אפשר לבטל.',
       confirm: 'מחיקת הפרטים',
       danger: true,
     });
@@ -44,7 +44,7 @@ export function PrivacySettings() {
           ['מי רואה', 'מנהלים ורכזים: הכול. צוות כניסה: רק שם ו-4 ספרות אחרונות של הטלפון, ורק ביום המפגש. ההגבלה נאכפת בשרת.'],
           ['הסכמות', `כל שינוי בהסכמה נרשם עם המקור ונוסח הטקסט (גרסה ${settings.data?.consent_text_version ?? '—'}).`],
           ['תקופת שמירה', `לוחם שלא הייתה לו פעילות ${settings.data?.retention_months ?? 36} חודשים מוצג כאן כמועמד למחיקת פרטים. שום דבר לא נמחק אוטומטית.`],
-          ['בקשת מחיקה', 'לוחם/ת שמבקש/ת למחוק את הפרטים: בכרטיס הלוחם, "מחיקת פרטים אישיים".'],
+          ['בקשת מחיקה', 'מי שמבקש למחוק את הפרטים: בכרטיס הלוחם, "מחיקת פרטים אישיים".'],
         ]} />
         <div className="mt-4"><Notice tone="warn" icon="alert">מסמכי הפרטיות (מדיניות הפרטיות בעמוד ההרשמה ונוהל אבטחת המידע) מנוסחים לבדיקה משפטית ואינם הצהרת עמידה בתקנות. ראו docs/04-security-privacy.md.</Notice></div>
       </Panel>
@@ -77,7 +77,7 @@ export function PrivacySettings() {
 type AuditRow = { id: number; at: string; actor_id: string | null; actor_role: string | null; action: string; entity: string; entity_id: string | null; changed_fields: string[] | null; details: Record<string, unknown> | null };
 
 const ENTITY: Record<string, string> = {
-  participants: 'לוחם/ת', registrations: 'הרשמה', events: 'מפגש', speakers: 'מרצה/מדריך', staff: 'משתמש', settings: 'הגדרות',
+  participants: 'כרטיס', registrations: 'הרשמה', events: 'מפגש', speakers: 'מרצה/מדריך', staff: 'משתמש', settings: 'הגדרות',
   message_templates: 'תבנית הודעה', acquisition_sources: 'מקור', referral_links: 'קישור', feedback: 'משוב', contact_log: 'יומן קשר', sites: 'מתחם',
 };
 const ACTION: Record<string, string> = {
@@ -98,7 +98,7 @@ export function AuditLog() {
     },
   });
   const who = (r: AuditRow) => {
-    if (!r.actor_id) return r.actor_role === 'public' ? 'לוחם/ת (טופס ציבורי)' : 'המערכת';
+    if (!r.actor_id) return r.actor_role === 'public' ? 'טופס ציבורי' : 'המערכת';
     return staff.data?.find((s) => s.user_id === r.actor_id)?.full_name ?? 'משתמש שנמחק';
   };
   return (

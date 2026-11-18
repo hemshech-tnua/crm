@@ -9,10 +9,11 @@ import { forgetPerson, forgetToken, knownPeople, rememberPerson, saveToken, save
 import { EventTicket } from './EventTicket';
 import { timeRange } from './eventText';
 import { ConsentFields, PersonFields, PhoneExample, cleanText, nameError, phoneError, usePersonForm } from './PersonForm';
-import { Honeypot, ResultTitle, SuccessMark } from './shared';
+import { Honeypot, ResultTitle, SuccessMark, usePageTitle } from './shared';
 
 /** #/c/:checkinCode — scanned from the QR sign at the entrance, on the participant's own phone. */
 export function CheckinPage() {
+  usePageTitle('צ׳ק־אין');
   const { code = '' } = useParams();
   return <Checkin key={code} code={code} />;
 }

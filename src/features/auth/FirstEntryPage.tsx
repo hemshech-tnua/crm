@@ -33,7 +33,7 @@ export function FirstEntryPage() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="font-display text-3xl">ברוך/ה הבא/ה לצוות</h1>
+      <h1 className="font-display text-3xl">ברוכים הבאים לצוות</h1>
       <p className="mt-1 mb-6 text-muted">
         כניסה ראשונה למערכת של המשך תנועה. כותבים את כתובת האימייל שלך, ונכנסים. מהפעם הבאה הכניסה בקוד שנשלח למייל הזה, בלי סיסמה.
       </p>

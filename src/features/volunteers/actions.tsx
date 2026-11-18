@@ -147,7 +147,7 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
     assign.mutate(
       {
         volunteerId: v.id, role: def.role, eventIds: ids, replace: replace?.id ?? null,
-        done: n > 1 ? `${v.full_name} שובץ/ה ל${label} ב-${n} מפגשים` : `${v.full_name} שובץ/ה ל${label}`,
+        done: n > 1 ? `${v.full_name}: שיבוץ ל${label} ב-${n} מפגשים` : `${v.full_name}: שיבוץ ל${label}`,
       },
       { onSuccess: onClose },
     );
@@ -171,7 +171,7 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
           {(c.here.length > 0 || c.declinedHere) && (
             <span className="mt-1 flex flex-wrap gap-1.5">
               {c.here.map((s) => <Badge key={s.id} tone="tide">כבר במפגש: {roleLabel(event.type, s.role)}</Badge>)}
-              {c.declinedHere && <Badge tone="bad" icon="alert">אמר/ה שלא יכול/ה במפגש הזה</Badge>}
+              {c.declinedHere && <Badge tone="bad" icon="alert">לא מסתדר במפגש הזה</Badge>}
             </span>
           )}
         </span>
@@ -187,7 +187,7 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
         onClose={onClose}
         title={`שיבוץ ל${label}`}
         footer={<>
-          <Button variant="secondary" icon="userPlus" onClick={() => setAdding(true)}>מתנדב/ת חדש/ה</Button>
+          <Button variant="secondary" icon="userPlus" onClick={() => setAdding(true)}>הוספה למאגר</Button>
           <Button variant="ghost" onClick={onClose}>סגירה</Button>
         </>}
       >
@@ -226,7 +226,7 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
           <SearchInput value={q} onChange={setQ} label="חיפוש במאגר" placeholder="שם או טלפון" />
           {assign.isError && <ErrorBox error={errorMessage(assign.error)} />}
           {candidates.length === 0 ? (
-            <p className="py-4 text-center text-muted">{q ? 'אין במאגר מישהו בשם הזה.' : 'אין במאגר מתנדבים פעילים פנויים.'} אפשר להוסיף מתנדב/ת חדש/ה.</p>
+            <p className="py-4 text-center text-muted">{q ? 'אין במאגר מישהו בשם הזה.' : 'אין במאגר מתנדבים פעילים פנויים.'} אפשר להוסיף מתנדבים חדשים.</p>
           ) : (
             <div className="flex flex-col gap-3">
               {preferred.length > 0 && (
@@ -252,7 +252,7 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
           onClose={() => setAdding(false)}
           onSaved={(id, name) => {
             assign.mutate(
-              { volunteerId: id, role: def.role, eventIds: [event.id, ...also], replace: replace?.id ?? null, done: `${name} נוסף/ה ושובץ/ה ל${label}` },
+              { volunteerId: id, role: def.role, eventIds: [event.id, ...also], replace: replace?.id ?? null, done: `${name}: הוספה למאגר ושיבוץ ל${label}` },
               { onSuccess: onClose },
             );
           }}
@@ -269,14 +269,14 @@ function ShiftDialog({ shift, onClose }: { shift: Shift; onClose: () => void }) 
   const set = useSetShiftStatus();
   const confirm = useConfirm();
   const v = volunteer(shift.volunteer_id);
-  const name = v?.full_name ?? 'מתנדב/ת';
+  const name = v?.full_name ?? '(בלי שם)';
   const e = shift.event;
   const def = { role: shift.role, label: roleLabel(e.type, shift.role) };
   const mark = (status: Shift['status']) => set.mutate({ shift, status, name }, { onSuccess: onClose });
   const cancel = async () => {
     const ok = await confirm({
       title: `לבטל את השיבוץ של ${name}?`,
-      body: `${def.label} ב${e.title}, ${fmtDayLong(e.starts_at)}. המקום יסומן "חסר". אם כבר שלחת לו/ה קישור, המשמרת תיעלם ממנו.`,
+      body: `${def.label} ב${e.title}, ${fmtDayLong(e.starts_at)}. המקום יסומן "חסר". אם כבר נשלח קישור אישי, המשמרת תיעלם ממנו.`,
       confirm: 'ביטול השיבוץ',
       cancel: 'חזרה',
       danger: true,
@@ -293,7 +293,7 @@ function ShiftDialog({ shift, onClose }: { shift: Shift; onClose: () => void }) 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <StatusBadge status={shift.status} />
             {shift.responded_at && <span className="text-small text-muted">עודכן {ago(shift.responded_at)}</span>}
-            {v && !v.is_active && <Badge>לא פעיל/ה במאגר</Badge>}
+            {v && !v.is_active && <Badge>ברשימת הלא פעילים</Badge>}
           </div>
           {v?.phone && (
             <a href={telLink(v.phone)} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-tide hover:underline">
@@ -304,13 +304,13 @@ function ShiftDialog({ shift, onClose }: { shift: Shift; onClose: () => void }) 
         </div>
 
         <div className="flex flex-col gap-2">
-          <p className="text-small font-medium text-muted">ענה/תה בטלפון? מסמנים כאן:</p>
+          <p className="text-small font-medium text-muted">התשובה הגיעה בטלפון? מסמנים כאן:</p>
           <div className="grid grid-cols-2 gap-2">
-            <Button icon="check" variant={shift.status === 'confirmed' ? 'primary' : 'secondary'} aria-pressed={shift.status === 'confirmed'} disabled={set.isPending || shift.status === 'confirmed'} onClick={() => mark('confirmed')}>אישר/ה</Button>
-            <Button icon="close" variant={shift.status === 'declined' ? 'primary' : 'secondary'} aria-pressed={shift.status === 'declined'} disabled={set.isPending || shift.status === 'declined'} onClick={() => mark('declined')}>לא יכול/ה</Button>
+            <Button icon="check" variant={shift.status === 'confirmed' ? 'primary' : 'secondary'} aria-pressed={shift.status === 'confirmed'} disabled={set.isPending || shift.status === 'confirmed'} onClick={() => mark('confirmed')}>אישור הגעה</Button>
+            <Button icon="close" variant={shift.status === 'declined' ? 'primary' : 'secondary'} aria-pressed={shift.status === 'declined'} disabled={set.isPending || shift.status === 'declined'} onClick={() => mark('declined')}>לא מסתדר</Button>
           </div>
           {shift.status !== 'invited' && (
-            <Button variant="ghost" icon="undo" className="self-start" disabled={set.isPending} onClick={() => mark('invited')}>חזרה ל"מוזמן/ת"</Button>
+            <Button variant="ghost" icon="undo" className="self-start" disabled={set.isPending} onClick={() => mark('invited')}>חזרה ל"בהמתנה"</Button>
           )}
         </div>
 
@@ -357,7 +357,7 @@ function SendLinkDialog({ volunteer: v, onClose }: { volunteer: Volunteer; onClo
       <div className="flex flex-col gap-4">
         <p className="text-small text-muted">
           {pending ? <>מחכים לתשובה ב-<span className="num">{pending}</span> {pending === 1 ? 'מפגש' : 'מפגשים'}. </> : null}
-          בקישור {firstName(v.full_name)} רואה את המפגשים שלו/ה ומאשר/ת או מעדכן/ת שלא מסתדר.
+          בקישור מופיעים כל המפגשים של {firstName(v.full_name)}, ושם מאשרים הגעה או מעדכנים שלא מסתדר.
         </p>
         {link.error ? (
           <ErrorBox error={`לא הצלחנו ליצור קישור: ${link.error}`} />
@@ -393,7 +393,7 @@ export function PendingLinks({ shifts, className = '' }: { shifts: Shift[]; clas
   if (!rows.length) return null;
   return (
     <div className={cx('flex flex-col gap-2', className)}>
-      <p className="text-small font-medium text-muted">מחכים לתשובה. שולחים לכל אחד/ת קישור אישי עם כל המפגשים שלו/ה:</p>
+      <p className="text-small font-medium text-muted">מחכים לתשובה. שולחים לכל שם ברשימה קישור אישי עם כל המפגשים שלו:</p>
       <ul className="flex flex-wrap gap-2">
         {rows.map(({ v, n }) => (
           <li key={v!.id}>
@@ -416,7 +416,7 @@ export function Reminders({ shifts, className = '', title = true }: { shifts: Sh
   if (!due.length) return null;
   return (
     <div className={cx('flex flex-col gap-2', className)}>
-      {title && <p className="text-small font-medium text-muted">תזכורת למי שאישר/ה, למפגשים של היומיים הקרובים:</p>}
+      {title && <p className="text-small font-medium text-muted">תזכורת למי שאישר הגעה, למפגשים של היומיים הקרובים:</p>}
       <ul className="flex flex-wrap gap-2">
         {due.map((s) => {
           const v = volunteer(s.volunteer_id);

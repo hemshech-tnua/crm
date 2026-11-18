@@ -7,10 +7,11 @@ import { ButtonLink, EmptyState, ErrorBox, Skeleton } from '@/ui/kit';
 import { useFeedbackContext, useRegistration } from './api';
 import { EventTicket } from './EventTicket';
 import { FeedbackForm } from './FeedbackForm';
-import { InviteBlock, ResultTitle, SuccessMark, inviteMessage } from './shared';
+import { InviteBlock, ResultTitle, SuccessMark, inviteMessage, usePageTitle } from './shared';
 
 /** #/f/:code (the event link, sent to everyone) or #/f/:code?t=token (personal: linked to the registration). */
 export function FeedbackPage() {
+  usePageTitle('משוב על המפגש');
   const { code = '' } = useParams();
   const [params] = useSearchParams();
   const token = params.get('t')?.trim() || null;

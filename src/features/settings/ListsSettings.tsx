@@ -68,7 +68,7 @@ function SourceForm({ initial, onDone }: { initial: Partial<Source>; onDone: () 
     <form onSubmit={submit} className="flex flex-col gap-4">
       <Input label="הטקסט בטופס" value={f.label ?? ''} onChange={(e) => setF({ ...f, label: e.target.value })} />
       <Input label="סדר הופעה" type="number" value={String(f.sort_order ?? 100)} onChange={(e) => setF({ ...f, sort_order: Number(e.target.value) })} hint="מספר קטן מופיע קודם" />
-      <Checkbox checked={!!f.is_friend} onChange={(v) => setF({ ...f, is_friend: v })} label="זה מקור של חבר" hint='שואל "מי הביא/ה אותך?" ונספר ביעד "הגיעו דרך חבר"' />
+      <Checkbox checked={!!f.is_friend} onChange={(v) => setF({ ...f, is_friend: v })} label="זה מקור של חבר" hint='שואל "דרך מי הגעת?" ונספר ביעד "הגיעו דרך חבר"' />
       <Checkbox checked={!!f.asks_detail} onChange={(v) => setF({ ...f, asks_detail: v })} label="לבקש פירוט בטקסט חופשי" />
       <Checkbox checked={!!f.is_active} onChange={(v) => setF({ ...f, is_active: v })} label="מופיע בטופס ההרשמה" />
       {error && <ErrorBox error={error} />}
@@ -175,7 +175,7 @@ function SiteSignDialog({ site, onClose }: { site: Site; onClose: () => void }) 
     <Dialog open onClose={onClose} title={`שלט קבוע לכניסה: ${site.name}`}>
       <div className="flex flex-col gap-4">
         <p className="text-body text-ink-soft">
-          ברקוד אחד לכל המפגשים במתחם. מי שסורק/ת מגיע/ה לצ׳ק־אין של המפגש שפתוח באותו רגע. אם אין מפגש פתוח, מופיע מתי ייפתח הבא.
+          ברקוד אחד לכל המפגשים במתחם. הסריקה מובילה לצ׳ק־אין של המפגש שפתוח באותו רגע. אם אין מפגש פתוח, מופיע מתי ייפתח הבא.
         </p>
         <div className="flex justify-center"><QrImage value={url} size={220} label={`ברקוד קבוע לכניסה, ${site.name}`} className="rounded-[var(--radius-panel)] border border-edge" /></div>
         <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PublicEvent } from '@/lib/types';
@@ -6,13 +6,12 @@ import { errorCode, errorMessage } from '@/lib/errors';
 import { allEventsUrl, manageUrl, registerUrl } from '@/lib/links';
 import { Button, ButtonLink, EmptyState, ErrorBox, Notice, Skeleton } from '@/ui/kit';
 import { registerFor, usePublicEvent, usePublicSources, type PublicSource, type RegisterResult } from './api';
-import { saveToken } from './device';
-import { ContactLine } from './shared';
+import { saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { Glyph } from './marks';
 import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
-import { CalendarButtons, InviteBlock, PayBlock, PersonalLink, ResultTitle, SuccessMark, WaitMark, inviteMessage } from './shared';
+import { CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
 import { fmtMoney, isPriced } from '@/lib/money';
 
 const UTM_KEYS = ['source', 'medium', 'campaign'] as const;
@@ -35,6 +34,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const sources = usePublicSources();
   const [done, setDone] = useState<RegisterResult | null>(null);
   const home = `/${trackingQuery(params)}`;
+  usePageTitle(pageTitle(done, event.data));
 
   if (done && event.data) return <Registered result={done} event={done.event ?? event.data} onAnother={() => { setDone(null); window.scrollTo(0, 0); }} />;
 
@@ -69,8 +69,8 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
             הזמנה מ{e.invited_by}
           </p>
         )}
-        <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'המפגש' : 'הרשמה למפגש'}</h1>
-        <EventTicket event={e} highlight detailed />
+        <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'פרטי המפגש' : 'הרשמה למפגש'}</h1>
+        <EventTicket event={e} highlight detailed showStatus="notable" />
       </div>
       <div className="lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
         {closed ? (
@@ -85,6 +85,17 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
       </div>
     </div>
   );
+}
+
+/** The browser tab's title: what this screen is, then the meeting ("הרשמה: מפגש שישי"). */
+function pageTitle(done: RegisterResult | null, e: PublicEvent | undefined): string | null {
+  if (!e) return null;
+  if (done) {
+    if (done.status === 'waitlisted' || done.status === 'already_waitlisted') return `רשימת ההמתנה: ${e.title}`;
+    return done.status === 'already_registered' ? `כבר נרשמת: ${e.title}` : `נרשמת: ${e.title}`;
+  }
+  const closed = e.status === 'cancelled' || !e.registration_open || (e.is_full && !e.waitlist_enabled);
+  return closed ? e.title : `הרשמה: ${e.title}`;
 }
 
 function ClosedState({ event: e, home }: { event: PublicEvent; home: string }) {
@@ -116,7 +127,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
   const linkKey = event.ref_source && sources.some((s) => s.key === event.ref_source) ? event.ref_source : '';
   const form = usePersonForm({ source: friendKey || linkKey });
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ReactNode>(null);
   const qc = useQueryClient();
   const waitlist = event.is_full && event.waitlist_enabled;
 
@@ -134,7 +145,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       });
       if (res.status === 'phone_in_use') {
         setBusy(false);
-        setError('מספר הטלפון הזה כבר רשום למפגש בשם של מישהו אחר. אם זה טלפון משותף, אפשר להירשם עם מספר נייד אחר או לכתוב לנו בוואטסאפ (הקישור למטה).');
+        setError(<>מספר הטלפון הזה כבר רשום למפגש בשם אחר. אם הטלפון משותף, אפשר להירשם עם מספר נייד אחר או לכתוב לנו: <ContactLine inline /></>);
         return;
       }
       saveToken(res.event?.code ?? event.code, res.token, res.first_name);
@@ -173,14 +184,23 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       <Button type="submit" size="lg" cta busy={busy} className="w-full">
         {waitlist ? 'הצטרפות לרשימת ההמתנה' : 'הרשמה'}
       </Button>
+      {!waitlist && (
+        <p className="-mt-2 text-center text-small text-muted">אחרי ההרשמה יופיע כאן קישור אישי. דרכו אפשר לבטל אם משהו משתנה.</p>
+      )}
     </form>
   );
 }
 
+function ownSaved(code: string, firstName: string | null | undefined): string | null {
+  const saved = savedRegistrations(code);
+  if (firstName) return saved.find((x) => x.name === firstName)?.token ?? null;
+  return saved.length === 1 ? saved[0].token : null;
+}
+
 function Registered({ result: r, event, onAnother }: { result: RegisterResult; event: PublicEvent; onAnother: () => void }) {
   const another = (
-    <button type="button" onClick={onAnother} className="min-h-11 self-center px-3 font-semibold text-tide underline underline-offset-4">
-      רישום של מישהו נוסף מהטלפון הזה
+    <button type="button" onClick={onAnother} className="min-h-11 self-center px-3 font-semibold text-balance text-tide underline underline-offset-4">
+      הרשמה של עוד מישהו מהטלפון הזה
     </button>
   );
   const name = r.first_name ? `${r.first_name}, ` : '';
@@ -214,16 +234,23 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
   }
 
   const again = r.status === 'already_registered';
+  // registered before from this phone: their own page is one tap away (the server does not send the link again).
+  // A shared phone may hold several people's registrations, so only the one with this first name is offered.
+  const mine = again && !r.token ? ownSaved(event.code, r.first_name) : null;
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
       <div className="pt-2 text-center">
         <SuccessMark />
         <ResultTitle className="mt-4">{again ? 'כבר נרשמת למפגש הזה' : 'נרשמת!'}</ResultTitle>
         <p className="mx-auto mt-2 max-w-sm text-lg text-ink-soft">
-          {again ? `${name}ההרשמה שלך בתוקף, אין צורך להירשם שוב.` : `${name}שמרנו לך מקום. מחכים לך!`}
+          {again ? `${name}ההרשמה שלך בתוקף. אין צורך להירשם שוב.` : `${name}שמרנו לך מקום. מחכים לך!`}
         </p>
-        {again && (
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">צריך לבטל? דרך הקישור לניהול ההרשמה שקיבלת כשנרשמת. אין אותו? <ContactLine inline /></p>
+        {again && !r.token && (
+          mine ? (
+            <ButtonLink to={`/m/${mine}`} variant="secondary" className="mt-4">לעמוד ההרשמה שלי</ButtonLink>
+          ) : (
+            <p className="mx-auto mt-1 max-w-sm text-sm text-muted">צריך לבטל? אפשר בקישור האישי שקיבלת בהרשמה. אין לך אותו? <ContactLine inline /></p>
+          )
         )}
       </div>
       {!again && <PayBlock event={event} />}
@@ -232,8 +259,8 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
           <CalendarButtons event={event} />
         </div>
       </EventTicket>
-      {invite && <InviteBlock url={invite.url} message={invite.message} />}
       {r.token && <PersonalLink url={manageUrl(r.token)} token={r.token} />}
+      {invite && <InviteBlock url={invite.url} message={invite.message} />}
       {another}
     </div>
   );

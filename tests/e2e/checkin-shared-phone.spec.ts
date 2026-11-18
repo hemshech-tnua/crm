@@ -9,7 +9,7 @@ test('a phone that registered two people asks who arrived; a mistaken check-in c
   const people = [{ n: `דן ${name().split(' ')[1]}`, p: phone() }, { n: `יעל ${name().split(' ')[1]}`, p: phone() }];
   await page.goto(`#/r/${ev.public_code}`);
   for (const [i, x] of people.entries()) {
-    if (i > 0) await page.getByRole('button', { name: 'רישום של מישהו נוסף מהטלפון הזה' }).click();
+    if (i > 0) await page.getByRole('button', { name: 'הרשמה של עוד מישהו מהטלפון הזה' }).click();
     await page.getByLabel('שם מלא').fill(x.n);
     await page.getByLabel('טלפון נייד').fill(x.p);
     await page.getByLabel('עיר מגורים').fill('מודיעין');

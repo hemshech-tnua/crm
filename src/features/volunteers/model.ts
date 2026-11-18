@@ -42,9 +42,9 @@ export const roleLabel = (type: EventType | null | undefined, role: VolunteerRol
   (type && SLOTS[type].find((s) => s.role === role)?.label) || ROLE_LABEL[role];
 
 export const STATUS_LABEL: Record<ShiftStatus, string> = {
-  invited: 'מוזמן/ת',
-  confirmed: 'אישר/ה',
-  declined: 'לא יכול/ה',
+  invited: 'בהמתנה',
+  confirmed: 'הגעה אושרה',
+  declined: 'לא מסתדר',
   cancelled: 'בוטל',
 };
 

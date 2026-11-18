@@ -112,7 +112,7 @@ export function TaskDialog({ task, eventId, meetingDay, onClose }: { task: Event
         <div className="grid grid-cols-2 gap-4">
           <Input label="הערכת זמן (שעות)" inputMode="decimal" type="number" min={0} max={24} step={0.25} value={f.hours} onChange={(e) => set('hours', e.target.value)} error={errors.hours} hint="0.25 = רבע שעה" />
           <Select label="באחריות" value={f.assignee_id} onChange={(e) => set('assignee_id', e.target.value)}>
-            <option value="">הרכז/ת</option>
+            <option value="">צוות הריכוז</option>
             {staff.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
           </Select>
         </div>

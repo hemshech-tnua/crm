@@ -31,7 +31,7 @@ export function SlotBody({ event, slot, compact }: { event: PlanEvent; slot: Slo
             )}
           >
             <span className={cx('max-w-full truncate font-medium', s.status === 'declined' && 'text-muted line-through decoration-1')}>
-              {v?.full_name ?? 'מתנדב/ת'}
+              {v?.full_name ?? '(בלי שם)'}
               <span className="sr-only"> · {where}</span>
             </span>
             <StatusBadge status={s.status} />

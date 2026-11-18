@@ -48,7 +48,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
       qc.invalidateQueries({ queryKey: ['speakers'] });
       qc.invalidateQueries({ queryKey: ['report_presenters'] });
       qc.invalidateQueries({ queryKey: ['attention'] });
-      toast.success(speaker ? 'הפרטים נשמרו' : admin && f.approve ? 'נוסף/ה ואושר/ה' : 'נוסף/ה. מחכה לאישור של מנהל/ת');
+      toast.success(speaker ? 'הפרטים נשמרו' : admin && f.approve ? 'ההוספה והאישור נשמרו' : 'ההצעה נשמרה ומחכה לאישור מנהלים');
       onClose();
     },
     onError: (e) => setFormError(errorMessage(e)),
@@ -59,7 +59,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
     const next = {
       full_name: nameError(f.full_name),
       topic: f.topic.trim().length < 2 ? (f.kind === 'speaker' ? 'צריך לכתוב נושא להרצאה.' : 'צריך לכתוב איזו פעילות.') : null,
-      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. כותבים כמו 050-1234567.' : null,
+      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.' : null,
       social_url: url && !/^https:\/\/[^\s<>"]+$/i.test(url) ? 'הקישור צריך להתחיל ב-https://' : url.length > 300 ? 'הקישור ארוך מדי.' : null,
     };
     setErrors(next);
@@ -72,7 +72,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
     <Dialog
       open
       onClose={onClose}
-      title={speaker ? `עריכה: ${speaker.full_name}` : 'מרצה או מדריך/ה חדש/ה'}
+      title={speaker ? `עריכה: ${speaker.full_name}` : 'הוספה למרצים ולמדריכים'}
       footer={<>
         <Button busy={save.isPending} onClick={submit}>שמירה</Button>
         <Button variant="ghost" onClick={onClose}>ביטול</Button>
@@ -83,20 +83,20 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
           legend="תפקיד"
           value={f.kind}
           onChange={(v) => set('kind', v)}
-          options={[{ value: 'speaker', label: 'מרצה' }, { value: 'instructor', label: 'מדריך/ה (יוגה, פילאטיס)' }]}
+          options={[{ value: 'speaker', label: 'מרצה' }, { value: 'instructor', label: 'הדרכה (יוגה, פילאטיס)' }]}
         />
         <Input label="שם מלא" required value={f.full_name} onChange={(e) => set('full_name', e.target.value)} error={errors.full_name} maxLength={80} />
         <Input label={f.kind === 'speaker' ? 'נושא ההרצאה' : 'פעילות'} required value={f.topic} onChange={(e) => set('topic', e.target.value)} error={errors.topic} maxLength={160} />
-        <Input label="משפט אחד עליו/ה" value={f.bio_line} onChange={(e) => set('bio_line', e.target.value)} maxLength={240} hint="מופיע בעמוד ההרשמה ליד השם (רק אחרי אישור)." />
+        <Input label="משפט היכרות קצר" value={f.bio_line} onChange={(e) => set('bio_line', e.target.value)} maxLength={240} hint="מופיע בעמוד ההרשמה ליד השם (רק אחרי אישור)." />
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="טלפון" ltr type="tel" inputMode="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} error={errors.phone} />
           <Input label="קישור (אינסטגרם, לינקדאין, אתר)" ltr type="url" placeholder="https://" value={f.social_url} onChange={(e) => set('social_url', e.target.value)} error={errors.social_url} maxLength={300} />
         </div>
         <Textarea label="הערות לצוות" value={f.notes} onChange={(e) => set('notes', e.target.value)} maxLength={1000} rows={3} />
         {!speaker && (admin ? (
-          <Checkbox label="לאשר מיד" hint="מרצה מאושר/ת אפשר לשבץ במפגש ולהציג בעמוד ההרשמה." checked={f.approve} onChange={(v) => set('approve', v)} />
+          <Checkbox label="לאשר מיד" hint="אחרי אישור אפשר לשבץ במפגש ולהציג בעמוד ההרשמה." checked={f.approve} onChange={(v) => set('approve', v)} />
         ) : (
-          <Notice icon="shield">יופיע/תופיע ב"הצעות ממתינות" עד שמנהל/ת יאשר/תאשר.</Notice>
+          <Notice icon="shield">ההצעה תחכה ב"הצעות ממתינות" עד לאישור מנהלים.</Notice>
         ))}
         {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />

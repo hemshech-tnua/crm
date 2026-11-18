@@ -115,7 +115,7 @@ export function TwoStepSettings() {
           <p className="text-body text-ink-soft">שכבת הגנה נוספת: בכל כניסה, אחרי הסיסמה, מקלידים גם קוד מתחלף מאפליקציה בטלפון. מומלץ מאוד למנהלים.</p>
           {error && <div className="mt-3"><ErrorBox error={error} /></div>}
           <Button className="mt-4" icon="shield" busy={busy} onClick={start}>הפעלת אימות דו־שלבי</Button>
-          {me.data?.role === 'admin' && <div className="mt-4"><Notice>אם הטלפון יאבד, מנהל/ת אחר/ת יכול/ה לאפס את האימות במסך המשתמשים.</Notice></div>}
+          {me.data?.role === 'admin' && <div className="mt-4"><Notice>אם הטלפון יאבד, מנהלים אחרים יכולים לאפס את האימות במסך המשתמשים.</Notice></div>}
         </>
       )}
     </Panel>

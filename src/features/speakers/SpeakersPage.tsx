@@ -23,11 +23,11 @@ export type PresenterStats = {
 };
 type Booking = { id: string; title: string; starts_at: string; status: string; speaker_id: string | null; instructor_id: string | null; lecture_topic: string | null; activity_name: string | null };
 
-const KIND_LABEL: Record<Speaker['kind'], string> = { speaker: 'מרצה', instructor: 'מדריך/ה' };
+const KIND_LABEL: Record<Speaker['kind'], string> = { speaker: 'מרצה', instructor: 'הדרכה' };
 const STATUS: Record<Speaker['status'], { label: string; tone: 'good' | 'warn' | 'neutral' | 'bad' }> = {
-  approved: { label: 'מאושר/ת', tone: 'good' },
-  proposed: { label: 'ממתין/ה לאישור', tone: 'warn' },
-  declined: { label: 'נדחה/תה', tone: 'neutral' },
+  approved: { label: 'אישור ניתן', tone: 'good' },
+  proposed: { label: 'בהמתנה לאישור', tone: 'warn' },
+  declined: { label: 'ההצעה נדחתה', tone: 'neutral' },
   archived: { label: 'בארכיון', tone: 'neutral' },
 };
 
@@ -69,7 +69,7 @@ export function SpeakersPage() {
     <div>
       <PageHeader
         title="מרצים ומדריכים"
-        subtitle="מי מעביר/ה את המפגשים, ומי מביא/ה הכי הרבה לוחמים"
+        subtitle="מי מעבירים את המפגשים, ומי מביאים הכי הרבה לוחמים"
         actions={<Button icon="plus" onClick={() => setEditing('new')}>הוספה</Button>}
       />
       <Tabs<Tab>
@@ -95,7 +95,7 @@ export function SpeakersPage() {
               {proposed.map((s) => <SpeakerCard key={s.id} s={s} role={role} onEdit={() => setEditing(s)} bookings={bookingsBy.get(s.id)} />)}
             </ul>
           ) : (
-            <Panel><EmptyState icon="mic" title="אין הצעות שמחכות">הצעות מהטופס הציבורי ומרצים שרכזים מוסיפים מחכים כאן לאישור של מנהל/ת.</EmptyState></Panel>
+            <Panel><EmptyState icon="mic" title="אין הצעות שמחכות">הצעות מהטופס הציבורי ומרצים שרכזים מוסיפים מחכים כאן לאישור מנהלים.</EmptyState></Panel>
           )}
         </div>
       ) : (
@@ -139,7 +139,7 @@ function ProposeLink() {
   return (
     <Notice icon="link">
       <p className="font-semibold">קישור לטופס הצעה עצמית</p>
-      <p>שולחים למי שרוצה להעביר הרצאה או להדריך. ההצעות מגיעות לכאן, ורק מנהל/ת מאשר/ת.</p>
+      <p>שולחים למי שרוצה להעביר הרצאה או להדריך. ההצעות מגיעות לכאן, ורק מנהלים מאשרים.</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <code dir="ltr" className="num max-w-full truncate rounded-[var(--radius-control)] bg-paper px-2 py-1 text-small text-ink">{url}</code>
         <Button size="sm" variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור הועתק')}>העתקה</Button>
@@ -169,8 +169,8 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
             <Th>{KIND_LABEL[kind]}</Th>
             <Th>{kind === 'speaker' ? 'נושאים' : 'פעילות'}</Th>
             <Th numeric>מפגשים</Th>
-            <Th numeric><span title="ממוצע המגיעים למפגשים שלו/ה">ממוצע משתתפים</span></Th>
-            <Th numeric><span title="כמה הגיעו בפעם הראשונה למפגשים שלו/ה">חדשים</span></Th>
+            <Th numeric><span title="ממוצע המגיעים למפגש">ממוצע משתתפים</span></Th>
+            <Th numeric><span title="כמה הגיעו בפעם הראשונה, בכל המפגשים יחד">חדשים</span></Th>
             <Th numeric><span title={kind === 'speaker' ? 'ממוצע דירוג ההרצאה במשוב' : 'ממוצע דירוג הפעילות במשוב'}>דירוג</span></Th>
           </tr>
         </thead>
@@ -206,7 +206,7 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
         ))}
       </ol>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-edge px-4 py-2 sm:px-5">
-        <p className="text-small text-muted">לפי המפגשים שכבר התקיימו. ממוצע משתתפים = מי שסומן/ה "הגיע/ה".</p>
+        <p className="text-small text-muted">לפי המפגשים שכבר התקיימו. ממוצע משתתפים = סימוני "הגעה".</p>
         {ranked.length > TOP && (
           <Button size="sm" variant="ghost" onClick={() => setAll((v) => !v)}>{all ? 'רק 5 הראשונים' : <>כל ה-{ranked.length}</>}</Button>
         )}
@@ -254,13 +254,13 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
     if (!admin) {
       const ok = await confirm({
         title: `להעביר את ${s.full_name} לארכיון?`,
-        body: 'לא יופיע/תופיע ברשימת הבחירה של מפגשים חדשים. רק מנהל/ת יוכל/תוכל להחזיר לפעילים.',
+        body: 'השם לא יופיע ברשימת הבחירה של מפגשים חדשים. רק מנהלים יוכלו להחזיר לפעילים.',
         confirm: 'העברה לארכיון',
         cancel: 'חזרה',
       });
       if (!ok) return;
     }
-    setStatus.mutate({ s, status: 'archived', done: `${s.full_name} הועבר/ה לארכיון`, undo: admin ? 'approved' : undefined });
+    setStatus.mutate({ s, status: 'archived', done: `${s.full_name} בארכיון עכשיו`, undo: admin ? 'approved' : undefined });
   };
 
   return (
@@ -282,11 +282,11 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
                 <Icon name="external" size={15} /><span dir="ltr" className="truncate">{s.social_url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40)}</span>
               </a>
             )}
-            {s.status === 'proposed' && <span className="text-muted">הוצע/ה {ago(s.created_at)}</span>}
+            {s.status === 'proposed' && <span className="text-muted">ההצעה הגיעה {ago(s.created_at)}</span>}
           </p>
           {s.proposal_message && (
             <blockquote className="mt-2 rounded-[var(--radius-control)] bg-mist px-3 py-2 text-body text-ink-soft">
-              <span className="text-small font-semibold text-muted">מה כתב/ה בהצעה: </span>{s.proposal_message}
+              <span className="text-small font-semibold text-muted">מה נכתב בהצעה: </span>{s.proposal_message}
             </blockquote>
           )}
           {s.notes && <p className="mt-2 whitespace-pre-line text-small text-ink-soft"><span className="font-semibold text-muted">הערות: </span>{s.notes}</p>}
@@ -301,7 +301,7 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
           )}
           {bookings && bookings.length > 0 && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-small">
-              <span className="text-muted">קבוע/ה ל:</span>
+              <span className="text-muted">שיבוצים:</span>
               {bookings.slice(0, 4).map((b) => (
                 <Link key={b.id} to={`/app/events/${b.id}`} className="inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-control)] border border-ink/25 px-2.5 font-medium text-ink hover:border-ink pointer-coarse:min-h-11">
                   <span className="num">{fmtShortDate(b.starts_at)}</span> {b.title}{b.status === 'draft' ? ' (טיוטה)' : ''}
@@ -310,14 +310,14 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
               {bookings.length > 4 && <span className="text-muted">ועוד <span className="num">{bookings.length - 4}</span></span>}
             </div>
           )}
-          {s.status === 'approved' && s.approved_at && <p className="mt-1.5 text-micro text-faint">אושר/ה <span className="num">{fmtDate(s.approved_at)}</span></p>}
+          {s.status === 'approved' && s.approved_at && <p className="mt-1.5 text-micro text-faint">אישור: <span className="num">{fmtDate(s.approved_at)}</span></p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-edge pt-3">
           {s.status === 'proposed' && (admin ? (
-            <Button size="sm" icon="check" busy={busy} onClick={() => setStatus.mutate({ s, status: 'approved', done: `${s.full_name} אושר/ה`, undo: 'proposed' })}>אישור</Button>
+            <Button size="sm" icon="check" busy={busy} onClick={() => setStatus.mutate({ s, status: 'approved', done: `${s.full_name}: ההצעה אושרה`, undo: 'proposed' })}>אישור</Button>
           ) : (
-            <span className="text-small font-medium text-warn">ממתין לאישור של מנהל/ת</span>
+            <span className="text-small font-medium text-warn">בהמתנה לאישור מנהלים</span>
           ))}
           <Button size="sm" variant="secondary" icon="edit" onClick={onEdit}>עריכה</Button>
           {s.status === 'proposed' && (
@@ -334,8 +334,8 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
               disabled={busy}
              
               onClick={() => setStatus.mutate(admin
-                ? { s, status: 'approved', done: `${s.full_name} חזר/ה לפעילים`, undo: s.status }
-                : { s, status: 'proposed', done: `${s.full_name} הועבר/ה להצעות הממתינות לאישור`, undo: s.status })}
+                ? { s, status: 'approved', done: `${s.full_name} שוב ברשימת הפעילים`, undo: s.status }
+                : { s, status: 'proposed', done: `${s.full_name} שוב בהצעות הממתינות לאישור`, undo: s.status })}
             >
               {admin ? 'החזרה לפעילים' : 'החזרה להצעות'}
             </Button>

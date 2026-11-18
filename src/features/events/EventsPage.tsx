@@ -153,7 +153,7 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
                 </div>
                 {(sp.name || sp.topic) && (
                   <div className="mt-1 text-small text-ink-soft">
-                    {sp.name ?? 'מרצה לא נקבע/ה'}{sp.topic ? `: ${sp.topic}` : ''}
+                    {sp.name ?? 'עוד אין מרצה'}{sp.topic ? `: ${sp.topic}` : ''}
                     {sp.pending && <span className="ms-1.5 font-medium text-warn">(ממתין לאישור)</span>}
                   </div>
                 )}
@@ -205,7 +205,7 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
                     {sp.name || sp.topic ? (
                       <div className="leading-snug">
                         <div className="font-medium">
-                          {sp.name ?? <span className="text-muted">מרצה לא נקבע/ה</span>}
+                          {sp.name ?? <span className="text-muted">עוד אין מרצה</span>}
                           {sp.pending && <span className="ms-1.5 text-small text-warn">(ממתין לאישור)</span>}
                         </div>
                         {sp.topic && <div className="truncate text-small text-muted">{sp.topic}</div>}

@@ -92,7 +92,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     },
     onSuccess: async (r) => {
       await invalidate(e.id);
-      toast.success(`${r.participant?.full_name ?? ''} עבר/ה לרשומים`);
+      toast.success(`ההרשמה של ${r.participant?.full_name ?? ''} עברה לרשומים`);
       if (r.participant?.phone) setComposer({ reg: { ...r, status: 'registered' }, keys: ['waitlist_promoted'], defaultKey: 'waitlist_promoted' });
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -119,7 +119,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     },
     onSuccess: async ({ r, status }) => {
       await invalidate(e.id);
-      toast.success(status === 'waitlisted' ? `המפגש מלא: ${r.participant?.full_name ?? ''} נוסף/ה לרשימת ההמתנה` : `${r.participant?.full_name ?? ''} רשום/ה שוב`);
+      toast.success(status === 'waitlisted' ? `המפגש מלא: ההרשמה של ${r.participant?.full_name ?? ''} ברשימת ההמתנה` : `ההרשמה של ${r.participant?.full_name ?? ''} חודשה`);
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -140,7 +140,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   const askCancel = async (r: RegRow) => {
     const ok = await confirm({
       title: 'ביטול הרשמה',
-      body: <>לבטל את ההרשמה של <b>{r.participant?.full_name}</b>? {r.status === 'registered' && waiting > 0 ? 'המקום יתפנה, ואפשר יהיה לקדם את הבא/ה ברשימת ההמתנה.' : 'המקום יתפנה.'}</>,
+      body: <>לבטל את ההרשמה של <b>{r.participant?.full_name}</b>? {r.status === 'registered' && waiting > 0 ? 'המקום יתפנה, ואפשר יהיה לקדם מרשימת ההמתנה.' : 'המקום יתפנה.'}</>,
       confirm: 'ביטול ההרשמה',
       cancel: 'חזרה',
       danger: true,
@@ -160,11 +160,11 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       { header: 'עיר', value: (r) => r.participant?.city },
       { header: 'סטטוס', value: (r) => REG_STATUS_LABEL[r.status] },
       { header: 'נוכחות', value: (r) => ATTENDANCE_LABEL[r.attendance] },
-      { header: 'הגיע/ה בלי הרשמה', value: (r) => (r.is_walk_in ? 'כן' : '') },
+      { header: 'הגעה בלי הרשמה', value: (r) => (r.is_walk_in ? 'כן' : '') },
       { header: 'פעם ראשונה', value: (r) => (r.first_time ? 'כן' : '') },
-      { header: 'נרשם/ה ב', value: (r) => fmtDateTime(r.registered_at) },
+      { header: 'מועד הרשמה', value: (r) => fmtDateTime(r.registered_at) },
       { header: 'מקור', value: (r) => r.source?.label },
-      { header: 'הופנה/תה על ידי', value: (r) => r.referrer?.full_name ?? r.referrer_name },
+      { header: 'מי הפנה', value: (r) => r.referrer?.full_name ?? r.referrer_name },
       { header: 'קישור', value: (r) => r.link?.label },
       { header: 'צ׳ק־אין', value: (r) => (r.checkin_method === 'self_qr' ? 'עצמי (QR)' : r.checkin_method === 'staff' ? 'צוות' : '') },
       ...(priced || rows.some((r) => r.payment_status !== 'none') ? [
@@ -180,9 +180,9 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
 
   const menuFor = (r: RegRow): MenuItem[] => {
     const items: MenuItem[] = [];
-    if (r.participant && !r.participant.anonymized_at) items.push({ label: 'כרטיס הלוחם/ת', icon: 'people', onClick: () => navigate(`/app/participants/${r.participant_id}`) });
-    if (started && r.status === 'registered' && r.attendance !== 'attended') items.push({ label: 'סימון הגיע/ה', icon: 'check', onClick: () => attendance.mutate({ r, attendance: 'attended' }) });
-    if (started && r.status === 'registered' && r.attendance !== 'no_show') items.push({ label: 'סימון לא הגיע/ה', icon: 'close', onClick: () => attendance.mutate({ r, attendance: 'no_show' }) });
+    if (r.participant && !r.participant.anonymized_at) items.push({ label: 'פתיחת הכרטיס', icon: 'people', onClick: () => navigate(`/app/participants/${r.participant_id}`) });
+    if (started && r.status === 'registered' && r.attendance !== 'attended') items.push({ label: 'סימון הגעה', icon: 'check', onClick: () => attendance.mutate({ r, attendance: 'attended' }) });
+    if (started && r.status === 'registered' && r.attendance !== 'no_show') items.push({ label: 'סימון אי־הגעה', icon: 'close', onClick: () => attendance.mutate({ r, attendance: 'no_show' }) });
     if ((priced && r.status !== 'cancelled') || r.payment_status === 'paid' || r.payment_status === 'refunded' || r.payment_status === 'waived') {
       items.push({ label: owes(r) ? 'סימון תשלום' : 'עדכון תשלום', icon: 'check', onClick: () => payFor(r) });
     }
@@ -203,7 +203,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         {canRegister && <Button icon="userPlus" onClick={() => setAdding(true)}>רישום ידני</Button>}
-        <ButtonLink to="/app/participants/new" variant="secondary" icon="plus">לוחם/ת חדש/ה</ButtonLink>
+        <ButtonLink to="/app/participants/new" variant="secondary" icon="plus">כרטיס חדש</ButtonLink>
         {can.admin(role) && rows.length > 0 && <Button variant="ghost" icon="download" onClick={exportCsv}>ייצוא לאקסל</Button>}
       </div>
 
@@ -242,7 +242,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-small text-ink-soft">
                   {r.participant?.phone && <a href={`tel:${r.participant.phone}`} className="num text-tide">{formatPhone(r.participant.phone)}</a>}
                   {r.participant?.city && <span>{r.participant.city}</span>}
-                  <span className="text-muted">נרשם/ה <span className="num">{fmtDateTime(r.registered_at)}</span></span>
+                  <span className="text-muted">הרשמה <span className="num">{fmtDateTime(r.registered_at)}</span></span>
                 </div>
                 <SourceCell r={r} className="mt-1" />
                 <div className="mt-3 flex items-center gap-2">
@@ -263,7 +263,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                   <Th className="rounded-tr-[var(--radius-panel)]">שם</Th>
                   <Th>טלפון ועיר</Th>
                   <Th>סטטוס</Th>
-                  <Th>נרשם/ה</Th>
+                  <Th>מועד הרשמה</Th>
                   <Th>מקור</Th>
                   <Th className="rounded-tl-[var(--radius-panel)]"><span className="sr-only">פעולות</span></Th>
                 </tr>
@@ -339,13 +339,13 @@ function NameCell({ r }: { r: RegRow }) {
       )}
       <div className="mt-1 flex flex-wrap gap-1">
         {r.first_time && r.status !== 'cancelled' && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
-        {r.is_walk_in && <Badge tone="neutral">הגיע/ה בלי הרשמה</Badge>}
+        {r.is_walk_in && <Badge tone="neutral">הגעה בלי הרשמה</Badge>}
         {r.submitted_name && (
           <Badge tone="warn" icon="alert" title="השם שהוקלד בהרשמה שונה מהשם בכרטיס. ייתכן שהוקלד טלפון של מישהו אחר: כדאי לברר.">
-            נרשם/ה בשם: {r.submitted_name}
+            הרשמה בשם: {r.submitted_name}
           </Badge>
         )}
-        {p?.photo_opt_out && <Badge tone="neutral" icon="noCamera" title="לא מעוניין/ת להופיע בתמונות">בלי צילום</Badge>}
+        {p?.photo_opt_out && <Badge tone="neutral" icon="noCamera" title="בקשה לא להופיע בתמונות">בלי צילום</Badge>}
       </div>
     </div>
   );
@@ -355,15 +355,15 @@ function StatusCell({ r, pos, started }: { r: RegRow; pos?: number; started: boo
   return (
     <div className="flex flex-col items-start gap-1">
       {r.status === 'registered' && r.attendance === 'attended' ? (
-        <Badge tone="good" icon="check">הגיע/ה{r.checkin_method === 'self_qr' ? ' (QR)' : ''}</Badge>
+        <Badge tone="good" icon="check">הגעה{r.checkin_method === 'self_qr' ? ' (QR)' : ''}</Badge>
       ) : r.status === 'registered' && r.attendance === 'no_show' ? (
-        <Badge tone="bad" icon="alert">לא הגיע/ה</Badge>
+        <Badge tone="bad" icon="alert">אי־הגעה</Badge>
       ) : r.status === 'waitlisted' ? (
         <Badge tone="warn" icon="alert">בהמתנה{pos ? <span className="num"> #{pos}</span> : null}</Badge>
       ) : r.status === 'cancelled' ? (
-        <Badge tone="neutral">ביטל/ה{r.cancelled_by === 'staff' ? ' (צוות)' : ''}</Badge>
+        <Badge tone="neutral">ביטול{r.cancelled_by === 'staff' ? ' (צוות)' : ''}</Badge>
       ) : (
-        <Badge tone="tide">{started ? 'רשום/ה, טרם סומן/ה' : 'רשום/ה'}</Badge>
+        <Badge tone="tide">{started ? 'טרם סומנה הגעה' : 'הרשמה פעילה'}</Badge>
       )}
       {showsPayment(r.status, r.payment_status) && !(r.payment_status === 'pending' && r.attendance === 'no_show') && <PaymentBadge status={r.payment_status} />}
     </div>
@@ -374,8 +374,8 @@ function SourceCell({ r, className = '' }: { r: RegRow; className?: string }) {
   const parts: ReactNode[] = [];
   if (r.source) parts.push(<span key="s">{r.source.label}{r.how_heard_detail ? `: ${r.how_heard_detail}` : ''}</span>);
   if (r.link) parts.push(<span key="l" className="inline-flex items-center gap-1"><Icon name="link" size={14} />{r.link.label}</span>);
-  if (r.referrer) parts.push(<span key="r">הביא/ה: <Link to={`/app/participants/${r.referrer.id}`} className="text-tide hover:underline">{r.referrer.full_name}</Link></span>);
-  else if (r.referrer_name) parts.push(<span key="r">הביא/ה: {r.referrer_name}</span>);
+  if (r.referrer) parts.push(<span key="r">הפניה: <Link to={`/app/participants/${r.referrer.id}`} className="text-tide hover:underline">{r.referrer.full_name}</Link></span>);
+  else if (r.referrer_name) parts.push(<span key="r">הפניה: {r.referrer_name}</span>);
   if (r.utm_source && !r.link) parts.push(<span key="u" dir="ltr" className="num">utm: {r.utm_source}</span>);
   if (!parts.length) return <span className={cx('text-small text-faint', className)}>{r.created_via === 'staff' ? 'רישום ידני' : '—'}</span>;
   return <div className={cx('flex flex-col gap-0.5 text-small text-ink-soft', className)}>{parts}</div>;
@@ -423,8 +423,8 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
       const send = () => onRegistered({
         id: regId, participant_id: p.id, status, participant: { id: p.id, full_name: p.full_name, phone: p.phone, city: p.city, consent_updates: false, photo_opt_out: false, anonymized_at: null },
       } as RegRow);
-      if (status === 'waitlisted') toast.success(`המפגש מלא: ${p.full_name} נוסף/ה לרשימת ההמתנה`);
-      else toast.success(`${p.full_name} נרשם/ה`, p.phone ? { label: 'שליחת אישור', run: send } : undefined);
+      if (status === 'waitlisted') toast.success(`המפגש מלא: ההרשמה של ${p.full_name} ברשימת ההמתנה`);
+      else toast.success(`ההרשמה של ${p.full_name} נשמרה`, p.phone ? { label: 'שליחת אישור', run: send } : undefined);
       setQ('');
       onClose();
     },
@@ -434,7 +434,7 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
   return (
     <Dialog open={open} onClose={onClose} title="רישום ידני למפגש">
       <div className="flex flex-col gap-4">
-        <SearchInput value={q} onChange={setQ} placeholder="שם או מספר טלפון" label="חיפוש לוחם/ת" />
+        <SearchInput value={q} onChange={setQ} placeholder="שם או מספר טלפון" label="חיפוש כרטיס" />
         {free === 0 && (
           <Checkbox
             label="לרשום גם מעבר למכסה"
@@ -477,7 +477,7 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
           <p className="text-small text-muted">לא נמצאו לוחמים בשם או במספר הזה.</p>
         )}
         <div className="border-t border-edge pt-3 text-small text-ink-soft">
-          לא במערכת? <Link to="/app/participants/new" className="font-semibold text-tide hover:underline">יצירת כרטיס ללוחם/ת חדש/ה</Link>, ואז חוזרים לכאן לרישום.
+          לא במערכת? <Link to="/app/participants/new" className="font-semibold text-tide hover:underline">יצירת כרטיס חדש</Link>, ואז חוזרים לכאן לרישום.
         </div>
       </div>
     </Dialog>

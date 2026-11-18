@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { ContactLine, TriList } from './shared';
+import { ContactLine, TriList, usePageTitle } from './shared';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -15,6 +15,7 @@ const List = TriList;
 
 /** Participant-facing privacy notice. A draft for legal review: it must not claim compliance nobody checked. */
 export function PrivacyPage() {
+  usePageTitle('מדיניות פרטיות');
   return (
     <article className="flex flex-col gap-6">
       <header>

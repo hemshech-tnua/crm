@@ -47,7 +47,7 @@ export function SuppliersView() {
             <div className="hidden md:block">
               <Table label="ספקים" className="rounded-none border-0">
                 <thead>
-                  <tr><Th>שם</Th><Th>מה</Th><Th>איש/אשת קשר</Th><Th>טלפון</Th><Th>עלות</Th><Th><span className="sr-only">פעולות</span></Th></tr>
+                  <tr><Th>שם</Th><Th>מה</Th><Th>ליצירת קשר</Th><Th>טלפון</Th><Th>עלות</Th><Th><span className="sr-only">פעולות</span></Th></tr>
                 </thead>
                 <tbody>
                   {rows.map((s) => (
@@ -137,7 +137,7 @@ function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onCl
   const submit = () => {
     const next = {
       name: f.name.trim().length < 2 ? 'צריך לכתוב שם.' : f.name.trim().length > 80 ? 'עד 80 תווים.' : null,
-      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. כותבים כמו 050-1234567.' : null,
+      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.' : null,
     };
     setErrors(next);
     setFormError(null);
@@ -162,9 +162,9 @@ function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onCl
     >
       <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         <Input label="שם" required value={f.name} onChange={(e) => set('name', e.target.value)} error={errors.name} maxLength={80} autoFocus={!supplier} />
-        <Input label="מה מספק/ת" value={f.what} onChange={(e) => set('what', e.target.value)} maxLength={120} placeholder="למשל: ארוחת בוקר, הגברה, עצים למדורה" />
+        <Input label="מה מספקים" value={f.what} onChange={(e) => set('what', e.target.value)} maxLength={120} placeholder="למשל: ארוחת בוקר, הגברה, עצים למדורה" />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="איש/אשת קשר" value={f.contact_name} onChange={(e) => set('contact_name', e.target.value)} maxLength={80} />
+          <Input label="שם ליצירת קשר" value={f.contact_name} onChange={(e) => set('contact_name', e.target.value)} maxLength={80} />
           <Input label="טלפון" ltr type="tel" inputMode="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} error={errors.phone} />
         </div>
         <Input label="עלות" value={f.cost_note} onChange={(e) => set('cost_note', e.target.value)} maxLength={120} placeholder="למשל: 45 ₪ למנה, מינימום 20" />

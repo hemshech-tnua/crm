@@ -66,8 +66,9 @@ export function relativeDays(v: string | Date): string {
   if (days === 0) return 'היום';
   if (days === 1) return 'מחר';
   if (days === -1) return 'אתמול';
-  if (days > 1) return `בעוד ${days} ימים`;
-  return `לפני ${-days} ימים`;
+  // non-breaking spaces: "בעוד 7 ימים" is read as one unit and never splits across lines
+  if (days > 1) return `בעוד\u00a0${days}\u00a0ימים`;
+  return `לפני\u00a0${-days}\u00a0ימים`;
 }
 
 export function age(birthYear?: number | null, birthDate?: string | null): number | null {

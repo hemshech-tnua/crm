@@ -101,14 +101,14 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
         )}
         {!allowed ? (
           <Notice tone="warn" icon="alert">
-            {recipient.full_name} לא אישר/ה לקבל עדכונים והזמנות. לפי חוק התקשורת אפשר לשלוח לו/ה הודעת וואטסאפ כזו רק אחרי הסכמה. אפשר להתקשר.
+            אין הסכמה של {recipient.full_name} לקבל עדכונים והזמנות. לפי חוק התקשורת אפשר לשלוח הודעת וואטסאפ כזו רק אחרי הסכמה. אפשר להתקשר.
           </Notice>
         ) : (
           <Textarea label="הטקסט (אפשר לערוך לפני השליחה)" value={text} onChange={(e) => setText(e.target.value)} rows={7} />
         )}
         {wantsLink && link.error && <Notice tone="warn" icon="alert">לא הצלחנו ליצור קישור אישי: {link.error}</Notice>}
         {wantsLink && link.url && (
-          <p className="text-sm text-muted">הקישור האישי חדש ומחליף קישור קודם של ההרשמה הזו, אם נשלח. הוא מיועד רק ל{firstName || 'נמען/ת'}.</p>
+          <p className="text-sm text-muted">הקישור האישי חדש ומחליף קישור קודם של ההרשמה הזו, אם נשלח. הוא מיועד רק ל{firstName || 'מי שמקבל את ההודעה'}.</p>
         )}
         {!phone && <Notice tone="warn" icon="alert">אין מספר טלפון בכרטיס.</Notice>}
       </div>
@@ -141,7 +141,7 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
         )}
         {allowed && text && <Button variant="ghost" icon="copy" onClick={() => copy(text, 'הטקסט הועתק')}>העתקה</Button>}
       </div>
-      <p className="mt-3 text-sm text-muted">ההודעה נשלחת מהוואטסאפ שלך, רק כשלוחצים "שליחה" שם. הפתיחה נרשמת בהיסטוריית הקשר של הלוחם/ת.</p>
+      <p className="mt-3 text-sm text-muted">ההודעה נשלחת מהוואטסאפ שלך, רק כשלוחצים "שליחה" שם. הפתיחה נרשמת בהיסטוריית הקשר שבכרטיס.</p>
     </Dialog>
   );
 }

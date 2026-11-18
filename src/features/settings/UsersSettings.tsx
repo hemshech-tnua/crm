@@ -45,7 +45,7 @@ export function UsersSettings() {
   };
 
   const reset = async (s: Staff) => {
-    if (!(await confirm({ title: `איפוס סיסמה ל${s.full_name}`, body: 'תיווצר סיסמה זמנית חדשה. הסיסמה הקודמת תפסיק לעבוד, ובכניסה הבאה תתבקש/י לבחור סיסמה אישית.', confirm: 'איפוס הסיסמה' }))) return;
+    if (!(await confirm({ title: `איפוס סיסמה ל${s.full_name}`, body: 'תיווצר סיסמה זמנית חדשה. הסיסמה הקודמת תפסיק לעבוד, ובכניסה הבאה תופיע בקשה לבחור סיסמה אישית.', confirm: 'איפוס הסיסמה' }))) return;
     const res = await run(s.user_id, { action: 'reset_password', user_id: s.user_id }, 'נוצרה סיסמה זמנית');
     if (res?.temp_password) setSecret({ name: s.full_name, email: s.email ?? formatPhone(s.phone), password: res.temp_password });
   };
@@ -68,7 +68,7 @@ export function UsersSettings() {
               return (
                 <li key={s.user_id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5">
                   <div className="min-w-0 flex-1 basis-48">
-                    <div className="font-semibold">{s.full_name} {self && <span className="text-small font-normal text-muted">(את/ה)</span>}</div>
+                    <div className="font-semibold">{s.full_name} {self && <span className="text-small font-normal text-muted">(החשבון שלך)</span>}</div>
                     <div className="num text-small text-muted" dir="ltr" style={{ textAlign: 'right' }}>
                       {[s.phone ? formatPhone(s.phone) : null, s.email].filter(Boolean).join(' · ')}
                     </div>
@@ -91,7 +91,7 @@ export function UsersSettings() {
                           ...(!self ? [{ label: 'איפוס אימות דו־שלבי', icon: 'shield' as const, onClick: async () => {
                             const ok = await confirm({
                               title: `לאפס את האימות הדו־שלבי של ${s.full_name}?`,
-                              body: 'מתאים כשהטלפון עם אפליקציית האימות אבד או הוחלף. הכניסה תחזור להיות בסיסמה בלבד, עד ש' + s.full_name.split(' ')[0] + ' יפעיל/תפעיל אותו מחדש מ"החשבון שלי". אם לא הוגדר אימות, לא ישתנה כלום.',
+                              body: 'מתאים כשהטלפון עם אפליקציית האימות אבד או הוחלף. הכניסה תחזור להיות בסיסמה בלבד, עד להפעלה מחדש מ"החשבון שלי" של ' + s.full_name.split(' ')[0] + '. אם לא הוגדר אימות, לא ישתנה כלום.',
                               confirm: 'איפוס',
                             });
                             if (ok) await run(s.user_id, { action: 'reset_mfa', user_id: s.user_id }, 'האימות הדו־שלבי אופס');
@@ -207,7 +207,7 @@ function CodeReadyDialog({ ready, onClose }: { ready: { name: string; email: str
       {ready && (
         <div className="flex flex-col gap-4">
           <p>
-            <span className="font-semibold">{ready.name}</span> נכנס/ת עם קוד חד־פעמי{' '}
+            הכניסה של <span className="font-semibold">{ready.name}</span> היא עם קוד חד־פעמי{' '}
             {ready.email ? <>למייל <span className="num font-semibold" dir="ltr">{ready.email}</span></> : <>ב-SMS לטלפון <span className="num font-semibold" dir="ltr">{formatPhone(ready.phone)}</span></>}. אין סיסמה.
           </p>
           <div className="flex gap-2">

@@ -93,8 +93,8 @@ export function ParticipantNewPage() {
         qc.invalidateQueries({ queryKey: ['event', f.event] });
       }
       if (regError) toast.error(`הכרטיס נוצר, אבל הרישום למפגש לא הצליח: ${errorMessage(regError)}`);
-      else if (reg?.status === 'waitlisted') toast.success('הכרטיס נוצר. המפגש מלא, אז נרשם/ה לרשימת ההמתנה.');
-      else if (reg) toast.success('הכרטיס נוצר והלוחם/ת רשום/ה למפגש');
+      else if (reg?.status === 'waitlisted') toast.success('הכרטיס נוצר. המפגש מלא, אז ההרשמה נכנסה לרשימת ההמתנה.');
+      else if (reg) toast.success('הכרטיס נוצר, וההרשמה למפגש נשמרה');
       else toast.success('הכרטיס נוצר');
       navigate(`/app/participants/${id}`, { replace: true });
     },
@@ -123,7 +123,7 @@ export function ParticipantNewPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="לוחם/ת חדש/ה" back={{ to: '/app/participants', label: 'לכל הלוחמים' }} subtitle="למי שפנה בטלפון או בוואטסאפ. מי שנרשם בטופס נוסף לבד." />
+      <PageHeader title="כרטיס חדש" back={{ to: '/app/participants', label: 'לכל הלוחמים' }} subtitle="למי שפנה בטלפון או בוואטסאפ. מי שנרשם בטופס נוסף לבד." />
       <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate className="flex flex-col gap-5">
         <Panel title="פרטים בסיסיים">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -132,7 +132,7 @@ export function ParticipantNewPage() {
           </div>
 
           <div aria-live="polite" className="mt-3 flex flex-col gap-3 empty:hidden">
-            {dup.isFetching && !dup.data && <p className="flex items-center gap-2 text-small text-muted"><Spinner size={14} />בודקים אם הלוחם/ת כבר במערכת…</p>}
+            {dup.isFetching && !dup.data && <p className="flex items-center gap-2 text-small text-muted"><Spinner size={14} />בודקים אם כבר יש כרטיס במערכת…</p>}
             {byPhone && (
               <div className="flex flex-col gap-2 rounded-[var(--radius-control)] border border-bad/30 bg-bad-wash px-4 py-3 text-bad sm:flex-row sm:items-center sm:justify-between">
                 <p className="flex items-start gap-2 font-medium">
@@ -167,16 +167,16 @@ export function ParticipantNewPage() {
           </div>
         </Panel>
 
-        <Panel title="איך הגיע/ה אלינו">
+        <Panel title="איך שמעו עלינו">
           <div className="flex flex-col gap-4">
-            <Select label="מקור היכרות" value={f.source} onChange={(e) => set('source', e.target.value)} hint="נשמר כמקור הראשון של הלוחם/ת ולא משתנה בהרשמות הבאות.">
+            <Select label="מקור היכרות" value={f.source} onChange={(e) => set('source', e.target.value)} hint="נשמר בכרטיס כמקור הראשון ולא משתנה בהרשמות הבאות.">
               <option value="">לא ידוע</option>
               {(sources.data ?? []).filter((s) => s.is_active).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </Select>
             {source?.asks_detail && <Input label="פירוט" value={f.source_detail} onChange={(e) => set('source_detail', e.target.value)} maxLength={120} />}
             {source?.is_friend && (
               <div className="flex flex-col gap-3 rounded-[var(--radius-control)] bg-mist p-3.5">
-                <p className="text-small font-semibold">מי הביא/ה?</p>
+                <p className="text-small font-semibold">מי הביא?</p>
                 {referrer ? (
                   <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-paper px-3.5 py-2.5">
                     <span className="font-semibold">{referrer.full_name}</span>
@@ -184,7 +184,7 @@ export function ParticipantNewPage() {
                   </div>
                 ) : (
                   <>
-                    <ParticipantPicker onPick={(p) => { setReferrer(p); set('referrer_name', ''); }} label="חיפוש החבר/ה במערכת" />
+                    <ParticipantPicker onPick={(p) => { setReferrer(p); set('referrer_name', ''); }} label="חיפוש במערכת" />
                     <Input label="לא במערכת? כותבים את השם" value={f.referrer_name} onChange={(e) => set('referrer_name', e.target.value)} maxLength={80} />
                   </>
                 )}
@@ -196,12 +196,12 @@ export function ParticipantNewPage() {
         <Panel title="הסכמות והערות">
           <div className="flex flex-col gap-4">
             <Checkbox
-              label="הלוחם/ת הסכים/ה לקבל עדכונים והזמנות בוואטסאפ"
-              hint="מסמנים רק אם הלוחם/ת אמר/ה במפורש שזה בסדר. בלי הסכמה אפשר להתקשר ולשלוח הודעות שירות על מפגש שנרשם/ה אליו."
+              label="יש הסכמה לקבל עדכונים והזמנות בוואטסאפ"
+              hint="מסמנים רק אחרי אישור מפורש שזה בסדר. בלי הסכמה אפשר להתקשר ולשלוח הודעות שירות על מפגש שיש אליו הרשמה."
               checked={f.consent}
               onChange={(v) => set('consent', v)}
             />
-            <Checkbox label="לא מעוניין/ת להופיע בתמונות" checked={f.photo_opt_out} onChange={(v) => set('photo_opt_out', v)} />
+            <Checkbox label="בקשה לא להופיע בתמונות" checked={f.photo_opt_out} onChange={(v) => set('photo_opt_out', v)} />
             <div className="flex flex-col gap-2">
               <Textarea label="הערות לצוות" value={f.notes} onChange={(e) => set('notes', e.target.value)} maxLength={1000} rows={3} />
               <FieldGuidance />
@@ -213,7 +213,7 @@ export function ParticipantNewPage() {
           {events.data && events.data.length === 0 ? (
             <p className="text-body text-muted">אין כרגע מפגש פתוח להרשמה.</p>
           ) : (
-            <Select label="מפגש" value={f.event} onChange={(e) => set('event', e.target.value)} hint="אם המפגש מלא, הלוחם/ת ייכנס/תיכנס לרשימת ההמתנה.">
+            <Select label="מפגש" value={f.event} onChange={(e) => set('event', e.target.value)} hint="אם המפגש מלא, ההרשמה תיכנס לרשימת ההמתנה.">
               <option value="">לא עכשיו</option>
               {(events.data ?? []).map((ev) => <option key={ev.id} value={ev.id}>{ev.title} · {fmtDayLong(ev.starts_at)} · {fmtTime(ev.starts_at)}</option>)}
             </Select>

@@ -91,7 +91,7 @@ test('24 hours after a meeting the dashboard asks for the thank-you; non-members
   await expect(page.getByText(/עברו 24 שעות מסוף המפגש/)).toBeVisible();
   const memberRow = page.locator('li', { hasText: memberName });
   const inviteeRow = page.locator('li', { hasText: inviteeName });
-  await expect(memberRow.getByText('חבר/ת עמותה')).toBeVisible();
+  await expect(memberRow.getByText('חברות בעמותה')).toBeVisible();
   await expect(inviteeRow.getByText('+ הזמנה להצטרף')).toBeVisible();
 
   await inviteeRow.getByRole('button', { name: 'שליחה' }).click();

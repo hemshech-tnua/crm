@@ -25,8 +25,12 @@ export function theActivity(e: PublicEvent): string {
 }
 
 /**
- * Display text with the association's name kept on one line: "המשך תנועה" (quoted or not) never breaks between its two
- * words, so a title or description does not leave "המשך" at the end of one line and "תנועה" on the next. Display only:
- * messages and calendar files keep the plain text.
+ * Display text that breaks well:
+ * - the association's name ("המשך תנועה", quoted or not, and "להמשיך תנועה") never breaks between its two words;
+ * - a dash between two parts ("ערב לוחמות - "המשך תנועה"") stays at the end of the first line, never starts the next.
+ * Display only: messages and calendar files keep the plain text.
  */
-export const keepName = (text: string): string => text.replace(/המשך תנועה/g, 'המשך\u00a0תנועה');
+export const keepName = (text: string): string =>
+  text
+    .replace(/(המשך|המשיך) תנועה/g, '$1\u00a0תנועה')
+    .replace(/ +([-–]) +/g, '\u00a0$1 ');

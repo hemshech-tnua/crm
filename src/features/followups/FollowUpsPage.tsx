@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
 import { fmtDate, fmtShortDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
-import { FOLLOWUP_TYPE_LABEL } from '@/lib/labels';
+import { FOLLOWUP_TYPE_LABEL, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
 import { Badge, Button, EmptyState, ErrorBox, FilterChips, IconButton, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
@@ -76,7 +76,7 @@ export function FollowUpsPage() {
           className="mb-4 flex min-h-12 w-full items-center gap-2.5 rounded-[var(--radius-control)] border-s-[3px] border-warn bg-warn-wash px-4 py-3 text-right text-body font-medium text-warn hover:underline"
         >
           <Icon name="alert" size={18} />
-          <span className="flex-1"><span className="num font-bold">{lapsed.length}</span> {lapsed.length === 1 ? 'קבוע/ה שהפסיק/ה להגיע מחכה' : 'קבועים שהפסיקו להגיע מחכים'} להחלטה אם לפנות</span>
+          <span className="flex-1"><span className="num font-bold">{lapsed.length}</span> {lapsed.length === 1 ? 'כרטיס של הגעה קבועה שנפסקה מחכה' : 'כרטיסים של הגעה קבועה שנפסקה מחכים'} להחלטה אם לפנות</span>
           <Icon name="chevron" size={18} />
         </button>
       )}
@@ -110,9 +110,9 @@ export function FollowUpsPage() {
           showAssignee={tab === 'open'}
           empty={tab === 'mine'
             ? <EmptyState icon="checkCircle" title="אין משימות פתוחות עליך" action={all.length ? <Button variant="secondary" onClick={() => setTab('open')}>לכל המשימות הפתוחות</Button> : undefined}>
-                {all.length ? <>יש <span className="num">{all.length}</span> משימות פתוחות של אחרים או בלי אחראי/ת.</> : 'כל הכבוד, הכול מטופל.'}
+                {all.length ? <>יש <span className="num">{all.length}</span> משימות פתוחות של אחרים או בלי שיוך.</> : 'כל הכבוד, הכול מטופל.'}
               </EmptyState>
-            : <EmptyState icon="checkCircle" title="אין משימות פתוחות">משימות נפתחות לבד כשסוגרים מפגש (מי שלא הגיע ומי שהגיע/ה בפעם הראשונה), או ידנית.</EmptyState>}
+            : <EmptyState icon="checkCircle" title="אין משימות פתוחות">משימות נפתחות לבד כשסוגרים מפגש (מי שלא הגיע ומי שהגיע בפעם הראשונה), או ידנית.</EmptyState>}
         />
       )}
 
@@ -185,11 +185,11 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           {p ? <PersonLink id={p.id} name={p.full_name} className="text-heading" /> : <span className="text-muted">פרטים נמחקו</span>}
-          {!t.title.startsWith(FOLLOWUP_TYPE_LABEL[t.type]) && (
+          {!taskTitle(t.title).startsWith(FOLLOWUP_TYPE_LABEL[t.type]) && (
             <Badge tone={t.type === 'lapsed' ? 'warn' : t.type === 'no_show' ? 'neutral' : 'tide'} icon={t.type === 'lapsed' ? 'alert' : undefined}>{FOLLOWUP_TYPE_LABEL[t.type]}</Badge>
           )}
         </div>
-        <p className="mt-0.5 text-body text-ink">{t.title}</p>
+        <p className="mt-0.5 text-body text-ink">{taskTitle(t.title)}</p>
         {t.notes && <p className="mt-0.5 whitespace-pre-line text-small text-ink-soft">{t.notes}</p>}
         <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-small text-muted">
           <DueText date={t.due_date} />
@@ -202,7 +202,7 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
           {showAssignee && (
             <>
               <span aria-hidden="true">·</span>
-              <span>{t.assignee_id ? name.get(t.assignee_id) ?? 'איש/אשת צוות' : <Badge tone="warn" icon="alert">בלי אחראי/ת</Badge>}</span>
+              <span>{t.assignee_id ? name.get(t.assignee_id) ?? 'הצוות' : <Badge tone="warn" icon="alert">בלי שיוך</Badge>}</span>
             </>
           )}
         </p>
@@ -219,7 +219,7 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
             </a>
           </>
         )}
-        <IconButton icon="edit" label="עריכה: אחראי/ת, תאריך יעד או ביטול" onClick={() => onAct('edit')} />
+        <IconButton icon="edit" label="עריכה: שיוך, תאריך יעד או ביטול" onClick={() => onAct('edit')} />
       </div>
     </li>
   );
@@ -243,7 +243,7 @@ function DoneList({ q }: { q: { data?: TaskRow[]; isLoading: boolean; isError: b
               <Badge tone={t.status === 'done' ? 'good' : 'neutral'} icon={t.status === 'done' ? 'check' : undefined}>{t.status === 'done' ? 'בוצע' : 'בוטלה'}</Badge>
               <span className="text-small text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</span>
             </div>
-            <p className="mt-0.5 text-body">{t.title}</p>
+            <p className="mt-0.5 text-body">{taskTitle(t.title)}</p>
             {t.outcome && <p className="mt-1 whitespace-pre-line rounded-[var(--radius-control)] bg-mist px-3 py-2 text-body text-ink-soft">{t.outcome}</p>}
             <p className="mt-1 text-small text-muted">
               {[t.completed_by ? name.get(t.completed_by) : null, t.completed_at ? fmtDate(t.completed_at) : null].filter(Boolean).join(' · ')}
@@ -270,7 +270,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
         ) : loading ? (
           <div className="p-4"><Skeleton lines={3} /></div>
         ) : !lapsed.length ? (
-          <EmptyState icon="checkCircle" title="אין כרגע קבועים שמחכים להחלטה">כל מי שהפסיק/ה להגיע כבר משויך/ת למשימה.</EmptyState>
+          <EmptyState icon="checkCircle" title="אין כרגע קבועים שמחכים להחלטה">לכל מי שהפסיק להגיע כבר יש משימה.</EmptyState>
         ) : (
           <ul className="divide-y divide-edge">
             {lapsed.map((l) => (

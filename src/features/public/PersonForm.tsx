@@ -263,7 +263,7 @@ export function ConsentFields({ form }: { form: PersonForm }) {
         />
         <Checkbox
           label="לא לפרסם תמונות שלי מהמפגשים"
-          hint="במפגשים מצלמים לפעמים לעמודים של העמותה. הצוות יראה את הבקשה שלך."
+          hint="לפעמים מצלמים במפגשים בשביל העמודים של העמותה. אם מסמנים כאן, הצוות יידע לא לפרסם תמונות שלך."
           checked={v.photo_opt_out}
           onChange={(c) => set('photo_opt_out', c)}
         />

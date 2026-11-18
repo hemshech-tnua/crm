@@ -63,19 +63,19 @@ test('scenario 5: door attendance, cancel, walk-in, closing, and the numbers in 
   await expect(page).toHaveURL(/#\/app\/door/);
   await page.getByText(title, { exact: true }).first().click();
   await expect(page).toHaveURL(new RegExp(`#/app/events/${ev.id}/door`));
-  await page.getByRole('button', { name: `סימון ש${people[0]} הגיע/ה` }).click();
-  await expect(page.getByRole('button', { name: `${people[0]} הגיע/ה. לחיצה מבטלת` })).toBeVisible();
+  await page.getByRole('button', { name: `סימון הגעה של ${people[0]}` }).click();
+  await expect(page.getByRole('button', { name: `${people[0]}: הגעה מסומנת. לחיצה מבטלת` })).toBeVisible();
   await page.getByRole('button', { name: `פעולות נוספות ל${people[1]}` }).click();
-  await page.getByRole('menuitem', { name: 'סימון ביטל/ה' }).click();
-  await confirmIfAsked(page, 'סימון ביטל/ה');
-  await page.getByRole('button', { name: 'הגיע/ה בלי הרשמה' }).first().click();
+  await page.getByRole('menuitem', { name: 'סימון ביטול' }).click();
+  await confirmIfAsked(page, 'סימון ביטול');
+  await page.getByRole('button', { name: 'הגעה בלי הרשמה' }).first().click();
   const walkName = name();
   const walkPhone = phone();
-  const dialog = page.getByRole('dialog', { name: 'הגיע/ה בלי הרשמה' });
+  const dialog = page.getByRole('dialog', { name: 'הגעה בלי הרשמה' });
   await dialog.getByLabel('שם מלא').fill(walkName);
   await dialog.getByLabel('טלפון').fill(walkPhone);
   await dialog.getByRole('button', { name: 'רישום וסימון הגעה' }).click();
-  await expect(page.getByRole('button', { name: `${walkName} הגיע/ה. לחיצה מבטלת` })).toBeVisible();
+  await expect(page.getByRole('button', { name: `${walkName}: הגעה מסומנת. לחיצה מבטלת` })).toBeVisible();
   // volunteers never see full phone numbers
   await expect(page.getByText(walkPhone)).toHaveCount(0);
 
@@ -151,8 +151,8 @@ test('scenario 8 @phone: register, check in, and the door list on a phone', asyn
   const door = await fresh();
   await loginAs(door, 'door');
   await door.goto(`#/app/events/${ev.id}/door`);
-  await expect(door.getByRole('button', { name: `${me.name} הגיע/ה. לחיצה מבטלת` })).toBeVisible();
-  await expect(door.getByRole('button', { name: 'חבר בכניסה הגיע/ה. לחיצה מבטלת' })).toBeVisible();
+  await expect(door.getByRole('button', { name: `${me.name}: הגעה מסומנת. לחיצה מבטלת` })).toBeVisible();
+  await expect(door.getByRole('button', { name: 'חבר בכניסה: הגעה מסומנת. לחיצה מבטלת' })).toBeVisible();
   expect(await door.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await door.mouse.wheel(0, 3000);
 

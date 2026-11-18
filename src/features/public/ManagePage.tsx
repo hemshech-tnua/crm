@@ -9,13 +9,14 @@ import { cancelRegistration, useFeedbackContext, useRegistration, type Registrat
 import { forgetToken, saveToken } from './device';
 import { EventTicket } from './EventTicket';
 import { FeedbackForm } from './FeedbackForm';
-import { Block, CalendarButtons, InviteBlock, PayBlock, inviteMessage } from './shared';
+import { Block, CalendarButtons, ContactLine, InviteBlock, PayBlock, inviteMessage, usePageTitle } from './shared';
 import { isPriced } from '@/lib/money';
 
 /** #/m/:token — the participant's own registration, from the personal link they got when registering. */
 export function ManagePage() {
   const { token = '' } = useParams();
   const reg = useRegistration(token);
+  usePageTitle('ההרשמה שלי');
 
   // keep the token on this phone so check-in at the door is one tap (no name or phone is stored)
   const code = reg.data?.event.code;
@@ -34,7 +35,7 @@ export function ManagePage() {
   if (reg.isError) {
     return errorCode(reg.error) === 'token_invalid' ? (
       <EmptyState icon="link" title="הקישור האישי לא תקין" action={<ButtonLink to="/">למפגשים הקרובים</ButtonLink>}>
-        ייתכן שהקישור הועתק חלקית, או שנרשמת מחדש ונוצר קישור חדש. אם צריך עזרה, אפשר לפנות לצוות העמותה.
+        ייתכן שהקישור הועתק חלקית, או שנרשמת מחדש ונוצר קישור חדש. אם צריך עזרה: <ContactLine inline />
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(reg.error)} onRetry={() => reg.refetch()} />

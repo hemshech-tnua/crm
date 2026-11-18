@@ -31,10 +31,10 @@ const AUDIENCE_GROUP: Record<Template['audience'], Group> = {
   participant: 'consented',
 };
 const GROUP_HINT: Record<Group, string> = {
-  aftercare: 'כל מי שהגיע/ה, עם הנוסח המתאים לכל אחד/ת: מי שעוד לא חבר/ת עמותה ואישר/ה עדכונים מקבל/ת תודה עם הזמנה להצטרף לעמותה. כל השאר מקבלים תודה ובקשה למשוב.',
-  registered: 'כל מי שרשום/ה למפגש (לא כולל בהמתנה ומבטלים).',
-  waitlisted: 'מי שממתין/ה למקום.',
-  attended: 'מי שסומן/ה כהגעה.',
+  aftercare: 'כל מי שהגיע, בנוסח המתאים: מי שאישר עדכונים ועוד לא הצטרף לעמותה מקבל תודה עם הזמנה להצטרף לעמותה. כל השאר מקבלים תודה ובקשה למשוב.',
+  registered: 'כל מי שרשום למפגש (לא כולל בהמתנה ומבטלים).',
+  waitlisted: 'מי שברשימת ההמתנה.',
+  attended: 'רשומים שסומנה להם הגעה.',
   no_show: 'רשומים שלא הגיעו. מסומנים בסגירת המפגש.',
   consented: 'אישרו לקבל עדכונים בוואטסאפ, הגיעו לפעילות כלשהי ב-90 הימים האחרונים, ועדיין לא רשומים למפגש הזה.',
 };
@@ -124,7 +124,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   if (templates.isLoading) return <Panel><Skeleton lines={6} /></Panel>;
   if (templates.isError) return <ErrorBox error={errorMessage(templates.error)} onRetry={() => templates.refetch()} />;
   if (!list.length) {
-    return <Panel><EmptyState icon="message" title="אין תבניות הודעה">מנהל/ת יכול/ה להוסיף תבניות במסך ההגדרות.</EmptyState></Panel>;
+    return <Panel><EmptyState icon="message" title="אין תבניות הודעה">מנהלים יכולים להוסיף תבניות במסך ההגדרות.</EmptyState></Panel>;
   }
 
   const preview = tpl ? renderTemplate(tpl.body, { ...people.ctx, firstName: '‹שם פרטי›' }) : '';
@@ -139,7 +139,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   return (
     <div className="flex flex-col gap-5">
       <Notice tone="tide" icon="shield">
-        שום הודעה לא נשלחת לבד. "שליחה" פותחת וואטסאפ בטלפון או במחשב שלך עם הטקסט מוכן, ואת/ה לוחץ/ת "שלח" בוואטסאפ. כל פתיחה נרשמת בהיסטוריית הקשר של הלוחם/ת.
+        שום הודעה לא נשלחת לבד. "שליחה" פותחת וואטסאפ בטלפון או במחשב שלך עם הטקסט מוכן, ושם לוחצים "שלח". כל פתיחה נרשמת בהיסטוריית הקשר שבכרטיס.
       </Notice>
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -157,7 +157,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
               {list.map((t) => <option key={t.key} value={t.key}>{t.label}{t.is_marketing ? ' (דורש הסכמה)' : ''}</option>)}
             </Select>
             {tpl?.is_marketing && (
-              <Notice tone="light" icon="alert">הודעה שיווקית: לפי חוק התקשורת נשלחת רק למי שאישר/ה לקבל עדכונים והזמנות.</Notice>
+              <Notice tone="light" icon="alert">הודעה שיווקית: לפי חוק התקשורת נשלחת רק למי שאישר לקבל עדכונים והזמנות.</Notice>
             )}
             <div>
               <div className="mb-1.5 text-small font-medium">כך זה ייראה</div>
@@ -182,14 +182,14 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
 
         <Panel
           title={<span>נפתחו בוואטסאפ <span className="num">{doneCount}</span> מתוך <span className="num">{eligibleCount}</span></span>}
-          actions={next ? <Button size="sm" icon="message" onClick={() => setComposer(next)}>שליחה ל{next.full_name?.split(' ')[0] ?? 'הבא/ה'}</Button> : undefined}
+          actions={next ? <Button size="sm" icon="message" onClick={() => setComposer(next)}>{next.full_name ? `שליחה ל${next.full_name.split(' ')[0]}` : 'לשליחה הבאה'}</Button> : undefined}
           padded={false}
         >
           <div className="px-4 pt-3 sm:px-5">
             <div className="h-1.5 bg-ink/10" role="progressbar" aria-valuemin={0} aria-valuemax={eligibleCount} aria-valuenow={doneCount} aria-label="התקדמות השליחה">
               <div className="h-full bg-ink transition-[width]" style={{ width: eligibleCount ? `${(doneCount / eligibleCount) * 100}%` : '0%' }} />
             </div>
-            {blocked > 0 && <p className="mt-2 flex items-start gap-1.5 text-small font-medium text-warn"><Icon name="alert" size={15} className="mt-0.5" />{blocked === 1 ? 'נמען/ת אחד/ת לא אישר/ה' : `${blocked} נמענים לא אישרו`} לקבל עדכונים, ולכן ההודעה הזו לא נשלחת {blocked === 1 ? 'אליו/ה' : 'אליהם'}.</p>}
+            {blocked > 0 && <p className="mt-2 flex items-start gap-1.5 text-small font-medium text-warn"><Icon name="alert" size={15} className="mt-0.5" />{blocked === 1 ? 'הודעה אחת לא נשלחת' : `${blocked} הודעות לא נשלחות`}, כי אין הסכמה לקבל עדכונים.</p>}
           </div>
           {loading ? (
             <div className="p-5"><Skeleton lines={5} /></div>
@@ -197,7 +197,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
             <div className="p-4"><ErrorBox error={errorMessage(error)} /></div>
           ) : ordered.length === 0 ? (
             <EmptyState icon="people" title="אין נמענים בקבוצה הזו">
-              {aftercare ? 'עוד אין מי שסומן/ה כהגעה למפגש הזה.' : group === 'no_show' && e.status !== 'completed' ? 'מי שלא הגיע/ה מסומן/ת בסגירת המפגש.' : group === 'consented' ? 'אין כרגע מי שאישר/ה עדכונים, הגיע/ה לאחרונה ולא רשום/ה.' : 'אפשר לבחור קבוצה אחרת.'}
+              {aftercare ? 'עוד לא סומנו הגעות למפגש הזה.' : group === 'no_show' && e.status !== 'completed' ? 'אי־הגעה מסומנת בסגירת המפגש.' : group === 'consented' ? 'אין כרגע מי שאישר עדכונים, הגיע לאחרונה ועוד לא נרשם.' : 'אפשר לבחור קבוצה אחרת.'}
             </EmptyState>
           ) : (
             <ul className="mt-2 divide-y divide-edge">
@@ -210,7 +210,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                       <div className="flex flex-wrap items-center gap-1.5 font-semibold">
                         {p.full_name}
                         {p.note && <Badge tone="tide">{p.note}</Badge>}
-                        {aftercare && p.membership === 'member' && <Badge tone="good">חבר/ת עמותה</Badge>}
+                        {aftercare && p.membership === 'member' && <Badge tone="good">חברות בעמותה</Badge>}
                         {aftercare && p.phone && aftercareKey(p, list) === 'join_invite' && <Badge tone="light">+ הזמנה להצטרף</Badge>}
                       </div>
                       <div className="num text-right text-small text-muted">{formatPhone(p.phone) || 'אין טלפון'}</div>
@@ -223,7 +223,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                     ) : !p.phone ? (
                       <Badge tone="neutral">אין טלפון</Badge>
                     ) : !ok ? (
-                      <Badge tone="warn" icon="alert" title="לא אישר/ה לקבל עדכונים והזמנות">אין הסכמה</Badge>
+                      <Badge tone="warn" icon="alert" title="אין הסכמה לקבל עדכונים והזמנות">אין הסכמה</Badge>
                     ) : (
                       <Button size="sm" variant="secondary" icon="message" onClick={() => setComposer(p)}>שליחה</Button>
                     )}
@@ -274,12 +274,12 @@ function AftercareInfo({ readyAt, joinCount, thanks, join }: { readyAt: Date; jo
   return (
     <>
       {ready ? (
-        <Notice tone="light" icon="checkCircle">עברו 24 שעות מסוף המפגש: זה הזמן לשלוח תודה. כל שליחה נרשמת, כך שרואים מי כבר קיבל/ה.</Notice>
+        <Notice tone="light" icon="checkCircle">עברו 24 שעות מסוף המפגש: זה הזמן לשלוח תודה. כל שליחה נרשמת, כך שרואים למי כבר נשלח.</Notice>
       ) : (
         <Notice tone="tide" icon="calendar">ההודעות יהיו מוכנות ב-<span className="num">{fmtDateTime(readyAt.toISOString())}</span>, 24 שעות אחרי סוף המפגש. אז המפגש יופיע גם בלוח הבקרה. אפשר לשלוח כבר עכשיו.</Notice>
       )}
       <div>
-        <div className="mb-1.5 text-small font-medium">תודה (לכל מי שהגיע/ה)</div>
+        <div className="mb-1.5 text-small font-medium">תודה (לכל מי שהגיע)</div>
         <div className={bubble}>{thanks || <span className="text-muted">אין תבנית "תודה". אפשר להוסיף בהגדרות.</span>}</div>
       </div>
       <div>
@@ -287,7 +287,7 @@ function AftercareInfo({ readyAt, joinCount, thanks, join }: { readyAt: Date; jo
           תודה + הזמנה להצטרף לעמותה {joinCount > 0 && <span className="font-normal text-muted">(<span className="num">{joinCount}</span> נמענים)</span>}
         </div>
         <div className={bubble}>{join || <span className="text-muted">אין תבנית "הזמנה להצטרף". אפשר להוסיף בהגדרות.</span>}</div>
-        <p className="mt-1.5 text-small text-muted">רק למי שעוד לא חבר/ת עמותה ואישר/ה לקבל עדכונים והזמנות (חוק התקשורת). אפשר לערוך את הטקסט לפני כל שליחה.</p>
+        <p className="mt-1.5 text-small text-muted">רק למי שאישר לקבל עדכונים והזמנות ועוד לא הצטרף לעמותה (חוק התקשורת). אפשר לערוך את הטקסט לפני כל שליחה.</p>
       </div>
     </>
   );

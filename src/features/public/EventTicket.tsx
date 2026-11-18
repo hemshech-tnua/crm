@@ -38,14 +38,19 @@ function Row({ icon, glyph, mark, children }: { icon?: IconName; glyph?: GlyphNa
   );
 }
 
-/** One event = one ticket: the date stub, then when, where and what. */
-export function EventTicket({ event, highlight = false, level = 2, detailed = false, showStatus = true, className, children }: {
+/**
+ * One event = one ticket: the date stub, then when, where and what. On the registration page (`detailed`) the speaker's
+ * bio and the description run under both, across the ticket's full width, rather than in the narrow column beside the stub.
+ */
+export function EventTicket({ event, highlight = false, level = 2, detailed = false, agenda = true, showStatus = true, className, children }: {
   event: PublicEvent;
   /** navy date block: only for the one event the page is about (the next Friday) */
   highlight?: boolean;
   level?: 2 | 3;
   /** speaker line and description (the registration page) */
   detailed?: boolean;
+  /** the activity and lecture rows; off where the page shows the program next to the ticket (#/friday) */
+  agenda?: boolean;
   /** 'notable': only when it says something beyond "open" (few spots, waitlist, full) */
   showStatus?: boolean | 'notable';
   className?: string;
@@ -53,11 +58,12 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
 }) {
   const H = level === 3 ? 'h3' : 'h2';
   const start = new Date(event.starts_at);
-  const activity = activityText(event);
-  const lecture = lectureText(event);
+  const activity = agenda ? activityText(event) : null;
+  const lecture = agenda ? lectureText(event) : null;
+  const more = detailed && (event.speaker_bio || event.description);
   const status = availability(event);
   return (
-    <article className={cx('flex overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper', className)}>
+    <article className={cx('flex flex-wrap overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper', className)}>
       {/* the date block: navy with beige type for the event the page is about, beige with navy type otherwise */}
       <div
         className={cx(
@@ -88,10 +94,6 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
               </Row>
             )}
           </ul>
-          {detailed && event.speaker_bio && <p className="mt-2 text-sm leading-relaxed text-muted">{keepName(event.speaker_bio)}</p>}
-          {detailed && event.description && (
-            <p className="mt-3 whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft">{keepName(event.description)}</p>
-          )}
           {(showStatus === true || (showStatus === 'notable' && !status.plain)) && (
             <div className="mt-3">
               <Badge tone={status.tone}>{status.text}</Badge>
@@ -99,6 +101,14 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
           )}
           {children}
       </div>
+      {more && (
+        <div className="basis-full border-t border-edge px-4 py-3 sm:px-5 sm:py-4">
+          {event.speaker_bio && <p className="text-sm leading-relaxed text-muted">{keepName(event.speaker_bio)}</p>}
+          {event.description && (
+            <p className={cx('whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft', event.speaker_bio && 'mt-2')}>{keepName(event.description)}</p>
+          )}
+        </div>
+      )}
     </article>
   );
 }

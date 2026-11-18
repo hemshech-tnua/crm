@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { age, fmtDate, fmtLongDate } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
-import { FOLLOWUP_TYPE_LABEL, MEMBERSHIP_LABEL } from '@/lib/labels';
+import { FOLLOWUP_TYPE_LABEL, MEMBERSHIP_LABEL, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
 import { Badge, Button, ButtonLink, EmptyState, ErrorBox, KeyValue, Notice, PageHeader, Panel, Skeleton, buttonClass, cx } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
@@ -52,7 +52,7 @@ function Anonymized({ card, back }: { card: Card; back: { to: string; label: str
       <PageHeader title="פרטים נמחקו" back={back} />
       <Panel>
         <EmptyState icon="shield" title="הפרטים האישיים של הכרטיס הזה נמחקו">
-          הפרטים נמחקו ב-<span className="num">{fmtDate(card.anonymized_at!)}</span> לבקשת הלוחם/ת או לפי מדיניות שמירת המידע.
+          הפרטים נמחקו ב-<span className="num">{fmtDate(card.anonymized_at!)}</span> לפי בקשה אישית או לפי מדיניות שמירת המידע.
           נשארו רק נתוני השתתפות בלי זיהוי, כדי שהסטטיסטיקה של המפגשים תישאר נכונה.
         </EmptyState>
       </Panel>
@@ -90,8 +90,8 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             <EngagementBadge status={s?.engagement_status} />
-            {card.membership === 'member' && <Badge tone="good" icon="star">חבר/ת עמותה</Badge>}
-            {card.membership === 'requested' && <Badge tone="warn" icon="alert">ביקש/ה להצטרף לעמותה</Badge>}
+            {card.membership === 'member' && <Badge tone="good" icon="star">חברות בעמותה</Badge>}
+            {card.membership === 'requested' && <Badge tone="warn" icon="alert">בקשת הצטרפות לעמותה</Badge>}
             {card.photo_opt_out && <Badge icon="noCamera" tone="warn">לא להצטלם</Badge>}
             <span>במערכת מאז <span className="num">{fmtDate(card.created_at)}</span></span>
           </span>
@@ -110,12 +110,12 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
       </div>
 
       <StatStrip loading={stats.isLoading} items={[
-        ['מפגשי שישי', s?.friday_count ?? null, 'מפגשי שישי שהגיע/ה אליהם'],
+        ['מפגשי שישי', s?.friday_count ?? null, 'הגעות למפגשי שישי'],
         ['כל הפעילויות', s?.attended_count ?? null, 'כולל ערבי מדורה'],
         ['ביקור אחרון', s?.last_attended_at ? ago(s.last_attended_at) : null, s?.last_attended_at ? fmtDate(s.last_attended_at) : undefined],
         ['ביקור ראשון', s?.first_attended_at ? fmtDate(s.first_attended_at) : null],
-        ['לא הגיע/ה', s?.no_show_count ?? null, 'נרשם/ה ולא הגיע/ה'],
-        ['חברים שהביא/ה', s?.friends_brought ?? null],
+        ['הרשמות בלי הגעה', s?.no_show_count ?? null, 'פעמים שהייתה הרשמה ולא הייתה הגעה'],
+        ['חברים שהופנו', s?.friends_brought ?? null],
       ]} />
 
       {openTasks.length > 0 && (
@@ -124,24 +124,24 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="flex flex-col gap-5">
-          <Panel title="מאיפה הגיע/ה">
+          <Panel title="מקור ההגעה">
             <KeyValue items={[
               ['מקור היכרות', card.first_source ? <>{card.first_source.label}{card.first_source_detail && <span className="text-ink-soft">: {card.first_source_detail}</span>}</> : null],
-              ['מי הביא/ה', <Referrer key="r" card={card} onLink={() => setOpen('referrer')} />],
+              ['מי הביא', <Referrer key="r" card={card} onLink={() => setOpen('referrer')} />],
               ['ערוץ ההרשמה הראשונה', firstReg ? channelText(firstReg) : null],
             ]} />
             <div className="mt-4 border-t border-edge pt-3">
-              <p className="mb-1.5 text-small font-semibold text-muted">חברים שהביא/ה</p>
+              <p className="mb-1.5 text-small font-semibold text-muted">חברים שהופנו</p>
               {card.friends.length ? (
                 <ul className="flex flex-col gap-1">
                   {card.friends.map((fr) => (
                     <li key={fr.id} className="flex items-center justify-between gap-2">
                       <PersonLink id={fr.id} name={fr.anonymized_at ? null : fr.full_name} />
-                      <span className="text-small text-muted">הצטרף/ה <span className="num">{fmtDate(fr.created_at)}</span></span>
+                      <span className="text-small text-muted">הצטרפות <span className="num">{fmtDate(fr.created_at)}</span></span>
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-small text-faint">עוד לא הביא/ה חברים</p>}
+              ) : <p className="text-small text-faint">עוד אין חברים שהופנו</p>}
             </div>
           </Panel>
 
@@ -153,10 +153,10 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
               ['יום הולדת', card.birth_date ? fmtLongDate(card.birth_date) : null],
               ['עיסוק', card.occupation],
               ['עדכונים בוואטסאפ', card.consent_updates
-                ? <span className="font-semibold text-ink">מסכים/ה{card.consent_updates_at && <span className="text-muted"> מ-<span className="num">{fmtDate(card.consent_updates_at)}</span></span>}</span>
-                : <span className="text-ink-soft">לא אישר/ה (אפשר להתקשר)</span>],
+                ? <span className="font-semibold text-ink">יש הסכמה{card.consent_updates_at && <span className="text-muted"> מ-<span className="num">{fmtDate(card.consent_updates_at)}</span></span>}</span>
+                : <span className="text-ink-soft">אין הסכמה (אפשר להתקשר)</span>],
               ['עמותה', <MembershipText key="m" card={card} />],
-              ['צילום', card.photo_opt_out ? <span className="text-warn">לא מעוניין/ת להופיע בתמונות</span> : 'אין הגבלה'],
+              ['צילום', card.photo_opt_out ? <span className="text-warn">בקשה לא להופיע בתמונות</span> : 'אין הגבלה'],
               ['הצטרפות', <span key="j"><span className="num">{fmtDate(card.created_at)}</span> · {CREATED_VIA_LABEL[card.created_via] ?? card.created_via}</span>],
             ]} />
             {card.notes && (
@@ -194,8 +194,8 @@ function channelText(r: CardRegistration): ReactNode {
   const utm = [r.utm_source, r.utm_medium, r.utm_campaign].filter(Boolean).join(' / ');
   if (r.link) return <>{r.link.label} <span className="num text-small text-muted">({r.link.code})</span></>;
   if (utm) return <span className="num">{utm}</span>;
-  if (r.created_via === 'staff') return <span className="text-ink-soft">נרשם/ה על ידי הצוות</span>;
-  if (r.is_walk_in || r.created_via === 'walk_in_staff' || r.created_via === 'checkin') return <span className="text-ink-soft">הגיע/ה בלי הרשמה</span>;
+  if (r.created_via === 'staff') return <span className="text-ink-soft">הרשמה על ידי הצוות</span>;
+  if (r.is_walk_in || r.created_via === 'walk_in_staff' || r.created_via === 'checkin') return <span className="text-ink-soft">הגעה בלי הרשמה</span>;
   return <span className="text-ink-soft">טופס ההרשמה, בלי קישור ערוץ</span>;
 }
 
@@ -277,12 +277,12 @@ function OpenTasks({ tasks, staffName, nextEvent, onNew, name }: {
           return (
             <li key={t.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div className="min-w-0">
-                <p className="font-semibold">{t.title}</p>
+                <p className="font-semibold">{taskTitle(t.title)}</p>
                 <p className="flex flex-wrap items-center gap-x-2 text-small text-muted">
                   <span>{FOLLOWUP_TYPE_LABEL[t.type]}</span>
                   {t.due_date && <><span aria-hidden="true">·</span><span className={cx(d! < 0 && 'font-semibold text-bad')}>{d! < 0 ? `באיחור (יעד ${fmtDate(t.due_date)})` : `יעד ${fmtDate(t.due_date)}`}</span></>}
                   <span aria-hidden="true">·</span>
-                  <span>{t.assignee_id ? staffName.get(t.assignee_id) ?? 'איש/אשת צוות' : 'ללא אחראי/ת'}</span>
+                  <span>{t.assignee_id ? staffName.get(t.assignee_id) ?? 'הצוות' : 'ללא שיוך'}</span>
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">
@@ -331,13 +331,13 @@ function DangerZone({ card }: { card: Card }) {
         <div className="flex flex-col gap-3">
           <div>
             <p className="font-semibold text-ink">מה יימחק:</p>
-            <p>שם, טלפון, עיר, גיל ותאריך לידה, עיסוק, הערות, מי הביא/ה, ההערות שכתב/ה במשוב, יומן השיחות ומשימות המעקב.</p>
+            <p>שם, טלפון, עיר, גיל ותאריך לידה, עיסוק, הערות, מי הביא, ההערות שנכתבו במשוב, יומן השיחות ומשימות המעקב.</p>
           </div>
           <div>
             <p className="font-semibold text-ink">מה יישאר, בלי זיהוי:</p>
             <p>ההגעות למפגשים והדירוגים, כדי שמספרי המשתתפים והדוחות יישארו נכונים.</p>
           </div>
-          <Notice tone="warn" icon="alert">אי אפשר לבטל את הפעולה. אם הלוחם/ת יירשם/תירשם שוב, ייפתח כרטיס חדש.</Notice>
+          <Notice tone="warn" icon="alert">אי אפשר לבטל את הפעולה. אם תהיה הרשמה חדשה, ייפתח כרטיס חדש.</Notice>
         </div>
       ),
     });
@@ -347,7 +347,7 @@ function DangerZone({ card }: { card: Card }) {
     <section className="mt-8 rounded-[var(--radius-panel)] border border-bad/25 bg-paper p-4 sm:p-5">
       <h2 className="font-bold">מחיקת פרטים אישיים (התממה)</h2>
       <p className="mt-1 max-w-2xl text-body text-ink-soft">
-        לבקשת הלוחם/ת או לפי מדיניות שמירת המידע. הפרטים המזהים נמחקים, ונתוני ההשתתפות נשארים בלי שם לסטטיסטיקה. רק מנהלים רואים את האפשרות הזו.
+        לפי בקשה אישית או לפי מדיניות שמירת המידע. הפרטים המזהים נמחקים, ונתוני ההשתתפות נשארים בלי שם לסטטיסטיקה. רק מנהלים רואים את האפשרות הזו.
       </p>
       <Button variant="danger" className="mt-3" icon="shield" busy={anonymize.isPending} onClick={ask}>מחיקת פרטים אישיים</Button>
     </section>

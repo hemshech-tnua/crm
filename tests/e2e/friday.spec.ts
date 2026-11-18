@@ -39,5 +39,6 @@ test('with no open Friday meeting, a calm empty state and a way to reach the tea
   // the program and the questions are still there
   await expect(page.getByRole('heading', { name: 'מה קורה בשישי' })).toBeVisible();
   await page.getByText('כמה זה עולה?').click();
-  await expect(page.getByText('ההשתתפות בתשלום סמלי, הפרטים בהרשמה.')).toBeVisible();
+  // no price is published: the page says so and how to ask, and promises nothing the registration page does not show
+  await expect(page.getByText('המחיר עוד לא מופיע באתר.', { exact: false })).toBeVisible();
 });

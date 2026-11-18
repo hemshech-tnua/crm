@@ -33,7 +33,7 @@ export function LoginPage() {
       <h1 className="font-display text-3xl">כניסת צוות</h1>
       <p className="mt-1 mb-6 text-muted">המערכת של צוות העמותה. לוחמים שרוצים להירשם למפגש לא צריכים חשבון.</p>
       {params.get('denied') && session && (
-        <div className="mb-4"><Notice tone="warn" icon="alert">החשבון הזה לא פעיל במערכת. פנו למנהל/ת.</Notice></div>
+        <div className="mb-4"><Notice tone="warn" icon="alert">החשבון הזה לא פעיל במערכת. פנו למנהלי המערכת.</Notice></div>
       )}
       {mode === 'password' ? <PasswordLogin from={from} /> : <CodeLogin key={mode} channel={mode} from={from} />}
       <div className="mt-6 flex flex-col items-start gap-1">
@@ -236,7 +236,7 @@ function PasswordLogin({ from }: { from: string }) {
         {error && <ErrorBox error={error} />}
         <Button type="submit" size="lg" busy={busy} disabled={!email || !password}>כניסה</Button>
       </form>
-      <p className="mt-6 text-sm text-muted">שכחת סיסמה? מנהל/ת המערכת יכול/ה לאפס אותה מתוך ההגדרות.</p>
+      <p className="mt-6 text-sm text-muted">שכחת סיסמה? מנהלי המערכת יכולים לאפס אותה מתוך ההגדרות.</p>
     </>
   );
 }

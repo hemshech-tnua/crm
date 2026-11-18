@@ -8,18 +8,24 @@ import { cx } from '@/ui/kit';
  * Phone: the image zone above the content zone, short, so the next meeting is still on the first screen.
  * Wide screen: side by side, the content zone on the right (where Hebrew starts) and the photograph on the left.
  * Headlines are short (up to five words) and the photograph is decorative, so it has no alt text.
+ * The content zone is the wider one on a wide screen, so the 60px headline "להמשיך תנועה" fits on one line.
  */
+
+/** The one slogan of the public pages; "להמשיך תנועה" is never split across lines. */
+export function Slogan() {
+  return <>בואו <span className="whitespace-nowrap">להמשיך תנועה</span></>;
+}
 export function Hero({ photo, kicker, title, children, position = 'center', className }: {
   photo: string; kicker?: ReactNode; title: ReactNode; children?: ReactNode; position?: string; className?: string;
 }) {
   return (
     <section className={cx(
-      '-mx-5 -mt-6 flex flex-col overflow-hidden bg-ink text-light sm:mx-0 sm:mt-0 sm:rounded-[var(--radius-panel)] lg:grid lg:min-h-[23rem] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]',
+      '-mx-5 -mt-6 flex flex-col overflow-hidden bg-ink text-light sm:mx-0 sm:mt-0 sm:rounded-[var(--radius-panel)] lg:grid lg:min-h-[23rem] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]',
       className,
     )}>
       <div className="flex flex-col justify-center px-5 pt-4 pb-5 sm:px-7 sm:pt-6 sm:pb-7 lg:px-10 lg:py-12">
         {kicker && <p className="font-display text-heading sm:text-section">{kicker}</p>}
-        <h1 className="font-display text-[2.25rem] leading-[1.02] sm:text-hero lg:text-[3.75rem]">{title}</h1>
+        <h1 className="font-display text-[2.25rem] leading-[1.02] text-balance sm:text-hero lg:text-[3.75rem]">{title}</h1>
         {children && <div className="mt-1.5 text-body text-light/90 sm:mt-3 lg:mt-5 lg:max-w-md lg:text-[1.0625rem]">{children}</div>}
       </div>
       <div className="relative order-first aspect-[3/1] overflow-hidden sm:aspect-[16/7] lg:order-none lg:aspect-auto">

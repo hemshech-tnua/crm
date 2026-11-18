@@ -367,7 +367,7 @@ function SourcesReport({ filters }: { filters: Filters }) {
                 {r.data.referrers.map((x) => (
                   <li key={x.id} className="flex flex-wrap items-center gap-x-5 gap-y-1 py-2.5">
                     <Link to={`/app/participants/${x.id}`} className="min-w-40 flex-1 font-semibold hover:text-tide hover:underline">{x.full_name}</Link>
-                    <span className="text-small">הביא/ה <span className="num font-bold">{x.friends}</span></span>
+                    <span className="text-small">הפניות <span className="num font-bold">{x.friends}</span></span>
                     <span className="text-small text-muted">הגיעו: <span className="num">{x.friends_attended}</span></span>
                     <span className="text-small text-muted">חזרו: <span className="num">{x.friends_returned}</span></span>
                     {x.friend_list?.length ? (
@@ -402,7 +402,7 @@ function PresentersReport({ filters }: { filters: Filters }) {
   const rows = q.data ?? [];
   const cols: Column<PresenterRow>[] = [
     { header: 'שם', value: (x) => x.full_name },
-    { header: 'תפקיד', value: (x) => (x.kind === 'speaker' ? 'מרצה' : 'מדריך/ה') },
+    { header: 'תפקיד', value: (x) => (x.kind === 'speaker' ? 'מרצה' : 'הדרכה') },
     { header: 'נושאים', value: (x) => x.topics ?? x.topic },
     { header: 'מפגשים', value: (x) => x.events },
     { header: 'ממוצע משתתפים', value: (x) => x.avg_attendance },
@@ -494,8 +494,8 @@ function Definitions() {
     ['הגיעו דרך חבר (יעד 25%)', 'מבין החדשים בתקופה: כמה סימנו שחבר הביא אותם, או נרשמו דרך קישור הזמנה אישי.'],
     ['דירוג ממוצע (יעד 4)', 'ממוצע "הדירוג הכללי" במשובים על מפגשי התקופה.'],
     ['שיעור חזרה של מקור', 'מבין מי שהגיע לראשונה דרך המקור בתקופה: כמה הגיעו לפחות פעם נוספת, בכל זמן.'],
-    ['קבוע/ה', 'הגיע/ה ל-2 מפגשי שישי לפחות ב-30 הימים האחרונים (ניתן לשינוי בהגדרות).'],
-    ['הפסיק/ה להגיע', 'מי שהיה קבוע בעבר, ומאז ביקורו האחרון התקיימו 3 מפגשי שישי במתחם שלו בלי שהגיע (ניתן לשינוי).'],
+    ['הגעה קבועה', 'הגעה ל-2 מפגשי שישי לפחות ב-30 הימים האחרונים (ניתן לשינוי בהגדרות).'],
+    ['הגעה שנפסקה', 'מי שהיה קבוע בעבר, ומאז ביקורו האחרון התקיימו 3 מפגשי שישי במתחם שלו בלי שהגיע (ניתן לשינוי).'],
     ['שלושה סוגי מקור', 'מקור ההיכרות נשמר בכרטיס הלוחם בהרשמה הראשונה ולא משתנה. "מי הפנה" וקישור הערוץ/הקמפיין נשמרים בכל הרשמה בנפרד.'],
     ['כשאין נתונים', 'מוצג "—" ולא 0%.'],
     ['כספים: נגבה', 'סכום התשלומים שסומנו "שולם" (בקישור לתשלום, בכניסה או ידנית), גם של מי שביטל אחרי ששילם, עד שסומן החזר.'],

@@ -127,7 +127,7 @@ export function ParticipantsPage() {
         { header: 'כל הפעילויות', value: (r) => r.stats?.attended_count ?? 0 },
         { header: 'ביקור ראשון', value: (r) => (r.stats?.first_attended_at ? fmtDate(r.stats.first_attended_at) : '') },
         { header: 'ביקור אחרון', value: (r) => (r.stats?.last_attended_at ? fmtDate(r.stats.last_attended_at) : '') },
-        { header: 'לא הגיע/ה (פעמים)', value: (r) => r.stats?.no_show_count ?? 0 },
+        { header: 'הרשמות בלי הגעה', value: (r) => r.stats?.no_show_count ?? 0 },
         { header: 'מקור היכרות', value: (r) => (r.first_source_id ? sourceLabel.get(r.first_source_id) : '') },
         { header: 'פירוט מקור', value: (r) => r.first_source_detail },
         { header: 'הסכמה לעדכונים', value: (r) => (r.consent_updates ? 'כן' : 'לא') },
@@ -155,7 +155,7 @@ export function ParticipantsPage() {
         subtitle={counts.data ? <><span className="num">{counts.data.all.toLocaleString('he-IL')}</span> לוחמים ולוחמות במערכת</> : 'כל מי שנרשם או הגיע למפגש'}
         actions={
           <>
-            <ButtonLink to="/app/participants/new" icon="userPlus">לוחם/ת חדש/ה</ButtonLink>
+            <ButtonLink to="/app/participants/new" icon="userPlus">כרטיס חדש</ButtonLink>
             <ButtonLink to="/app/participants/duplicates" variant="secondary" icon="merge">כפילויות אפשריות</ButtonLink>
             {can.admin(role) && (
               <Button variant="ghost" icon="download" busy={exporting} onClick={exportCsv} disabled={!total}>ייצוא CSV</Button>
@@ -228,10 +228,10 @@ export function ParticipantsPage() {
           <div className="rounded-[var(--radius-panel)] border border-edge bg-paper">
             {anyFilter ? (
               <EmptyState icon="search" title="לא נמצאו לוחמים" action={<Button variant="secondary" onClick={clearAll}>ניקוי החיפוש והסינון</Button>}>
-                {q ? <>אין תוצאות עבור "{q}". אפשר לחפש לפי חלק מהשם, 4 ספרות אחרונות של הטלפון או עיר.</> : 'אף לוחם/ת לא מתאים/ה לסינון שנבחר.'}
+                {q ? <>אין תוצאות עבור "{q}". אפשר לחפש לפי חלק מהשם, 4 ספרות אחרונות של הטלפון או עיר.</> : 'אין כרטיסים שמתאימים לסינון שנבחר.'}
               </EmptyState>
             ) : (
-              <EmptyState icon="people" title="עוד אין לוחמים במערכת" action={<ButtonLink to="/app/participants/new" icon="userPlus">לוחם/ת חדש/ה</ButtonLink>}>
+              <EmptyState icon="people" title="עוד אין לוחמים במערכת" action={<ButtonLink to="/app/participants/new" icon="userPlus">כרטיס חדש</ButtonLink>}>
                 לוחמים נוספים לכאן מעצמם כשנרשמים בטופס ההרשמה או נכנסים למפגש. אפשר גם להוסיף ידנית.
               </EmptyState>
             )}
@@ -240,7 +240,7 @@ export function ParticipantsPage() {
           <>
             <div className="mb-2 flex items-center justify-between text-small text-muted">
               <span>
-                {anyFilter ? 'נמצאו ' : ''}<span className="num font-semibold text-ink">{total.toLocaleString('he-IL')}</span> {total === 1 ? 'לוחם/ת' : 'לוחמים'}
+                {anyFilter ? 'נמצאו ' : ''}<span className="num font-semibold text-ink">{total.toLocaleString('he-IL')}</span> {total === 1 ? 'כרטיס' : 'לוחמים'}
               </span>
               {roster.isFetching && <span className="flex items-center gap-1.5"><Spinner size={14} />מעדכנים…</span>}
             </div>
@@ -312,7 +312,7 @@ function RosterTable({ rows, sourceLabel, openSet, from }: ListProps) {
             <Th>טלפון</Th>
             <Th>עיר</Th>
             <Th numeric>גיל</Th>
-            <Th numeric><span title="מפגשי שישי שהגיע/ה אליהם">מפגשי שישי</span></Th>
+            <Th numeric><span title="הגעות למפגשי שישי">מפגשי שישי</span></Th>
             <Th numeric><span title="כל הפעילויות, כולל ערבי מדורה">פעילויות</span></Th>
             <Th>ביקור אחרון</Th>
             <Th>מקור</Th>

@@ -15,7 +15,7 @@ const AUDIENCE: Record<Template['audience'], string> = {
   attended: 'למי שהגיע',
   no_show: 'למי שנרשם ולא הגיע',
   consented: 'למי שהסכים לקבל עדכונים',
-  participant: 'ללוחם/ת מסוים/ת',
+  participant: 'לאדם מסוים',
 };
 
 const SAMPLE = {

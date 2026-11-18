@@ -8,7 +8,8 @@ import { usePublicEvents } from './api';
 import { EventTicket, availability } from './EventTicket';
 import { activityText, keepName, lectureText, timeRange } from './eventText';
 import { trackingQuery } from './tracking';
-import { Hero } from './Hero';
+import { Hero, Slogan } from './Hero';
+import { H2 } from './friday/sections';
 import hills from '@/assets/photos/hills.webp';
 
 const dayNum = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, day: 'numeric' });
@@ -28,8 +29,12 @@ export function PublicHome() {
 
   return (
     <div>
-      <Hero photo={hills} position="50% 62%" kicker="בואו איתנו" title="להמשיך תנועה">
-        מפגשי שישי ללוחמים וללוחמות: אימון, הרצאת&nbsp;אורח, ארוחת&nbsp;בוקר וזמן&nbsp;ביחד.
+      <Hero photo={hills} position="50% 62%" title={<Slogan />}>
+        <p>מפגשים ללוחמים וללוחמות אחרי השירות. בשישי בבוקר: אימון, הרצאת&nbsp;אורח וארוחת&nbsp;בוקר ביחד.</p>
+        <Link to={`/friday${query}`} className="mt-1 inline-flex min-h-11 items-center gap-2 font-semibold text-light underline underline-offset-4 sm:mt-2">
+          איך נראה בוקר שישי
+          <Tri size="0.7em" />
+        </Link>
       </Hero>
 
       <div className="mt-5 sm:mt-8 lg:mt-10">
@@ -46,13 +51,13 @@ export function PublicHome() {
         ) : (
           <div className={rest.length ? 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-10' : 'lg:max-w-xl'}>
             <section aria-labelledby="next-meeting" className="lg:sticky lg:top-6">
-              <h2 id="next-meeting" className="mb-2.5 text-heading font-semibold">המפגש הקרוב</h2>
+              <h2 id="next-meeting" className={`${H2} mb-3 lg:mb-4`}>המפגש הקרוב</h2>
               <EventTicket event={next} highlight level={3} showStatus="notable" className="relative">
                 <ButtonLink
                   to={`/r/${next.code}${query}`}
                   cta
                   size="lg"
-                  className="mt-4 min-w-44 font-bold after:absolute after:inset-0 after:content-['']"
+                  className="mt-4 min-w-44 after:absolute after:inset-0 after:content-['']"
                 >
                   {cta(next)}
                   <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
@@ -62,9 +67,9 @@ export function PublicHome() {
             </section>
             {rest.length > 0 && (
               <section aria-labelledby="more-meetings">
-                <h2 id="more-meetings" className="mb-2.5 text-heading font-semibold">עוד מפגשים</h2>
+                <h2 id="more-meetings" className={`${H2} mb-3 lg:mb-4`}>עוד מפגשים</h2>
                 <ul className="divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper">
-                  {rest.map((e) => <ScheduleRow key={e.code} event={e} to={`/r/${e.code}${query}`} label={cta(e)} />)}
+                  {rest.map((e) => <ScheduleRow key={e.code} event={e} to={`/r/${e.code}${query}`} />)}
                 </ul>
               </section>
             )}
@@ -77,9 +82,9 @@ export function PublicHome() {
 
 /**
  * One meeting in the schedule (book p.63: date, what, the triangle). The whole row is the link; its name is the title
- * and the date, so a screen reader tells the rows apart even when the titles repeat.
+ * and the date, so a screen reader tells the rows apart even when the titles repeat (and the heading list stays clean).
  */
-function ScheduleRow({ event: e, to, label }: { event: PublicEvent; to: string; label: string }) {
+function ScheduleRow({ event: e, to }: { event: PublicEvent; to: string }) {
   const start = new Date(e.starts_at);
   const status = availability(e);
   const what = lectureText(e) ?? activityText(e);
@@ -89,14 +94,14 @@ function ScheduleRow({ event: e, to, label }: { event: PublicEvent; to: string; 
         <h3 className="font-semibold leading-snug">
           <Link to={to} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
             {keepName(e.title)}
-            <span className="sr-only">, {fmtDayLong(start)}. {label}</span>
+            <span className="sr-only">, {fmtDayLong(start)}</span>
           </Link>
         </h3>
         <p className="mt-0.5 text-small text-muted">
           <span className="num">{timeRange(e)}</span> · {relativeDays(start)}
         </p>
         {e.location && <p className="text-small text-muted">{e.location}</p>}
-        {what && <p className="mt-0.5 truncate text-small text-ink-soft">{what}</p>}
+        {what && <p className="mt-0.5 line-clamp-2 text-small text-ink-soft">{keepName(what)}</p>}
         {!status.plain && <div className="mt-1.5"><Badge tone={status.tone}>{status.text}</Badge></div>}
       </div>
       <div className="order-first flex w-14 shrink-0 flex-col items-center text-center" aria-hidden="true">

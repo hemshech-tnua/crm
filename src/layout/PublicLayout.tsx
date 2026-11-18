@@ -32,7 +32,7 @@ export function PublicLayout() {
       </main>
       <footer className={cx('mx-auto w-full px-5 pb-8 text-small text-muted', width)}>
         <div className={cx('flex flex-col items-center border-t border-edge pt-2 text-center', wide ? 'lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:text-start' : 'sm:items-start sm:text-start')}>
-          <nav aria-label="קישורים נוספים" className="flex flex-wrap justify-center gap-x-5 sm:justify-start">
+          <nav aria-label="קישורים נוספים" className="grid grid-cols-2 justify-items-center gap-x-4 text-center sm:flex sm:flex-wrap sm:justify-start sm:gap-x-5 sm:text-start">
             <Link to="/member" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">הצטרפות לעמותה</Link>
             <Link to="/join" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">רוצים להרצות או להדריך?</Link>
             <Link to="/privacy" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">מדיניות פרטיות</Link>

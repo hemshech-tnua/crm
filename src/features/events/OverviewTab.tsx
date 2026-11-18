@@ -93,9 +93,9 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
           ['מרצה', sp ? (
             <span key="s" className="inline-flex flex-wrap items-center gap-1.5">
               {sp.full_name}
-              {sp.status !== 'approved' && <Badge tone="warn">{sp.status === 'proposed' ? 'ממתין לאישור' : 'לא מאושר/ת'}</Badge>}
+              {sp.status !== 'approved' && <Badge tone="warn">{sp.status === 'proposed' ? 'ממתין לאישור' : 'בלי אישור'}</Badge>}
             </span>
-          ) : e.type === 'friday' ? <Badge key="s" tone="warn" icon="mic">עוד לא נקבע/ה</Badge> : null],
+          ) : e.type === 'friday' ? <Badge key="s" tone="warn" icon="mic">עוד אין</Badge> : null],
           ['נושא', e.lecture_topic],
           ['מקומות', e.capacity != null ? <span key="c"><span className="num">{e.capacity}</span>{e.waitlist_enabled ? ' · עם רשימת המתנה' : ' · בלי רשימת המתנה'}</span> : 'בלי הגבלה'],
           ['השתתפות', isPriced(e.price) ? (
@@ -194,8 +194,8 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
     const st = settings.data;
     const unmarked = Math.max(0, (s?.registered_count ?? 0) - (s?.attended_registered_count ?? 0) - (s?.no_show_count ?? 0));
     const tasks = [
-      st?.auto_task_no_show !== false && '"חסרת לנו" ושיחה לכל מי שלא הגיע/ה',
-      st?.auto_task_first_time !== false && 'שיחת היכרות לכל מי שהגיע/ה בפעם הראשונה',
+      st?.auto_task_no_show !== false && '"חסרת לנו" ושיחה לכל מי שלא הגיע',
+      st?.auto_task_first_time !== false && 'שיחת היכרות לכל מי שהגיע בפעם הראשונה',
       st?.auto_task_lapsed !== false && 'פנייה לקבועים שהפסיקו להגיע',
     ].filter(Boolean) as string[];
     const ok = await confirm({
@@ -206,7 +206,7 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
           <p>מה יקרה עכשיו:</p>
           <ul className="flex list-disc flex-col gap-1.5 pr-5">
             <li>
-              {unmarked > 0 ? <><b className="num">{unmarked}</b> רשומים שלא סומנו כהגעה יסומנו "לא הגיע/ה".</> : 'כל הרשומים כבר מסומנים. אף אחד לא יסומן "לא הגיע/ה" אוטומטית.'}
+              {unmarked > 0 ? <><b className="num">{unmarked}</b> רשומים שלא סומנו כהגעה יסומנו כאי־הגעה.</> : 'כל הרשומים כבר מסומנים. אף אחד לא יסומן אוטומטית כאי־הגעה.'}
             </li>
             {tasks.length > 0 && <li>ייפתחו משימות מעקב: {tasks.join('; ')}.</li>}
             <li>המפגש יסומן "התקיים" וייכנס לדוחות ולמדדים.</li>
@@ -222,7 +222,7 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
     if (e.type === 'friday' && !e.speaker_id) {
       const ok = await confirm({
         title: 'פתיחת הרשמה בלי מרצה?',
-        body: 'עוד לא נקבע/ה מרצה למפגש. אפשר לפתוח הרשמה עכשיו ולהוסיף מרצה ונושא אחר כך.',
+        body: 'עוד אין מרצה למפגש. אפשר לפתוח הרשמה עכשיו ולהוסיף מרצה ונושא אחר כך.',
         confirm: 'פתיחת הרשמה',
       });
       if (!ok) return;
@@ -309,7 +309,7 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
               <BigStat label="הגיעו" value={s?.attended_count ?? 0} highlight />
-              <BigStat label='סומנו "לא הגיע/ה"' value={result.no_shows} />
+              <BigStat label="לא הגיעו" value={result.no_shows} />
             </div>
             <KeyValue
               items={[
@@ -363,7 +363,7 @@ function DuplicateDialog({ open, onClose, e }: { open: boolean; onClose: () => v
   return (
     <Dialog open={open} onClose={onClose} title="שכפול לשבוע הבא" size="sm">
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <p className="text-[0.95rem] text-ink-soft">נוצרת טיוטה עם אותם פרטים, מקום, מכסה ופעילות. המרצה והנושא מתאפסים (מרצה חדש/ה בכל שבוע).</p>
+        <p className="text-[0.95rem] text-ink-soft">נוצרת טיוטה עם אותם פרטים, מקום, מכסה ופעילות. המרצה והנושא מתאפסים (בכל שבוע הרצאה חדשה).</p>
         <div className="grid grid-cols-2 gap-3">
           <Input label="תאריך" type="date" ltr value={date} onChange={(x) => setWhen({ date: x.target.value, time })} error={err} hint={/^\d{4}-\d{2}-\d{2}$/.test(date) && !err ? fmtDayLong(fromIl(date, '12:00')) : undefined} />
           <Input label="שעת התחלה" type="time" ltr value={time} onChange={(x) => setWhen({ date, time: x.target.value })} step={300} />
@@ -573,7 +573,7 @@ function EntrancePanel({ e }: { e: EventWithStats }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <p className="text-[0.95rem] text-ink-soft">
-            קוד QR להדפסה ולתלייה בכניסה: מי שמגיע/ה סורק/ת ומסמן/ת הגעה בעצמו/ה. הסריקה פתוחה {e.status === 'draft' ? 'אחרי פתיחת ההרשמה, ' : ''}סביב שעת המפגש.
+            קוד QR להדפסה ולתלייה בכניסה: מי שמגיע סורק אותו ומסמן הגעה, בלי עזרה מהצוות. הסריקה פתוחה {e.status === 'draft' ? 'אחרי פתיחת ההרשמה, ' : ''}סביב שעת המפגש.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button icon="qr" onClick={() => setPrinting(true)}>שלט כניסה להדפסה</Button>

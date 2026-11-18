@@ -28,8 +28,8 @@ export function VolunteersPage() {
     <div>
       <PageHeader
         title="מתנדבים"
-        subtitle="משבצים מראש לחודשים הקרובים, ושולחים לכל אחד/ת קישור לאישור"
-        actions={<Button icon="userPlus" onClick={() => setEditing('new')}>מתנדב/ת חדש/ה</Button>}
+        subtitle="משבצים מראש לחודשים הקרובים, ושולחים קישור אישי לאישור"
+        actions={<Button icon="userPlus" onClick={() => setEditing('new')}>הוספה למאגר</Button>}
       />
       <Tabs<Tab>
         label="מתנדבים"

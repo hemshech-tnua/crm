@@ -6,7 +6,7 @@ import { useMe } from '@/lib/auth';
 import { useStaffList } from '@/lib/data';
 import { addDays, todayIl } from '@/lib/dates';
 import { errorCode, errorMessage, must } from '@/lib/errors';
-import { CHANNEL_LABEL } from '@/lib/labels';
+import { CHANNEL_LABEL, taskTitle } from '@/lib/labels';
 import type { FollowUp } from '@/lib/types';
 import { Button, Checkbox, ChoiceGroup, Input, Select, Textarea } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
@@ -25,7 +25,7 @@ export type TaskRow = FollowUp & {
 };
 export const TASK_SELECT = `*, participant:participants(id,full_name,phone,consent_updates), event:events(${EVENT_FOR_MESSAGE})`;
 
-export const LAPSED_TASK_TITLE = 'קבוע/ה שהפסיק/ה להגיע: לשאול מה שלומו/ה';
+export const LAPSED_TASK_TITLE = 'הגעה קבועה שנפסקה: לשאול מה נשמע';
 
 /** After any change to tasks: the queue, the dashboard's "needs attention", and the person's card. */
 export function useInvalidateTasks() {
@@ -87,7 +87,7 @@ export function TaskComposer({ task, nextEvent, onClose }: { task: TaskRow; next
 
 // ───────────── complete a task ─────────────
 
-const QUICK_OUTCOMES = ['הכול בסדר, יגיע/תגיע בשישי הבא', 'עסוק/ה בתקופה הזו, נחזור בעוד חודש', 'ביקש/ה לא לפנות שוב'];
+const QUICK_OUTCOMES = ['הכול בסדר, נתראה בשישי הבא', 'תקופה עמוסה, נחזור בעוד חודש', 'בקשה לא לפנות שוב'];
 
 export function CompleteTaskDialog({ task, onClose }: {
   task: Pick<FollowUp, 'id' | 'participant_id' | 'event_id' | 'title'> & { participantName?: string | null };
@@ -112,7 +112,7 @@ export function CompleteTaskDialog({ task, onClose }: {
       const { error } = await supabase.from('follow_ups').update({ due_date: due }).eq('id', task.id);
       if (error) throw error;
       const { error: logErr } = await supabase.from('contact_log').insert({
-        participant_id: task.participant_id, channel, summary: 'ניסיון יצירת קשר: לא ענה/תה', follow_up_id: task.id, event_id: task.event_id,
+        participant_id: task.participant_id, channel, summary: 'ניסיון יצירת קשר: אין מענה', follow_up_id: task.id, event_id: task.event_id,
       });
       if (logErr) throw logErr;
     },
@@ -163,12 +163,12 @@ export function CompleteTaskDialog({ task, onClose }: {
       title="סימון כבוצע"
       footer={<>
         <Button icon="check" busy={save.isPending} disabled={retry.isPending} onClick={submit}>בוצע: שמירה</Button>
-        <Button variant="secondary" icon="undo" busy={retry.isPending} disabled={save.isPending} onClick={() => retry.mutate()}>לא ענה/תה: לנסות שוב בעוד יומיים</Button>
+        <Button variant="secondary" icon="undo" busy={retry.isPending} disabled={save.isPending} onClick={() => retry.mutate()}>אין מענה: לנסות שוב בעוד יומיים</Button>
         <Button variant="ghost" onClick={onClose}>ביטול</Button>
       </>}
     >
       <div className="flex flex-col gap-4">
-        <p className="text-body text-ink-soft">{task.title}{task.participantName ? ` · ${task.participantName}` : ''}</p>
+        <p className="text-body text-ink-soft">{taskTitle(task.title)}{task.participantName ? ` · ${task.participantName}` : ''}</p>
         <ChoiceGroup<Channel>
           legend="איך דיברתם?"
           columns={2}
@@ -227,7 +227,7 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
   const cancelTask = async () => {
     const ok = await confirm({
       title: 'לבטל את המשימה?',
-      body: 'המשימה תעבור ל"הושלמו" עם הסטטוס "בוטלה". שום הודעה לא נשלחת ללוחם/ת.',
+      body: 'המשימה תעבור ל"הושלמו" עם הסטטוס "בוטלה". שום הודעה לא נשלחת.',
       confirm: 'ביטול המשימה',
       cancel: 'חזרה',
       danger: true,
@@ -250,8 +250,8 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
     >
       <div className="flex flex-col gap-4">
         <Input label="כותרת" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} />
-        <Select label="אחראי/ת" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-          <option value="">ללא אחראי/ת</option>
+        <Select label="באחריות" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+          <option value="">ללא שיוך</option>
           {list.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
         </Select>
         <Input label="תאריך יעד" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
@@ -295,7 +295,7 @@ export function NewTaskDialog({ participant, onClose, onCreated }: {
     onError: (e) => setErr(errorMessage(e)),
   });
   const submit = () => {
-    if (!person) return setErr('בוחרים לוחם/ת.');
+    if (!person) return setErr('בוחרים כרטיס.');
     if (title.trim().length < 2) return setErr('צריך כותרת למשימה.');
     setErr(null);
     save.mutate();
@@ -313,7 +313,7 @@ export function NewTaskDialog({ participant, onClose, onCreated }: {
       <div className="flex flex-col gap-4">
         {person ? (
           <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-tide-wash px-3.5 py-2.5">
-            <span><span className="text-small text-muted">לוחם/ת: </span><span className="font-semibold">{person.full_name}</span></span>
+            <span><span className="text-small text-muted">עם: </span><span className="font-semibold">{person.full_name}</span></span>
             {!participant && <Button size="sm" variant="ghost" onClick={() => setPerson(null)}>החלפה</Button>}
           </div>
         ) : (
@@ -322,8 +322,8 @@ export function NewTaskDialog({ participant, onClose, onCreated }: {
         <Input label="מה צריך לעשות?" required value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="תאריך יעד" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-          <Select label="אחראי/ת" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">ללא אחראי/ת</option>
+          <Select label="באחריות" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+            <option value="">ללא שיוך</option>
             {list.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
           </Select>
         </div>
@@ -353,7 +353,7 @@ export function useOpenLapsedTask() {
     onSuccess: (_d, id) => { invalidate(id); toast.success('נפתחה משימה. היא מופיעה עכשיו ב"שלי".'); },
     onError: (e, id) => {
       invalidate(id);
-      toast.error(errorCode(e) === 'duplicate_phone' ? 'כבר יש משימה פתוחה ללוחם/ת הזה/ו.' : errorMessage(e));
+      toast.error(errorCode(e) === 'duplicate_phone' ? 'כבר יש משימה פתוחה בכרטיס הזה.' : errorMessage(e));
     },
   });
 }

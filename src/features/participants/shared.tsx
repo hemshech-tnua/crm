@@ -17,11 +17,11 @@ import { Icon } from '@/ui/Icon';
 export const NOTES_GUIDANCE = 'לא רושמים כאן מידע רפואי, יחידה צבאית או הערות על אופי ואישיות.';
 
 export const CREATED_VIA_LABEL: Record<string, string> = {
-  registration: 'נרשם/ה בטופס ההרשמה',
-  checkin: 'נרשם/ה בכניסה למפגש',
-  staff: 'נוסף/ה על ידי הצוות',
-  import: 'יובא/ה מרשימה',
-  membership_form: 'ביקש/ה להצטרף לעמותה בטופס',
+  registration: 'הרשמה בטופס ההרשמה',
+  checkin: 'הרשמה בכניסה למפגש',
+  staff: 'הוספה על ידי הצוות',
+  import: 'ייבוא מרשימה',
+  membership_form: 'בקשת הצטרפות לעמותה בטופס',
 };
 
 // The beige highlight (`light`) stays reserved for "today / the next meeting" (docs/02); statuses use the semantic tones.
@@ -152,7 +152,7 @@ export function useParticipantSearch(term: string, opts: { excludeId?: string; l
 }
 
 /** Search box + tappable results. Used to link a referrer, open a task for someone, etc. */
-export function ParticipantPicker({ onPick, excludeId, label = 'חיפוש לוחם/ת', placeholder = 'שם, טלפון או עיר' }: {
+export function ParticipantPicker({ onPick, excludeId, label = 'חיפוש כרטיס', placeholder = 'שם, טלפון או עיר' }: {
   onPick: (p: PickedParticipant) => void; excludeId?: string; label?: string; placeholder?: string;
 }) {
   const [term, setTerm] = useState('');
@@ -224,7 +224,7 @@ export function nameError(v: string): string | null {
 
 export function phoneError(v: string): string | null {
   if (!v.trim()) return 'צריך מספר טלפון.';
-  return normalizePhone(v) ? null : 'מספר הטלפון לא נראה תקין. כותבים כמו 050-1234567.';
+  return normalizePhone(v) ? null : 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.';
 }
 
 export function birthDateError(v: string): string | null {

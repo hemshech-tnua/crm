@@ -344,14 +344,14 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               <Input label="פעילות" list="activity-suggestions" value={f.activity_name} onChange={(e) => set('activity_name', e.target.value)} error={errors.activity_name} maxLength={60} placeholder="יוגה / פילאטיס" />
               <datalist id="activity-suggestions">{ACTIVITY_SUGGESTIONS.map((a) => <option key={a} value={a} />)}</datalist>
             </div>
-            <Select label="מדריך/ה" value={f.instructor_id} onChange={(e) => set('instructor_id', e.target.value)} hint={instructors.length ? undefined : 'אין עדיין מדריכים מאושרים. מוסיפים במסך מרצים ומדריכים.'}>
+            <Select label="הדרכה" value={f.instructor_id} onChange={(e) => set('instructor_id', e.target.value)} hint={instructors.length ? undefined : 'אין עדיין מדריכים מאושרים. מוסיפים במסך מרצים ומדריכים.'}>
               <option value="">לא נקבע</option>
-              {instructors.map((s) => <option key={s.id} value={s.id}>{s.full_name}{s.status !== 'approved' ? ' (לא מאושר/ת)' : ''}</option>)}
+              {instructors.map((s) => <option key={s.id} value={s.id}>{s.full_name}{s.status !== 'approved' ? ' (בלי אישור)' : ''}</option>)}
             </Select>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
-              label="מרצה אורח/ת"
+              label="מרצה"
               value={f.speaker_id}
               onChange={(e) => changeSpeaker(e.target.value)}
               hint={lecturers.length ? undefined : 'אין עדיין מרצים. מוסיפים במסך מרצים ומדריכים.'}
@@ -359,7 +359,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               <option value="">לא נקבע</option>
               {lecturers.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.full_name}{s.topic ? ` · ${s.topic}` : ''}{s.status === 'proposed' ? ' (ממתין לאישור)' : s.status !== 'approved' ? ' (לא מאושר/ת)' : ''}
+                  {s.full_name}{s.topic ? ` · ${s.topic}` : ''}{s.status === 'proposed' ? ' (ממתין לאישור)' : s.status !== 'approved' ? ' (בלי אישור)' : ''}
                 </option>
               ))}
             </Select>
@@ -367,7 +367,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
           </div>
           {speaker && speaker.status !== 'approved' && (
             <Notice tone="warn" icon="alert">
-              {speaker.full_name} עדיין {speaker.status === 'proposed' ? 'ממתין/ה לאישור' : 'לא מאושר/ת'} של מנהל/ת. אפשר לשבץ, וכדאי לאשר לפני שמפרסמים.
+              {speaker.full_name}: {speaker.status === 'proposed' ? 'ההצעה עדיין מחכה לאישור מנהלים' : 'אין אישור מנהלים'}. אפשר לשבץ, וכדאי לאשר לפני שמפרסמים.
             </Notice>
           )}
           {speaker?.bio_line && <p className="text-small text-muted">{speaker.bio_line}</p>}

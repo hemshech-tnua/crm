@@ -3,7 +3,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTemplates } from '@/lib/data';
 import { fmtDate, fmtDateTime, fmtDayLong, fmtTime } from '@/lib/dates';
-import { CHANNEL_LABEL, EVENT_TYPE_LABEL, FOLLOWUP_TYPE_LABEL } from '@/lib/labels';
+import { CHANNEL_LABEL, EVENT_TYPE_LABEL, FOLLOWUP_TYPE_LABEL, taskTitle } from '@/lib/labels';
 import type { ContactLog } from '@/lib/types';
 import { Badge, EmptyState, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
@@ -65,8 +65,8 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
               {c.template_key && <span className="font-normal text-ink-soft">: {tplLabel.get(c.template_key) ?? 'הודעה מתבנית'}</span>}
             </p>
             {c.summary && <p className="mt-0.5 whitespace-pre-line text-ink-soft">{c.summary}</p>}
-            {task && <p className="mt-0.5 text-small text-muted">במסגרת משימה: {task.title}</p>}
-            <Meta>{[c.created_by ? staffName.get(c.created_by) ?? 'איש/אשת צוות' : null, fmtDateTime(c.created_at)]}</Meta>
+            {task && <p className="mt-0.5 text-small text-muted">במסגרת משימה: {taskTitle(task.title)}</p>}
+            <Meta>{[c.created_by ? staffName.get(c.created_by) ?? 'הצוות' : null, fmtDateTime(c.created_at)]}</Meta>
           </div>
         ),
       });
@@ -80,7 +80,7 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
         icon: 'task',
         node: (
           <div>
-            <p className="font-semibold">{t.status === 'done' ? 'משימה הושלמה' : 'משימה בוטלה'}: <span className="font-normal">{t.title}</span></p>
+            <p className="font-semibold">{t.status === 'done' ? 'משימה הושלמה' : 'משימה בוטלה'}: <span className="font-normal">{taskTitle(t.title)}</span></p>
             <p className="text-small text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</p>
             {t.outcome && <p className="mt-0.5 whitespace-pre-line text-ink-soft">{t.outcome}</p>}
             <Meta>{[t.completed_by ? staffName.get(t.completed_by) : null, t.completed_at ? fmtDate(t.completed_at) : null]}</Meta>
@@ -92,7 +92,7 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
   }, [regs, feedback, contacts, tasks, staffName, templates.data]);
 
   if (!items.length) {
-    return <EmptyState icon="calendar" title="עוד אין היסטוריה">כשהלוחם/ת יירשם/תירשם למפגש, יגיע/תגיע או ידבר/תדבר עם הצוות, זה יופיע כאן.</EmptyState>;
+    return <EmptyState icon="calendar" title="עוד אין היסטוריה">הרשמות למפגשים, הגעות ושיחות עם הצוות יופיעו כאן.</EmptyState>;
   }
   return (
     <ol className="relative">
@@ -128,15 +128,15 @@ function Meta({ children }: { children: (string | null | undefined)[] }) {
 function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; future: boolean }) {
   const ev = r.event!;
   const badges: ReactNode[] = [];
-  if (r.status === 'cancelled') badges.push(<Badge key="s">{r.cancelled_by === 'staff' ? 'בוטל ע״י הצוות' : 'ביטל/ה'}</Badge>);
+  if (r.status === 'cancelled') badges.push(<Badge key="s">{r.cancelled_by === 'staff' ? 'בוטל ע״י הצוות' : 'ביטול עצמי'}</Badge>);
   else if (r.status === 'waitlisted') badges.push(<Badge key="s" tone="warn" icon="alert">ברשימת המתנה</Badge>);
-  else if (r.attendance === 'attended') badges.push(<Badge key="s" tone="good" icon="check">הגיע/ה</Badge>);
-  else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="bad" icon="alert">לא הגיע/ה</Badge>);
-  else badges.push(<Badge key="s" tone={future ? 'light' : 'neutral'}>{future ? 'רשום/ה' : 'טרם סומן'}</Badge>);
-  if (r.is_walk_in) badges.push(<Badge key="w">הגיע/ה בלי הרשמה</Badge>);
+  else if (r.attendance === 'attended') badges.push(<Badge key="s" tone="good" icon="check">הגעה</Badge>);
+  else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="bad" icon="alert">אי־הגעה</Badge>);
+  else badges.push(<Badge key="s" tone={future ? 'light' : 'neutral'}>{future ? 'הרשמה פעילה' : 'טרם סומן'}</Badge>);
+  if (r.is_walk_in) badges.push(<Badge key="w">הגעה בלי הרשמה</Badge>);
 
   const checkin = r.attendance === 'attended' && r.checked_in_at
-    ? `${r.checkin_method === 'self_qr' ? 'צ׳ק־אין עצמי ב-QR' : 'סומן/ה בכניסה'} ב-${fmtTime(r.checked_in_at)}`
+    ? `${r.checkin_method === 'self_qr' ? 'צ׳ק־אין עצמי ב-QR' : 'סימון בכניסה'} ב-${fmtTime(r.checked_in_at)}`
     : null;
   const utm = [r.utm_source, r.utm_medium, r.utm_campaign].filter(Boolean).join(' / ');
 
@@ -151,10 +151,10 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
       <p className="text-small text-ink-soft">{fmtDayLong(ev.starts_at)}</p>
       <ul className="mt-1 flex flex-col gap-0.5 text-small text-muted">
         {checkin && <li>{checkin}</li>}
-        {!r.is_walk_in && <li>נרשם/ה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (ע״י הצוות)' : ''}</li>}
-        {(r.how_heard || r.how_heard_detail) && <li>איך שמע/ה: {[r.how_heard?.label, r.how_heard_detail].filter(Boolean).join(': ')}</li>}
+        {!r.is_walk_in && <li>הרשמה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (ע״י הצוות)' : ''}</li>}
+        {(r.how_heard || r.how_heard_detail) && <li>איך שמעו עלינו: {[r.how_heard?.label, r.how_heard_detail].filter(Boolean).join(': ')}</li>}
         {(r.referrer || r.referrer_name) && (
-          <li>הופנה/תה ע״י: {r.referrer ? <PersonLink id={r.referrer.id} name={r.referrer.full_name} className="font-medium" /> : r.referrer_name}</li>
+          <li>הפניה: {r.referrer ? <PersonLink id={r.referrer.id} name={r.referrer.full_name} className="font-medium" /> : r.referrer_name}</li>
         )}
         {r.link && <li>קישור הרשמה: {r.link.label} <span className="num">({r.link.code})</span></li>}
         {utm && <li>UTM: <span className="num">{utm}</span></li>}
@@ -170,7 +170,7 @@ function FeedbackItem({ f, standalone }: { f: CardFeedback; standalone?: boolean
     <div className={cx(!standalone && 'mt-2 rounded-[var(--radius-control)] bg-mist px-3 py-2')}>
       {standalone && <p className="font-semibold">משוב{f.event ? ` על ${f.event.title}, ${fmtDate(f.event.starts_at)}` : ''}</p>}
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small">
-        {!standalone && <span className="font-semibold">המשוב שנתן/ה:</span>}
+        {!standalone && <span className="font-semibold">המשוב:</span>}
         {parts.filter(([, v]) => v != null).map(([k, v]) => (
           <span key={k} className="inline-flex items-center gap-1">
             {k} <span className="num font-semibold">{v}/5</span>

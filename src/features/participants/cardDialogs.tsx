@@ -148,7 +148,7 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
           error={errors.birth_date}
           hint={card.birth_year && !card.birth_date ? `כרגע ידועה רק שנת לידה משוערת (${card.birth_year}) מהגיל שנמסר בהרשמה.` : 'לא חובה. משמש לברכת יום הולדת.'}
         />
-        <Select label="איך הגיע/ה אלינו לראשונה" value={f.first_source_id} onChange={(e) => set('first_source_id', e.target.value)}>
+        <Select label="מקור ההיכרות הראשון" value={f.first_source_id} onChange={(e) => set('first_source_id', e.target.value)}>
           <option value="">לא ידוע</option>
           {(sources.data ?? []).filter((s) => s.is_active || s.id === f.first_source_id).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </Select>
@@ -156,7 +156,7 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
           {(['none', 'requested', 'member'] as const).map((m) => <option key={m} value={m}>{MEMBERSHIP_LABEL[m]}</option>)}
         </Select>
         {f.membership === 'member' ? (
-          <Input label="חבר/ה מתאריך" type="date" min="1990-01-01" max="2100-12-31" value={f.member_since} onChange={(e) => set('member_since', e.target.value)} hint="ריק = היום" />
+          <Input label="חברות מתאריך" type="date" min="1990-01-01" max="2100-12-31" value={f.member_since} onChange={(e) => set('member_since', e.target.value)} hint="ריק = היום" />
         ) : <div className="hidden sm:block" aria-hidden="true" />}
         {source?.asks_detail && (
           <Input label="פירוט המקור" value={f.first_source_detail} onChange={(e) => set('first_source_detail', e.target.value)} maxLength={120} className="sm:col-span-2" />
@@ -167,12 +167,12 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
         </div>
         <div className="flex flex-col gap-3 sm:col-span-2">
           <Checkbox
-            label="מסכים/ה לקבל עדכונים והזמנות בוואטסאפ"
-            hint="מסמנים רק אם הלוחם/ת אישר/ה במפורש. הסימון נשמר ביומן ההסכמות."
+            label="יש הסכמה לקבל עדכונים והזמנות בוואטסאפ"
+            hint="מסמנים רק אחרי אישור מפורש. הסימון נשמר ביומן ההסכמות."
             checked={f.consent_updates}
             onChange={(v) => set('consent_updates', v)}
           />
-          <Checkbox label="לא מעוניין/ת להופיע בתמונות" checked={f.photo_opt_out} onChange={(v) => set('photo_opt_out', v)} />
+          <Checkbox label="בקשה לא להופיע בתמונות" checked={f.photo_opt_out} onChange={(v) => set('photo_opt_out', v)} />
         </div>
         {formError && <p className="text-small font-medium text-bad sm:col-span-2" role="alert">{formError}</p>}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
@@ -247,20 +247,20 @@ export function ReferrerDialog({ card, onClose }: { card: Card; onClose: () => v
     },
     onSuccess: (ref) => {
       invalidate(card.id, ref?.id, card.referred_by_participant_id);
-      toast.success(ref ? `${card.full_name} מקושר/ת עכשיו ל${ref.full_name}` : 'הקישור הוסר');
+      toast.success(ref ? `נשמר הקישור בין ${card.full_name} ל${ref.full_name}` : 'הקישור הוסר');
       onClose();
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
   return (
-    <Dialog open onClose={onClose} title="מי הביא/ה?">
+    <Dialog open onClose={onClose} title="מי הביא?">
       <div className="flex flex-col gap-4">
         {card.referred_by_name && (
           <Notice icon="people">
-            בהרשמה נכתב: <strong>{card.referred_by_name}</strong>. מחפשים את הכרטיס שלו/ה וקושרים, כדי שההפניה תיספר לו/ה בדוחות.
+            בהרשמה נכתב: <strong>{card.referred_by_name}</strong>. מחפשים את הכרטיס הזה וקושרים, כדי שההפניה תיספר בדוחות.
           </Notice>
         )}
-        <ParticipantPicker onPick={(p) => save.mutate(p)} excludeId={card.id} label="חיפוש מי שהביא/ה" />
+        <ParticipantPicker onPick={(p) => save.mutate(p)} excludeId={card.id} label="חיפוש מי שהביא" />
         {card.referred_by_participant_id && (
           <Button variant="ghost" className="self-start" busy={save.isPending} onClick={() => save.mutate(null)}>הסרת הקישור הנוכחי</Button>
         )}
@@ -287,7 +287,7 @@ export function MessageChooser({ recipient, regs, nextEvent, onClose }: {
     const out: Purpose[] = [];
     if (upcoming) out.push({ key: 'reminder', title: 'תזכורת למפגש', about: `${upcoming.event!.title}, ${fmtDayLong(upcoming.event!.starts_at)}`, ev: upcoming.event });
     out.push({ key: 'invite_next', title: 'הזמנה למפגש הבא', about: nextEvent ? `${nextEvent.title}, ${fmtDayLong(nextEvent.starts_at)}` : 'אין כרגע מפגש פתוח: הקישור יוביל לרשימת המפגשים', ev: nextEvent, marketing: true });
-    out.push({ key: 'lapsed', title: 'מזמן לא התראינו', about: 'שאלה מה שלומו/ה + קישור להרשמה', ev: nextEvent, marketing: true });
+    out.push({ key: 'lapsed', title: 'מזמן לא התראינו', about: 'שאלה מה נשמע + קישור להרשמה', ev: nextEvent, marketing: true });
     if (lastNoShow) out.push({ key: 'missed_you', title: 'חסרת לנו', about: `על ${lastNoShow.event!.title}, ${fmtDayLong(lastNoShow.event!.starts_at)}`, ev: lastNoShow.event });
     if (lastAttended) out.push({ key: 'thanks', title: 'תודה + קישור למשוב', about: `על ${lastAttended.event!.title}, ${fmtDayLong(lastAttended.event!.starts_at)}`, ev: lastAttended.event });
     const known = new Set((templates.data ?? []).map((t) => t.key));
@@ -325,7 +325,7 @@ export function MessageChooser({ recipient, regs, nextEvent, onClose }: {
               >
                 <span className="min-w-0">
                   <span className="block font-semibold">{p.title}</span>
-                  <span className="block text-small text-muted">{blocked ? 'לא אישר/ה עדכונים בוואטסאפ: אפשר רק להתקשר' : p.about}</span>
+                  <span className="block text-small text-muted">{blocked ? 'אין הסכמה לעדכונים בוואטסאפ: אפשר רק להתקשר' : p.about}</span>
                 </span>
                 <Icon name="chevron" size={18} className="text-faint" />
               </button>

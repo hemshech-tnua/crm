@@ -23,14 +23,15 @@ const monthShort = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, month: 'shor
 const endSentence = (t: string) => (/[.!?]$/.test(t) ? t : `${t}.`);
 
 /**
- * The ticket of the next Friday meeting with the big "שמרו לי מקום". The ticket itself shows the fee when there is one;
- * the payment note goes under the button.
+ * The ticket of the next Friday meeting with the big "שמרו לי מקום": when, where, coffee, and the fee when there is one
+ * (the payment note goes under the button). The activity and the lecture are in the program beside it, not repeated
+ * here, so on a phone the button stays on the first screen.
  */
 export function NextTicket({ event: e, query }: { event: PublicEvent; query: string }) {
   const price = priceOf(e);
   const note = paymentNoteOf(e);
   return (
-    <EventTicket event={e} highlight level={3} showStatus="notable">
+    <EventTicket event={e} highlight level={3} showStatus="notable" agenda={false}>
       <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className="mt-4 w-full sm:w-auto" data-testid="friday-cta">
         {ctaLabel(e)}
         <span className="sr-only">: {e.title}, {fmtDayLong(e.starts_at)}</span>
@@ -98,7 +99,7 @@ export function Program({ event, className }: { event: PublicEvent | null; class
               </span>
               <Tri className="text-light" size="0.75em" />
               <span className="min-w-0">
-                <span className="block text-[1.0625rem] font-bold leading-snug">{it.title}</span>
+                <span className="block text-heading font-bold">{it.title}</span>
                 {it.detail && <span className="mt-0.5 block text-small text-light/85">{it.detail}</span>}
               </span>
             </li>
@@ -120,10 +121,10 @@ const FOR_WHOM = [
 export function ForWhom() {
   return (
     <section aria-labelledby="friday-who">
-      <h2 id="friday-who" className={H2}>למי זה</h2>
+      <h2 id="friday-who" className={H2}>למי זה מתאים</h2>
       <ul className="mt-4 grid gap-x-8 gap-y-0 lg:mt-5 lg:grid-cols-3">
         {FOR_WHOM.map((line) => (
-          <li key={line} className="flex items-baseline gap-3 border-t-2 border-ink py-3.5 text-[1.1875rem] leading-snug font-semibold text-ink lg:pt-4 lg:text-[1.3125rem]">
+          <li key={line} className="flex items-baseline gap-3 border-t border-ink py-3.5 text-heading font-semibold text-ink lg:pt-4 lg:text-section">
             <Tri className="text-ink" size="0.62em" />
             <span className="min-w-0">{line}</span>
           </li>
@@ -147,7 +148,7 @@ export function FlyerSection({ src, alt, onShare }: { src: string | null; alt: s
         </p>
         <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
           <Button icon="link" onClick={onShare}>שיתוף</Button>
-          <a href={src} download className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-control-line px-4 text-[0.95rem] font-semibold text-ink transition-colors hover:border-ink hover:bg-ink/[0.06]">
+          <a href={src} download className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-control-line px-4 text-[0.9375rem] font-semibold text-ink transition-colors hover:border-ink hover:bg-ink/[0.06]">
             הורדת הפלייר
           </a>
         </div>
@@ -195,7 +196,7 @@ function MeetingRow({ event: e, to }: { event: PublicEvent; to: string }) {
             <span className="sr-only">. {e.title}. {ctaLabel(e)}</span>
           </Link>
         </h3>
-        <p className="mt-0.5 truncate text-small text-muted">
+        <p className="mt-0.5 line-clamp-2 text-small text-muted">
           <span className="num">{fmtTime(start)}</span>
           {what ? <> · {what}</> : e.location ? <> · {e.location}</> : null}
         </p>
@@ -211,7 +212,7 @@ function MeetingRow({ event: e, to }: { event: PublicEvent; to: string }) {
 function Question({ q, children }: { q: string; children: ReactNode }) {
   return (
     <details className="group">
-      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 text-[1.0625rem] font-semibold transition-colors select-none hover:bg-mist/60 focus-visible:-outline-offset-3 sm:px-5 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 text-heading font-semibold transition-colors select-none hover:bg-mist/60 focus-visible:-outline-offset-3 sm:px-5 [&::-webkit-details-marker]:hidden">
         <Tri className="text-ink transition-transform duration-200 group-open:-rotate-90" size="0.7em" />
         <span className="min-w-0">{q}</span>
       </summary>
@@ -240,7 +241,10 @@ export function Faq({ event }: { event: PublicEvent | null }) {
           ) : price === 0 ? (
             'ההשתתפות ללא עלות.'
           ) : (
-            'ההשתתפות בתשלום סמלי, הפרטים בהרשמה.'
+            // no price published: say so, and how to ask, rather than promise details the registration page does not show
+            <>
+              {event ? 'המחיר למפגש הזה עוד לא מופיע באתר.' : 'המחיר עוד לא מופיע באתר.'} אפשר לשאול אותנו: <ContactLine inline />
+            </>
           )}
         </Question>
         {place && (
@@ -253,8 +257,20 @@ export function Faq({ event }: { event: PublicEvent | null }) {
           </Question>
         )}
         <Question q="מה להביא?">בגדים נוחים ובקבוק מים. את השאר אנחנו מביאים.</Question>
-        <Question q="אפשר להביא חבר או חברה?">כן, ובשמחה. כל אחד נרשם בעצמו דרך הקישור, אז פשוט שלחו להם אותו.</Question>
+        <Question q="אפשר להביא חבר או חברה?">כן, בשמחה! ההרשמה אישית, אז פשוט שלחו להם את הקישור לדף.</Question>
       </div>
+    </section>
+  );
+}
+
+/** Beside the questions on a wide screen when no later meetings fill that column: one more way to ask. */
+export function AskUs() {
+  return (
+    <section aria-labelledby="friday-ask">
+      <h2 id="friday-ask" className={H2}>שאלה אחרת?</h2>
+      <p className="mt-3 rounded-[var(--radius-panel)] border border-edge bg-paper px-4 pt-3 pb-1 text-ink-soft sm:px-5 lg:mt-4">
+        לא מצאתם כאן תשובה? <ContactLine inline />
+      </p>
     </section>
   );
 }
@@ -265,19 +281,21 @@ export function Faq({ event }: { event: PublicEvent | null }) {
 export function ShareBand({ url, message, onCopy }: { url: string; message: string; onCopy: () => void }) {
   return (
     <section aria-labelledby="friday-share" className="relative -mx-5 overflow-hidden bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]">
-      <Stripes width={220} height={64} unit={18} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-16 w-[220px] text-light lg:top-auto lg:bottom-0 lg:h-full lg:w-[30%]" />
-      <div className={cx('relative px-5 pt-20 pb-7 sm:px-7 lg:flex lg:items-end lg:justify-between lg:gap-10 lg:py-10 lg:pe-[34%]')}>
+      {/* the same stripe weight as the program panel: a short run from the top-left corner, cut by the band's edges */}
+      <Stripes width={220} height={64} unit={18} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-16 w-[220px] text-light" />
+      <div className="relative px-5 pt-20 pb-7 sm:px-7 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10 lg:px-10 lg:py-10">
         <div>
           <h2 id="friday-share" className="font-display text-[1.75rem] leading-tight lg:text-[2.25rem]">שתפו עם מי שצריך את זה</h2>
           <p className="mt-2 max-w-md text-light/90">
-            מכירים לוחם או לוחמת שהשישי הזה בדיוק בשבילם? שלחו להם את הקישור לדף.
+            מכירים לוחם או לוחמת שהשישי הזה בדיוק&nbsp;בשבילם?
+            <span className="block">שלחו להם את הקישור&nbsp;לדף.</span>
           </p>
-          <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
-            <Button variant="light" icon="copy" onClick={onCopy}>העתקת הקישור</Button>
-            <ExternalButton href={`https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`} variant="onDark" icon="message">
-              שליחה בוואטסאפ
-            </ExternalButton>
-          </div>
+        </div>
+        <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap lg:mt-0">
+          <Button variant="light" icon="copy" onClick={onCopy}>העתקת הקישור</Button>
+          <ExternalButton href={`https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`} variant="onDark" icon="message">
+            שליחה בוואטסאפ
+          </ExternalButton>
         </div>
       </div>
     </section>

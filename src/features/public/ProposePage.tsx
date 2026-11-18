@@ -4,7 +4,7 @@ import { normalizePhone } from '@/lib/phone';
 import { Button, ButtonLink, ChoiceGroup, ErrorBox, Input, Textarea } from '@/ui/kit';
 import { propose } from './api';
 import { PhoneExample, cleanText, nameError, phoneError } from './PersonForm';
-import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList } from './shared';
+import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList, usePageTitle } from './shared';
 
 type Kind = 'speaker' | 'instructor';
 type Values = { kind: Kind | ''; full_name: string; phone: string; topic: string; bio_line: string; social_url: string; message: string; website: string };
@@ -34,6 +34,7 @@ function validate(v: Values): Errors {
 }
 
 export function ProposePage() {
+  usePageTitle('רוצים להרצות או להדריך?');
   const ids = useId();
   const [v, setV] = useState<Values>({ kind: '', full_name: '', phone: '', topic: '', bio_line: '', social_url: '', message: '', website: '' });
   const [errors, setErrors] = useState<Errors>({});

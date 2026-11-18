@@ -1,6 +1,6 @@
 import type { Attendance, Engagement, EventStatus, EventType, Membership, PaymentMethod, PaymentStatus, RegStatus, Role } from './types';
 
-export const ROLE_LABEL: Record<Role, string> = { admin: 'מנהל/ת', coordinator: 'רכז/ת', volunteer: 'צוות כניסה' };
+export const ROLE_LABEL: Record<Role, string> = { admin: 'ניהול', coordinator: 'ריכוז', volunteer: 'צוות כניסה' };
 export const ROLE_HINT: Record<Role, string> = {
   admin: 'הכול, כולל משתמשים, הגדרות, ייצוא ומחיקת פרטים',
   coordinator: 'מפגשים, משתתפים, מעקב, מרצים ודוחות',
@@ -11,34 +11,34 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = { friday: 'מפגש �
 export const EVENT_STATUS_LABEL: Record<EventStatus, string> = {
   draft: 'טיוטה', open: 'הרשמה פתוחה', closed: 'הרשמה סגורה', completed: 'התקיים', cancelled: 'בוטל',
 };
-export const REG_STATUS_LABEL: Record<RegStatus, string> = { registered: 'רשום/ה', waitlisted: 'בהמתנה', cancelled: 'ביטל/ה' };
-export const ATTENDANCE_LABEL: Record<Attendance, string> = { unknown: 'טרם סומן', attended: 'הגיע/ה', no_show: 'לא הגיע/ה' };
+export const REG_STATUS_LABEL: Record<RegStatus, string> = { registered: 'הרשמה פעילה', waitlisted: 'בהמתנה', cancelled: 'ביטול' };
+export const ATTENDANCE_LABEL: Record<Attendance, string> = { unknown: 'טרם סומן', attended: 'הגעה', no_show: 'אי־הגעה' };
 
 export const ENGAGEMENT_LABEL: Record<Engagement, string> = {
-  registered: 'טרם הגיע/ה',
-  first_timer: 'חדש/ה',
-  returning: 'חוזר/ת',
-  regular: 'קבוע/ה',
-  lapsed: 'הפסיק/ה להגיע',
+  registered: 'לפני הגעה ראשונה',
+  first_timer: 'הגעה ראשונה',
+  returning: 'הגעה חוזרת',
+  regular: 'הגעה קבועה',
+  lapsed: 'הגעה שנפסקה',
 };
 export const ENGAGEMENT_HINT: Record<Engagement, string> = {
-  registered: 'נרשם/ה אבל עוד לא הגיע/ה לאף מפגש',
-  first_timer: 'הגיע/ה למפגש אחד',
-  returning: 'הגיע/ה ליותר ממפגש אחד',
-  regular: 'הגיע/ה לפחות ל-2 מפגשי שישי ב-30 הימים האחרונים',
-  lapsed: 'היה/תה קבוע/ה, ומאז הביקור האחרון התקיימו 3 מפגשי שישי בלי שהגיע/ה',
+  registered: 'יש הרשמה, אבל עוד אין הגעה לאף מפגש',
+  first_timer: 'הגעה למפגש אחד',
+  returning: 'הגעה ליותר ממפגש אחד',
+  regular: 'הגעה ל-2 מפגשי שישי לפחות ב-30 הימים האחרונים',
+  lapsed: 'הגעה קבועה בעבר, ומאז הביקור האחרון התקיימו 3 מפגשי שישי בלי הגעה',
 };
 
 export const FOLLOWUP_TYPE_LABEL = {
-  no_show: 'נרשם/ה ולא הגיע/ה',
+  no_show: 'הרשמה בלי הגעה',
   first_time: 'פעם ראשונה',
-  lapsed: 'הפסיק/ה להגיע',
+  lapsed: 'הגעה שנפסקה',
   waitlist: 'רשימת המתנה',
   general: 'כללי',
   membership: 'הצטרפות לעמותה',
 } as const;
 
-export const MEMBERSHIP_LABEL: Record<Membership, string> = { none: 'לא חבר/ה בעמותה', requested: 'ביקש/ה להצטרף לעמותה', member: 'חבר/ת עמותה' };
+export const MEMBERSHIP_LABEL: Record<Membership, string> = { none: 'בלי חברות בעמותה', requested: 'בקשת הצטרפות לעמותה', member: 'חברות בעמותה' };
 
 export const CHANNEL_LABEL = { whatsapp: 'וואטסאפ', phone: 'שיחת טלפון', in_person: 'פנים אל פנים', other: 'אחר' } as const;
 
@@ -48,3 +48,17 @@ export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   card: 'כרטיס אשראי', bit: 'Bit', paybox: 'PayBox', cash: 'מזומן', transfer: 'העברה בנקאית', other: 'אחר',
 };
+
+/**
+ * Follow-up task titles as shown on screen. Tasks the database opens automatically still carry the older slashed
+ * wording in their stored title ("נרשם/ה ולא הגיע/ה: …"); show them in the current gender-neutral wording, which also
+ * matches FOLLOWUP_TYPE_LABEL, so the type badge is hidden as it is for new titles. Stored data is left unchanged.
+ */
+const LEGACY_TASK_TITLES: [string, string][] = [
+  ['נרשם/ה ולא הגיע/ה:', 'הרשמה בלי הגעה:'],
+  ['קבוע/ה שהפסיק/ה להגיע: לשאול מה שלומו/ה', 'הגעה קבועה שנפסקה: לשאול מה נשמע'],
+];
+export function taskTitle(title: string): string {
+  for (const [old, now] of LEGACY_TASK_TITLES) if (title.startsWith(old)) return now + title.slice(old.length);
+  return title;
+}
