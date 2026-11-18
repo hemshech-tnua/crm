@@ -185,7 +185,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
         {waitlist ? 'הצטרפות לרשימת ההמתנה' : 'הרשמה'}
       </Button>
       {!waitlist && (
-        <p className="-mt-2 text-center text-small text-muted">אחרי ההרשמה יופיע כאן קישור אישי. דרכו אפשר לבטל אם משהו משתנה.</p>
+        <p className="-mt-2 text-center text-small text-balance text-muted">אחרי ההרשמה יופיע כאן קישור אישי. דרכו אפשר לבטל אם משהו משתנה.</p>
       )}
     </form>
   );

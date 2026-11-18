@@ -136,7 +136,7 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
     <Block title={title}>
       <p className="text-[0.9375rem] text-ink-soft">
         מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
-        <span className="block">שלחו להם את קישור ההזמנה שלכם. כך נדע שהגיעו&nbsp;דרככם.</span>
+        <span className="block">שלחו להם את קישור ההזמנה שלכם. כך&nbsp;נדע שהגיעו&nbsp;דרככם.</span>
       </p>
       <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (

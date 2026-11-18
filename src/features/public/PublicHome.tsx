@@ -30,7 +30,7 @@ export function PublicHome() {
   return (
     <div>
       <Hero photo={hills} position="50% 62%" title={<Slogan />}>
-        <p>מפגשים ללוחמים וללוחמות אחרי השירות. בשישי בבוקר: אימון, הרצאת&nbsp;אורח וארוחת&nbsp;בוקר ביחד.</p>
+        <p>מפגשים ללוחמים וללוחמות אחרי השירות. בשישי&nbsp;בבוקר: אימון, הרצאת&nbsp;אורח וארוחת&nbsp;בוקר ביחד.</p>
         <Link to={`/friday${query}`} className="mt-1 inline-flex min-h-11 items-center gap-2 font-semibold text-light underline underline-offset-4 sm:mt-2">
           איך נראה בוקר שישי
           <Tri size="0.7em" />
