@@ -7,10 +7,11 @@ import { TZ, fmtDay, fmtDayLong, fmtTime } from '@/lib/dates';
 import { Badge, Button, ButtonLink, ExternalButton, cx } from '@/ui/kit';
 import { Stripes, Tri } from '@/ui/Shapes';
 import { EventTicket, availability } from '../EventTicket';
-import { ContactLine } from '../shared';
-import { activityText, lectureText, timeRange } from '../eventText';
+import { ContactLine, wazeUrl } from '../shared';
+import { activityText, keepName, lectureText, timeRange } from '../eventText';
 import { fmtMoney, isPriced } from '@/lib/money';
-import { ctaLabel, paymentNoteOf, priceOf, program } from './model';
+import { ctaLabel, lowThreshold, paymentNoteOf, priceOf, program } from './model';
+import { FRIDAY_FACTS } from './facts';
 
 /** Section headings: the book's Bold, one step under the hero. */
 export const H2 = 'font-display text-section lg:text-[1.625rem] lg:leading-tight';
@@ -40,6 +41,11 @@ export function NextTicket({ event: e, query }: { event: PublicEvent; query: str
         {e.is_full ? 'נפתח מקום? נעדכן אתכם לפי הסדר.' : 'ההרשמה לוקחת פחות מדקה.'}
         {isPriced(price) && note && <> {endSentence(note)}</>}
       </p>
+      {FRIDAY_FACTS.greeter && (
+        <p className="mt-1 text-small font-semibold text-ink" data-fact="greeter">
+          מגיעים לבד? {FRIDAY_FACTS.greeter} מהצוות מחכה לכם&nbsp;בכניסה.
+        </p>
+      )}
     </EventTicket>
   );
 }
@@ -85,7 +91,7 @@ export function Program({ event, className }: { event: PublicEvent | null; class
       {/* stripes enter from the top-left corner, cut by the panel's top and left edges, clear of the heading */}
       <Stripes width={180} height={56} unit={16} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-14 w-[180px] text-light" />
       <div className="relative px-5 pt-6 pb-4 sm:px-7 sm:pt-7 sm:pb-5">
-        <h2 id="friday-program" className={H2}>מה קורה בשישי</h2>
+        <h2 id="friday-program" className={H2}>ככה נראה הבוקר</h2>
         <ol className="mt-5">
           {items.map((it) => (
             <li key={it.title} className="grid grid-cols-[4.5rem_auto_minmax(0,1fr)] items-baseline gap-x-3 border-t border-light/20 py-3.5 sm:grid-cols-[5rem_auto_minmax(0,1fr)] sm:gap-x-4">
@@ -100,7 +106,8 @@ export function Program({ event, className }: { event: PublicEvent | null; class
               <Tri className="text-light" size="0.75em" />
               <span className="min-w-0">
                 <span className="block text-heading font-bold">{it.title}</span>
-                {it.detail && <span className="mt-0.5 block text-small text-light/85">{it.detail}</span>}
+                {it.detail && <span className="mt-0.5 block text-small text-light/85">{keepName(it.detail)}</span>}
+                {it.note && <span className="mt-1 block text-small font-semibold text-light" data-fact="allLevels">{it.note}</span>}
               </span>
             </li>
           ))}
@@ -113,23 +120,59 @@ export function Program({ event, className }: { event: PublicEvent | null; class
 // ───────────── who it is for ─────────────
 
 const FOR_WHOM = [
-  'ללוחמים וללוחמות אחרי השירות, בכל שלב',
-  'לא צריך להכיר אף אחד, באים כמו שאתם',
-  'בלי התחייבות: נרשמים למפגש אחד ורואים',
+  'סיימתם את השירות כלוחמים או כלוחמות, לא משנה לפני כמה\u00a0זמן',
+  'חסרה לכם לפעמים התחושה של\u00a0צוות',
+  'בא לכם להתחיל את השישי בתנועה ולא\u00a0בגלילה',
+  'אתם לא מכירים שם אף אחד. גם זה\u00a0בסדר.',
 ];
 
+/** "זה בשבילכם אם…": the visitor recognises themselves, the last line answers the fear of arriving alone. */
 export function ForWhom() {
   return (
-    <section aria-labelledby="friday-who">
-      <h2 id="friday-who" className={H2}>למי זה מתאים</h2>
-      <ul className="mt-4 grid gap-x-8 gap-y-0 lg:mt-5 lg:grid-cols-3">
+    <section aria-labelledby="friday-who" className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-10">
+      <h2 id="friday-who" className={cx(H2, 'lg:self-start lg:pt-4')}>זה בשבילכם אם…</h2>
+      <ul className="mt-4 grid gap-x-10 lg:mt-0 lg:grid-cols-2">
         {FOR_WHOM.map((line) => (
-          <li key={line} className="flex items-baseline gap-3 border-t border-ink py-3.5 text-heading font-semibold text-ink lg:pt-4 lg:text-section">
+          <li key={line} className="flex items-baseline gap-3 border-t border-ink py-3.5 text-heading font-semibold text-pretty text-ink lg:py-4 lg:text-section">
             <Tri className="text-ink" size="0.62em" />
             <span className="min-w-0">{line}</span>
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+// ───────────── the low threshold ─────────────
+
+/** One navy band of short "no strings" points, the triangle before each. No heading on screen: it is a list of facts. */
+export function LowThreshold() {
+  return (
+    <section aria-label="בלי אותיות קטנות" className="relative -mx-5 overflow-hidden bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]">
+      <Stripes width={150} height={44} unit={14} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-11 w-[150px] text-light" />
+      <ul className="relative flex flex-col gap-3 px-5 pt-14 pb-6 sm:flex-row sm:flex-wrap sm:gap-x-9 sm:gap-y-3 sm:py-7 sm:ps-7 sm:pe-44 lg:py-8 lg:ps-10 lg:pe-48">
+        {lowThreshold().map((item) => (
+          <li key={item} className="flex items-baseline gap-2.5 font-display text-section whitespace-nowrap lg:text-[1.5rem]">
+            <Tri className="text-light" size="0.6em" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// ───────────── who meets you ─────────────
+
+/** Only once the team names the person at the entrance (FRIDAY_FACTS.greeter). */
+export function Greeter() {
+  if (!FRIDAY_FACTS.greeter) return null;
+  return (
+    <section aria-labelledby="friday-greeter" data-fact="greeter">
+      <h2 id="friday-greeter" className={H2}>מי מקבל אתכם</h2>
+      <p className="mt-3 max-w-2xl text-heading text-ink lg:text-section">
+        {FRIDAY_FACTS.greeter} מהצוות מחכה לכם בכניסה כדי להכיר לכם כמה&nbsp;אנשים.
+      </p>
     </section>
   );
 }
@@ -147,7 +190,7 @@ export function FlyerSection({ src, alt, onShare }: { src: string | null; alt: s
           מעלים לסטורי או שולחים בקבוצה. מי שמגיע דרך הקישור לדף הזה נרשם בדקה.
         </p>
         <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
-          <Button icon="link" onClick={onShare}>שיתוף</Button>
+          <Button icon="link" onClick={onShare}>העתקת הקישור</Button>
           <a href={src} download className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-control-line px-4 text-[0.9375rem] font-semibold text-ink transition-colors hover:border-ink hover:bg-ink/[0.06]">
             הורדת הפלייר
           </a>
@@ -221,16 +264,27 @@ function Question({ q, children }: { q: string; children: ReactNode }) {
   );
 }
 
-const wazeUrl = (place: string) => `https://waze.com/ul?q=${encodeURIComponent(place)}&navigate=yes`;
-
 export function Faq({ event }: { event: PublicEvent | null }) {
   const price = priceOf(event);
   const note = paymentNoteOf(event);
   const place = event?.location ?? null;
+  const f = FRIDAY_FACTS;
   return (
     <section aria-labelledby="friday-faq">
-      <h2 id="friday-faq" className={H2}>כדאי לדעת</h2>
+      <h2 id="friday-faq" className={H2}>שאלות של פעם ראשונה</h2>
       <div className="mt-3 divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper lg:mt-4">
+        <Question q="מגיעים לבד. זה מוזר?">
+          ממש לא. לא צריך להכיר אף אחד כדי לבוא, והקפה בסוף בדיוק&nbsp;בשביל&nbsp;זה.
+          {f.greeter && <> {f.greeter} מהצוות שם כדי לקבל אתכם ולהכיר לכם&nbsp;אנשים.</>}
+        </Question>
+        {f.allLevels && (
+          <Question q="אני לא בכושר. זה בשבילי?">כן. לכל תרגיל יש גרסה קלה יותר, הולכים לפי הקצב שלכם ואף אחד לא&nbsp;סופר.</Question>
+        )}
+        <Question q="מה ללבוש ומה להביא?">בגדים ונעליים נוחים לאימון ובקבוק מים. את הקפה והנשנושים אנחנו&nbsp;מביאים.</Question>
+        {f.showers && <Question q="יש איפה להחליף בגדים או להתקלח?">{f.showers}</Question>}
+        {f.lateOk && (
+          <Question q="מגיעים באיחור. זה בסדר?">מגיעים בכל זאת ומצטרפים איפה שאנחנו. גם רק להרצאה ולקפה זה&nbsp;טוב.</Question>
+        )}
         <Question q="כמה זה עולה?">
           {isPriced(price) ? (
             <>
@@ -239,7 +293,7 @@ export function Faq({ event }: { event: PublicEvent | null }) {
               {note && <> {endSentence(note)}</>}
             </>
           ) : price === 0 ? (
-            'ההשתתפות ללא עלות.'
+            'ההשתתפות בחינם.'
           ) : (
             // no price published: say so, and how to ask, rather than promise details the registration page does not show
             <>
@@ -247,17 +301,19 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             </>
           )}
         </Question>
+        <Question q="צריך לספר משהו על עצמי?">לא. מתאמנים, שומעים הרצאה ויושבים לקפה. מי שרוצה לדבר,&nbsp;מדבר.</Question>
+        <Question q="נרשמתי ולא מסתדר לי. מה עושים?">מבטלים בקישור האישי שמקבלים אחרי ההרשמה, וכך המקום עובר למישהו&nbsp;אחר.</Question>
         {place && (
           <Question q="איפה זה?">
             <p>{place}</p>
+            {f.parking && <p className="mt-1">{f.parking}</p>}
             <a href={wazeUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-2">
               ניווט ב-Waze
-              <span className="sr-only">(נפתח בחלון חדש)</span>
+              <span className="sr-only"> (נפתח בחלון חדש)</span>
             </a>
           </Question>
         )}
-        <Question q="מה להביא?">בגדים נוחים ובקבוק מים. את השאר אנחנו מביאים.</Question>
-        <Question q="אפשר להביא חבר או חברה?">כן, בשמחה! ההרשמה אישית, אז פשוט שלחו להם את הקישור לדף.</Question>
+        <Question q="אפשר להביא חבר או חברה?">כן, ובפעם הראשונה זה אפילו נוח יותר. ההרשמה אישית, אז שלחו להם את&nbsp;הקישור.</Question>
       </div>
     </section>
   );
@@ -275,27 +331,40 @@ export function AskUs() {
   );
 }
 
-// ───────────── sharing ─────────────
+// ───────────── closing ─────────────
 
-/** The closing band: navy, stripes from the corner, the page link to copy or send on WhatsApp. */
-export function ShareBand({ url, message, onCopy }: { url: string; message: string; onCopy: () => void }) {
+/**
+ * The closing band: navy, stripes from the corner. The question and "שמרו לי מקום" for the next meeting, then a quieter
+ * second action: send the page to someone from the old team (copy the link, or WhatsApp with a ready message).
+ */
+export function ClosingBand({ next, query, url, message, onCopy }: {
+  next: PublicEvent | null; query: string; url: string; message: string; onCopy: () => void;
+}) {
   return (
-    <section aria-labelledby="friday-share" className="relative -mx-5 overflow-hidden bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]">
+    <section aria-labelledby="friday-close" className="relative -mx-5 overflow-hidden bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]">
       {/* the same stripe weight as the program panel: a short run from the top-left corner, cut by the band's edges */}
       <Stripes width={220} height={64} unit={18} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-16 w-[220px] text-light" />
-      <div className="relative px-5 pt-20 pb-7 sm:px-7 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10 lg:px-10 lg:py-10">
+      <div className="relative px-5 pt-20 pb-7 sm:px-7 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end lg:gap-14 lg:px-10 lg:pt-24 lg:pb-10">
         <div>
-          <h2 id="friday-share" className="font-display text-[1.75rem] leading-tight lg:text-[2.25rem]">שתפו עם מי שצריך את זה</h2>
-          <p className="mt-2 max-w-md text-light/90">
-            מכירים לוחם או לוחמת שהשישי הזה בדיוק&nbsp;בשבילם?
-            <span className="block">שלחו להם את הקישור&nbsp;לדף.</span>
-          </p>
+          <h2 id="friday-close" className="font-display text-[2rem] leading-tight lg:text-[2.75rem]">נתראה בשישי?</h2>
+          {next && (
+            <ButtonLink to={`/r/${next.code}${query}`} variant="light" size="lg" cta className="mt-5 w-full sm:w-auto" data-testid="friday-closing-cta">
+              {ctaLabel(next)}
+              <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
+            </ButtonLink>
+          )}
         </div>
-        <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap lg:mt-0">
-          <Button variant="light" icon="copy" onClick={onCopy}>העתקת הקישור</Button>
-          <ExternalButton href={`https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`} variant="onDark" icon="message">
-            שליחה בוואטסאפ
-          </ExternalButton>
+        <div className="mt-8 border-t border-light/25 pt-5 lg:mt-0 lg:border-t-0 lg:border-s lg:ps-10 lg:pt-0">
+          <p className="max-w-sm text-light/90">
+            יש מישהו מהצוות הישן שחסר&nbsp;לכם?
+            <span className="block">שלחו לו את&nbsp;הקישור.</span>
+          </p>
+          <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+            <Button variant="onDark" icon="copy" onClick={onCopy}>העתקת הקישור</Button>
+            <ExternalButton href={`https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`} variant="onDark" icon="message">
+              שליחה בוואטסאפ
+            </ExternalButton>
+          </div>
         </div>
       </div>
     </section>

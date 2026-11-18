@@ -11,7 +11,8 @@ import { EventTicket } from './EventTicket';
 import { Glyph } from './marks';
 import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
-import { CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
+import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
+import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { fmtMoney, isPriced } from '@/lib/money';
 
 const UTM_KEYS = ['source', 'medium', 'campaign'] as const;
@@ -242,8 +243,15 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
       <div className="pt-2 text-center">
         <SuccessMark />
         <ResultTitle className="mt-4">{again ? 'כבר נרשמת למפגש הזה' : 'נרשמת!'}</ResultTitle>
-        <p className="mx-auto mt-2 max-w-sm text-lg text-ink-soft">
-          {again ? `${name}ההרשמה שלך בתוקף. אין צורך להירשם שוב.` : `${name}שמרנו לך מקום. מחכים לך!`}
+        <p className="mx-auto mt-2 max-w-sm text-lg text-balance text-ink-soft">
+          {again ? `${name}ההרשמה שלך בתוקף. לא צריך להירשם שוב.` : (
+            <>
+              {name}שמרנו לך מקום.{' '}
+              <span className="block">
+                נתראה ב<span className="whitespace-nowrap">{fmtDayLong(event.starts_at)}</span> ב-<span className="num whitespace-nowrap">{fmtTime(event.starts_at)}</span>.
+              </span>
+            </>
+          )}
         </p>
         {again && !r.token && (
           mine ? (
@@ -255,12 +263,26 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
       </div>
       {!again && <PayBlock event={event} />}
       <EventTicket event={event} highlight showStatus={false}>
-        <div className="mt-4">
+        <p className="mt-4 text-[0.9375rem] font-medium text-pretty text-ink">
+          עוד צעד קטן: מכניסים ליומן עכשיו, כדי ש{event.type === 'friday' ? 'השישי הזה' : 'המפגש'} לא ייבלע&nbsp;בשבוע.
+        </p>
+        <div className="mt-3">
           <CalendarButtons event={event} />
         </div>
       </EventTicket>
+      <BeforeYouCome event={event} />
       {r.token && <PersonalLink url={manageUrl(r.token)} token={r.token} />}
-      {invite && <InviteBlock url={invite.url} message={invite.message} />}
+      {invite && (
+        <InviteBlock
+          url={invite.url}
+          message={invite.message}
+          title="באים ביחד?"
+          lead={<>
+            קל יותר להגיע בפעם הראשונה עם מישהו&nbsp;מוכר.
+            <span className="block">שלחו את קישור ההזמנה שלכם לחבר או חברה&nbsp;מהשירות.</span>
+          </>}
+        />
+      )}
       {another}
     </div>
   );

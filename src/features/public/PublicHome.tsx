@@ -29,12 +29,23 @@ export function PublicHome() {
 
   return (
     <div>
-      <Hero photo={hills} position="50% 62%" title={<Slogan />}>
-        <p>מפגשים ללוחמים וללוחמות אחרי השירות. בשישי&nbsp;בבוקר: אימון, הרצאת&nbsp;אורח וארוחת&nbsp;בוקר ביחד.</p>
-        <Link to={`/friday${query}`} className="mt-1 inline-flex min-h-11 items-center gap-2 font-semibold text-light underline underline-offset-4 sm:mt-2">
-          איך נראה בוקר שישי
-          <Tri size="0.7em" />
-        </Link>
+      <Hero
+        photo={hills}
+        position="50% 62%"
+        kicker={<Slogan />}
+        titleSize="sentence"
+        title={<>
+          <span className="block">השירות נגמר.</span>
+          <span className="block">הצוות לא חייב להיגמר.</span>
+        </>}
+      >
+        <p>
+          <span className="whitespace-nowrap">המשך תנועה</span> היא הבית ללוחמים וללוחמות אחרי&nbsp;השירות. בשישי&nbsp;בבוקר: אימון,
+          הרצאה וארוחת&nbsp;בוקר ביחד.
+        </p>
+        <ButtonLink to={`/friday${query}`} variant="light" size="lg" cta className="mt-4 w-full sm:mt-5 sm:w-auto" data-testid="home-friday">
+          לבוקר השישי הקרוב
+        </ButtonLink>
       </Hero>
 
       <div className="mt-5 sm:mt-8 lg:mt-10">

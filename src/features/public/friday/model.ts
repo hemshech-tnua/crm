@@ -2,6 +2,7 @@
 import type { PublicEvent } from '@/lib/types';
 import { fmtTime } from '@/lib/dates';
 import { activityText, lectureText } from '../eventText';
+import { FRIDAY_FACTS } from './facts';
 
 const startMs = (e: PublicEvent) => new Date(e.starts_at).getTime();
 
@@ -43,17 +44,35 @@ export function paymentNoteOf(e: PublicEvent | null | undefined): string | null 
 /** The label of the main call to action. */
 export const ctaLabel = (e: PublicEvent) => (e.is_full ? 'הכניסו אותי לרשימת ההמתנה' : 'שמרו לי מקום');
 
-/** `time` is a clock time; `until` marks the end of the morning ("עד 11:30"). */
-export type ProgramItem = { time: string | null; until?: boolean; title: string; detail: string | null };
+/** `time` is a clock time; `until` marks the end of the morning ("עד 11:30"). `note` is a second line under the detail. */
+export type ProgramItem = { time: string | null; until?: boolean; title: string; detail: string | null; note?: string | null };
 
 /**
  * A Friday morning for participants (the team's 08:15 setup is not shown). Start and end come from the meeting when
  * there is one; the activity and the guest lecture too. The times in between are not published, so they are not guessed.
+ * The line about easier versions of the exercises appears only once the coach has confirmed it (FRIDAY_FACTS.allLevels).
  */
-export function program(e: PublicEvent | null): ProgramItem[] {
+export function program(e: PublicEvent | null, facts = FRIDAY_FACTS): ProgramItem[] {
   return [
-    { time: e ? fmtTime(e.starts_at) : '09:00', title: 'אימון', detail: (e && activityText(e)) ?? 'יוגה או אימון פונקציונלי' },
+    {
+      time: e ? fmtTime(e.starts_at) : '09:00',
+      title: 'אימון',
+      // the row is already titled 'אימון': drop it from the start of the activity ("אימון קרוספיט…" → "קרוספיט…")
+      detail: (e && activityText(e)?.replace(/^אימון\s+/, '')) || 'יוגה או אימון פונקציונלי',
+      note: facts.allLevels ? 'לכל תרגיל יש גרסה קלה יותר. הולכים לפי הקצב שלכם.' : null,
+    },
     { time: null, title: 'הרצאת אורח', detail: (e && lectureText(e)) ?? null },
-    { time: e ? fmtTime(e.ends_at) : '11:30', until: true, title: 'ארוחת בוקר וזמן ביחד', detail: 'קפה, נשנושים ושיחה' },
+    { time: e ? fmtTime(e.ends_at) : '11:30', until: true, title: 'קפה, ארוחת בוקר וזמן ביחד', detail: 'בלי לחץ. יושבים, מדברים, מכירים.' },
+  ];
+}
+
+/** The short "no strings" points of the navy strip; the fitness one and the rhythm only once the team confirms them. */
+export function lowThreshold(facts = FRIDAY_FACTS): string[] {
+  return [
+    'בלי דרגות, בלי מסדרים',
+    'בלי התחייבות',
+    ...(facts.allLevels ? ['לכל רמת כושר'] : []),
+    'ביטול בקישור האישי',
+    ...(facts.frequency ? [`שישי בבוקר, ${facts.frequency}`] : []),
   ];
 }

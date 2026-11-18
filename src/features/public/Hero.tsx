@@ -15,17 +15,26 @@ import { cx } from '@/ui/kit';
 export function Slogan() {
   return <>בואו <span className="whitespace-nowrap">להמשיך תנועה</span></>;
 }
-export function Hero({ photo, kicker, title, children, position = 'center', className }: {
+/** The headline sizes: `slogan` for the two-word slogan, `sentence` for a longer headline (two short sentences). */
+const TITLE = {
+  slogan: 'text-[2.25rem] leading-[1.02] sm:text-hero lg:text-[3.75rem]',
+  sentence: 'text-[1.625rem] leading-[1.1] min-[360px]:text-[1.875rem] sm:text-[2.5rem] lg:text-[3rem] lg:leading-[1.06]',
+} as const;
+
+export function Hero({ photo, kicker, title, children, position = 'center', className, titleSize = 'slogan' }: {
   photo: string; kicker?: ReactNode; title: ReactNode; children?: ReactNode; position?: string; className?: string;
+  titleSize?: keyof typeof TITLE;
 }) {
   return (
     <section className={cx(
-      '-mx-5 -mt-6 flex flex-col overflow-hidden bg-ink text-light sm:mx-0 sm:mt-0 sm:rounded-[var(--radius-panel)] lg:grid lg:min-h-[23rem] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]',
+      '-mx-5 -mt-6 flex flex-col overflow-hidden bg-ink text-light sm:mx-0 sm:mt-0 sm:rounded-[var(--radius-panel)] lg:grid lg:min-h-[23rem]',
+      // a sentence headline needs the wider content zone to keep each sentence on one line
+      titleSize === 'sentence' ? 'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]',
       className,
     )}>
       <div className="flex flex-col justify-center px-5 pt-4 pb-5 sm:px-7 sm:pt-6 sm:pb-7 lg:px-10 lg:py-12">
         {kicker && <p className="font-display text-heading sm:text-section">{kicker}</p>}
-        <h1 className="font-display text-[2.25rem] leading-[1.02] text-balance sm:text-hero lg:text-[3.75rem]">{title}</h1>
+        <h1 className={cx('font-display text-balance', TITLE[titleSize], kicker != null && titleSize === 'sentence' && 'mt-1.5 sm:mt-2')}>{title}</h1>
         {children && <div className="mt-1.5 text-body text-light/90 sm:mt-3 lg:mt-5 lg:max-w-md lg:text-[1.0625rem]">{children}</div>}
       </div>
       <div className="relative order-first aspect-[3/1] overflow-hidden sm:aspect-[16/7] lg:order-none lg:aspect-auto">

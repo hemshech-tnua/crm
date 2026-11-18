@@ -8,7 +8,7 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
 test('public pages have no WCAG A/AA violations', async ({ page }) => {
   const ev = await makeEvent({ title: 'נגישות E2E' });
-  for (const route of ['#/', `#/r/${ev.public_code}`, '#/privacy', '#/join', '#/login']) {
+  for (const route of ['#/', '#/friday', `#/r/${ev.public_code}`, '#/privacy', '#/join', '#/login']) {
     await page.goto(route);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(400); // let colour transitions (e.g. the previously active nav item) settle

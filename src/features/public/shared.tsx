@@ -10,6 +10,7 @@ import { Glyph } from './marks';
 import { useOrgInfo } from './api';
 import { formatPhone, whatsappLink } from '@/lib/phone';
 import { fmtMoney, isPriced } from '@/lib/money';
+import { FRIDAY_FACTS } from './friday/facts';
 
 /**
  * The browser tab's title on a public page: "מפגשי שישי | המשך תנועה". Without one (null) the default title of
@@ -115,13 +116,17 @@ export function inviteMessage(event: PublicEvent | null): string {
   if (event) {
     // a title that already names the association ("ערב לוחמות - "המשך תנועה"") does not get it twice
     const of = /המשך תנועה/.test(event.title) ? '' : ' של המשך תנועה';
-    return `נרשמתי ל${event.title}${of}, ${fmtDayLong(event.starts_at)} ב-${fmtTime(event.starts_at)}. בא לך להצטרף? הנה קישור להרשמה:`;
+    return `נרשמתי ל${event.title}${of}, ${fmtDayLong(event.starts_at)} ב-${fmtTime(event.starts_at)}. בא לך לבוא איתי? ככה אף אחד מאיתנו לא מגיע לבד.`;
   }
   return 'שמעת על המשך תנועה? מפגשי שישי ללוחמים וללוחמות: תנועה, הרצאה, ארוחת בוקר וחברים. בא לך לבוא איתי? כל המפגשים הקרובים כאן:';
 }
 
 /** "Invite a friend": the personal link (so the friend counts as brought by you). Web Share when the phone has it. */
-export function InviteBlock({ url, message, title = 'הזמינו עוד חברים' }: { url: string; message: string; title?: ReactNode }) {
+export function InviteBlock({ url, message, title = 'הזמינו עוד חברים', lead }: {
+  url: string; message: string; title?: ReactNode;
+  /** the text above the buttons; by default the general "invite more friends" one */
+  lead?: ReactNode;
+}) {
   const copy = useCopy();
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const share = async () => {
@@ -135,8 +140,12 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
   return (
     <Block title={title}>
       <p className="text-[0.9375rem] text-ink-soft">
-        מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
-        <span className="block">שלחו להם את קישור ההזמנה שלכם. כך&nbsp;נדע שהגיעו&nbsp;דרככם.</span>
+        {lead ?? (
+          <>
+            מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
+            <span className="block">שלחו להם את קישור ההזמנה שלכם. כך&nbsp;נדע שהגיעו&nbsp;דרככם.</span>
+          </>
+        )}
       </p>
       <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (
@@ -159,11 +168,11 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
 export function PersonalLink({ url, token, waitlist }: { url: string; token: string; waitlist?: boolean }) {
   const copy = useCopy();
   return (
-    <Block title="הקישור האישי שלך">
+    <Block title={waitlist ? 'הקישור האישי שלך' : 'השתנו התוכניות?'}>
       <p className="text-[0.9375rem] text-ink-soft">
         {waitlist
           ? 'כדאי לשמור את הקישור: דרכו אפשר לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה.'
-          : 'כדאי לשמור את הקישור: דרכו אפשר לבטל את ההרשמה או לתת משוב אחרי המפגש.'}
+          : 'מבטלים בקישור האישי, וכך המקום עובר למישהו\u00a0אחר.'}
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
@@ -172,6 +181,59 @@ export function PersonalLink({ url, token, waitlist }: { url: string; token: str
         <ButtonLink to={`/m/${token}`} variant="ghost">לעמוד ההרשמה שלי</ButtonLink>
       </div>
     </Block>
+  );
+}
+
+export const wazeUrl = (place: string) => `https://waze.com/ul?q=${encodeURIComponent(place)}&navigate=yes`;
+/** Public transport directions to the place (Google Maps, transit mode): works on a phone with or without the app. */
+export const transitUrl = (place: string) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place)}&travelmode=transit`;
+
+/**
+ * After registering: one panel with what helps someone actually arrive. How to get there (navigation, public transport,
+ * a ride), and on a Friday morning what to bring and, once the team confirms them, the reminder and who meets you.
+ * Nothing here is stored; it only prompts the plan.
+ */
+export function BeforeYouCome({ event }: { event: PublicEvent }) {
+  const place = event.location;
+  const friday = event.type === 'friday';
+  const f = FRIDAY_FACTS;
+  const now = friday && (f.reminder || f.greeter);
+  return (
+    <div className="divide-y divide-edge rounded-[var(--radius-panel)] border border-edge bg-paper">
+      <section aria-labelledby="after-route" className="p-4 sm:p-5">
+        <SectionTitle id="after-route">איך מגיעים?</SectionTitle>
+        {place && (
+          <>
+            <p className="mt-2 flex items-start gap-2 text-ink">
+              <Glyph name="pin" className="mt-[3px]" />
+              <span className="min-w-0">{place}</span>
+            </p>
+            <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+              <ExternalButton href={wazeUrl(place)} variant="secondary">ניווט ב-Waze</ExternalButton>
+              <ExternalButton href={transitUrl(place)} variant="secondary">תחבורה ציבורית</ExternalButton>
+            </div>
+          </>
+        )}
+        <p className="mt-2 text-[0.9375rem] text-ink-soft">
+          צריכים טרמפ? <ContactLine inline />
+        </p>
+      </section>
+      {friday && (
+        <section aria-labelledby="after-bring" className="p-4 sm:p-5">
+          <SectionTitle id="after-bring">מה להביא</SectionTitle>
+          <TriList items={['בגדים ונעליים נוחים לאימון', 'בקבוק מים']} className="mt-2 text-ink" />
+          <p className="mt-2 text-[0.9375rem] text-ink-soft">את הקפה והנשנושים אנחנו&nbsp;מביאים.</p>
+        </section>
+      )}
+      {now && (
+        <section aria-labelledby="after-now" className="p-4 sm:p-5" data-fact="reminder-greeter">
+          <SectionTitle id="after-now">מה הלאה</SectionTitle>
+          {f.reminder && <p className="mt-2 text-[0.9375rem] text-ink-soft">{f.reminder}</p>}
+          {f.greeter && <p className="mt-1 text-[0.9375rem] font-semibold text-ink">כשמגיעים, חפשו את {f.greeter}.</p>}
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -247,7 +309,7 @@ export function PayBlock({ event, className = '' }: { event: PublicEvent; classN
             לתשלום <span className="num">{amount}</span>
           </ExternalButton>
           <p className="mt-3 text-[0.9375rem] text-ink-soft">
-            התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך מהקישור האישי או בכניסה למפגש.
+            התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך בקישור האישי או בכניסה למפגש.
           </p>
         </>
       ) : (
