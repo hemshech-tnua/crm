@@ -77,6 +77,8 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
               <span className="text-muted"> · {relativeDays(start)}</span>
             </Row>
             {event.location && <Row glyph="pin">{event.location}</Row>}
+            {/* Friday mornings end with breakfast together: say so up front */}
+            {event.type === 'friday' && <Row glyph="coffee">קפה ונשנושים</Row>}
             {activity && <Row icon="sun">{activity}</Row>}
             {lecture && <Row icon="mic">{lecture}</Row>}
             {isPriced(event.price) && (
