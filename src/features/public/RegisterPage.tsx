@@ -69,7 +69,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
             הזמנה מ{e.invited_by}
           </p>
         )}
-        <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'המפגש' : 'שמרו לכם מקום'}</h1>
+        <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'המפגש' : 'הרשמה למפגש'}</h1>
         <EventTicket event={e} highlight detailed />
       </div>
       <div className="lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
@@ -166,7 +166,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
           {event.payment_note && <span className="basis-full text-small text-muted">{event.payment_note}</span>}
         </p>
       )}
-      <p className="-mb-1 text-body text-ink-soft">ארבעה פרטים ושאלה אחת, וזהו.</p>
+      <p className="-mb-1 text-body text-ink-soft">רק ארבעה פרטים ושאלה אחת.</p>
       <PersonFields form={form} sources={sources} invitedBy={event.invited_by} />
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
@@ -206,7 +206,7 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
             {name}אם יתפנה מקום, נחזור אליך בוואטסאפ או בטלפון. עד אז ההרשמה עוד לא סופית.
           </p>
         </div>
-        <EventTicket event={event} showStatus={false} />
+        <EventTicket event={event} highlight showStatus={false} />
         {r.token && <PersonalLink url={manageUrl(r.token)} token={r.token} waitlist />}
         {another}
       </div>
@@ -227,7 +227,7 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
         )}
       </div>
       {!again && <PayBlock event={event} />}
-      <EventTicket event={event} showStatus={false}>
+      <EventTicket event={event} highlight showStatus={false}>
         <div className="mt-4">
           <CalendarButtons event={event} />
         </div>

@@ -141,7 +141,7 @@ test('scenario 8 @phone: register, check in, and the door list on a phone', asyn
   await expect(friend.getByLabel('שם מלא')).toHaveValue('חבר בכניסה');
   await friend.getByLabel('עיר מגורים').fill('לוד');
   await friend.getByLabel('גיל').fill('29');
-  await friend.getByRole('radio', { name: /חבר\/ה/ }).check();
+  await friend.getByRole('radio', { name: /חברים סיפרו/ }).check();
   await friend.getByRole('button', { name: 'נרשמים ונכנסים' }).click();
   await expect(friend.getByRole('heading', { name: /חבר!/ })).toBeVisible();
   const { data: w } = await coord.from('participants').select('id').eq('phone', e164(fp)).single();

@@ -118,7 +118,8 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
   return (
     <Block title={title}>
       <p className="text-[0.9375rem] text-ink-soft">
-        מכירים עוד לוחמים ולוחמות שכדאי שיבואו? שלחו להם את קישור ההזמנה שלכם, וכך נדע שהגיעו דרככם.
+        מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
+        <span className="block">שלחו להם את קישור ההזמנה שלכם, וכך נדע שהגיעו&nbsp;דרככם.</span>
       </p>
       <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (
@@ -144,8 +145,8 @@ export function PersonalLink({ url, token, waitlist }: { url: string; token: str
     <Block title="הקישור לניהול ההרשמה שלך">
       <p className="text-[0.9375rem] text-ink-soft">
         {waitlist
-          ? 'כדאי לשמור את הקישור: דרכו אפשר לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה. הקישור אישי, לא לשתף.'
-          : 'כדאי לשמור את הקישור: דרכו אפשר לבטל, ואחרי המפגש לתת משוב. הקישור אישי, לא לשתף.'}
+          ? 'כדאי לשמור את הקישור: דרכו אפשר לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה. הקישור אישי, לא\u00a0לשתף.'
+          : 'כדאי לשמור את הקישור: דרכו אפשר לבטל, ואחרי המפגש לתת משוב. הקישור אישי, לא\u00a0לשתף.'}
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
       <div className="mt-3 flex flex-wrap gap-2">

@@ -5,7 +5,7 @@ import { Badge, cx } from '@/ui/kit';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { Icon, type IconName } from '@/ui/Icon';
 import { Glyph, type GlyphName } from './marks';
-import { activityText, lectureText, timeRange } from './eventText';
+import { activityText, keepName, lectureText, timeRange } from './eventText';
 
 const dayNum = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, day: 'numeric' });
 const monthName = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, month: 'long' });
@@ -70,7 +70,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
         <span className="mt-1 text-small font-semibold">{monthName.format(start)}</span>
       </div>
       <div className="min-w-0 flex-1 px-4 py-4 sm:px-5 sm:py-5">
-          <H className="text-heading font-bold">{event.title}</H>
+          <H className="text-heading font-bold">{keepName(event.title)}</H>
           <ul className="mt-2 flex flex-col gap-1.5 text-[0.9375rem] text-ink-soft">
             <Row glyph="clock">
               <span className="num">{timeRange(event)}</span>
@@ -79,8 +79,8 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
             {event.location && <Row glyph="pin">{event.location}</Row>}
             {/* Friday mornings end with breakfast together: say so up front */}
             {event.type === 'friday' && <Row glyph="coffee">קפה ונשנושים</Row>}
-            {activity && <Row icon="sun">{activity}</Row>}
-            {lecture && <Row icon="mic">{lecture}</Row>}
+            {activity && <Row icon="sun">{keepName(activity)}</Row>}
+            {lecture && <Row icon="mic">{keepName(lecture)}</Row>}
             {isPriced(event.price) && (
               <Row mark="₪">
                 <span className="font-semibold text-ink">השתתפות: <span className="num">{fmtMoney(event.price)}</span></span>
@@ -88,9 +88,9 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
               </Row>
             )}
           </ul>
-          {detailed && event.speaker_bio && <p className="mt-2 text-sm leading-relaxed text-muted">{event.speaker_bio}</p>}
+          {detailed && event.speaker_bio && <p className="mt-2 text-sm leading-relaxed text-muted">{keepName(event.speaker_bio)}</p>}
           {detailed && event.description && (
-            <p className="mt-3 whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft">{event.description}</p>
+            <p className="mt-3 whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft">{keepName(event.description)}</p>
           )}
           {(showStatus === true || (showStatus === 'notable' && !status.plain)) && (
             <div className="mt-3">

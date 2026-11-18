@@ -6,7 +6,7 @@ import { Badge, ButtonLink, EmptyState, ErrorBox, Skeleton } from '@/ui/kit';
 import { Tri } from '@/ui/Shapes';
 import { usePublicEvents } from './api';
 import { EventTicket, availability } from './EventTicket';
-import { activityText, lectureText, timeRange } from './eventText';
+import { activityText, keepName, lectureText, timeRange } from './eventText';
 import { trackingQuery } from './tracking';
 import { Hero } from './Hero';
 import hills from '@/assets/photos/hills.webp';
@@ -29,7 +29,7 @@ export function PublicHome() {
   return (
     <div>
       <Hero photo={hills} position="50% 62%" kicker="בואו איתנו" title="להמשיך תנועה">
-        מפגשי שישי ללוחמים וללוחמות: יוגה, הרצאת אורח, ארוחת בוקר וזמן ביחד.
+        מפגשי שישי ללוחמים וללוחמות: אימון, הרצאת&nbsp;אורח, ארוחת&nbsp;בוקר וזמן&nbsp;ביחד.
       </Hero>
 
       <div className="mt-5 sm:mt-8 lg:mt-10">
@@ -44,19 +44,20 @@ export function PublicHome() {
             </EmptyState>
           </div>
         ) : (
-          <div className={rest.length ? 'grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-10' : 'lg:max-w-xl'}>
+          <div className={rest.length ? 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-10' : 'lg:max-w-xl'}>
             <section aria-labelledby="next-meeting" className="lg:sticky lg:top-6">
               <h2 id="next-meeting" className="mb-2.5 text-heading font-semibold">המפגש הקרוב</h2>
               <EventTicket event={next} highlight level={3} showStatus="notable" className="relative">
                 <ButtonLink
                   to={`/r/${next.code}${query}`}
                   cta
-                  className="mt-4 w-full after:absolute after:inset-0 after:content-[''] sm:w-auto"
+                  size="lg"
+                  className="mt-4 min-w-44 font-bold after:absolute after:inset-0 after:content-['']"
                 >
                   {cta(next)}
                   <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
                 </ButtonLink>
-                {cta(next) === 'להרשמה' && <p className="mt-2 text-small text-muted">ההרשמה לוקחת פחות מדקה.</p>}
+                {cta(next) === 'להרשמה' && <p className="mt-2 text-[0.9375rem] text-muted">ההרשמה לוקחת פחות מדקה.</p>}
               </EventTicket>
             </section>
             {rest.length > 0 && (
@@ -87,7 +88,7 @@ function ScheduleRow({ event: e, to, label }: { event: PublicEvent; to: string; 
       <div className="min-w-0 flex-1">
         <h3 className="font-semibold leading-snug">
           <Link to={to} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
-            {e.title}
+            {keepName(e.title)}
             <span className="sr-only">, {fmtDayLong(start)}. {label}</span>
           </Link>
         </h3>

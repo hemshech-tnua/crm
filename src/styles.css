@@ -118,6 +118,9 @@
     line-height: 1.2;
     text-wrap: balance;
   }
+  p, li, legend, label {
+    text-wrap: pretty;
+  }
   /* focus: the ring is drawn on the ground around the element, so its colour follows the ground, not the element:
      navy on light ground (also around navy buttons), beige only inside navy areas */
   :focus-visible {

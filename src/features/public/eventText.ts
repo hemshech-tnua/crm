@@ -23,3 +23,10 @@ export function theActivity(e: PublicEvent): string {
   if (!name) return 'הפעילות';
   return /^[א-ת]/.test(name) ? `ה${name}` : name;
 }
+
+/**
+ * Display text with the association's name kept on one line: "המשך תנועה" (quoted or not) never breaks between its two
+ * words, so a title or description does not leave "המשך" at the end of one line and "תנועה" on the next. Display only:
+ * messages and calendar files keep the plain text.
+ */
+export const keepName = (text: string): string => text.replace(/המשך תנועה/g, 'המשך\u00a0תנועה');

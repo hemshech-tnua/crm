@@ -77,7 +77,7 @@ test('a friend registers through a personal invite link and is credited to the i
   const { data: inviter } = await coord.from('participants').insert({ full_name: 'מזמין בדיקה', phone: inviterPhone }).select('id, referral_code').single();
   await page.goto(`#/r/${ev.public_code}?ref=${inviter!.referral_code}`);
   await expect(page.getByText(/הזמנה ממזמין/)).toBeVisible();
-  await expect(page.getByRole('radio', { name: /חבר\/ה/ })).toBeChecked();
+  await expect(page.getByRole('radio', { name: /חברים סיפרו/ })).toBeChecked();
   const friendPhone = phone();
   await page.getByLabel('שם מלא').fill('חבר מוזמן');
   await page.getByLabel('טלפון נייד').fill(friendPhone);
