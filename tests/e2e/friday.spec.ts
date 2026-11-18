@@ -24,7 +24,7 @@ test('shows the next Friday meeting and the CTA leads to /r/<code> with the refe
   expect(box && box.y + box.height).toBeLessThanOrEqual(844);
 
   // the sections of the page, in the visitor's words
-  for (const name of ['ככה נראה הבוקר', 'זה בשבילכם אם…', 'שאלות של פעם ראשונה', 'נתראה בשישי?']) {
+  for (const name of ['ככה נראה הבוקר', 'זה בשבילכם אם…', 'שאלות ותשובות', 'נתראה בשישי?']) {
     await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
   }
   await expect(page.getByText('בלי דרגות, בלי מסדרים')).toBeVisible();
@@ -50,21 +50,25 @@ test('copy that depends on an unconfirmed fact stays off the page while the fact
   const absent = async (text: string) => expect(page.getByText(text, { exact: false })).toHaveCount(0);
   if (!FRIDAY_FACTS.greeter) {
     await absent('מחכה לכם בכניסה');
-    await absent('לקבל אתכם ולהכיר לכם');
+    await absent('מחכה בכניסה');
     await expect(page.getByRole('heading', { name: 'מי מקבל אתכם' })).toHaveCount(0);
   }
   if (!FRIDAY_FACTS.allLevels) {
     await absent('גרסה קלה יותר');
     await absent('כל רמת כושר');
-    await absent('אני לא בכושר');
+    await absent('נדרשת רמת כושר');
   }
-  if (!FRIDAY_FACTS.lateOk) await absent('מגיעים באיחור');
-  if (!FRIDAY_FACTS.showers) await absent('יש איפה להחליף');
+  if (!FRIDAY_FACTS.lateOk) await absent('להצטרף באיחור');
+  if (!FRIDAY_FACTS.showers) await absent('להחליף בגדים');
   if (!FRIDAY_FACTS.frequency) await absent('שישי בבוקר,');
   if (Object.values(FRIDAY_FACTS).every((v) => !v)) await expect(page.locator('[data-fact]')).toHaveCount(0);
   // the questions every first-timer gets, whatever the facts
-  await expect(page.getByText('מגיעים לבד. זה מוזר?')).toBeVisible();
-  await expect(page.getByText('צריך לספר משהו על עצמי?')).toBeVisible();
+  for (const g of ['על המפגש', 'הגעה והכנה', 'הרשמה, תשלום ופרטיות']) await expect(page.getByRole('heading', { name: g, level: 3 })).toBeVisible();
+  for (const q of ['למי מיועדים המפגשים?', 'צריך לשתף משהו אישי או לדבר על השירות?', 'איך מבטלים או משנים הרשמה?', 'מה קורה עם הפרטים שממלאים בטופס?', 'מצלמים במפגשים?']) {
+    await expect(page.getByText(q)).toBeVisible();
+  }
+  await expect(page.getByText('אפשר להגיע לבד', { exact: false })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'למדיניות הפרטיות' })).toHaveAttribute('href', '#/privacy');
 });
 
 test('with no open Friday meeting, a calm empty state and a way to reach the team', async ({ page }) => {
@@ -76,7 +80,7 @@ test('with no open Friday meeting, a calm empty state and a way to reach the tea
   await expect(page.getByTestId('friday-closing-cta')).toHaveCount(0);
   // the program and the questions are still there
   await expect(page.getByRole('heading', { name: 'ככה נראה הבוקר' })).toBeVisible();
-  await page.getByText('כמה זה עולה?').click();
+  await page.getByText('כמה עולה ההשתתפות?').click();
   // no price is published: the page says so and how to ask, and promises nothing the registration page does not show
   await expect(page.getByText('המחיר עוד לא מופיע באתר.', { exact: false })).toBeVisible();
 });

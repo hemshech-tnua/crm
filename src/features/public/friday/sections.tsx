@@ -7,7 +7,7 @@ import { TZ, fmtDay, fmtDayLong, fmtTime } from '@/lib/dates';
 import { Badge, Button, ButtonLink, ExternalButton, cx } from '@/ui/kit';
 import { Stripes, Tri } from '@/ui/Shapes';
 import { EventTicket, availability } from '../EventTicket';
-import { ContactLine, wazeUrl } from '../shared';
+import { ContactLine, transitUrl, wazeUrl } from '../shared';
 import { activityText, keepName, lectureText, timeRange } from '../eventText';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { ctaLabel, lowThreshold, paymentNoteOf, priceOf, program } from './model';
@@ -264,6 +264,24 @@ function Question({ q, children }: { q: string; children: ReactNode }) {
   );
 }
 
+/** A heading inside the questions panel that groups the questions under it (a sub-level of the section's h2). */
+function QuestionGroup({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <div role="group" aria-labelledby={id} className="divide-y divide-edge">
+      <h3 id={id} className="bg-mist/60 px-4 py-2.5 text-small font-semibold tracking-wide text-ink-soft sm:px-5">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+const linkClass = 'inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-2';
+
+/**
+ * Questions and answers for someone deciding whether to come, grouped by what they need to know: the meeting itself,
+ * getting there and preparing, then registration, payment and privacy. Every answer states only what is true today
+ * (from the meeting's data, the privacy policy or the form); questions that depend on a fact the team has not
+ * confirmed (FRIDAY_FACTS) appear only once it is set.
+ */
 export function Faq({ event }: { event: PublicEvent | null }) {
   const price = priceOf(event);
   const note = paymentNoteOf(event);
@@ -271,49 +289,87 @@ export function Faq({ event }: { event: PublicEvent | null }) {
   const f = FRIDAY_FACTS;
   return (
     <section aria-labelledby="friday-faq">
-      <h2 id="friday-faq" className={H2}>שאלות של פעם ראשונה</h2>
+      <h2 id="friday-faq" className={H2}>שאלות ותשובות</h2>
       <div className="mt-3 divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper lg:mt-4">
-        <Question q="מגיעים לבד. זה מוזר?">
-          ממש לא. לא צריך להכיר אף אחד כדי לבוא, והקפה בסוף בדיוק&nbsp;בשביל&nbsp;זה.
-          {f.greeter && <> {f.greeter} מהצוות שם כדי לקבל אתכם ולהכיר לכם&nbsp;אנשים.</>}
-        </Question>
-        {f.allLevels && (
-          <Question q="אני לא בכושר. זה בשבילי?">כן. לכל תרגיל יש גרסה קלה יותר, הולכים לפי הקצב שלכם ואף אחד לא&nbsp;סופר.</Question>
-        )}
-        <Question q="מה ללבוש ומה להביא?">בגדים ונעליים נוחים לאימון ובקבוק מים. את הקפה והנשנושים אנחנו&nbsp;מביאים.</Question>
-        {f.showers && <Question q="יש איפה להחליף בגדים או להתקלח?">{f.showers}</Question>}
-        {f.lateOk && (
-          <Question q="מגיעים באיחור. זה בסדר?">מגיעים בכל זאת ומצטרפים איפה שאנחנו. גם רק להרצאה ולקפה זה&nbsp;טוב.</Question>
-        )}
-        <Question q="כמה זה עולה?">
-          {isPriced(price) ? (
-            <>
-              ההשתתפות עולה <span className="num font-semibold text-ink">{fmtMoney(price)}</span>.{' '}
-              {event?.payment_url ? 'משלמים אחרי ההרשמה, בקישור לתשלום.' : 'משלמים בכניסה למפגש.'}
-              {note && <> {endSentence(note)}</>}
-            </>
-          ) : price === 0 ? (
-            'ההשתתפות בחינם.'
-          ) : (
-            // no price published: say so, and how to ask, rather than promise details the registration page does not show
-            <>
-              {event ? 'המחיר למפגש הזה עוד לא מופיע באתר.' : 'המחיר עוד לא מופיע באתר.'} אפשר לשאול אותנו: <ContactLine inline />
-            </>
-          )}
-        </Question>
-        <Question q="צריך לספר משהו על עצמי?">לא. מתאמנים, שומעים הרצאה ויושבים לקפה. מי שרוצה לדבר,&nbsp;מדבר.</Question>
-        <Question q="נרשמתי ולא מסתדר לי. מה עושים?">מבטלים בקישור האישי שמקבלים אחרי ההרשמה, וכך המקום עובר למישהו&nbsp;אחר.</Question>
-        {place && (
-          <Question q="איפה זה?">
-            <p>{place}</p>
-            {f.parking && <p className="mt-1">{f.parking}</p>}
-            <a href={wazeUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-2">
-              ניווט ב-Waze
-              <span className="sr-only"> (נפתח בחלון חדש)</span>
-            </a>
+        <QuestionGroup id="faq-about" title="על המפגש">
+          <Question q="למי מיועדים המפגשים?">
+            ללוחמים וללוחמות אחרי השירות, בכל שלב, ולא משנה כמה זמן עבר מהשחרור. אין צורך בהיכרות מוקדמת עם העמותה או
+            עם המשתתפים.
           </Question>
-        )}
-        <Question q="אפשר להביא חבר או חברה?">כן, ובפעם הראשונה זה אפילו נוח יותר. ההרשמה אישית, אז שלחו להם את&nbsp;הקישור.</Question>
+          <Question q={'אפשר להגיע לבד, בלי להכיר אף\u00a0אחד?'}>
+            בהחלט. הבוקר בנוי כך שיש זמן להכיר: אחרי האימון וההרצאה יושבים יחד לקפה ולארוחת&nbsp;בוקר.
+            {f.greeter && <> {f.greeter} מהצוות מחכה בכניסה כדי לקבל את מי שמגיע בפעם הראשונה ולהכיר לו&nbsp;אנשים.</>}
+          </Question>
+          <Question q="צריך לשתף משהו אישי או לדבר על השירות?">
+            לא. המפגש אינו מעגל שיחה: מתאמנים, שומעים הרצאה ונפגשים לארוחת בוקר. כל אחד ואחת משתפים רק את מה
+            שהם&nbsp;רוצים.
+          </Question>
+          {f.allLevels && (
+            <Question q="נדרשת רמת כושר מסוימת?">
+              לא. לכל תרגיל יש גרסה קלה יותר, וכל אחד ואחת מתאמנים בקצב&nbsp;שלהם.
+            </Question>
+          )}
+          <Question q="אפשר להביא חבר או חברה?">
+            כן, בשמחה. ההרשמה אישית, כך שכל אחד ואחת נרשמים בנפרד: שלחו להם את הקישור&nbsp;לדף.
+          </Question>
+        </QuestionGroup>
+
+        <QuestionGroup id="faq-arrive" title="הגעה והכנה">
+          {place && (
+            <Question q="איפה מתקיים המפגש ואיך מגיעים?">
+              <p>{place}</p>
+              {f.parking && <p className="mt-1">{f.parking}</p>}
+              <p className="mt-1 flex flex-wrap gap-x-5">
+                <a href={wazeUrl(place)} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                  ניווט ב-Waze<span className="sr-only"> (נפתח בחלון חדש)</span>
+                </a>
+                <a href={transitUrl(place)} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                  תחבורה ציבורית<span className="sr-only"> (נפתח בחלון חדש)</span>
+                </a>
+              </p>
+            </Question>
+          )}
+          <Question q="מה כדאי להביא?">
+            בגדי ספורט ונעליים נוחות לאימון, ובקבוק מים. קפה ונשנושים מחכים&nbsp;במקום.
+          </Question>
+          {f.showers && <Question q="יש מקום להחליף בגדים או להתקלח?">{f.showers}</Question>}
+          {f.lateOk && (
+            <Question q="אפשר להצטרף באיחור?">
+              כן. מצטרפים בכל שלב של הבוקר, גם רק להרצאה ולארוחת&nbsp;הבוקר.
+            </Question>
+          )}
+        </QuestionGroup>
+
+        <QuestionGroup id="faq-register" title="הרשמה, תשלום ופרטיות">
+          <Question q="כמה עולה ההשתתפות?">
+            {isPriced(price) ? (
+              <>
+                ההשתתפות עולה <span className="num font-semibold text-ink">{fmtMoney(price)}</span>.{' '}
+                {event?.payment_url ? 'התשלום מתבצע אחרי ההרשמה, בקישור לתשלום מאובטח.' : 'התשלום מתבצע בכניסה למפגש.'}
+                {note && <> {endSentence(note)}</>}
+              </>
+            ) : price === 0 ? (
+              'ההשתתפות בחינם.'
+            ) : (
+              // no price published: say so, and how to ask, rather than promise details the registration page does not show
+              <>
+                {event ? 'המחיר למפגש הזה עוד לא מופיע באתר.' : 'המחיר עוד לא מופיע באתר.'} אפשר לשאול אותנו: <ContactLine inline />
+              </>
+            )}
+          </Question>
+          <Question q="איך מבטלים או משנים הרשמה?">
+            בקישור האישי שמופיע מיד אחרי ההרשמה. ביטול מראש מפנה את המקום למי שממתין&nbsp;לו.
+          </Question>
+          <Question q="מה קורה עם הפרטים שממלאים בטופס?">
+            הפרטים משמשים רק לניהול ההרשמה וההגעה ולחזרה אליכם. רק צוות העמותה רואה אותם, והם לא נמכרים ולא מועברים
+            לגורמים אחרים.{' '}
+            <Link to="/privacy" className="font-semibold text-tide underline underline-offset-2">למדיניות הפרטיות</Link>
+          </Question>
+          <Question q="מצלמים במפגשים?">
+            לפעמים, בשביל העמודים של העמותה. בטופס ההרשמה אפשר לסמן שלא יפורסמו תמונות שלכם, והצוות יראה את
+            הבקשה.
+          </Question>
+        </QuestionGroup>
       </div>
     </section>
   );
