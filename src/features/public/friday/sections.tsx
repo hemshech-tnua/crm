@@ -12,6 +12,7 @@ import { activityText, keepName, lectureText, timeRange } from '../eventText';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { ctaLabel, lowThreshold, paymentNoteOf, priceOf, program } from './model';
 import { FRIDAY_FACTS } from './facts';
+import { DetailsLink } from '../MeetingDetails';
 
 /** Section headings: the book's Bold, one step under the hero. */
 export const H2 = 'font-display text-section lg:text-[1.625rem] lg:leading-tight';
@@ -46,6 +47,7 @@ export function NextTicket({ event: e, query }: { event: PublicEvent; query: str
           מגיעים לבד? {FRIDAY_FACTS.greeter} מהצוות מחכה לכם&nbsp;בכניסה.
         </p>
       )}
+      <DetailsLink event={e} query={query} className="mt-1" />
     </EventTicket>
   );
 }

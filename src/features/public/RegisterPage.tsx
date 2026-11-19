@@ -8,6 +8,7 @@ import { Button, ButtonLink, EmptyState, ErrorBox, Notice, Skeleton } from '@/ui
 import { registerFor, usePublicEvent, usePublicSources, type PublicSource, type RegisterResult } from './api';
 import { saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
+import { DetailsButton, MeetingSheet, useDetailsSheet } from './MeetingDetails';
 import { Glyph } from './marks';
 import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
@@ -35,9 +36,20 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const sources = usePublicSources();
   const [done, setDone] = useState<RegisterResult | null>(null);
   const home = `/${trackingQuery(params)}`;
+  const sheet = useDetailsSheet();
   usePageTitle(pageTitle(done, event.data));
+  const shown = done?.event ?? event.data;
+  // the details sheet sits over the form or the success screen, which keep their state underneath (?d=1)
+  const details = shown ? <MeetingSheet event={shown} open={sheet.open} onClose={sheet.hide} /> : null;
 
-  if (done && event.data) return <Registered result={done} event={done.event ?? event.data} onAnother={() => { setDone(null); window.scrollTo(0, 0); }} />;
+  if (done && event.data) {
+    return (
+      <>
+        <Registered result={done} event={done.event ?? event.data} onAnother={() => { setDone(null); window.scrollTo(0, 0); }} onDetails={sheet.show} />
+        {details}
+      </>
+    );
+  }
 
   if (event.isPending) return <Skeleton lines={8} className="py-6" />;
   if (event.isError) {
@@ -72,6 +84,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
         )}
         <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'פרטי המפגש' : 'הרשמה למפגש'}</h1>
         <EventTicket event={e} highlight detailed showStatus="notable" />
+        <DetailsButton event={e} onOpen={sheet.show} className="-mt-3" />
       </div>
       <div className="lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
         {closed ? (
@@ -84,6 +97,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
           <RegisterForm event={e} sources={sources.data} refCode={ref} utm={utm} onDone={setDone} />
         )}
       </div>
+      {details}
     </div>
   );
 }
@@ -198,7 +212,7 @@ function ownSaved(code: string, firstName: string | null | undefined): string | 
   return saved.length === 1 ? saved[0].token : null;
 }
 
-function Registered({ result: r, event, onAnother }: { result: RegisterResult; event: PublicEvent; onAnother: () => void }) {
+function Registered({ result: r, event, onAnother, onDetails }: { result: RegisterResult; event: PublicEvent; onAnother: () => void; onDetails: () => void }) {
   const another = (
     <button type="button" onClick={onAnother} className="min-h-11 self-center px-3 font-semibold text-balance text-tide underline underline-offset-4">
       הרשמה של עוד מישהו מהטלפון הזה
@@ -269,6 +283,7 @@ function Registered({ result: r, event, onAnother }: { result: RegisterResult; e
         <div className="mt-3">
           <CalendarButtons event={event} />
         </div>
+        <DetailsButton event={event} onOpen={onDetails} className="mt-2" />
       </EventTicket>
       <BeforeYouCome event={event} />
       {r.token && <PersonalLink url={manageUrl(r.token)} token={r.token} />}

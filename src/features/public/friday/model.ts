@@ -53,12 +53,18 @@ export type ProgramItem = { time: string | null; until?: boolean; title: string;
  * The line about fitness levels appears only once it is confirmed (FRIDAY_FACTS.allLevels).
  */
 export function program(e: PublicEvent | null, facts = FRIDAY_FACTS): ProgramItem[] {
+  // "אימון קרוספיט" is already a full title: use it as the row's title and put the coach under it ("עם יוגב מלר"),
+  // so "אימון" is not said twice and the activity's name is never cut. Other activities ("יוגה") keep the row title
+  // 'אימון' with the activity as the detail.
+  const activity = e?.activity_name?.trim() || null;
+  const ownTitle = activity && /^אימון\s/.test(activity) ? activity : null;
   return [
     {
       time: e ? fmtTime(e.starts_at) : '09:00',
-      title: 'אימון',
-      // the row is already titled 'אימון': drop it from the start of the activity ("אימון קרוספיט…" → "קרוספיט…")
-      detail: (e && activityText(e)?.replace(/^אימון\s+/, '')) || 'יוגה או אימון פונקציונלי',
+      title: ownTitle ?? 'אימון',
+      detail: ownTitle
+        ? (e?.instructor_name ? `עם ${e.instructor_name}` : null)
+        : (e && activityText(e)) || 'יוגה או אימון פונקציונלי',
       note: facts.allLevels ? 'מתאים לכל רמות הכושר.' : null,
     },
     { time: null, title: 'הרצאת אורח', detail: (e && lectureText(e)) ?? null },

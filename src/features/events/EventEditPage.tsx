@@ -30,6 +30,7 @@ type Form = {
   instructor_id: string;
   speaker_id: string;
   lecture_topic: string;
+  lecture_description: string;
   description: string;
   internal_notes: string;
   status: EventStatus;
@@ -69,6 +70,7 @@ function newForm(settings: Settings | undefined, sites: Site[], taken: Set<strin
     instructor_id: '',
     speaker_id: '',
     lecture_topic: '',
+    lecture_description: '',
     description: '',
     internal_notes: '',
     status: 'draft',
@@ -99,6 +101,7 @@ function formFromEvent(e: EventRow): Form {
     instructor_id: e.instructor_id ?? '',
     speaker_id: e.speaker_id ?? '',
     lecture_topic: e.lecture_topic ?? '',
+    lecture_description: e.lecture_description ?? '',
     description: e.description ?? '',
     internal_notes: e.internal_notes ?? '',
     status: e.status,
@@ -159,6 +162,7 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   }
   if (f.activity_name.length > 60) errors.activity_name = 'עד 60 תווים.';
   if (f.lecture_topic.length > 160) errors.lecture_topic = 'עד 160 תווים.';
+  if (f.lecture_description.length > 600) errors.lecture_description = 'עד 600 תווים.';
   if (f.description.length > 2000) errors.description = 'עד 2000 תווים.';
   if (f.internal_notes.length > 2000) errors.internal_notes = 'עד 2000 תווים.';
   const price = parseAmount(f.price);
@@ -254,6 +258,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
         instructor_id: f.instructor_id || null,
         speaker_id: f.speaker_id || null,
         lecture_topic: f.lecture_topic.trim() || null,
+        lecture_description: f.lecture_description.trim() || null,
         description: f.description.trim() || null,
         internal_notes: f.internal_notes.trim() || null,
         price: parseAmount(f.price) || null,
@@ -371,6 +376,15 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
             </Notice>
           )}
           {speaker?.bio_line && <p className="text-small text-muted">{speaker.bio_line}</p>}
+          <Textarea
+            label="תיאור ההרצאה"
+            value={f.lecture_description}
+            onChange={(e) => set('lecture_description', e.target.value)}
+            error={errors.lecture_description}
+            maxLength={600}
+            rows={3}
+            hint={<>מוצג ב״כל הפרטים על המפגש״, מתחת לנושא ההרצאה. <span className="whitespace-nowrap"><span className="num">{f.lecture_description.length}</span> מתוך <span className="num">600</span> תווים.</span></>}
+          />
           <Textarea
             label="תיאור למשתתפים"
             value={f.description}

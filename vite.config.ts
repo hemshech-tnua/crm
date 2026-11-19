@@ -16,7 +16,8 @@ function csp(supabaseUrl: string): Plugin {
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
-    "img-src 'self' data: blob:",
+    // people's photos on the meeting page: exactly the public path of the `people` bucket, nothing else of Storage
+    `img-src 'self' data: blob:${origin ? ` ${origin}/storage/v1/object/public/people/` : ''}`,
     `connect-src 'self' ${origin}`.trim(),
     "object-src 'none'",
     "base-uri 'self'",

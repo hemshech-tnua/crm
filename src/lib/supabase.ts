@@ -13,3 +13,10 @@ export const supabase = createClient(url ?? 'http://invalid.local', key ?? 'miss
 });
 
 export const functionsUrl = `${url}/functions/v1`;
+
+/** The public Storage bucket of people's photos (published only with consent; never in the git repository). */
+export const PEOPLE_BUCKET = 'people';
+
+/** The public URL of a photo in the `people` bucket. The CSP allows images from exactly this path. */
+export const personPhotoUrl = (path: string) =>
+  `${url ?? ''}/storage/v1/object/public/${PEOPLE_BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;

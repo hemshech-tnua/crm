@@ -11,6 +11,7 @@ import { EventTicket } from './EventTicket';
 import { FeedbackForm } from './FeedbackForm';
 import { Block, CalendarButtons, ContactLine, InviteBlock, PayBlock, inviteMessage, usePageTitle } from './shared';
 import { isPriced } from '@/lib/money';
+import { DetailsLink } from './MeetingDetails';
 
 /** #/m/:token — the participant's own registration, from the personal link they got when registering. */
 export function ManagePage() {
@@ -146,6 +147,7 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
         {active && upcoming && r.status === 'registered' && (
           <div className="mt-4"><CalendarButtons event={e} /></div>
         )}
+        {e.status !== 'cancelled' && upcoming && <DetailsLink event={e} className="mt-2" />}
       </EventTicket>
 
       {active && upcoming && r.status === 'registered' && (

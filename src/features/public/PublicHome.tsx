@@ -9,6 +9,7 @@ import { EventTicket, availability } from './EventTicket';
 import { activityText, keepName, lectureText, timeRange } from './eventText';
 import { trackingQuery } from './tracking';
 import { Hero, Slogan } from './Hero';
+import { DetailsLink } from './MeetingDetails';
 import { H2 } from './friday/sections';
 import hills from '@/assets/photos/hills.webp';
 
@@ -74,6 +75,8 @@ export function PublicHome() {
                   <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
                 </ButtonLink>
                 {cta(next) === 'להרשמה' && <p className="mt-2 text-[0.9375rem] text-muted">ההרשמה לוקחת פחות מדקה.</p>}
+                {/* above the button's whole-card link (its ::after overlay) */}
+                <DetailsLink event={next} query={query} className="relative z-[1] mt-1" />
               </EventTicket>
             </section>
             {rest.length > 0 && (

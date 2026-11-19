@@ -34,6 +34,12 @@ export type Speaker = {
   full_name: string;
   topic: string | null;
   bio_line: string | null;
+  /** The chip on the public meeting page ("מרצה אורחת"), up to 30 characters. */
+  role_label: string | null;
+  /** A few words for the public meeting page, up to 600 characters. */
+  about: string | null;
+  /** Object path of the photo in the public Storage bucket `people` (published only with the person's consent). */
+  photo_path: string | null;
   phone: string | null;
   social_url: string | null;
   status: 'proposed' | 'approved' | 'declined' | 'archived';
@@ -72,6 +78,8 @@ export type EventRow = {
   /** The provider's hosted payment page (https). Payment never happens in this app. */
   payment_url: string | null;
   payment_note: string | null;
+  /** What the lecture is about, on the public meeting page; up to 600 characters. */
+  lecture_description: string | null;
 };
 
 export type EventStats = {
@@ -282,6 +290,23 @@ export type PublicEvent = {
   payment_note?: string | null;
   invited_by?: string | null;
   ref_source?: string | null;
+  /** What the lecture is about (meeting details view). */
+  lecture_description?: string | null;
+  /** The approved instructor, then the approved speaker (meeting details view). */
+  people?: PublicPerson[];
+};
+
+/** One person on the public meeting page. Only approved people; never a phone, notes or a social link. */
+export type PublicPerson = {
+  role: 'instructor' | 'speaker';
+  name: string;
+  /** role_label: the chip text, or null for the neutral default */
+  label: string | null;
+  /** bio_line: one short line on the card */
+  line: string | null;
+  about: string | null;
+  /** object path in the public bucket `people` */
+  photo_path: string | null;
 };
 
 // ── event preparation and volunteers (migration 20261106002200_event_prep.sql) ──
