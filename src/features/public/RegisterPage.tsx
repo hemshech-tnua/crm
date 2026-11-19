@@ -12,7 +12,7 @@ import { DetailsButton, MeetingSheet, useDetailsSheet } from './MeetingDetails';
 import { Glyph } from './marks';
 import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
-import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
+import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, type Payer, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { fmtMoney, isPriced } from '@/lib/money';
 
@@ -35,6 +35,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const event = usePublicEvent(code, ref);
   const sources = usePublicSources();
   const [done, setDone] = useState<RegisterResult | null>(null);
+  const [payer, setPayer] = useState<Payer | null>(null);
   const home = `/${trackingQuery(params)}`;
   const sheet = useDetailsSheet();
   usePageTitle(pageTitle(done, event.data));
@@ -45,7 +46,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   if (done && event.data) {
     return (
       <>
-        <Registered result={done} event={done.event ?? event.data} onAnother={() => { setDone(null); window.scrollTo(0, 0); }} onDetails={sheet.show} />
+        <Registered result={done} event={done.event ?? event.data} payer={payer} onAnother={() => { setDone(null); setPayer(null); window.scrollTo(0, 0); }} onDetails={sheet.show} />
         {details}
       </>
     );
@@ -94,7 +95,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
         ) : sources.isPending ? (
           <Skeleton lines={6} />
         ) : (
-          <RegisterForm event={e} sources={sources.data} refCode={ref} utm={utm} onDone={setDone} />
+          <RegisterForm event={e} sources={sources.data} refCode={ref} utm={utm} onDone={(r, who) => { setPayer(who); setDone(r); }} />
         )}
       </div>
       {details}
@@ -134,7 +135,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
   sources: PublicSource[];
   refCode: string | null;
   utm: Record<string, string>;
-  onDone: (r: RegisterResult) => void;
+  onDone: (r: RegisterResult, payer: Payer) => void;
 }) {
   // arriving through a friend's personal link: "a friend brought me" is already chosen
   const friendKey = refCode?.startsWith('f-') ? (sources.find((s) => s.is_friend)?.key ?? '') : '';
@@ -152,9 +153,10 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
     if (busy || !form.check()) return;
     setBusy(true);
     try {
+      const person = form.payload(sources);
       const res = await registerFor({
         event: event.code,
-        ...form.payload(sources),
+        ...person,
         ref: refCode,
         utm: Object.keys(utm).length ? utm : undefined,
       });
@@ -165,7 +167,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       }
       saveToken(res.event?.code ?? event.code, res.token, res.first_name);
       void qc.invalidateQueries({ queryKey: ['pub', 'events'] });
-      onDone(res);
+      onDone(res, { name: person.full_name, phone: person.phone });
     } catch (err) {
       setBusy(false);
       if (form.serverError(err)) return;
@@ -212,7 +214,7 @@ function ownSaved(code: string, firstName: string | null | undefined): string | 
   return saved.length === 1 ? saved[0].token : null;
 }
 
-function Registered({ result: r, event, onAnother, onDetails }: { result: RegisterResult; event: PublicEvent; onAnother: () => void; onDetails: () => void }) {
+function Registered({ result: r, event, payer, onAnother, onDetails }: { result: RegisterResult; event: PublicEvent; payer: Payer | null; onAnother: () => void; onDetails: () => void }) {
   const another = (
     <button type="button" onClick={onAnother} className="min-h-11 self-center px-3 font-semibold text-balance text-tide underline underline-offset-4">
       הרשמה של עוד מישהו מהטלפון הזה
@@ -275,7 +277,7 @@ function Registered({ result: r, event, onAnother, onDetails }: { result: Regist
           )
         )}
       </div>
-      {!again && <PayBlock event={event} />}
+      {!again && <PayBlock event={event} payer={payer} />}
       <EventTicket event={event} highlight showStatus={false}>
         <p className="mt-4 text-[0.9375rem] font-medium text-pretty text-ink">
           עוד צעד קטן: מכניסים ליומן עכשיו, כדי ש{event.type === 'friday' ? 'השישי הזה' : 'המפגש'} לא ייבלע&nbsp;בשבוע.

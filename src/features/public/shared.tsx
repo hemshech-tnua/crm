@@ -297,7 +297,10 @@ export function ContactLine({ inline = false }: { inline?: boolean }) {
  * provider's own secure page, opened as a normal link: no card details ever pass through this site. Without a link,
  * the fee is paid at the entrance. Nothing is shown for a free meeting.
  */
-export function PayBlock({ event, className = '' }: { event: PublicEvent; className?: string }) {
+export { payUrl, type Payer } from './payUrl';
+import { payUrl, type Payer } from './payUrl';
+
+export function PayBlock({ event, payer = null, className = '' }: { event: PublicEvent; payer?: Payer | null; className?: string }) {
   if (!isPriced(event.price)) return null;
   const amount = fmtMoney(event.price);
   return (
@@ -305,13 +308,19 @@ export function PayBlock({ event, className = '' }: { event: PublicEvent; classN
       <SectionTitle>דמי השתתפות: <span className="num">{amount}</span></SectionTitle>
       {event.payment_url ? (
         <>
-          <ExternalButton href={event.payment_url} variant="primary" size="lg" cta className="mt-3 w-full sm:w-auto">
+          <ExternalButton href={payUrl(event.payment_url, payer)} variant="primary" size="lg" cta className="mt-3 w-full sm:w-auto">
             לתשלום <span className="num">{amount}</span>
           </ExternalButton>
           {/* one payment link serves everyone, so the team matches payments to registrations by name and phone */}
-          <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
-            בדף התשלום כתבו את אותו שם ואותו טלפון שנרשמתם איתם, כדי שנדע לסמן שהתשלום שלכם&nbsp;התקבל.
-          </p>
+          {payUrl(event.payment_url, payer) !== event.payment_url ? (
+            <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
+              השם והטלפון כבר ממולאים בדף התשלום. נשאר רק להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.
+            </p>
+          ) : (
+            <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
+              בדף התשלום כתבו את אותו שם ואותו טלפון שנרשמתם איתם, כדי שנדע לסמן שהתשלום שלכם&nbsp;התקבל.
+            </p>
+          )}
           <p className="mt-2 text-[0.9375rem] text-ink-soft">
             התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך בקישור האישי או בכניסה למפגש.
           </p>
