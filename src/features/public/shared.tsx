@@ -308,7 +308,11 @@ export function PayBlock({ event, className = '' }: { event: PublicEvent; classN
           <ExternalButton href={event.payment_url} variant="primary" size="lg" cta className="mt-3 w-full sm:w-auto">
             לתשלום <span className="num">{amount}</span>
           </ExternalButton>
-          <p className="mt-3 text-[0.9375rem] text-ink-soft">
+          {/* one payment link serves everyone, so the team matches payments to registrations by name and phone */}
+          <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
+            בדף התשלום כתבו את אותו שם ואותו טלפון שנרשמתם איתם, כדי שנדע לסמן שהתשלום שלכם&nbsp;התקבל.
+          </p>
+          <p className="mt-2 text-[0.9375rem] text-ink-soft">
             התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך בקישור האישי או בכניסה למפגש.
           </p>
         </>
