@@ -60,7 +60,8 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
   const start = new Date(event.starts_at);
   const activity = agenda ? activityText(event) : null;
   const lecture = agenda ? lectureText(event) : null;
-  const more = detailed && (event.speaker_bio || event.description);
+  // the speaker's line lives on their card in «כל הפרטים על המפגש»; under the ticket only the meeting's own description
+  const more = detailed && event.description;
   const status = availability(event);
   return (
     <article className={cx('flex flex-wrap overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper', className)}>
@@ -103,10 +104,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
       </div>
       {more && (
         <div className="basis-full border-t border-edge px-4 py-3 sm:px-5 sm:py-4">
-          {event.speaker_bio && <p className="text-sm leading-relaxed text-muted">{keepName(event.speaker_bio)}</p>}
-          {event.description && (
-            <p className={cx('whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft', event.speaker_bio && 'mt-2')}>{keepName(event.description)}</p>
-          )}
+          <p className="whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft">{keepName(event.description ?? '')}</p>
         </div>
       )}
     </article>
