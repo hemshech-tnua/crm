@@ -42,7 +42,7 @@ export function PublicHome() {
       >
         <p>
           <span className="whitespace-nowrap">המשך תנועה</span> היא הבית ללוחמים וללוחמות אחרי&nbsp;השירות. בשישי&nbsp;בבוקר: אימון,
-          הרצאה וארוחת&nbsp;בוקר ביחד.
+          קפה ונשנושים והרצאת&nbsp;אורח.
         </p>
         <ButtonLink to={`/friday${query}`} variant="light" size="lg" cta className="mt-4 w-full sm:mt-5 sm:w-auto" data-testid="home-friday">
           לבוקר השישי הקרוב

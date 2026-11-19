@@ -67,8 +67,8 @@ export function program(e: PublicEvent | null, facts = FRIDAY_FACTS): ProgramIte
         : (e && activityText(e)) || 'יוגה או אימון פונקציונלי',
       note: facts.allLevels ? 'מתאים לכל רמות הכושר.' : null,
     },
-    { time: null, title: 'הרצאת אורח', detail: (e && lectureText(e)) ?? null },
-    { time: e ? fmtTime(e.ends_at) : '11:30', until: true, title: 'קפה, ארוחת בוקר וזמן ביחד', detail: 'בלי לחץ. יושבים, מדברים, מכירים.' },
+    { time: null, title: 'קפה ונשנושים', detail: 'בלי לחץ. יושבים, מדברים, מכירים.' },
+    { time: e ? fmtTime(e.ends_at) : '11:30', until: true, title: 'הרצאת אורח', detail: (e && lectureText(e)) ?? null },
   ];
 }
 

@@ -29,7 +29,7 @@ export type PostContent = {
   /** "9:00–11:30" (drawn left-to-right) */
   time: string;
   place: string;
-  /** "יוגה · הרצאת אורח · ארוחת בוקר · זמן ביחד" */
+  /** "יוגה · קפה ונשנושים · הרצאת אורח" */
   program: string;
   speakerName: string;
   topic: string;
@@ -149,7 +149,7 @@ export function wrapBalanced(ctx: CanvasRenderingContext2D, text: string, maxWid
 }
 
 /**
- * Wraps a list ("יוגה · הרצאת אורח · ארוחת בוקר") only between items, so a "·" never dangles at a line end; balanced
+ * Wraps a list ("יוגה · קפה ונשנושים · הרצאת אורח") only between items, so a "·" never dangles at a line end; balanced
  * like wrapBalanced. Falls back to a word wrap when one item is wider than the line on its own.
  */
 export function wrapItems(ctx: CanvasRenderingContext2D, items: string[], maxWidth: number, maxLines = Infinity, sep = ' · '): string[] {
@@ -1043,7 +1043,7 @@ export type CaptionInput = {
   description: string;
 };
 
-/** "יוגה, הרצאת אורח, ארוחת בוקר וזמן ביחד" */
+/** "יוגה, קפה ונשנושים והרצאת אורח" */
 export function joinHe(items: string[]): string {
   const xs = items.map((s) => s.trim()).filter(Boolean);
   if (xs.length <= 1) return xs[0] ?? '';
@@ -1051,7 +1051,7 @@ export function joinHe(items: string[]): string {
 }
 
 export function programItems(type: CaptionInput['type'], activity: string, hasSpeaker: boolean): string[] {
-  if (type === 'friday') return [activity, hasSpeaker ? 'הרצאת אורח' : '', 'ארוחת בוקר', 'זמן ביחד'].filter(Boolean);
+  if (type === 'friday') return [activity, 'קפה ונשנושים', hasSpeaker ? 'הרצאת אורח' : ''].filter(Boolean);
   return [activity].filter(Boolean);
 }
 

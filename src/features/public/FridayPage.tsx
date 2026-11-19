@@ -23,10 +23,10 @@ import { AskUs, ClosingBand, Faq, FlyerSection, ForWhom, Greeter, H2, LowThresho
   While FLYER is null the "הפלייר" section is not rendered at all.
 */
 const FLYER: string | null = null;
-const FLYER_ALT = 'הפלייר של מפגשי שישי של המשך תנועה: אימון, הרצאת אורח וארוחת בוקר ביחד, ללוחמים וללוחמות אחרי השירות';
+const FLYER_ALT = 'הפלייר של מפגשי שישי של המשך תנועה: אימון, קפה ונשנושים והרצאת אורח, ללוחמים וללוחמות אחרי השירות';
 
 /** The WhatsApp text of the closing band (the page link follows on its own line). */
-const SHARE_MESSAGE = 'חשבתי עליך. יש בשישי בבוקר מפגש של לוחמים ולוחמות אחרי השירות: אימון, הרצאה וארוחת בוקר. נראה לי שזה בשבילך.';
+const SHARE_MESSAGE = 'חשבתי עליך. יש בשישי בבוקר מפגש של לוחמים ולוחמות אחרי השירות: אימון, קפה ונשנושים והרצאה. נראה לי שזה בשבילך.';
 
 /** The kicker over the slogan: the dot sits with the first part, and each part stays whole when the line wraps. */
 const KICKER = (
@@ -56,7 +56,7 @@ export function FridayPage() {
   return (
     <div>
       <Hero photo={hills} position="50% 74%" kicker={KICKER} title={<Slogan />}>
-        <p>אימון, הרצאה וקפה, עם אנשים שהיו&nbsp;שם. באים לבד או עם חברים, כמו&nbsp;שאתם.</p>
+        <p>אימון, קפה והרצאה, עם אנשים שהיו&nbsp;שם. באים לבד או עם חברים, כמו&nbsp;שאתם.</p>
         {plan.next && (
           <p className="mt-4 hidden font-display text-section text-light sm:block">
             {fmtDayLong(plan.next.starts_at)} · <span className="num">{fmtTime(plan.next.starts_at)}</span>

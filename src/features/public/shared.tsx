@@ -118,7 +118,7 @@ export function inviteMessage(event: PublicEvent | null): string {
     const of = /המשך תנועה/.test(event.title) ? '' : ' של המשך תנועה';
     return `נרשמתי ל${event.title}${of}, ${fmtDayLong(event.starts_at)} ב-${fmtTime(event.starts_at)}. בא לך לבוא איתי? ככה אף אחד מאיתנו לא מגיע לבד.`;
   }
-  return 'שמעת על המשך תנועה? מפגשי שישי ללוחמים וללוחמות: תנועה, הרצאה, ארוחת בוקר וחברים. בא לך לבוא איתי? כל המפגשים הקרובים כאן:';
+  return 'שמעת על המשך תנועה? מפגשי שישי ללוחמים וללוחמות: אימון, קפה ונשנושים והרצאה. בא לך לבוא איתי? כל המפגשים הקרובים כאן:';
 }
 
 /** "Invite a friend": the personal link (so the friend counts as brought by you). Web Share when the phone has it. */
