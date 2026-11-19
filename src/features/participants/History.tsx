@@ -39,7 +39,7 @@ export function History({ regs, feedback, contacts, tasks, staffName }: {
       out.push({
         key: `r-${r.id}`,
         at: r.event.starts_at,
-        dot: r.attendance === 'attended' ? 'attended' : r.attendance === 'no_show' ? 'missed' : future && r.status !== 'cancelled' ? 'next' : 'plain',
+        dot: r.attendance === 'attended' ? 'attended' : r.attendance === 'no_show' ? 'missed' : future && (r.status === 'registered' || r.status === 'waitlisted') ? 'next' : 'plain',
         icon: r.event.type === 'bonfire' ? 'flame' : 'calendar',
         node: <RegItem r={r} fb={fb} future={future} />,
       });
@@ -130,6 +130,7 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
   const badges: ReactNode[] = [];
   if (r.status === 'cancelled') badges.push(<Badge key="s">{r.cancelled_by === 'staff' ? 'בוטל ע״י הצוות' : 'ביטול עצמי'}</Badge>);
   else if (r.status === 'waitlisted') badges.push(<Badge key="s" tone="warn" icon="alert">ברשימת המתנה</Badge>);
+  else if (r.status === 'pending_payment') badges.push(<Badge key="s" tone="warn" icon="alert">ההרשמה לא הושלמה: לא שולם</Badge>);
   else if (r.attendance === 'attended') badges.push(<Badge key="s" tone="good" icon="check">הגעה</Badge>);
   else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="bad" icon="alert">אי־הגעה</Badge>);
   else badges.push(<Badge key="s" tone={future ? 'light' : 'neutral'}>{future ? 'הרשמה פעילה' : 'טרם סומן'}</Badge>);

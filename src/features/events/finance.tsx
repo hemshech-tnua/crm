@@ -17,6 +17,8 @@ export type EventFinance = {
   price: number | null;
   has_payment_link: boolean;
   registered: number;
+  /** started a pay-first registration and never paid: not registered, not income */
+  started_unpaid?: number;
   income: {
     expected: number; collected: number; paid_count: number; pending_count: number; pending_amount: number;
     waived_count: number; refunded_count: number; refunded_amount: number;
@@ -157,13 +159,100 @@ function PaymentForm({ target: t, event, onClose }: { target: PaymentTarget; eve
   );
 }
 
+// ───────────── the manual "אישור תשלום" of a pending registration ─────────────
+
+export type ConfirmTarget = { id: string; name: string | null };
+
+/**
+ * A backup for the provider's webhook: the team saw the payment (in "יש חשבונית") and confirms it here. The registration is
+ * marked paid and registered, or put on the waitlist when the meeting filled up meanwhile (staff_confirm_payment).
+ */
+export function ConfirmPaymentDialog({ target, event, onClose }: { target: ConfirmTarget | null; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void }) {
+  return (
+    <Dialog open={!!target} onClose={onClose} title={target?.name ? `אישור תשלום: ${target.name}` : 'אישור תשלום'} size="sm">
+      {target && <ConfirmForm key={target.id} target={target} event={event} onClose={onClose} />}
+    </Dialog>
+  );
+}
+
+function ConfirmForm({ target: t, event, onClose }: { target: ConfirmTarget; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void }) {
+  const toast = useToast();
+  const invalidate = useInvalidateEvent();
+  const [amount, setAmount] = useState(isPriced(event.price) ? String(Number(event.price)) : '');
+  const [ref, setRef] = useState('');
+  const [errors, setErrors] = useState<{ amount?: string; form?: string }>({});
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('staff_confirm_payment', {
+        p_registration_id: t.id, p_amount: parseAmount(amount), p_ref: ref.trim() || null, p_method: 'card',
+      });
+      if (error) throw error;
+      return (data as { status: RegStatus }).status;
+    },
+    onSuccess: async (status) => {
+      await invalidate(event.id);
+      if (status === 'waitlisted') toast.success(`${t.name ?? ''}: התשלום אושר, אבל המפגש מלא. ההרשמה נכנסה לרשימת ההמתנה, ונפתחה משימה.`);
+      else toast.success(`${t.name ?? ''}: התשלום אושר וההרשמה הושלמה`);
+      onClose();
+    },
+    onError: (err) => (errorCode(err) === 'invalid_amount' ? setErrors({ amount: errorMessage(err) }) : setErrors({ form: errorMessage(err) })),
+  });
+
+  const submit = (ev: FormEvent) => {
+    ev.preventDefault();
+    const v = parseAmount(amount);
+    if (v == null || Number.isNaN(v) || v <= 0 || v > 100000) {
+      setErrors({ amount: 'צריך סכום חיובי, למשל 20.' });
+      return;
+    }
+    setErrors({});
+    save.mutate();
+  };
+
+  return (
+    <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <p className="text-body text-ink-soft">
+        לאשר רק אחרי שרואים את התשלום ב"יש חשבונית". ההרשמה תושלם מיד, ואם המפגש התמלא בינתיים היא תיכנס לרשימת ההמתנה.
+      </p>
+      <Input
+        label="סכום ששולם (₪)"
+        inputMode="decimal"
+        ltr
+        className="num"
+        value={amount}
+        onChange={(x) => { setAmount(x.target.value); setErrors({}); }}
+        error={errors.amount}
+        hint={isPriced(event.price) ? `דמי ההשתתפות: ${fmtMoney(event.price)}` : undefined}
+      />
+      <Input
+        label="אסמכתה (לא חובה)"
+        value={ref}
+        onChange={(x) => setRef(x.target.value)}
+        maxLength={100}
+        hint={`מספר הקבלה ב"יש חשבונית"`}
+      />
+      {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button type="submit" icon="check" busy={save.isPending}>אישור תשלום</Button>
+        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+      </div>
+    </form>
+  );
+}
+
 // ───────────── the meeting's money ─────────────
 
 /**
  * Income (expected, collected, still owed) and expenses (the meeting's supplier payments). Shown for a meeting with a
  * fee, and for a free one that has expenses or took money.
  */
-export function FinancePanel({ e, onUnpaid, onExpenses }: { e: Pick<EventRow, 'id' | 'price'>; onUnpaid?: () => void; onExpenses?: () => void }) {
+export function FinancePanel({ e, onUnpaid, onStarted, onExpenses }: {
+  e: Pick<EventRow, 'id' | 'price'>; onUnpaid?: () => void;
+  /** to the registrations that started and were never paid */
+  onStarted?: () => void;
+  onExpenses?: () => void;
+}) {
   const q = useEventFinance(e.id);
   const f = q.data;
   if (!f || (!isPriced(f.price) && f.expenses.count === 0 && f.income.collected <= 0)) return null;
@@ -204,6 +293,12 @@ export function FinancePanel({ e, onUnpaid, onExpenses }: { e: Pick<EventRow, 'i
           sub={<>נגבה פחות הוצאות ששולמו · צפי <span className="num" dir="ltr">{fmtMoney(f.projected_net)}</span></>}
         />
       </section>
+      {!!f.started_unpaid && (
+        <p className="mt-3 text-small text-ink-soft">
+          <span className="num font-bold text-ink">{f.started_unpaid}</span> התחילו הרשמה ולא שילמו. הם לא נספרים ברשומים ולא בהכנסות.{' '}
+          {onStarted && <button type="button" className="font-semibold text-tide underline underline-offset-2" onClick={onStarted}>לרשימה</button>}
+        </p>
+      )}
     </Panel>
   );
 }

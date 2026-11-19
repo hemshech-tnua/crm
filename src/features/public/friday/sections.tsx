@@ -347,7 +347,7 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             {isPriced(price) ? (
               <>
                 ההשתתפות עולה <span className="num font-semibold text-ink">{fmtMoney(price)}</span>.{' '}
-                {event?.payment_url ? 'התשלום מתבצע אחרי ההרשמה, בקישור לתשלום מאובטח.' : 'התשלום מתבצע בכניסה למפגש.'}
+                {event?.payment_url ? 'משלמים בהרשמה, בכרטיס אשראי, וההרשמה מאושרת מיד אחרי התשלום.' : 'התשלום מתבצע בכניסה למפגש.'}
                 {note && <> {endSentence(note)}</>}
               </>
             ) : price === 0 ? (

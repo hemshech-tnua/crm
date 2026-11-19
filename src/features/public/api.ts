@@ -6,7 +6,11 @@ import type { Attendance, Membership, PaymentStatus, PublicEvent, RegStatus } fr
 
 export type PublicSource = { key: string; label: string; is_friend: boolean; asks_detail: boolean };
 
-export type RegisterStatus = 'registered' | 'waitlisted' | 'already_registered' | 'already_waitlisted' | 'phone_in_use';
+/**
+ * 'pending_payment': a meeting with a fee and a payment link. Nothing is held until the provider confirms the payment;
+ * the token lets the page watch for that.
+ */
+export type RegisterStatus = 'registered' | 'waitlisted' | 'pending_payment' | 'already_registered' | 'already_waitlisted' | 'phone_in_use';
 export type RegisterResult = {
   status: RegisterStatus;
   first_name: string | null;
@@ -27,6 +31,9 @@ export type RegistrationInfo = {
   feedback_given: boolean;
   /** 'pending' at a priced meeting until the team (or the provider) marks it paid. */
   payment_status?: PaymentStatus;
+  /** For 'pending_payment' only: the name and phone as typed, to fill in the payment page. */
+  full_name?: string | null;
+  phone?: string | null;
   event: PublicEvent;
 };
 
@@ -104,11 +111,24 @@ export const usePublicEvent = (code: string, ref: string | null) =>
 export const usePublicSources = () =>
   useQuery({ queryKey: ['pub', 'sources'], retry, staleTime: 10 * 60_000, queryFn: () => rpc<PublicSource[]>('public_sources') });
 
-export const useRegistration = (token: string | null) =>
+/** While a payment is awaited the page asks again every 5 s, only while the tab is visible, for up to 30 minutes. */
+export const PAYMENT_POLL_MS = 5_000;
+export const PAYMENT_POLL_FOR_MS = 30 * 60_000;
+
+/**
+ * The registration behind a personal token. With `watchPaymentSince` (when the watching started), a pending payment is
+ * checked again on its own until it turns into a place (or the 30 minutes pass).
+ */
+export const useRegistration = (token: string | null, watchPaymentSince?: number) =>
   useQuery({
     queryKey: ['pub', 'registration', token],
     enabled: !!token,
     retry,
+    refetchInterval: (q) =>
+      watchPaymentSince != null && q.state.data?.status === 'pending_payment' && Date.now() - watchPaymentSince < PAYMENT_POLL_FOR_MS
+        ? PAYMENT_POLL_MS
+        : false,
+    refetchIntervalInBackground: false,
     queryFn: () => rpc<RegistrationInfo>('public_registration', { p_token: token }),
   });
 
@@ -136,7 +156,8 @@ export const useFeedbackContext = (by: { token: string } | { event: string }) =>
     queryFn: () => rpc<FeedbackContext>('public_feedback_context', { p: by }),
   });
 
-export const registerFor = (p: PersonPayload & { event: string; ref?: string | null; utm?: Record<string, string> }) =>
+/** `token`: this phone's saved link for the same person, so asking again keeps the same link while it is unpaid. */
+export const registerFor = (p: PersonPayload & { event: string; ref?: string | null; utm?: Record<string, string>; token?: string | null }) =>
   rpc<RegisterResult>('public_register', { p });
 
 export const cancelRegistration = (token: string, reason: string | null) =>

@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router';
 import { useRole } from '@/lib/auth';
 import { PageHeader, Tabs } from '@/ui/kit';
 import { GeneralSettings } from './GeneralSettings';
+import { PaymentWebhookPanel } from './PaymentWebhook';
 import { UsersSettings } from './UsersSettings';
 import { TemplatesSettings } from './TemplatesSettings';
 import { SourcesSettings, SitesSettings } from './ListsSettings';
@@ -41,7 +42,12 @@ export function SettingsPage() {
     <>
       <PageHeader title="הגדרות" subtitle={admin ? 'יעדים, משתמשים, הודעות, מקורות ופרטיות.' : 'קישורי ההרשמה לפי ערוץ, והחשבון שלך.'} />
       <Tabs<Tab> label="הגדרות" value={tab} onChange={setTab} tabs={tabs} />
-      {tab === 'general' && <GeneralSettings />}
+      {tab === 'general' && (
+        <div className="flex flex-col gap-5">
+          <GeneralSettings />
+          <PaymentWebhookPanel />
+        </div>
+      )}
       {tab === 'users' && <UsersSettings />}
       {tab === 'templates' && <TemplatesSettings />}
       {tab === 'links' && <LinksSettings />}

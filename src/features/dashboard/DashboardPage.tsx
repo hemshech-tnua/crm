@@ -31,6 +31,8 @@ type Attention = {
   name_mismatches?: { registration_id: string; event_id: string; event_title: string; starts_at: string; participant_id: string; card_name: string; typed_name: string }[];
   /** Meetings that ended 24 hours ago (up to a week), with thank-you messages not sent yet. */
   aftercare?: { id: string; title: string; starts_at: string; pending: number; join_invites: number }[];
+  /** payments from "יש חשבונית" that matched no pending registration */
+  unmatched_payments?: number;
 };
 
 type SourceRow = { source_id: string | null; label: string; is_friend: boolean; participants: number; returned: number; registered_only: number };
@@ -252,6 +254,7 @@ function AttentionList({ a }: { a: Attention }) {
   capped(mism,
     (m) => ({ icon: 'alert', tone: 'warn', text: <>הרשמה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
     (n) => ({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: '/app/events', action: 'למפגשים' }));
+  if (a.unmatched_payments) items.push({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{a.unmatched_payments}</span> תשלומים מ"יש חשבונית" לא זוהו ומחכים לשיוך להרשמה</>, to: '/app/reports?tab=finance', action: 'לשיוך' });
   if (a.proposals_pending) items.push({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{a.proposals_pending}</span> הצעות להרצאה או הדרכה מחכות לאישור</>, to: '/app/speakers?tab=proposed', action: 'לצפייה' });
   if (a.followups_mine) items.push({ icon: 'task', tone: 'tide', text: <><span className="num font-bold">{a.followups_mine}</span> משימות פתוחות משויכות אליך</>, to: '/app/followups', action: 'למשימות שלי' });
 

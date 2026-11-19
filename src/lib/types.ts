@@ -1,7 +1,8 @@
 export type Role = 'admin' | 'coordinator' | 'volunteer';
 export type EventType = 'friday' | 'bonfire' | 'other';
 export type EventStatus = 'draft' | 'open' | 'closed' | 'completed' | 'cancelled';
-export type RegStatus = 'registered' | 'waitlisted' | 'cancelled';
+/** 'pending_payment': started at a meeting with a fee and a payment link, not paid yet. Holds no place and is not counted. */
+export type RegStatus = 'registered' | 'waitlisted' | 'cancelled' | 'pending_payment';
 export type Attendance = 'unknown' | 'attended' | 'no_show';
 /** none: a free meeting (or before fees); pending: owes the fee; waived: let in free; refunded: paid and given back. */
 export type PaymentStatus = 'none' | 'pending' | 'paid' | 'waived' | 'refunded';
@@ -185,7 +186,7 @@ export type FollowUp = {
   id: string;
   participant_id: string;
   event_id: string | null;
-  type: 'no_show' | 'first_time' | 'lapsed' | 'waitlist' | 'general' | 'membership';
+  type: 'no_show' | 'first_time' | 'lapsed' | 'waitlist' | 'general' | 'membership' | 'payment';
   title: string;
   notes: string | null;
   due_date: string | null;

@@ -1,4 +1,4 @@
-import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Link, type LinkProps } from 'react-router';
 import { Icon, type IconName } from './Icon';
 import { Stripes, Tri } from './Shapes';
@@ -456,8 +456,19 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
 export function FilterChips<T extends string>({ options, value, onChange, label, className = '' }: {
   options: { value: T; label: ReactNode; count?: number; title?: string }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
 }) {
+  // on a phone the chips scroll sideways: keep the chosen one in view (e.g. a filter opened from a link)
+  const strip = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const c = strip.current;
+    const b = c?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!c || !b || c.scrollWidth <= c.clientWidth) return;
+    const cr = c.getBoundingClientRect();
+    const br = b.getBoundingClientRect();
+    if (br.left < cr.left + 16) c.scrollLeft -= cr.left + 16 - br.left;
+    else if (br.right > cr.right - 16) c.scrollLeft += br.right - (cr.right - 16);
+  }, [value]);
   return (
-    <div role="group" aria-label={label} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [mask-image:linear-gradient(to_right,transparent,#000_28px)] sm:mx-0 sm:flex-wrap sm:px-0 sm:[mask-image:none]', className)}>
+    <div ref={strip} role="group" aria-label={label} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [mask-image:linear-gradient(to_right,transparent,#000_28px)] sm:mx-0 sm:flex-wrap sm:px-0 sm:[mask-image:none]', className)}>
       {options.map((o) => {
         const on = o.value === value;
         return (

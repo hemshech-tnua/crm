@@ -293,9 +293,11 @@ export function ContactLine({ inline = false }: { inline?: boolean }) {
 }
 
 /**
- * The participation fee after registering (and on the personal page while it is unpaid). Payment happens only on the
- * provider's own secure page, opened as a normal link: no card details ever pass through this site. Without a link,
- * the fee is paid at the entrance. Nothing is shown for a free meeting.
+ * The participation fee of a registered place that is still unpaid (on the personal page, for a place the team gave or a
+ * promotion from the waitlist), and after registering at a meeting without a link. Payment happens only on the
+ * provider's own secure page, opened as a normal link: no card details ever pass through this site. Without a link, the
+ * fee is paid at the entrance; with one it is paid online only (a meeting with a link registers through the pay step,
+ * PayStep.tsx). Nothing is shown for a free meeting.
  */
 export { payUrl, type Payer } from './payUrl';
 import { payUrl, type Payer } from './payUrl';
@@ -322,7 +324,7 @@ export function PayBlock({ event, payer = null, className = '' }: { event: Publi
             </p>
           )}
           <p className="mt-2 text-[0.9375rem] text-ink-soft">
-            התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך בקישור האישי או בכניסה למפגש.
+            התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך בקישור&nbsp;האישי.
           </p>
         </>
       ) : (

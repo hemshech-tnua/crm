@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { allEventsUrl, registerUrl } from '@/lib/links';
-import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Skeleton, Textarea } from '@/ui/kit';
+import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, Skeleton, Textarea } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
 import { cancelRegistration, useFeedbackContext, useRegistration, type RegistrationInfo } from './api';
 import { forgetToken, saveToken } from './device';
@@ -12,12 +12,19 @@ import { FeedbackForm } from './FeedbackForm';
 import { Block, CalendarButtons, ContactLine, InviteBlock, PayBlock, inviteMessage, usePageTitle } from './shared';
 import { isPriced } from '@/lib/money';
 import { DetailsLink } from './MeetingDetails';
+import { PayStep, useWatchExpired } from './PayStep';
 
 /** #/m/:token — the participant's own registration, from the personal link they got when registering. */
 export function ManagePage() {
   const { token = '' } = useParams();
-  const reg = useRegistration(token);
-  usePageTitle('ההרשמה שלי');
+  // a pending payment is watched: the page turns into the registration by itself once the payment arrives
+  const [since] = useState(() => Date.now());
+  const reg = useRegistration(token, since);
+  const expired = useWatchExpired(since);
+  // the payment arrived while this page was open: say so on the registration
+  const [sawPending, setSawPending] = useState(false);
+  if (reg.data?.status === 'pending_payment' && !sawPending) setSawPending(true);
+  usePageTitle(reg.data?.status === 'pending_payment' ? 'תשלום ההרשמה' : 'ההרשמה שלי');
 
   // keep the token on this phone so check-in at the door is one tap (no name or phone is stored)
   const code = reg.data?.event.code;
@@ -43,7 +50,23 @@ export function ManagePage() {
     );
   }
 
-  return <Manage key={token} info={reg.data} token={token} />;
+  const r = reg.data;
+  const e = r.event;
+  if (r.status === 'pending_payment' && e.status !== 'cancelled' && e.payment_url && Number(e.price ?? 0) > 0
+      && new Date(e.starts_at).getTime() > Date.now()) {
+    return (
+      <PayStep
+        event={e}
+        payer={r.full_name && r.phone ? { name: r.full_name, phone: r.phone } : null}
+        token={token}
+        firstName={r.first_name}
+        expired={expired}
+        showLink={false}
+        onCheck={async () => (await reg.refetch()).data?.status === 'pending_payment'}
+      />
+    );
+  }
+  return <Manage key={token} info={r} token={token} justPaid={sawPending && r.payment_status === 'paid'} />;
 }
 
 function statusLine(r: RegistrationInfo): { badge: ReactNode; text: string } {
@@ -53,6 +76,15 @@ function statusLine(r: RegistrationInfo): { badge: ReactNode; text: string } {
     return {
       badge: <Badge>ההרשמה בוטלה</Badge>,
       text: e.registration_open ? 'התחרטת? אפשר להירשם שוב כל עוד יש מקום.' : 'תודה שעדכנת. נשמח לראות אותך במפגש הבא.',
+    };
+  }
+  if (r.status === 'pending_payment') {
+    return { badge: <Badge>ההרשמה לא הושלמה</Badge>, text: 'התשלום לא התקבל, ולכן ההרשמה לא הושלמה.' };
+  }
+  if (r.status === 'waitlisted' && r.payment_status === 'paid') {
+    return {
+      badge: <Badge tone="warn">ברשימת ההמתנה{r.waitlist_position != null && <> · מקום <span className="num">{r.waitlist_position}</span></>}</Badge>,
+      text: 'התשלום התקבל, אבל בינתיים כל המקומות נתפסו. הצוות יחזור אליך בהקדם, כדי למצוא מקום או להחזיר את התשלום.',
     };
   }
   if (r.status === 'waitlisted') {
@@ -67,7 +99,7 @@ function statusLine(r: RegistrationInfo): { badge: ReactNode; text: string } {
   return { badge: <Badge tone="good" icon="check">נרשמת</Badge>, text: 'ההרשמה שלך בתוקף. מחכים לך!' };
 }
 
-function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
+function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; token: string; justPaid?: boolean }) {
   const e = r.event;
   const qc = useQueryClient();
   const confirm = useConfirm();
@@ -77,7 +109,8 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
   const [error, setError] = useState<string | null>(null);
   const line = statusLine(r);
   const upcoming = new Date(e.starts_at).getTime() > Date.now();
-  const active = r.status !== 'cancelled' && e.status !== 'cancelled';
+  // a place, or a place in the queue (a registration that was never paid holds neither)
+  const active = (r.status === 'registered' || r.status === 'waitlisted') && e.status !== 'cancelled';
   const waitlisted = r.status === 'waitlisted';
   // the fee is asked only of a registered place (a waitlisted one pays if a place opens up)
   const priced = isPriced(e.price) && active && r.status === 'registered';
@@ -136,6 +169,9 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
           {paid && <Badge tone="good" icon="check">שולם, תודה</Badge>}
         </div>
         <p className="mt-2 text-[1.05rem] text-ink-soft">{line.text}</p>
+        {justPaid && r.status === 'registered' && (
+          <div className="mt-3"><Notice icon="check">התשלום התקבל. נרשמת!</Notice></div>
+        )}
         {r.status === 'cancelled' && e.registration_open && e.status !== 'cancelled' && (
           <ButtonLink to={`/r/${e.code}`} className="mt-3">להירשם שוב</ButtonLink>
         )}
@@ -162,7 +198,7 @@ function Manage({ info: r, token }: { info: RegistrationInfo; token: string }) {
 
       {invite && <InviteBlock url={invite.url} message={invite.message} />}
 
-      {r.can_cancel && r.status !== 'cancelled' && (
+      {r.can_cancel && active && (
         <Block title={waitlisted ? 'כבר לא צריך את המקום בתור?' : 'לא מסתדר לך להגיע?'}>
           <p className="text-[0.9375rem] text-ink-soft">
             {waitlisted ? 'אפשר לצאת מרשימת ההמתנה בלחיצה.' : 'עדכון מראש מפנה את המקום למי שמחכה. זה עוזר לכולם.'}

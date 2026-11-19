@@ -1,11 +1,11 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PublicEvent } from '@/lib/types';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { allEventsUrl, manageUrl, registerUrl } from '@/lib/links';
 import { Button, ButtonLink, EmptyState, ErrorBox, Notice, Skeleton } from '@/ui/kit';
-import { registerFor, usePublicEvent, usePublicSources, type PublicSource, type RegisterResult } from './api';
+import { registerFor, usePublicEvent, usePublicSources, useRegistration, type PublicSource, type RegisterResult } from './api';
 import { saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { DetailsButton, MeetingSheet, useDetailsSheet } from './MeetingDetails';
@@ -15,6 +15,7 @@ import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
 import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, type Payer, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { fmtMoney, isPriced } from '@/lib/money';
+import { PayStep, paysFirst, useWatchExpired } from './PayStep';
 
 const UTM_KEYS = ['source', 'medium', 'campaign'] as const;
 
@@ -36,6 +37,8 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const sources = usePublicSources();
   const [done, setDone] = useState<RegisterResult | null>(null);
   const [payer, setPayer] = useState<Payer | null>(null);
+  // the payment of a pay-first registration arrived while this page was open
+  const [paid, setPaid] = useState(false);
   const home = `/${trackingQuery(params)}`;
   const sheet = useDetailsSheet();
   usePageTitle(pageTitle(done, event.data));
@@ -44,9 +47,14 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   const details = shown ? <MeetingSheet event={shown} open={sheet.open} onClose={sheet.hide} /> : null;
 
   if (done && event.data) {
+    const another = () => { setDone(null); setPayer(null); setPaid(false); window.scrollTo(0, 0); };
     return (
       <>
-        <Registered result={done} event={done.event ?? event.data} payer={payer} onAnother={() => { setDone(null); setPayer(null); window.scrollTo(0, 0); }} onDetails={sheet.show} />
+        {done.status === 'pending_payment' ? (
+          <AwaitingPayment result={done} event={done.event ?? event.data} payer={payer} onPaid={(r) => { setPaid(true); setDone(r); }} />
+        ) : (
+          <Registered result={done} event={done.event ?? event.data} payer={payer} paid={paid} onAnother={another} onDetails={sheet.show} />
+        )}
         {details}
       </>
     );
@@ -107,6 +115,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
 function pageTitle(done: RegisterResult | null, e: PublicEvent | undefined): string | null {
   if (!e) return null;
   if (done) {
+    if (done.status === 'pending_payment') return `תשלום: ${e.title}`;
     if (done.status === 'waitlisted' || done.status === 'already_waitlisted') return `רשימת ההמתנה: ${e.title}`;
     return done.status === 'already_registered' ? `כבר נרשמת: ${e.title}` : `נרשמת: ${e.title}`;
   }
@@ -157,6 +166,8 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       const res = await registerFor({
         event: event.code,
         ...person,
+        // asking again from this phone while it is unpaid keeps the same personal link
+        token: paysFirst(event) ? ownSaved(event.code, person.full_name.trim().split(/\s+/)[0] ?? null) : null,
         ref: refCode,
         utm: Object.keys(utm).length ? utm : undefined,
       });
@@ -189,7 +200,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
         <p className="flex flex-wrap items-baseline gap-x-2 rounded-[var(--radius-control)] border-s-[3px] border-ink bg-mist px-3.5 py-2.5">
           <span className="font-bold">השתתפות: <span className="num">{fmtMoney(event.price)}</span></span>
           <span className="text-small text-ink-soft">
-            {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים אחרי ההרשמה, בקישור לתשלום.' : 'משלמים בכניסה למפגש.'}
+            {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים בהרשמה, בכרטיס אשראי, וההרשמה מאושרת מיד אחרי התשלום.' : 'משלמים בכניסה למפגש.'}
           </span>
           {event.payment_note && <span className="basis-full text-small text-muted">{event.payment_note}</span>}
         </p>
@@ -202,7 +213,11 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
         {waitlist ? 'הצטרפות לרשימת ההמתנה' : 'הרשמה'}
       </Button>
       {!waitlist && (
-        <p className="-mt-2 text-center text-small text-balance text-muted">אחרי ההרשמה יופיע כאן קישור אישי. דרכו אפשר לבטל אם משהו משתנה.</p>
+        <p className="-mt-2 text-center text-small text-balance text-muted">
+          {paysFirst(event)
+            ? 'בשלב הבא משלמים בכרטיס אשראי. בלי תשלום ההרשמה לא נשמרת.'
+            : 'אחרי ההרשמה יופיע כאן קישור אישי. דרכו אפשר לבטל אם משהו משתנה.'}
+        </p>
       )}
     </form>
   );
@@ -214,7 +229,38 @@ function ownSaved(code: string, firstName: string | null | undefined): string | 
   return saved.length === 1 ? saved[0].token : null;
 }
 
-function Registered({ result: r, event, payer, onAnother, onDetails }: { result: RegisterResult; event: PublicEvent; payer: Payer | null; onAnother: () => void; onDetails: () => void }) {
+/**
+ * A pay-first registration while the payment is awaited: the pay step, checked every few seconds. When the payment
+ * arrives it hands the new status up, and the page shows "נרשמת!" (or the waitlist, when the places ran out meanwhile).
+ */
+function AwaitingPayment({ result, event, payer, onPaid }: { result: RegisterResult; event: PublicEvent; payer: Payer | null; onPaid: (r: RegisterResult) => void }) {
+  const [since] = useState(() => Date.now());
+  const reg = useRegistration(result.token ?? null, since);
+  const expired = useWatchExpired(since);
+  const info = reg.data;
+  useEffect(() => {
+    if (info?.status === 'registered' || info?.status === 'waitlisted') {
+      onPaid({ ...result, status: info.status, waitlist_position: info.waitlist_position, event: info.event });
+    }
+  }, [info, result, onPaid]);
+  return (
+    <PayStep
+      event={info?.event ?? event}
+      payer={payer ?? (info?.full_name && info.phone ? { name: info.full_name, phone: info.phone } : null)}
+      token={result.token ?? null}
+      firstName={result.first_name}
+      expired={expired}
+      onCheck={async () => (await reg.refetch()).data?.status === 'pending_payment'}
+    />
+  );
+}
+
+function Registered({ result: r, event, payer, paid = false, onAnother, onDetails }: {
+  result: RegisterResult; event: PublicEvent; payer: Payer | null;
+  /** the payment of a pay-first registration was just confirmed */
+  paid?: boolean;
+  onAnother: () => void; onDetails: () => void;
+}) {
   const another = (
     <button type="button" onClick={onAnother} className="min-h-11 self-center px-3 font-semibold text-balance text-tide underline underline-offset-4">
       הרשמה של עוד מישהו מהטלפון הזה
@@ -243,6 +289,11 @@ function Registered({ result: r, event, payer, onAnother, onDetails }: { result:
             {name}אם יתפנה מקום, נחזור אליך בוואטסאפ או בטלפון. עד אז ההרשמה עוד לא סופית.
           </p>
         </div>
+        {paid && (
+          <Notice icon="check">
+            התשלום התקבל, אבל בינתיים כל המקומות נתפסו. הצוות יחזור אליך בהקדם, כדי למצוא מקום או להחזיר את&nbsp;התשלום.
+          </Notice>
+        )}
         <EventTicket event={event} highlight showStatus={false} />
         {r.token && <PersonalLink url={manageUrl(r.token)} token={r.token} waitlist />}
         {another}
@@ -277,7 +328,11 @@ function Registered({ result: r, event, payer, onAnother, onDetails }: { result:
           )
         )}
       </div>
-      {!again && <PayBlock event={event} payer={payer} />}
+      {paid ? (
+        <Notice icon="check">התשלום התקבל. תודה!</Notice>
+      ) : (
+        !again && <PayBlock event={event} payer={payer} />
+      )}
       <EventTicket event={event} highlight showStatus={false}>
         <p className="mt-4 text-[0.9375rem] font-medium text-pretty text-ink">
           עוד צעד קטן: מכניסים ליומן עכשיו, כדי ש{event.type === 'friday' ? 'השישי הזה' : 'המפגש'} לא ייבלע&nbsp;בשבוע.

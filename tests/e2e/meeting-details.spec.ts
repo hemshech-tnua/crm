@@ -157,8 +157,9 @@ test('@phone the sheet on #/r opens with ?d=1, back closes it, and the typed for
   const close = sheet.getByRole('button', { name: /^סגירה/ });
   await expect(close).toBeFocused();
   const box = (await close.boundingBox())!;
-  expect(box.width).toBeGreaterThanOrEqual(44);
-  expect(box.height).toBeGreaterThanOrEqual(44);
+  // rounded: sub-pixel layout can report 43.9999 for a 44px target
+  expect(Math.round(box.width)).toBeGreaterThanOrEqual(44);
+  expect(Math.round(box.height)).toBeGreaterThanOrEqual(44);
   // full screen on a phone
   const vp = page.viewportSize()!;
   const sb = (await sheet.boundingBox())!;

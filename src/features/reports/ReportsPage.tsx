@@ -15,6 +15,7 @@ import { Icon } from '@/ui/Icon';
 import { Columns, SplitBars } from '@/ui/charts';
 import { FilterBar, rpcArgs, useFilters, type Filters } from './period';
 import { Drilldown, type DrillKind } from './Drilldown';
+import { UnmatchedPayments } from '@/features/events/UnmatchedPayments';
 
 type Tab = 'events' | 'monthly' | 'sources' | 'presenters' | 'retention' | 'finance' | 'definitions';
 
@@ -47,7 +48,12 @@ export function ReportsPage() {
       {tab === 'sources' && <SourcesReport filters={filters} />}
       {tab === 'presenters' && <PresentersReport filters={filters} />}
       {tab === 'retention' && <RetentionReport filters={filters} />}
-      {tab === 'finance' && <FinanceReport filters={filters} />}
+      {tab === 'finance' && (
+        <div className="flex flex-col gap-5">
+          <UnmatchedPayments />
+          <FinanceReport filters={filters} />
+        </div>
+      )}
       {tab === 'definitions' && <Definitions />}
     </>
   );

@@ -281,7 +281,7 @@ export function MessageChooser({ recipient, regs, nextEvent, onClose }: {
   const purposes = useMemo(() => {
     const now = Date.now();
     const byDate = [...regs].filter((r) => r.event).sort((a, b) => b.event!.starts_at.localeCompare(a.event!.starts_at));
-    const upcoming = byDate.filter((r) => r.status !== 'cancelled' && new Date(r.event!.starts_at).getTime() > now).at(-1);
+    const upcoming = byDate.filter((r) => (r.status === 'registered' || r.status === 'waitlisted') && new Date(r.event!.starts_at).getTime() > now).at(-1);
     const lastNoShow = byDate.find((r) => r.attendance === 'no_show');
     const lastAttended = byDate.find((r) => r.attendance === 'attended');
     const out: Purpose[] = [];

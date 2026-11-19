@@ -18,22 +18,25 @@ import { MessageComposer } from '@/ui/MessageComposer';
 import type { EventPeople } from './context';
 import { cleanSearch, useEventRegistrations, useInvalidateEvent, type RegRow } from './queries';
 import { RowMenu, hasStarted, useDebounced, type MenuItem } from './shared';
-import { PaymentBadge, PaymentDialog, showsPayment, type PaymentTarget } from './finance';
+import { ConfirmPaymentDialog, PaymentBadge, PaymentDialog, showsPayment, type ConfirmTarget, type PaymentTarget } from './finance';
+import { UnmatchedPayments } from './UnmatchedPayments';
 
-type Filter = 'active' | 'registered' | 'waitlisted' | 'unpaid' | 'attended' | 'no_show' | 'cancelled' | 'all';
+type Filter = 'active' | 'registered' | 'waitlisted' | 'pending_payment' | 'unpaid' | 'attended' | 'no_show' | 'cancelled' | 'all';
 /** Owes the fee: a registered place, not paid, and not a no-show (a waitlisted place pays only once it is registered). */
 const owes = (r: RegRow) => r.status === 'registered' && r.payment_status === 'pending' && r.attendance !== 'no_show';
 const FILTERS: { value: Filter; label: string; test: (r: RegRow) => boolean }[] = [
-  { value: 'active', label: 'רשומים והמתנה', test: (r) => r.status !== 'cancelled' },
+  { value: 'active', label: 'רשומים והמתנה', test: (r) => r.status === 'registered' || r.status === 'waitlisted' },
   { value: 'registered', label: 'רשומים', test: (r) => r.status === 'registered' },
   { value: 'waitlisted', label: 'בהמתנה', test: (r) => r.status === 'waitlisted' },
+  // started at a meeting with a payment link and did not pay: no place, not counted; the team may reach out
+  { value: 'pending_payment', label: 'ממתינים לתשלום', test: (r) => r.status === 'pending_payment' },
   { value: 'unpaid', label: 'לא שילמו', test: owes },
   { value: 'attended', label: 'הגיעו', test: (r) => r.attendance === 'attended' },
   { value: 'no_show', label: 'לא הגיעו', test: (r) => r.attendance === 'no_show' },
   { value: 'cancelled', label: 'ביטלו', test: (r) => r.status === 'cancelled' },
   { value: 'all', label: 'הכול', test: () => true },
 ];
-const STATUS_RANK: Record<RegStatus, number> = { registered: 0, waitlisted: 1, cancelled: 2 };
+const STATUS_RANK: Record<RegStatus, number> = { registered: 0, waitlisted: 1, pending_payment: 2, cancelled: 3 };
 
 type ComposerState = { reg: RegRow; keys?: string[]; defaultKey?: string };
 
@@ -49,8 +52,11 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   const [composer, setComposer] = useState<ComposerState | null>(null);
   const [adding, setAdding] = useState(false);
   const [paying, setPaying] = useState<PaymentTarget | null>(null);
+  const [confirming, setConfirming] = useState<ConfirmTarget | null>(null);
   const started = hasStarted(e);
   const priced = isPriced(e.price);
+  const paysFirst = priced && !!e.payment_url;
+  const confirmFor = (r: RegRow) => setConfirming({ id: r.id, name: r.participant?.full_name ?? null });
   const payFor = (r: RegRow) => setPaying({
     id: r.id, name: r.participant?.full_name ?? null, payment_status: r.payment_status, paid_amount: r.paid_amount,
     payment_method: r.payment_method, payment_ref: r.payment_ref,
@@ -183,7 +189,8 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     if (r.participant && !r.participant.anonymized_at) items.push({ label: 'פתיחת הכרטיס', icon: 'people', onClick: () => navigate(`/app/participants/${r.participant_id}`) });
     if (started && r.status === 'registered' && r.attendance !== 'attended') items.push({ label: 'סימון הגעה', icon: 'check', onClick: () => attendance.mutate({ r, attendance: 'attended' }) });
     if (started && r.status === 'registered' && r.attendance !== 'no_show') items.push({ label: 'סימון אי־הגעה', icon: 'close', onClick: () => attendance.mutate({ r, attendance: 'no_show' }) });
-    if ((priced && r.status !== 'cancelled') || r.payment_status === 'paid' || r.payment_status === 'refunded' || r.payment_status === 'waived') {
+    if (r.status === 'pending_payment') items.push({ label: 'אישור תשלום', icon: 'check', onClick: () => confirmFor(r) });
+    else if ((priced && r.status !== 'cancelled') || r.payment_status === 'paid' || r.payment_status === 'refunded' || r.payment_status === 'waived') {
       items.push({ label: owes(r) ? 'סימון תשלום' : 'עדכון תשלום', icon: 'check', onClick: () => payFor(r) });
     }
     if (r.status === 'cancelled' && canRegister) items.push({ label: 'רישום מחדש', icon: 'undo', onClick: () => reRegister.mutate(r) });
@@ -214,9 +221,13 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
         </Notice>
       )}
 
+      {paysFirst && <UnmatchedPayments eventId={e.id} />}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <FilterChips label="סינון לפי סטטוס" value={filter} onChange={setFilter} className="min-w-0 flex-1"
-          options={FILTERS.filter((f) => f.value !== 'unpaid' || priced || counts.unpaid > 0).map((f) => ({ value: f.value, label: f.label, count: counts[f.value] }))} />
+          options={FILTERS
+            .filter((f) => (f.value !== 'unpaid' || priced || counts.unpaid > 0) && (f.value !== 'pending_payment' || paysFirst || counts.pending_payment > 0))
+            .map((f) => ({ value: f.value, label: f.label, count: counts[f.value] }))} />
         <div className="shrink-0 sm:mr-auto sm:w-64">
           <SearchInput value={search} onChange={setSearch} placeholder="שם או טלפון" label="חיפוש בנרשמים" />
         </div>
@@ -249,6 +260,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                   {r.participant?.phone && <Button size="sm" variant="secondary" icon="message" onClick={() => openComposer(r)}>וואטסאפ</Button>}
                   {r.status === 'waitlisted' && <Button size="sm" icon="userPlus" busy={promote.isPending && promote.variables?.id === r.id} onClick={() => promote.mutate(r)}>קידום לרשומים</Button>}
                   {owes(r) && <Button size="sm" variant="secondary" icon="check" onClick={() => payFor(r)}>סימון תשלום</Button>}
+                  {r.status === 'pending_payment' && <Button size="sm" variant="secondary" icon="check" onClick={() => confirmFor(r)}>אישור תשלום</Button>}
                   <div className="mr-auto"><RowMenu items={menuFor(r)} /></div>
                 </div>
               </li>
@@ -283,6 +295,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                       <div className="flex items-center justify-end gap-1">
                         {r.status === 'waitlisted' && <Button size="sm" icon="userPlus" busy={promote.isPending && promote.variables?.id === r.id} onClick={() => promote.mutate(r)}>קידום</Button>}
                         {owes(r) && <Button size="sm" variant="secondary" onClick={() => payFor(r)}>סימון תשלום</Button>}
+                        {r.status === 'pending_payment' && <Button size="sm" variant="secondary" onClick={() => confirmFor(r)}>אישור תשלום</Button>}
                         {r.participant?.phone && (
                           <IconButton icon="message" label={`הודעת וואטסאפ ל${r.participant.full_name ?? ''}`} title="הודעת וואטסאפ" onClick={() => openComposer(r)} />
                         )}
@@ -316,6 +329,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
         />
       )}
       <PaymentDialog target={paying} event={e} onClose={() => setPaying(null)} />
+      <ConfirmPaymentDialog target={confirming} event={e} onClose={() => setConfirming(null)} />
       <ManualRegisterDialog
         open={adding}
         onClose={() => setAdding(false)}
@@ -362,6 +376,8 @@ function StatusCell({ r, pos, started }: { r: RegRow; pos?: number; started: boo
         <Badge tone="warn" icon="alert">בהמתנה{pos ? <span className="num"> #{pos}</span> : null}</Badge>
       ) : r.status === 'cancelled' ? (
         <Badge tone="neutral">ביטול{r.cancelled_by === 'staff' ? ' (צוות)' : ''}</Badge>
+      ) : r.status === 'pending_payment' ? (
+        <Badge tone="warn" icon="alert" title="התחילו הרשמה ועוד לא שילמו. אין להם מקום, והם לא נספרים ברשומים.">ממתין לתשלום</Badge>
       ) : (
         <Badge tone="tide">{started ? 'טרם סומנה הגעה' : 'הרשמה פעילה'}</Badge>
       )}
@@ -453,7 +469,8 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
           <ul className="flex flex-col divide-y divide-edge">
             {results.data.map((p) => {
               const reg = existing.get(p.id);
-              const active = reg && reg.status !== 'cancelled';
+              // started a paid registration and did not pay: the team may still register them
+              const active = reg && reg.status !== 'cancelled' && reg.status !== 'pending_payment';
               return (
                 <li key={p.id} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1">

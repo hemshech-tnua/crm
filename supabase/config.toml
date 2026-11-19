@@ -438,3 +438,9 @@ enabled = true
 [functions.staff-admin]
 enabled = true
 verify_jwt = false
+
+# "יש חשבונית" payment webhook (document created). The provider cannot send a Supabase session, so the function is
+# reached without a JWT and authenticates the caller by the secret key in its URL (the YESH_WEBHOOK_KEY secret).
+[functions.yesh-webhook]
+enabled = true
+verify_jwt = false

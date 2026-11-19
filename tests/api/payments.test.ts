@@ -1,4 +1,6 @@
-// Participant payments and the per-meeting finance snapshot (migration 20261106002300_payments.sql).
+// Participant payments and the per-meeting finance snapshot (migration 20261106002300_payments.sql). Since
+// 20261106002700_pay_before_register.sql a meeting with a fee AND a payment link registers only after payment
+// (tests/api/pay-first.test.ts); the "registered and owes the fee" flow below is a priced meeting without a link.
 import { describe, expect, it } from 'vitest';
 import { execSync } from 'node:child_process';
 import { makeEvent, registration, staff, visitor } from './helpers';
@@ -20,7 +22,7 @@ async function regId(eventId: string) {
 }
 
 describe('a priced meeting', () => {
-  it('shows the price and the payment link publicly, and a public registration owes the fee', async () => {
+  it('shows the price and the payment link publicly; with a link a public registration waits for the payment', async () => {
     const ev = await makeEvent({ price: 20, payment_url: PAY_URL, payment_note: 'אפשר לשלם גם במקום' });
     const v = visitor();
     const { data: pub, error } = await v.rpc('public_get_event', { p_code: ev.public_code });
@@ -32,7 +34,7 @@ describe('a priced meeting', () => {
     expect((list as Record<string, unknown>[]).every((e) => 'price' in e && 'payment_url' in e)).toBe(true);
 
     const r = await register(ev.public_code);
-    expect(r.status).toBe('registered');
+    expect(r.status).toBe('pending_payment');
     expect(r.event.price).toBe(20);
     expect(r.event.payment_url).toBe(PAY_URL);
     const { data: mine } = await visitor().rpc('public_registration', { p_token: r.token });
@@ -42,7 +44,7 @@ describe('a priced meeting', () => {
   });
 
   it('a waitlisted registration also starts pending, but is not counted as owed', async () => {
-    const ev = await makeEvent({ price: 20, payment_url: PAY_URL, capacity: 1 });
+    const ev = await makeEvent({ price: 20, capacity: 1 });
     await register(ev.public_code);
     const w = await register(ev.public_code);
     expect(w.status).toBe('waitlisted');
@@ -55,7 +57,7 @@ describe('a priced meeting', () => {
 
   it('staff mark payment; the finance snapshot adds up with the supplier payments', async () => {
     const coord = await staff('coord');
-    const ev = await makeEvent({ price: 20, payment_url: PAY_URL });
+    const ev = await makeEvent({ price: 20 });
     const a = await register(ev.public_code);
     const idA = await regId(ev.id);
     await register(ev.public_code);
@@ -93,7 +95,7 @@ describe('a priced meeting', () => {
     const { data: f, error: e2 } = await coord.rpc('staff_event_finance', { p_event_id: ev.id });
     expect(e2).toBeNull();
     expect(f.price).toBe(20);
-    expect(f.has_payment_link).toBe(true);
+    expect(f.has_payment_link).toBe(false);
     expect(f.registered).toBe(3);
     expect(f.income).toEqual({
       expected: 40, collected: 20, paid_count: 1, pending_count: 1, pending_amount: 20, waived_count: 1, refunded_count: 0, refunded_amount: 0,
@@ -173,7 +175,7 @@ describe('who may mark payment', () => {
 
   it('the door team marks cash at the entrance (and can undo a wrong tap), on the meeting day only', async () => {
     const door = await staff('door');
-    const ev = await makeEvent({ price: 20, payment_url: PAY_URL, startsInMinutes: 30 });
+    const ev = await makeEvent({ price: 20, startsInMinutes: 30 });
     await register(ev.public_code);
     const id = await regId(ev.id);
 
@@ -208,10 +210,12 @@ describe('who may mark payment', () => {
       sql(`set role ${role}; select private.mark_paid_by_provider('${id}', 20, '${ref}')::text`);
     expect(() => call('authenticated', 'TX-1')).toThrow();
     expect(() => call('anon', 'TX-1')).toThrow();
-    expect(JSON.parse(call('service_role', 'TX-1'))).toMatchObject({ payment_status: 'paid', paid_amount: 20, payment_method: 'card', payment_ref: 'TX-1' });
+    // a pending (pay-first) registration that is paid is registered
+    expect(JSON.parse(call('service_role', 'TX-1'))).toMatchObject({ payment_status: 'paid', paid_amount: 20, payment_method: 'card', payment_ref: 'TX-1', status: 'registered' });
     // a retried callback changes nothing
     expect(JSON.parse(call('service_role', 'TX-1'))).toMatchObject({ already: true, same_ref: true });
     const { data: mine } = await visitor().rpc('public_registration', { p_token: r.token });
     expect(mine.payment_status).toBe('paid');
+    expect(mine.status).toBe('registered');
   });
 });

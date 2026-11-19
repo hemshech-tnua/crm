@@ -23,6 +23,7 @@ npx supabase link --project-ref <REF>
 npx supabase db push                      # מריץ את כל supabase/migrations (סכמה, הרשאות, ברירות מחדל)
 npx supabase functions deploy staff-admin --no-verify-jwt
 npx supabase secrets set ALLOWED_ORIGINS=https://<כתובת האתר>
+# תשלום לפני הרשמה ("יש חשבונית"): הפונקציה yesh-webhook והסוד YESH_WEBHOOK_KEY, לפי docs/08-payments-webhook.md
 
 # 2) הגדרות Auth ב-Dashboard (Authentication):
 #    - Sign In / Providers: לכבות "Allow new users to sign up" (חובה: אחרת כל אחד יכול להפעיל שליחת SMS על חשבון העמותה)

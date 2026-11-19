@@ -34,7 +34,7 @@ export function OverviewTab({ event: e, people, onTab }: Props) {
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
           <Facts e={e} people={people} />
-          <FinancePanel e={e} onUnpaid={() => onTab('registrations', { filter: 'unpaid' })} onExpenses={() => onTab('prep')} />
+          <FinancePanel e={e} onUnpaid={() => onTab('registrations', { filter: 'unpaid' })} onStarted={() => onTab('registrations', { filter: 'pending_payment' })} onExpenses={() => onTab('prep')} />
         </div>
         <div className="flex flex-col gap-5">
           <LinksPanel e={e} />

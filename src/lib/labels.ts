@@ -11,7 +11,7 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = { friday: 'מפגש �
 export const EVENT_STATUS_LABEL: Record<EventStatus, string> = {
   draft: 'טיוטה', open: 'הרשמה פתוחה', closed: 'הרשמה סגורה', completed: 'התקיים', cancelled: 'בוטל',
 };
-export const REG_STATUS_LABEL: Record<RegStatus, string> = { registered: 'הרשמה פעילה', waitlisted: 'בהמתנה', cancelled: 'ביטול' };
+export const REG_STATUS_LABEL: Record<RegStatus, string> = { registered: 'הרשמה פעילה', waitlisted: 'בהמתנה', cancelled: 'ביטול', pending_payment: 'ממתין לתשלום' };
 export const ATTENDANCE_LABEL: Record<Attendance, string> = { unknown: 'טרם סומן', attended: 'הגעה', no_show: 'אי־הגעה' };
 
 export const ENGAGEMENT_LABEL: Record<Engagement, string> = {
@@ -36,6 +36,7 @@ export const FOLLOWUP_TYPE_LABEL = {
   waitlist: 'רשימת המתנה',
   general: 'כללי',
   membership: 'הצטרפות לעמותה',
+  payment: 'תשלום',
 } as const;
 
 export const MEMBERSHIP_LABEL: Record<Membership, string> = { none: 'בלי חברות בעמותה', requested: 'בקשת הצטרפות לעמותה', member: 'חברות בעמותה' };

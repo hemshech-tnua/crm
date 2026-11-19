@@ -74,7 +74,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   const readyAt = new Date(new Date(e.ends_at).getTime() + AFTERCARE_DELAY_MS);
   const [composer, setComposer] = useState<Person | null>(null);
 
-  const activeIds = useMemo(() => (regs.data ?? []).filter((r) => r.status !== 'cancelled').map((r) => r.participant_id), [regs.data]);
+  const activeIds = useMemo(() => (regs.data ?? []).filter((r) => r.status === 'registered' || r.status === 'waitlisted').map((r) => r.participant_id), [regs.data]);
   const consented = useConsentedRecent(e.id, activeIds, group === 'consented' && !!regs.data);
 
   const recipients: Person[] = useMemo(() => {
