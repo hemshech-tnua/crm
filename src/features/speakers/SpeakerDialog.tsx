@@ -48,7 +48,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
     setPhotoError(null);
     setPhotoBusy(true);
     try {
-      const path = await uploadPhoto(id, file);
+      const path = await uploadPhoto(file);
       uploaded.current.push(path);
       set('photo_path', path);
     } catch (e) {
@@ -160,7 +160,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
             error={errors.role_label}
             maxLength={30}
             placeholder={f.kind === 'speaker' ? 'מרצה אורחת' : 'מאמן קרוספיט'}
-            hint={<>ריק = {f.kind === 'speaker' ? '״הרצאת אורח״' : '״אימון״ ושם הפעילות'}. <span className="whitespace-nowrap"><span className="num">{f.role_label.length}</span> מתוך <span className="num">30</span> תווים.</span></>}
+            hint={<>אם נשאר ריק: {f.kind === 'speaker' ? '״הרצאת אורח״' : '״אימון״ ושם הפעילות'}. <span className="whitespace-nowrap"><span className="num">{f.role_label.length}</span> מתוך <span className="num">30</span> תווים.</span></>}
           />
           <Textarea
             label="כמה מילים לדף המפגש"

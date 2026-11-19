@@ -49,10 +49,13 @@ export async function preparePhoto(file: File): Promise<{ blob: Blob; ext: 'webp
   return { blob, ext };
 }
 
-/** Upload under `<speaker id>-<timestamp>.<ext>`: a new name for every photo, so caches never show an old one. */
-export async function uploadPhoto(speakerId: string, file: File): Promise<string> {
+/**
+ * Upload under a random name (`<uuid>-<timestamp>.<ext>`): a new name for every photo, so caches never show an old one,
+ * and nothing internal (such as the speaker's row id) appears in the public file name.
+ */
+export async function uploadPhoto(file: File): Promise<string> {
   const { blob, ext } = await preparePhoto(file);
-  const path = `${speakerId}-${Date.now()}.${ext}`;
+  const path = `${crypto.randomUUID()}-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from(PEOPLE_BUCKET).upload(path, blob, {
     contentType: ext === 'webp' ? 'image/webp' : 'image/jpeg',
     cacheControl: '31536000',

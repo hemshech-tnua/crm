@@ -16,7 +16,7 @@ const LONG_ABOUT = 'פסקה ראשונה על האדם, עם כמה משפטי�
 
 async function presenter(kind: 'speaker' | 'instructor', extra: Record<string, unknown> = {}) {
   const admin = await staff('admin');
-  const tag = randomUUID().slice(0, 4).replace(/\d/g, 'ק');
+  const tag = randomUUID().slice(0, 8).replace(/\d/g, (d) => 'אבגדהוזחטי'[+d]);
   const { data, error } = await admin.from('speakers').insert({
     kind, status: 'approved', full_name: kind === 'speaker' ? `מרצה דמו ${tag}` : `מדריך דמו ${tag}`, topic: 'נושא דמו', ...extra,
   }).select('id, full_name').single();
@@ -226,7 +226,8 @@ test('staff upload a photo for the meeting page, and removing it deletes the fil
   const row = (await admin.from('speakers').select('role_label, about, photo_path').eq('id', sp.id).single()).data!;
   expect(row.role_label).toBe('מרצה אורחת');
   expect(row.about).toBe('כמה מילים לדמו.');
-  expect(row.photo_path).toMatch(new RegExp(`^${sp.id}-\\d+\\.(webp|jpg)$`));
+  expect(row.photo_path).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d+\.(webp|jpg)$/);
+  expect(row.photo_path).not.toContain(sp.id);
   // cropped to 4:5 and at most 800 wide
   const res = await fetch(`${API_URL}/storage/v1/object/public/people/${row.photo_path}`);
   expect(res.status).toBe(200);

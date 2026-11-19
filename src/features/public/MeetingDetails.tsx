@@ -83,7 +83,7 @@ function Header({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
           {keepName(e.title)}
         </Title>
         <p className="mt-2 text-body text-light/90">
-          {fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span>
+          {fmtDayLong(e.starts_at)}&nbsp;· <span className="num">{timeRange(e)}</span>
         </p>
       </div>
     </header>
