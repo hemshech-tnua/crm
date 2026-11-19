@@ -12,7 +12,7 @@ import { activityText, keepName, lectureText, timeRange } from '../eventText';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { ctaLabel, lowThreshold, paymentNoteOf, priceOf, program } from './model';
 import { FRIDAY_FACTS } from './facts';
-import { DetailsLink } from '../MeetingDetails';
+import { CTA_WIDTH, DetailsLink } from '../MeetingDetails';
 
 /** Section headings: the book's Bold, one step under the hero. */
 export const H2 = 'font-display text-section lg:text-[1.625rem] lg:leading-tight';
@@ -34,7 +34,7 @@ export function NextTicket({ event: e, query }: { event: PublicEvent; query: str
   const note = paymentNoteOf(e);
   return (
     <EventTicket event={e} highlight level={3} showStatus="notable" agenda={false}>
-      <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className="mt-4 w-full sm:w-auto" data-testid="friday-cta">
+      <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className={`mt-4 w-full ${CTA_WIDTH}`} data-testid="friday-cta">
         {ctaLabel(e)}
         <span className="sr-only">: {e.title}, {fmtDayLong(e.starts_at)}</span>
       </ButtonLink>
@@ -47,7 +47,7 @@ export function NextTicket({ event: e, query }: { event: PublicEvent; query: str
           מגיעים לבד? {FRIDAY_FACTS.greeter} מהצוות מחכה לכם&nbsp;בכניסה.
         </p>
       )}
-      <DetailsLink event={e} query={query} className="mt-1" />
+      <DetailsLink event={e} query={query} wide="phone" className="mt-3" />
     </EventTicket>
   );
 }

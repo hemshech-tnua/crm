@@ -69,14 +69,14 @@ export function PublicHome() {
                   to={`/r/${next.code}${query}`}
                   cta
                   size="lg"
-                  className="mt-4 min-w-44 after:absolute after:inset-0 after:content-['']"
+                  className="mt-4 min-w-[13.5rem] after:absolute after:inset-0 after:content-['']"
                 >
                   {cta(next)}
                   <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
                 </ButtonLink>
                 {cta(next) === 'להרשמה' && <p className="mt-2 text-[0.9375rem] text-muted">ההרשמה לוקחת פחות מדקה.</p>}
                 {/* above the button's whole-card link (its ::after overlay) */}
-                <DetailsLink event={next} query={query} className="relative z-[1] mt-1" />
+                <DetailsLink event={next} query={query} className="relative z-[1] mt-3" />
               </EventTicket>
             </section>
             {rest.length > 0 && (

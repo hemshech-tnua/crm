@@ -8,7 +8,7 @@ import { fmtDayLong } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { personPhotoUrl } from '@/lib/supabase';
-import { Badge, ButtonLink, EmptyState, ErrorBox, Skeleton, cx } from '@/ui/kit';
+import { Badge, ButtonLink, EmptyState, ErrorBox, Skeleton, buttonClass, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { Stripes } from '@/ui/Shapes';
 import { usePublicEvent } from './api';
@@ -36,15 +36,27 @@ export function hasDetails(e: PublicEvent, where: 'register' | 'other' = 'other'
   return where !== 'register' && !!e.description?.trim();
 }
 
-const TRIGGER = 'inline-flex min-h-11 items-center self-start font-semibold text-tide underline underline-offset-4 hover:text-ink-soft';
+// A real secondary button in the page's language: navy frame, bold label, the people icon (it leads to who is with us),
+// the width of the call to action above it. It fills navy on hover and stays clearly second to «שמרו לי מקום».
+const TRIGGER = buttonClass('secondary', 'md', 'min-w-44 gap-2 border-2 border-ink text-ink hover:border-ink hover:bg-ink hover:text-light active:bg-ink-soft', true);
+
+/**
+ * How wide the trigger is: false = its own width; 'always' = the full width (under the ticket on #/r); 'phone' = full
+ * width on a phone and, from sm up, the same width as the «שמרו לי מקום» button above it (CTA_WIDTH), so they line up.
+ */
+type Wide = false | 'always' | 'phone';
+export const CTA_WIDTH = 'sm:w-auto sm:min-w-[23rem]';
+const WRAP: Record<string, string> = { false: 'w-fit', always: 'w-full', phone: 'w-full sm:w-fit' };
+const FIT: Record<string, string> = { false: '', always: 'w-full', phone: `w-full ${CTA_WIDTH}` };
 
 /** «כל הפרטים על המפגש» as a link to the page (#/e/<code>), keeping ?ref and utm_*. */
-export function DetailsLink({ event, query = '', className }: { event: PublicEvent; query?: string; className?: string }) {
+export function DetailsLink({ event, query = '', wide = false, className }: { event: PublicEvent; query?: string; wide?: Wide; className?: string }) {
   if (!hasDetails(event)) return null;
   // on its own line, under the call to action and its helper text
   return (
-    <div className={cx('flex w-fit', className)}>
-      <Link to={`/e/${event.code}${query}`} className={TRIGGER} data-testid="details-trigger">
+    <div className={cx('flex', WRAP[String(wide)], className)}>
+      <Link to={`/e/${event.code}${query}`} className={cx(TRIGGER, FIT[String(wide)])} data-testid="details-trigger">
+        <Icon name="people" size={18} />
         כל הפרטים על המפגש
       </Link>
     </div>
@@ -52,11 +64,12 @@ export function DetailsLink({ event, query = '', className }: { event: PublicEve
 }
 
 /** «כל הפרטים על המפגש» as a button that opens the sheet (the registration page and its success screen). */
-export function DetailsButton({ event, onOpen, className }: { event: PublicEvent; onOpen: () => void; className?: string }) {
+export function DetailsButton({ event, onOpen, wide = false, className }: { event: PublicEvent; onOpen: () => void; wide?: Wide; className?: string }) {
   if (!hasDetails(event, 'register')) return null;
   return (
-    <div className={cx('flex w-fit', className)}>
-      <button type="button" onClick={onOpen} aria-haspopup="dialog" className={TRIGGER} data-testid="details-trigger">
+    <div className={cx('flex', WRAP[String(wide)], className)}>
+      <button type="button" onClick={onOpen} aria-haspopup="dialog" className={cx(TRIGGER, FIT[String(wide)])} data-testid="details-trigger">
+        <Icon name="people" size={18} />
         כל הפרטים על המפגש
       </button>
     </div>

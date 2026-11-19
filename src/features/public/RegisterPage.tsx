@@ -84,7 +84,7 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
         )}
         <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'פרטי המפגש' : 'הרשמה למפגש'}</h1>
         <EventTicket event={e} highlight detailed showStatus="notable" />
-        <DetailsButton event={e} onOpen={sheet.show} className="-mt-3" />
+        <DetailsButton event={e} onOpen={sheet.show} wide="always" className="-mt-3" />
       </div>
       <div className="lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
         {closed ? (
