@@ -431,7 +431,8 @@ export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; peop
         text: <>מתנדבים <span className="num">{filled}/{need}</span></> });
     }
   }
-  const pending = finance.data?.income.pending_count ?? 0;
+  // the same people the "לא שילמו" list opens on: registered and owing, plus those who started a paid registration
+  const pending = (finance.data?.income.pending_count ?? 0) + (finance.data?.started_unpaid ?? 0);
   if (live && pending > 0) {
     items.push({ key: 'pay', state: e.status === 'completed' || hasEnded(e) ? 'warn' : 'info', label: 'למי שלא שילמו', go: () => onTab('registrations', { filter: 'unpaid' }),
       text: <><span className="num font-bold">{pending}</span> לא שילמו</> });

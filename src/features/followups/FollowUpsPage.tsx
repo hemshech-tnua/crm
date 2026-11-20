@@ -74,7 +74,7 @@ export function FollowUpsPage() {
         actions={<Button icon="plus" onClick={() => setCreating(true)}>משימה חדשה</Button>}
       />
 
-      {eventFilter && <EventScope eventId={eventFilter} tasks={allOpen} loading={open.isLoading} onClear={() => setParam('event', null)} />}
+      {eventFilter && <EventScope eventId={eventFilter} tasks={all} loading={open.isLoading} onClear={() => setParam('event', null)} />}
 
       {tab !== 'done' && !eventFilter && lapsed.length > 0 && (
         <button
@@ -149,16 +149,29 @@ function EventScope({ eventId, tasks, loading, onClear }: { eventId: string; tas
   });
   const event = fromTask ?? ev.data;
   const free = tasks.filter((t) => !t.assignee_id);
-  const setOwner = async (ids: string[], owner: string | null) => {
-    const { error } = await supabase.from('follow_ups').update({ assignee_id: owner }).in('id', ids);
+  // only tasks that are still without anyone in charge: a colleague who took one in the meantime keeps it
+  const takeFree = async (ids: string[]): Promise<string[]> => {
+    const { data, error } = await supabase.from('follow_ups').update({ assignee_id: me.data!.user_id })
+      .in('id', ids).is('assignee_id', null).select('id');
+    if (error) throw error;
+    return (data ?? []).map((r: { id: string }) => r.id);
+  };
+  // undo gives back only what this tap took, and only while it is still mine
+  const giveBack = async (ids: string[]) => {
+    const { error } = await supabase.from('follow_ups').update({ assignee_id: null })
+      .in('id', ids).eq('assignee_id', me.data!.user_id);
     if (error) throw error;
   };
   const take = useMutation({
-    mutationFn: async (ids: string[]) => setOwner(ids, me.data!.user_id),
-    onSuccess: (_d, ids) => {
+    mutationFn: takeFree,
+    onSuccess: (taken) => {
       invalidate();
-      toast.undo(ids.length === 1 ? 'המשימה עברה אליך' : `${ids.length} משימות עברו אליך`, () => {
-        setOwner(ids, null).then(() => invalidate(), (e) => toast.error(errorMessage(e)));
+      if (!taken.length) {
+        toast.info('המשימות כבר נלקחו על ידי אחרים מהצוות');
+        return;
+      }
+      toast.undo(taken.length === 1 ? 'המשימה עברה אליך' : `${taken.length} משימות עברו אליך`, () => {
+        giveBack(taken).then(() => invalidate(), (e) => toast.error(errorMessage(e)));
       });
     },
     onError: (e) => toast.error(errorMessage(e)),

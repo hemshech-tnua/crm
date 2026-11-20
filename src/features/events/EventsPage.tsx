@@ -75,17 +75,20 @@ export function EventsPage() {
       return [e.title, e.lecture_topic, e.activity_name, sp].some((x) => x?.toLowerCase().includes(t));
     });
   }, [upcomingAll, type, search, byId]);
+  // the chip the dashboard links to: no speaker, or one not approved yet (the dashboard's "בלי מרצה מאושר" counts both)
+  const needsSpeaker = (e: EventWithStats) => noSpeaker(e) || (e.type === 'friday' && !!e.speaker_id
+    && e.status !== 'cancelled' && e.status !== 'completed' && byId.get(e.speaker_id) != null && byId.get(e.speaker_id)!.status !== 'approved');
   const upCounts: Record<UpStatus, number> = {
     all: upcomingBase.filter((e) => e.status !== 'cancelled').length,
     draft: upcomingBase.filter((e) => e.status === 'draft').length,
-    nospeaker: upcomingBase.filter(noSpeaker).length,
+    nospeaker: upcomingBase.filter(needsSpeaker).length,
     waitlist: upcomingBase.filter((e) => e.status !== 'cancelled' && seats(e).waitlisted > 0).length,
     cancelled: upStatus === 'cancelled' ? upcomingBase.length : cancelledCount,
   };
   const upcoming = upcomingBase.filter((e) =>
     upStatus === 'all' ? e.status !== 'cancelled'
       : upStatus === 'draft' ? e.status === 'draft'
-        : upStatus === 'nospeaker' ? noSpeaker(e)
+        : upStatus === 'nospeaker' ? needsSpeaker(e)
           : upStatus === 'waitlist' ? e.status !== 'cancelled' && seats(e).waitlisted > 0
             : e.status === 'cancelled');
   const past = useMemo(() => (pastQ.data ?? []).filter((e) => new Date(e.ends_at).getTime() < now), [pastQ.data, now]);
@@ -100,7 +103,7 @@ export function EventsPage() {
   const upChips: { value: UpStatus; label: string; count?: number }[] = [
     { value: 'all', label: 'הכול', count: upCounts.all },
     { value: 'draft', label: 'טיוטה', count: upCounts.draft },
-    { value: 'nospeaker', label: 'בלי מרצה', count: upCounts.nospeaker },
+    { value: 'nospeaker', label: 'בלי מרצה מאושר', count: upCounts.nospeaker },
     ...(upCounts.waitlist || upStatus === 'waitlist' ? [{ value: 'waitlist' as const, label: 'רשימת המתנה', count: upCounts.waitlist }] : []),
     ...(upCounts.cancelled || upStatus === 'cancelled' ? [{ value: 'cancelled' as const, label: 'בוטלו', count: upCounts.cancelled }] : []),
   ];

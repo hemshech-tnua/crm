@@ -118,8 +118,8 @@ export function DashboardPage() {
                 {unclosed > 0 ? (
                   <>
                     {' · '}
-                    <Link to="/app/events?show=past&status=unclosed" className="inline-flex items-center font-bold text-ink underline underline-offset-2">
-                      {unclosed === 1 ? 'מפגש אחד מחכה לסגירה' : <><span className="num">{unclosed}</span>&nbsp;מפגשים מחכים לסגירה</>}<Tri className="ms-1.5" />
+                    <Link to={`/app/events?show=past&status=unclosed${filters.type ? `&type=${filters.type}` : ''}`} className="inline-flex items-center font-bold text-ink underline underline-offset-2">
+                      {unclosed === 1 ? 'מפגש אחד בתקופה הזו מחכה לסגירה' : <><span className="num">{unclosed}</span>&nbsp;מפגשים בתקופה הזו מחכים לסגירה</>}<Tri className="ms-1.5" />
                     </Link>
                   </>
                 ) : <span className="text-ink-soft"> · בתקופה הזו עוד לא נסגר מפגש, ולכן מופיע "—".</span>}

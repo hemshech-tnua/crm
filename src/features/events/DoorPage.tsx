@@ -174,8 +174,11 @@ export function DoorPage() {
     },
     onSuccess: (v) => {
       if (v.paid) {
-        toast.undo(v.arrived ? `ההגעה והתשלום של ${v.row.display_name} סומנו` : `התשלום של ${v.row.display_name} סומן · שולם במקום`, () =>
-          doorPay.mutate({ row: v.row, paid: false }));
+        toast.undo(v.arrived ? `ההגעה והתשלום של ${v.row.display_name} סומנו` : `התשלום של ${v.row.display_name} סומן · שולם במקום`, () => {
+          doorPay.mutate({ row: v.row, paid: false });
+          // the arrival was marked together with the cash: a mistaken tap takes both back
+          if (v.arrived) setAttendance.mutate({ row: v.row, attendance: 'unknown', quiet: true });
+        });
       } else toast.success(`הסימון "שולם במקום" של ${v.row.display_name} הוסר`);
     },
     onSettled: () => {
@@ -602,8 +605,10 @@ function WalkinForm({ initial, onClose, eventId, price, onDone }: {
   /** After the arrival is saved: record the cash, if it was taken. Returns a note for the toast. */
   const recordCash = async (registrationId: string): Promise<string> => {
     if (!paid || price == null) return price != null ? ' · לא שולם' : '';
-    const { error } = await supabase.rpc('staff_door_payment', { p_registration_id: registrationId, p_paid: true });
-    return error ? ` · התשלום לא נשמר (${errorMessage(error)})` : ' · שולם במקום';
+    const { data, error } = await supabase.rpc('staff_door_payment', { p_registration_id: registrationId, p_paid: true });
+    if (error) return ` · התשלום לא נשמר (${errorMessage(error)})`;
+    // already paid (online, before the meeting): nothing to take at the door
+    return (data as { already?: boolean } | null)?.already ? ' · כבר שולם, אין לגבות' : ' · שולם במקום';
   };
 
   // S3: someone we already know, typed by name: suggest the existing card instead of creating a duplicate
