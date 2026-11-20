@@ -402,7 +402,7 @@ export function MeetingPage() {
     }
     return c === 'event_not_found' ? (
       <EmptyState icon="calendar" title="לא מצאנו את המפגש" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
-        אולי הקישור ישן או שחסר בו תו. כל המפגשים הפתוחים מופיעים בעמוד&nbsp;הראשי.
+        ייתכן שהקישור ישן או שהוקלד לא נכון.
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(event.error)} onRetry={() => event.refetch()} />

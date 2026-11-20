@@ -14,7 +14,7 @@ import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
 import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, type Payer, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
-import { fmtMoney, isPriced } from '@/lib/money';
+import { isPriced } from '@/lib/money';
 import { PayStep, paysFirst, useWatchExpired } from './PayStep';
 
 const UTM_KEYS = ['source', 'medium', 'campaign'] as const;
@@ -198,11 +198,11 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       )}
       {isPriced(event.price) && (
         <p className="flex flex-wrap items-baseline gap-x-2 rounded-[var(--radius-control)] border-s-[3px] border-ink bg-mist px-3.5 py-2.5">
-          <span className="font-bold">מחיר: <span className="num">{fmtMoney(event.price)}</span></span>
+          {/* the ticket above already shows the price and the team's note: here only how paying works */}
+          <span className="font-bold">תשלום</span>
           <span className="text-small text-ink-soft">
             {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים בכרטיס אשראי, מיד אחרי מילוי הפרטים.' : 'משלמים בכניסה למפגש.'}
           </span>
-          {event.payment_note && <span className="basis-full text-small text-muted">{event.payment_note}</span>}
         </p>
       )}
       <p className="-mb-1 text-body text-ink-soft">רק ארבעה פרטים ושאלה אחת.</p>
@@ -315,7 +315,7 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
             <>
               {name}שמרנו לך מקום.{' '}
               <span className="block">
-                נתראה ב<span className="whitespace-nowrap">{fmtDayLong(event.starts_at)}</span> ב-<span className="num whitespace-nowrap">{fmtTime(event.starts_at)}</span>.
+                נתראה ב<span className="whitespace-nowrap">{fmtDayLong(event.starts_at)}</span> ב־<span className="num whitespace-nowrap">{fmtTime(event.starts_at)}</span>.
               </span>
             </>
           )}

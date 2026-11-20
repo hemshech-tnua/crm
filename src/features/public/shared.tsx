@@ -116,7 +116,7 @@ export function inviteMessage(event: PublicEvent | null): string {
   if (event) {
     // a title that already names the association ("ערב לוחמות - "המשך תנועה"") does not get it twice
     const of = /המשך תנועה/.test(event.title) ? '' : ' של המשך תנועה';
-    return `נרשמתי ל${event.title}${of}, ${fmtDayLong(event.starts_at)} ב-${fmtTime(event.starts_at)}. בא לך לבוא איתי? ככה אף אחד מאיתנו לא מגיע לבד.`;
+    return `נרשמתי ל${event.title}${of}, ${fmtDayLong(event.starts_at)} ב־${fmtTime(event.starts_at)}. בא לך לבוא איתי? ככה אף אחד מאיתנו לא מגיע לבד.`;
   }
   return 'שמעת על המשך תנועה? מפגשי שישי ללוחמים וללוחמות: אימון, קפה ונשנושים והרצאה. בא לך לבוא איתי? כל המפגשים הקרובים כאן:';
 }
