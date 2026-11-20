@@ -128,7 +128,7 @@ function EventsReport({ filters }: { filters: Filters }) {
         <div className="mb-4">
           <Notice tone="light" icon="alert">
             <span className="num font-bold">{unclosed}</span> {unclosed === 1 ? 'מפגש מהרשימה עוד לא נסגר' : 'מפגשים מהרשימה עוד לא נסגרו'}, ולכן {unclosed === 1 ? 'הוא לא נספר' : 'הם לא נספרים'} ביעדים. סוגרים בלשונית "סיכום" של המפגש.{' '}
-            <Link to="/app/events?show=past" className="font-semibold text-tide underline underline-offset-2">למפגשים הקודמים</Link>
+            <Link to="/app/events?show=past&status=unclosed" className="font-semibold text-tide underline underline-offset-2">למפגשים הקודמים</Link>
           </Notice>
         </div>
       )}
