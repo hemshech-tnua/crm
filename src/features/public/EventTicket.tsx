@@ -90,7 +90,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
             {lecture && <Row icon="mic">{keepName(lecture)}</Row>}
             {isPriced(event.price) && (
               <Row mark="₪">
-                <span className="font-semibold text-ink">השתתפות: <span className="num">{fmtMoney(event.price)}</span></span>
+                <span className="font-semibold text-ink">מחיר: <span className="num">{fmtMoney(event.price)}</span></span>
                 {detailed && event.payment_note && <span className="block text-sm text-muted">{event.payment_note}</span>}
               </Row>
             )}

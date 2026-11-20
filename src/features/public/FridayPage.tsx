@@ -38,7 +38,7 @@ const KICKER = (
 
 /**
  * #/friday — the landing page for the Friday meetings, the one link shared on Instagram and WhatsApp.
- * Phone: the poster hero, then the next meeting with its "שמרו לי מקום" on the first screen. Wide screen: two columns
+ * Phone: the poster hero, then the next meeting with its "להרשמה" on the first screen. Wide screen: two columns
  * where it helps (the ticket beside the program, more meetings beside the questions).
  * The ?ref= / utm_* of the visit travel into the registration links; the shared link is the plain page link.
  */
@@ -56,7 +56,7 @@ export function FridayPage() {
   return (
     <div>
       <Hero photo={hills} position="50% 74%" kicker={KICKER} title={<Slogan />}>
-        <p>אימון, קפה והרצאה, עם אנשים שהיו&nbsp;שם. באים לבד או עם חברים, כמו&nbsp;שאתם.</p>
+        <p>אימון, קפה והרצאה, עם אנשים שהיו&nbsp;שם. באים לבד או עם&nbsp;חברים.</p>
         {plan.next && (
           <p className="mt-4 hidden font-display text-section text-light sm:block">
             {fmtDayLong(plan.next.starts_at)} · <span className="num">{fmtTime(plan.next.starts_at)}</span>
@@ -69,7 +69,7 @@ export function FridayPage() {
               {ctaLabel(plan.next)}
               <span className="sr-only">: {plan.next.title}, {fmtDayLong(plan.next.starts_at)}</span>
             </ButtonLink>
-            <p className="mt-2.5 text-small text-light/85">פחות מדקה. השתנו התוכניות? מבטלים בקישור&nbsp;האישי.</p>
+            <p className="mt-2.5 text-small text-light/85">ההרשמה לוקחת פחות מדקה. אפשר לבטל בקישור&nbsp;האישי.</p>
           </div>
         )}
       </Hero>
@@ -94,15 +94,16 @@ export function FridayPage() {
         <ForWhom />
       </div>
 
-      <div className="mt-10 lg:mt-14">
-        <LowThreshold />
-      </div>
-
+      {/* right after "אתם לא מכירים שם אף אחד": who meets you at the entrance */}
       {FRIDAY_FACTS.greeter && (
-        <div className="mt-12 lg:mt-16">
+        <div className="mt-10 lg:mt-14">
           <Greeter />
         </div>
       )}
+
+      <div className="mt-12 lg:mt-16">
+        <LowThreshold />
+      </div>
 
       {FLYER && (
         <div className="mt-12 lg:mt-16">

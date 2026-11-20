@@ -11,15 +11,15 @@ import { trackingQuery } from './tracking';
 import { Hero, Slogan } from './Hero';
 import { DetailsLink } from './MeetingDetails';
 import { H2 } from './friday/sections';
+import { bookable, ctaLabel } from './friday/model';
 import hills from '@/assets/photos/hills.webp';
 
 const dayNum = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, day: 'numeric' });
 const monthShort = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, month: 'short' });
 
+/** The ticket's button: the same label as on #/friday and #/e (ctaLabel), or "לפרטים" when no one can register. */
 function cta(e: PublicEvent): string {
-  if (!e.registration_open) return 'לפרטים';
-  if (e.is_full) return e.waitlist_enabled ? 'להצטרפות לרשימת ההמתנה' : 'לפרטים';
-  return 'להרשמה';
+  return bookable(e) ? ctaLabel(e) : 'לפרטים';
 }
 
 export function PublicHome() {
@@ -45,7 +45,7 @@ export function PublicHome() {
           קפה ונשנושים והרצאת&nbsp;אורח.
         </p>
         <ButtonLink to={`/friday${query}`} variant="light" size="lg" cta className="mt-4 w-full sm:mt-5 sm:w-auto" data-testid="home-friday">
-          לבוקר השישי הקרוב
+          על מפגשי שישי
         </ButtonLink>
       </Hero>
 
@@ -57,7 +57,7 @@ export function PublicHome() {
         ) : !next ? (
           <div className="rounded-[var(--radius-panel)] border border-edge bg-paper">
             <EmptyState icon="calendar" title="אין כרגע מפגשים פתוחים להרשמה">
-              המפגש הבא יפורסם בקרוב באינסטגרם ובקבוצות הוואטסאפ של העמותה. נשמח לראות אתכם!
+              כל מפגש מתפרסם כאן, באינסטגרם ובקבוצות הוואטסאפ של&nbsp;העמותה.
             </EmptyState>
           </div>
         ) : (
@@ -74,7 +74,7 @@ export function PublicHome() {
                   {cta(next)}
                   <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
                 </ButtonLink>
-                {cta(next) === 'להרשמה' && <p className="mt-2 text-[0.9375rem] text-muted">ההרשמה לוקחת פחות מדקה.</p>}
+                {bookable(next) && !next.is_full && <p className="mt-2 text-[0.9375rem] text-muted">ההרשמה לוקחת פחות מדקה.</p>}
                 {/* above the button's whole-card link (its ::after overlay) */}
                 <DetailsLink event={next} query={query} className="relative z-[1] mt-3" />
               </EventTicket>

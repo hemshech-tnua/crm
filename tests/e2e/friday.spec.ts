@@ -1,4 +1,4 @@
-// The Friday landing page (#/friday): the next Friday meeting with "שמרו לי מקום" (carrying the referral), or a calm
+// The Friday landing page (#/friday): the next Friday meeting with its registration button (carrying the referral), or a calm
 // empty state when nothing is open. Copy that depends on a fact the team has not confirmed (FRIDAY_FACTS) stays off the
 // page while the fact is unset. Also: the home hero's button to this page, and what the success screen adds for a Friday.
 import { expect, test, type Page } from '@playwright/test';
@@ -16,7 +16,7 @@ test('shows the next Friday meeting and the CTA leads to /r/<code> with the refe
   await expect(page.getByRole('heading', { level: 2, name: 'המפגש הקרוב' })).toBeVisible();
   const cta = page.getByTestId('friday-cta');
   await expect(cta).toBeVisible();
-  await expect(cta).toContainText(/שמרו לי מקום|רשימת ההמתנה/);
+  await expect(cta).toContainText(/^להרשמה/);
   await expect(cta).toHaveAttribute('href', /^#\/r\/[a-z0-9]+\?ref=ig$/);
 
   // phone first: the button is on the first screen
@@ -56,7 +56,7 @@ test('copy that depends on a fact shows exactly when the fact is confirmed', asy
   await shown(FRIDAY_FACTS.allLevels, 'נדרשת רמת כושר');
   await shown(FRIDAY_FACTS.partialOk, 'אפשר להגיע רק לחלק מהבוקר?');
   await shown(FRIDAY_FACTS.showers, 'יש מקום להחליף בגדים');
-  await shown(FRIDAY_FACTS.frequency, 'שישי בבוקר,');
+  await shown(FRIDAY_FACTS.frequency, FRIDAY_FACTS.frequency ?? 'מפגשים בחודש');
   if (FRIDAY_FACTS.greeter) await expect(page.getByText(FRIDAY_FACTS.greeter, { exact: false }).first()).toBeVisible();
   if (Object.values(FRIDAY_FACTS).every((v) => !v)) await expect(page.locator('[data-fact]')).toHaveCount(0);
   // the questions every first-timer gets, whatever the facts
@@ -86,7 +86,7 @@ test('the home hero has a real button to the Friday page, carrying the referral'
   await page.goto('#/?ref=ig');
   await expect(page.getByRole('heading', { level: 1, name: 'השירות נגמר. הצוות לא חייב להיגמר.' })).toBeVisible();
   const button = page.getByTestId('home-friday');
-  await expect(button).toHaveText('לבוקר השישי הקרוב');
+  await expect(button).toHaveText('על מפגשי שישי');
   await expect(button).toHaveAttribute('href', '#/friday?ref=ig');
   await button.click();
   await expect(page.getByRole('heading', { level: 1, name: 'בואו להמשיך תנועה' })).toBeVisible();

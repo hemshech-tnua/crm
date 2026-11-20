@@ -17,7 +17,7 @@ export function SitePage() {
   if (site.isError) {
     return errorCode(site.error) === 'site_not_found' ? (
       <EmptyState icon="qr" title="הקוד הזה לא פעיל" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
-        אפשר לגשת לצוות בכניסה, ונסמן אתכם שם.
+        גשו לצוות בכניסה, ונסמן שם שהגעתם.
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(site.error)} onRetry={() => site.refetch()} />
@@ -29,7 +29,7 @@ export function SitePage() {
   if (s.open.length > 1) {
     return (
       <div className="flex flex-col gap-5">
-        <h1 className="font-display text-title">לאיזה מפגש הגעת?</h1>
+        <h1 className="font-display text-title">לאיזה מפגש הגעתם?</h1>
         <div className="flex flex-col gap-3">
           {s.open.map((o) => (
             <ButtonLink key={o.checkin_code} to={`/c/${o.checkin_code}`} replace size="lg" className="h-auto! w-full flex-col py-4">
@@ -52,7 +52,7 @@ export function SitePage() {
           <p className="text-lg">
             הצ׳ק־אין למפגש הבא ב{s.site} ייפתח {when} בשעה <span className="num font-bold">{fmtTime(s.next.opens_at)}</span>.
           </p>
-          <p className="mt-1 text-muted">אם הגעת ממש לפני, העמוד יתעדכן לבד כשייפתח.</p>
+          <p className="mt-1 text-muted">הגעתם מוקדם? העמוד יתעדכן לבד כשהצ׳ק־אין&nbsp;ייפתח.</p>
           <ButtonLink to={`/r/${s.next.event.code}`} className="mt-4">להרשמה למפגש</ButtonLink>
         </section>
       </div>
@@ -60,7 +60,7 @@ export function SitePage() {
   }
   return (
     <EmptyState icon="calendar" title="אין כרגע מפגש מתוכנן כאן" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
-      מפגשים חדשים מתפרסמים בעמוד המפגשים.
+      כל המפגשים הקרובים מופיעים בעמוד&nbsp;הראשי.
     </EmptyState>
   );
 }

@@ -25,9 +25,9 @@ const monthShort = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, month: 'shor
 const endSentence = (t: string) => (/[.!?]$/.test(t) ? t : `${t}.`);
 
 /**
- * The ticket of the next Friday meeting with the big "שמרו לי מקום": when, where, coffee, and the fee when there is one
+ * The ticket of the next Friday meeting with the big call to action: when, where, coffee, and the fee when there is one
  * (the payment note goes under the button). The activity and the lecture are in the program beside it, not repeated
- * here, so on a phone the button stays on the first screen.
+ * here, so on a phone the button stays on the first screen. Who meets first-timers has its own section (Greeter).
  */
 export function NextTicket({ event: e, query }: { event: PublicEvent; query: string }) {
   const price = priceOf(e);
@@ -39,14 +39,9 @@ export function NextTicket({ event: e, query }: { event: PublicEvent; query: str
         <span className="sr-only">: {e.title}, {fmtDayLong(e.starts_at)}</span>
       </ButtonLink>
       <p className="mt-2 text-small text-muted">
-        {e.is_full ? 'נפתח מקום? נעדכן אתכם לפי הסדר.' : 'ההרשמה לוקחת פחות מדקה.'}
+        {e.is_full ? 'אם יתפנה מקום, נעדכן אתכם לפי סדר ההרשמה.' : 'ההרשמה לוקחת פחות מדקה.'}
         {isPriced(price) && note && <> {endSentence(note)}</>}
       </p>
-      {FRIDAY_FACTS.greeter && (
-        <p className="mt-1 text-small font-semibold text-ink" data-fact="greeter">
-          מגיעים לבד? {FRIDAY_FACTS.greeter} מהצוות מחכה לכם&nbsp;בכניסה.
-        </p>
-      )}
       <DetailsLink event={e} query={query} wide="phone" className="mt-3" />
     </EventTicket>
   );
@@ -66,14 +61,14 @@ export function NoMeeting({ known }: { known: PublicEvent | null }) {
           </p>
           <p className="mt-3 max-w-md text-ink-soft">
             {known.registration_open && known.is_full
-              ? 'המקומות למפגש הזה כבר התמלאו. המפגש שאחריו יפורסם כאן בקרוב.'
+              ? 'המפגש הזה כבר מלא. המפגש שאחריו יפורסם כאן בקרוב.'
               : 'ההרשמה למפגש הזה עוד לא נפתחה. היא תיפתח כאן בקרוב.'}
           </p>
         </>
       ) : (
         <>
           <p className="font-display text-section">המפגש הבא יפורסם בקרוב</p>
-          <p className="mt-1.5 max-w-md text-ink-soft">כל מפגש מתפרסם כאן, באינסטגרם ובקבוצות הוואטסאפ של העמותה.</p>
+          <p className="mt-1.5 max-w-md text-ink-soft">כל מפגש מתפרסם כאן, באינסטגרם ובקבוצות הוואטסאפ של&nbsp;העמותה.</p>
         </>
       )}
       <div className="mt-2">
@@ -122,7 +117,7 @@ export function Program({ event, className }: { event: PublicEvent | null; class
 // ───────────── who it is for ─────────────
 
 const FOR_WHOM = [
-  'סיימתם את השירות כלוחמים או כלוחמות, לא משנה לפני כמה\u00a0זמן',
+  'שירתם כלוחמים או כלוחמות, לא משנה לפני כמה\u00a0זמן',
   'חסרה לכם לפעמים התחושה של\u00a0צוות',
   'בא לכם להתחיל את השישי בתנועה ולא\u00a0בגלילה',
   'אתם לא מכירים שם אף אחד. גם זה\u00a0בסדר.',
@@ -166,14 +161,17 @@ export function LowThreshold() {
 
 // ───────────── who meets you ─────────────
 
-/** Only once the team names the person at the entrance (FRIDAY_FACTS.greeter). */
+/**
+ * Only once the team names the person at the entrance (FRIDAY_FACTS.greeter). Right after "זה בשבילכם אם…", whose last
+ * line is the fear of arriving alone; the page says it here once (and in the matching question).
+ */
 export function Greeter() {
   if (!FRIDAY_FACTS.greeter) return null;
   return (
     <section aria-labelledby="friday-greeter" data-fact="greeter">
       <h2 id="friday-greeter" className={H2}>מי מקבל אתכם</h2>
       <p className="mt-3 max-w-2xl text-heading text-ink lg:text-section">
-        {FRIDAY_FACTS.greeter} מהצוות מחכה לכם בכניסה כדי להכיר לכם כמה&nbsp;אנשים.
+        {FRIDAY_FACTS.greeter} מהצוות מחכה לכם בכניסה ומכיר לכם כמה&nbsp;אנשים.
       </p>
     </section>
   );
@@ -295,16 +293,15 @@ export function Faq({ event }: { event: PublicEvent | null }) {
       <div className="mt-3 divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper lg:mt-4">
         <QuestionGroup id="faq-about" title="על המפגש">
           <Question q="למי מיועדים המפגשים?">
-            ללוחמים וללוחמות אחרי השירות, בכל שלב, ולא משנה כמה זמן עבר מהשחרור. אין צורך בהיכרות מוקדמת עם העמותה או
-            עם המשתתפים.
+            ללוחמים וללוחמות אחרי השירות, לא משנה כמה זמן עבר מהשחרור. לא צריך להכיר מראש את העמותה או את&nbsp;המשתתפים.
           </Question>
           <Question q={'אפשר להגיע לבד, בלי להכיר אף\u00a0אחד?'}>
-            בהחלט. הבוקר בנוי כך שיש זמן להכיר: אחרי האימון יושבים יחד לקפה ולנשנושים, ורק אז מתחילה&nbsp;ההרצאה.
-            {f.greeter && <> {f.greeter} מהצוות מחכה בכניסה כדי לקבל את מי שמגיע בפעם הראשונה ולהכיר לו&nbsp;אנשים.</>}
+            <p>כן. אחרי האימון יושבים יחד לקפה ולנשנושים, ורק אז מתחילה ההרצאה. יש זמן&nbsp;להכיר.</p>
+            {f.greeter && <p className="mt-1.5">{f.greeter} מהצוות מחכה בכניסה ומכיר למי שבא בפעם הראשונה כמה&nbsp;אנשים.</p>}
           </Question>
           <Question q="צריך לשתף משהו אישי או לדבר על השירות?">
-            לא. המפגש אינו מעגל שיחה: מתאמנים, יושבים לקפה ולנשנושים ושומעים הרצאה. כל אחד ואחת משתפים רק את מה
-            שהם&nbsp;רוצים.
+            לא. זה לא מעגל שיחה: מתאמנים, יושבים לקפה ושומעים הרצאה. כל אחד ואחת משתפים רק מה
+            שרוצים.
           </Question>
           {f.allLevels && (
             <Question q="נדרשת רמת כושר מסוימת?">
@@ -312,7 +309,7 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             </Question>
           )}
           <Question q="אפשר להביא חבר או חברה?">
-            כן, בשמחה. ההרשמה אישית, כך שכל אחד ואחת נרשמים בנפרד: שלחו להם את הקישור&nbsp;לדף.
+            כן, בשמחה. כל אחד ואחת נרשמים בנפרד, אז שלחו להם את הקישור&nbsp;לדף.
           </Question>
         </QuestionGroup>
 
@@ -332,12 +329,12 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             </Question>
           )}
           <Question q="מה כדאי להביא?">
-            בגדי ספורט ונעליים נוחות לאימון, ובקבוק מים. קפה ונשנושים מחכים&nbsp;במקום.
+            בגדים ונעליים נוחים לאימון, ובקבוק מים. את הקפה והנשנושים אנחנו&nbsp;מביאים.
           </Question>
           {f.showers && <Question q="יש מקום להחליף בגדים או להתקלח?">{f.showers}</Question>}
           {f.partialOk && (
             <Question q="אפשר להגיע רק לחלק מהבוקר?">
-              כן, אפשר להגיע רק לאימון או רק להרצאה. גם השתתפות בחלק מהבוקר היא&nbsp;בתשלום.
+              כן, אפשר להגיע רק לאימון או רק להרצאה. גם אז ההשתתפות היא&nbsp;בתשלום.
             </Question>
           )}
         </QuestionGroup>
@@ -345,10 +342,16 @@ export function Faq({ event }: { event: PublicEvent | null }) {
         <QuestionGroup id="faq-register" title="הרשמה, תשלום ופרטיות">
           <Question q="כמה עולה ההשתתפות?">
             {isPriced(price) ? (
+              // the price on its own line (a sentence ending in "₪" breaks badly), then how and when to pay
               <>
-                ההשתתפות עולה <span className="num font-semibold text-ink">{fmtMoney(price)}</span>.{' '}
-                {event?.payment_url ? 'משלמים בהרשמה, בכרטיס אשראי, וההרשמה מאושרת מיד אחרי התשלום.' : 'התשלום מתבצע בכניסה למפגש.'}
-                {note && <> {endSentence(note)}</>}
+                <p>מחיר: <span className="num font-semibold text-ink">{fmtMoney(price)}</span></p>
+                <p className="mt-1.5">
+                  {event?.payment_url
+                    // the team's payment note says how to pay; without one, the payment page takes a credit card
+                    ? `משלמים בסוף ההרשמה${note ? '' : ', בכרטיס אשראי'}. ההרשמה מאושרת מיד אחרי התשלום.`
+                    : 'משלמים בכניסה למפגש.'}
+                  {note && <> {endSentence(note)}</>}
+                </p>
               </>
             ) : price === 0 ? (
               'ההשתתפות בחינם.'
@@ -360,15 +363,15 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             )}
           </Question>
           <Question q="איך מבטלים או משנים הרשמה?">
-            בקישור האישי שמופיע מיד אחרי ההרשמה. ביטול מראש מפנה את המקום למי שממתין&nbsp;לו.
+            בקישור האישי שמקבלים בסוף ההרשמה. ביטול מראש מפנה את המקום למי שממתין&nbsp;לו.
           </Question>
           <Question q="מה קורה עם הפרטים שממלאים בטופס?">
-            הפרטים משמשים רק לניהול ההרשמה וההגעה ולחזרה אליכם. רק צוות העמותה רואה אותם, והם לא נמכרים ולא מועברים
+            הפרטים משמשים רק לניהול ההרשמה וההגעה ולחזרה אליכם. רק צוות העמותה רואה אותם. הם לא נמכרים ולא מועברים
             לגורמים אחרים.{' '}
             <Link to="/privacy" className="font-semibold text-tide underline underline-offset-2">למדיניות הפרטיות</Link>
           </Question>
           <Question q="מצלמים במפגשים?">
-            לפעמים, בשביל העמודים של העמותה. בטופס ההרשמה אפשר לסמן שלא יפורסמו תמונות שלכם, והצוות יראה את
+            לפעמים, בשביל העמודים של העמותה. לא רוצים להופיע? מסמנים את זה בטופס ההרשמה, והצוות רואה את
             הבקשה.
           </Question>
         </QuestionGroup>
@@ -383,7 +386,7 @@ export function AskUs() {
     <section aria-labelledby="friday-ask">
       <h2 id="friday-ask" className={H2}>שאלה אחרת?</h2>
       <p className="mt-3 rounded-[var(--radius-panel)] border border-edge bg-paper px-4 pt-3 pb-1 text-ink-soft sm:px-5 lg:mt-4">
-        לא מצאתם כאן תשובה? <ContactLine inline />
+        <ContactLine inline />
       </p>
     </section>
   );
@@ -392,7 +395,7 @@ export function AskUs() {
 // ───────────── closing ─────────────
 
 /**
- * The closing band: navy, stripes from the corner. The question and "שמרו לי מקום" for the next meeting, then a quieter
+ * The closing band: navy, stripes from the corner. The question and the registration button for the next meeting, then a quieter
  * second action: send the page to someone from the old team (copy the link, or WhatsApp with a ready message).
  */
 export function ClosingBand({ next, query, url, message, onCopy }: {

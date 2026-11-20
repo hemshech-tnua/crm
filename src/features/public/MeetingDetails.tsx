@@ -37,12 +37,12 @@ export function hasDetails(e: PublicEvent, where: 'register' | 'other' = 'other'
 }
 
 // A real secondary button in the page's language: navy frame, bold label, the people icon (it leads to who is with us),
-// the width of the call to action above it. It fills navy on hover and stays clearly second to «שמרו לי מקום».
+// the width of the call to action above it. It fills navy on hover and stays clearly second to «להרשמה».
 const TRIGGER = buttonClass('secondary', 'md', 'min-w-44 gap-2 border-2 border-ink text-ink hover:border-ink hover:bg-ink hover:text-light active:bg-ink-soft', true);
 
 /**
  * How wide the trigger is: false = its own width; 'always' = the full width (under the ticket on #/r); 'phone' = full
- * width on a phone and, from sm up, the same width as the «שמרו לי מקום» button above it (CTA_WIDTH), so they line up.
+ * width on a phone and, from sm up, the same width as the «להרשמה» button above it (CTA_WIDTH), so they line up.
  */
 type Wide = false | 'always' | 'phone';
 export const CTA_WIDTH = 'sm:w-auto sm:min-w-[23rem]';
@@ -109,11 +109,16 @@ function initials(name: string): string {
   return words.slice(0, 2).map((w) => w[0]).join('');
 }
 
-/** The chip on the card: the label the team wrote, or a neutral default from the role. */
+/**
+ * The chip on the card: the label the team wrote, or a neutral default from the role. An activity already named
+ * "אימון קרוספיט" is not prefixed again ("אימון אימון קרוספיט").
+ */
 function roleChip(p: PublicPerson, e: PublicEvent): string {
   if (p.label?.trim()) return p.label.trim();
   if (p.role === 'speaker') return 'הרצאת אורח';
-  return e.activity_name?.trim() ? `אימון ${e.activity_name.trim()}` : 'אימון';
+  const activity = e.activity_name?.trim();
+  if (!activity) return 'אימון';
+  return /^אימון(\s|$)/.test(activity) ? activity : `אימון ${activity}`;
 }
 
 /** A few words about the person: four lines, then «קראו עוד» when there is more. */
@@ -274,6 +279,10 @@ function Fact({ term, children }: { term: string; children: ReactNode }) {
   );
 }
 
+/**
+ * Where, how much, what to bring, and whether registration is open. The date and time are in the header right above,
+ * so they are not repeated here.
+ */
 function Facts({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
   const friday = e.type === 'friday';
   const status = availability(e);
@@ -282,10 +291,6 @@ function Facts({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
     <section aria-labelledby={id}>
       <SectionHead mode={mode} id={id}>פרטים חשובים</SectionHead>
       <dl className="mt-3 divide-y divide-edge rounded-[var(--radius-panel)] border border-edge bg-paper lg:mt-4">
-        <Fact term="מתי">
-          {fmtDayLong(e.starts_at)}
-          <span className="block text-ink-soft"><span className="num">{timeRange(e)}</span></span>
-        </Fact>
         {e.location && (
           <Fact term="איפה">
             {e.location}
@@ -294,14 +299,18 @@ function Facts({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
             </a>
           </Fact>
         )}
-        {friday && <Fact term="קפה ונשנושים">את הקפה והנשנושים אנחנו&nbsp;מביאים.</Fact>}
         {isPriced(e.price) && (
-          <Fact term="השתתפות">
+          <Fact term="מחיר">
             <span className="num font-semibold">{fmtMoney(e.price)}</span>
             {e.payment_note && <span className="block text-small text-muted">{e.payment_note}</span>}
           </Fact>
         )}
-        {friday && <Fact term="מה להביא">בגדים ונעליים נוחים לאימון, ובקבוק מים.</Fact>}
+        {friday && (
+          <Fact term="מה להביא">
+            בגדים ונעליים נוחים לאימון, ובקבוק מים.
+            <span className="block text-small text-muted">את הקפה והנשנושים אנחנו&nbsp;מביאים.</span>
+          </Fact>
+        )}
         <Fact term="הרשמה"><Badge tone={status.tone}>{status.text}</Badge></Fact>
       </dl>
     </section>
@@ -309,18 +318,19 @@ function Facts({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
 }
 
 /**
- * The view itself, the same on the page and in the sheet: who is with us, the lecture, the morning, the important
- * details. Wide screen, page: the header, the details and the call to action stay in a column beside the content.
+ * The view itself, the same on the page and in the sheet, in the order a visitor decides: when (the header), where and
+ * how much (the important details), what happens (the morning), who leads it, and the lecture. Wide screen, page: the
+ * header, the details and the call to action stay in a column beside the content.
  */
 export function MeetingDetails({ event: e, mode, cta }: { event: PublicEvent; mode: Mode; cta?: ReactNode }) {
   if (mode === 'sheet') {
     return (
       <div className="flex flex-col gap-7">
         <Header event={e} mode={mode} />
+        <Facts event={e} mode={mode} />
+        <Morning event={e} mode={mode} />
         <People event={e} mode={mode} />
         <Lecture event={e} mode={mode} />
-        <Morning event={e} mode={mode} />
-        <Facts event={e} mode={mode} />
       </div>
     );
   }
@@ -329,13 +339,13 @@ export function MeetingDetails({ event: e, mode, cta }: { event: PublicEvent; mo
     <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)] lg:items-start lg:gap-10">
       <div className="contents lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-6">
         <div className="order-1"><Header event={e} mode={mode} /></div>
-        <div className="order-3"><Facts event={e} mode={mode} /></div>
+        <div className="order-2"><Facts event={e} mode={mode} /></div>
         {cta && <div className="order-4">{cta}</div>}
       </div>
-      <div className="order-2 flex min-w-0 flex-col gap-8">
+      <div className="order-3 flex min-w-0 flex-col gap-8">
+        <Morning event={e} mode={mode} />
         <People event={e} mode={mode} />
         <Lecture event={e} mode={mode} />
-        <Morning event={e} mode={mode} />
       </div>
     </div>
   );
@@ -386,13 +396,13 @@ export function MeetingPage() {
     if (c === 'registration_not_open') {
       return (
         <EmptyState icon="calendar" title="ההרשמה עוד לא נפתחה" action={<ButtonLink to={home}>למפגשים הפתוחים עכשיו</ButtonLink>}>
-          המפגש הזה עוד בהכנה. נסו שוב בקרוב, או עקבו אחרינו בקבוצות ובאינסטגרם.
+          המפגש הזה עוד בהכנה. נסו שוב בקרוב, או עקבו אחרינו באינסטגרם ובקבוצות&nbsp;הוואטסאפ.
         </EmptyState>
       );
     }
     return c === 'event_not_found' ? (
       <EmptyState icon="calendar" title="לא מצאנו את המפגש" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
-        ייתכן שהקישור ישן או שהוקלד לא נכון.
+        אולי הקישור ישן או שחסר בו תו. כל המפגשים הפתוחים מופיעים בעמוד&nbsp;הראשי.
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(event.error)} onRetry={() => event.refetch()} />

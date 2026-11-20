@@ -41,8 +41,12 @@ export function paymentNoteOf(e: PublicEvent | null | undefined): string | null 
   return typeof raw === 'string' && raw.trim() ? raw.trim() : null;
 }
 
-/** The label of the main call to action. */
-export const ctaLabel = (e: PublicEvent) => (e.is_full ? 'הכניסו אותי לרשימת ההמתנה' : 'שמרו לי מקום');
+/**
+ * The label of the main call to action, the same on every public page: it says what happens next. A meeting with a
+ * payment link is paid during registration, so its button says so; a full one leads to the waiting list.
+ */
+export const ctaLabel = (e: PublicEvent) =>
+  e.is_full ? 'להרשמה לרשימת ההמתנה' : e.payment_url && Number(e.price) > 0 ? 'להרשמה ולתשלום' : 'להרשמה';
 
 /** `time` is a clock time; `until` marks the end of the morning ("עד 11:30"). `note` is a second line under the detail. */
 export type ProgramItem = { time: string | null; until?: boolean; title: string; detail: string | null; note?: string | null };
@@ -72,13 +76,16 @@ export function program(e: PublicEvent | null, facts = FRIDAY_FACTS): ProgramIte
   ];
 }
 
-/** The short "no strings" points of the navy strip; the fitness one and the rhythm only once the team confirms them. */
+/**
+ * The short "no strings" points of the navy strip, each a few words that fit one line on a phone; the fitness one and
+ * the rhythm only once the team confirms them.
+ */
 export function lowThreshold(facts = FRIDAY_FACTS): string[] {
   return [
     'בלי דרגות, בלי מסדרים',
     'בלי התחייבות',
     ...(facts.allLevels ? ['לכל רמות הכושר'] : []),
     'ביטול בקישור האישי',
-    ...(facts.frequency ? [`שישי בבוקר, ${facts.frequency}`] : []),
+    ...(facts.frequency ? [facts.frequency] : []),
   ];
 }
