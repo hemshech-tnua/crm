@@ -45,7 +45,7 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
     if (busy) return;
     setError(null);
     const errs: typeof errors = {};
-    if (!overall) errs.overall = 'בחרו ציון למפגש, מ-1 עד 5.';
+    if (!overall) errs.overall = 'בחרו ציון למפגש, מ־1 עד 5.';
     if (!personal && phone.trim() && !normalizePhone(phone)) errs.phone = errorMessage({ message: 'invalid_phone' });
     setErrors(errs);
     if (errs.overall) return focus(`${ids}-overall`);

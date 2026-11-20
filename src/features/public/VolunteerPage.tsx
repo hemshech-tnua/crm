@@ -76,7 +76,7 @@ export function VolunteerPage() {
 }
 
 const STATUS: Record<VShift['status'], { badge: ReactNode; text: string }> = {
-  invited: { badge: <Badge tone="warn" icon="alert">מחכים לתשובה שלך</Badge>, text: 'בחרו תשובה. אפשר לשנות אותה אחר כך.' },
+  invited: { badge: <Badge tone="warn" icon="alert">מחכים לתשובה שלך</Badge>, text: 'אפשר לבחור, ואפשר לשנות אחר כך.' },
   confirmed: { badge: <Badge tone="good" icon="check">אישרת הגעה</Badge>, text: 'תודה! נשלח תזכורת לפני המפגש.' },
   declined: { badge: <Badge>עדכנת שלא מסתדר</Badge>, text: 'תודה שעדכנת. אם בכל זאת יסתדר, אפשר לשנות כאן.' },
 };

@@ -171,7 +171,7 @@ export function PersonalLink({ url, token, waitlist }: { url: string; token: str
     <Block title={waitlist ? 'הקישור האישי שלך' : 'השתנו התוכניות?'}>
       <p className="text-[0.9375rem] text-ink-soft">
         {waitlist
-          ? 'שמרו את הקישור. דרכו רואים את המקום שלך בתור, ואפשר גם לצאת מרשימת ההמתנה.'
+          ? 'כדאי לשמור את הקישור. דרכו אפשר לראות את המקום שלך בתור, או לצאת מרשימת ההמתנה.'
           : 'אפשר לבטל בקישור האישי. כך המקום עובר למי שמחכה.'}
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
@@ -324,7 +324,7 @@ export function PayBlock({ event, payer = null, className = '' }: { event: Publi
             </p>
           )}
           <p className="mt-2 text-[0.9375rem] text-ink-soft">
-            דף התשלום המאובטח של חברת התשלום נפתח בחלון חדש. לא מסתדר עכשיו? אפשר לשלם אחר כך בקישור&nbsp;האישי.
+            דף התשלום המאובטח של חברת התשלום ייפתח בחלון חדש. לא מסתדר עכשיו? אפשר לשלם אחר כך בקישור&nbsp;האישי.
           </p>
         </>
       ) : (

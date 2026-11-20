@@ -300,8 +300,8 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             {f.greeter && <p className="mt-1.5">{f.greeter} מהצוות מחכה בכניסה ומכיר למי שבא בפעם הראשונה כמה&nbsp;אנשים.</p>}
           </Question>
           <Question q="צריך לשתף משהו אישי או לדבר על השירות?">
-            לא. זה לא מעגל שיחה: מתאמנים, יושבים לקפה ושומעים הרצאה. כל אחד ואחת משתפים רק מה
-            שרוצים.
+            לא. זה לא מעגל שיחה: מתאמנים, יושבים לקפה ושומעים הרצאה. כל אחד ואחת משתפים רק את מה
+            שהם&nbsp;רוצים.
           </Question>
           {f.allLevels && (
             <Question q="נדרשת רמת כושר מסוימת?">
@@ -334,7 +334,7 @@ export function Faq({ event }: { event: PublicEvent | null }) {
           {f.showers && <Question q="יש מקום להחליף בגדים או להתקלח?">{f.showers}</Question>}
           {f.partialOk && (
             <Question q="אפשר להגיע רק לחלק מהבוקר?">
-              כן, אפשר להגיע רק לאימון או רק להרצאה. גם אז ההשתתפות היא&nbsp;בתשלום.
+              כן, אפשר להגיע רק לאימון או רק להרצאה. גם השתתפות בחלק מהבוקר היא&nbsp;בתשלום.
             </Question>
           )}
         </QuestionGroup>
@@ -371,7 +371,7 @@ export function Faq({ event }: { event: PublicEvent | null }) {
             <Link to="/privacy" className="font-semibold text-tide underline underline-offset-2">למדיניות הפרטיות</Link>
           </Question>
           <Question q="מצלמים במפגשים?">
-            לפעמים, בשביל העמודים של העמותה. לא רוצים להופיע? מסמנים את זה בטופס ההרשמה, והצוות רואה את
+            לפעמים, בשביל העמודים של העמותה. לא רוצים שיפורסמו תמונות שלכם? מסמנים את זה בטופס ההרשמה, והצוות רואה את
             הבקשה.
           </Question>
         </QuestionGroup>

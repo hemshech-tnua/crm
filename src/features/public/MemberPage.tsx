@@ -165,7 +165,7 @@ function Done({ result: r }: { result: MembershipResult }) {
   const title = r.result === 'already_member' ? `${name}כבר יש לך חברות בעמותה` : r.result === 'already_requested' ? `${name}הבקשה שלך כבר אצלנו` : `תודה${r.first_name ? `, ${r.first_name}` : ''}! קיבלנו`;
   const body = r.result === 'already_member'
     ? 'תודה שבחרת להיות חלק מהעמותה. נתראה במפגש הבא!'
-    : 'מישהו מהצוות יחזור אליך בימים הקרובים, בטלפון, עם כל הפרטים על ההצטרפות.';
+    : 'מישהו מהצוות יחזור אליך בימים הקרובים עם כל הפרטים על ההצטרפות.';
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center gap-3 pt-2 text-center">
       <SuccessMark />

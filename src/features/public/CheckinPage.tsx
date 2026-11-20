@@ -218,7 +218,7 @@ function Walkin({ code, phone, onBack, onResult }: {
         </p>
         {name != null && (
           <p className="mt-2 text-[1.05rem] text-ink-soft">
-            כבר היית אצלנו? לא מצאנו את השם הזה עם המספר הזה.{' '}
+            לא מצאנו את השם הזה עם המספר הזה. כבר נרשמת או היית אצלנו?{' '}
             <button type="button" onClick={() => { setTyped(name); setName(null); }} className="min-h-11 font-semibold text-tide underline underline-offset-4">
               לנסות שוב עם השם מההרשמה
             </button>

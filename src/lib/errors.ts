@@ -8,7 +8,7 @@ const MESSAGES: Record<string, string> = {
   invalid_topic: 'צריך לכתוב נושא (לפחות 2 אותיות).',
   invalid_url: 'הקישור צריך להתחיל ב-https://',
   invalid_kind: 'בחירה לא תקינה.',
-  invalid_rating: 'בחרו דירוג בין 1 ל-5.',
+  invalid_rating: 'בחרו ציון בין 1 ל־5.',
   invalid_date: 'התאריך לא תקין.',
   invalid_attendance: 'סטטוס נוכחות לא תקין.',
   event_not_found: 'לא מצאנו את המפגש. ייתכן שהקישור ישן.',

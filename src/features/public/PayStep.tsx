@@ -87,7 +87,7 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
         <TriList
           className="mt-3 text-[0.9375rem] text-ink"
           items={[
-            'נפתח דף התשלום המאובטח של חברת התשלום, בחלון\u00a0חדש.',
+            'דף התשלום המאובטח של חברת התשלום ייפתח בחלון\u00a0חדש.',
             prefilled
               ? <span className="font-semibold">השם והטלפון כבר ממולאים שם. נשאר להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.</span>
               : <span className="font-semibold">כותבים שם וטלפון כמו בהרשמה, כדי שנזהה את התשלום, ומשלמים בכרטיס&nbsp;אשראי.</span>,

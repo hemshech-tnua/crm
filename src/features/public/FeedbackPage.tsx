@@ -126,7 +126,7 @@ function Thanks({ token }: { token: string | null }) {
       <div className="pt-2 text-center">
         <SuccessMark />
         <ResultTitle className="mt-4">המשוב התקבל. תודה!</ResultTitle>
-        <p className="mx-auto mt-2 max-w-sm text-lg text-ink-soft">נשתמש בו כדי לבנות את המפגשים הבאים.</p>
+        <p className="mx-auto mt-2 max-w-sm text-lg text-ink-soft">הוא עוזר לנו לבנות את המפגשים הבאים.</p>
       </div>
       {invite && <InviteBlock url={allEventsUrl(invite)} message={inviteMessage(null)} />}
       <ButtonLink to="/" variant="secondary" className="self-center">למפגשים הקרובים</ButtonLink>
