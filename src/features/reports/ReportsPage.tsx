@@ -466,7 +466,7 @@ function PresentersReport({ filters }: { filters: Filters }) {
     { header: 'תפקיד', value: (x) => (x.kind === 'speaker' ? 'מרצה' : 'הדרכה') },
     { header: 'נושאים', value: (x) => x.topics ?? x.topic },
     { header: 'מפגשים', value: (x) => x.events },
-    { header: 'ממוצע משתתפים', value: (x) => x.avg_attendance },
+    { header: 'ממוצע לוחמים', value: (x) => x.avg_attendance },
     { header: 'חדשים שהגיעו', value: (x) => x.new_attendees },
     { header: 'דירוג (הרצאה למרצים, פעילות למדריכים)', value: (x) => x.avg_rating },
   ];
@@ -478,7 +478,7 @@ function PresentersReport({ filters }: { filters: Filters }) {
         <table className="w-full text-body">
           <thead className="border-b border-edge"><tr>
             <th className={th}>שם</th><th className={th}>{kind === 'speaker' ? 'נושאי ההרצאות' : 'פעילויות'}</th><th className={th}>מפגשים</th>
-            <th className={th}>ממוצע משתתפים</th><th className={th}>חדשים</th><th className={th}>{kind === 'speaker' ? 'דירוג ההרצאה' : 'דירוג הפעילות'}</th>
+            <th className={th}>ממוצע לוחמים</th><th className={th}>חדשים</th><th className={th}>{kind === 'speaker' ? 'דירוג ההרצאה' : 'דירוג הפעילות'}</th>
           </tr></thead>
           <tbody className="divide-y divide-edge">
             {list.map((x) => (
@@ -550,7 +550,7 @@ function Definitions() {
     ['שיעור הגעה (יעד 80%)', 'מבין מי שנרשם מראש ולא ביטל: כמה הגיעו בפועל.'],
     ['חדש', 'לוחם שזו הייתה הפעם הראשונה שלו בפעילות כלשהי של העמותה.'],
     ['חוזר', 'לוחם שהגיע בעבר לפעילות אחרת.'],
-    ['ממוצע משתתפים (יעד 20)', 'סך ההגעות חלקי מספר המפגשים שהתקיימו בתקופה.'],
+    ['ממוצע לוחמים (יעד 20)', 'סך ההגעות חלקי מספר המפגשים שהתקיימו בתקופה.'],
     ['הגיעו ליותר ממפגש אחד (יעד 20%)', 'מבין הלוחמים שהגיעו בתקופה: כמה הגיעו בסך הכול לשני מפגשים או יותר מאותו סוג (עד סוף התקופה).'],
     ['הגיעו דרך חבר (יעד 25%)', 'מבין החדשים בתקופה: כמה סימנו שחבר הביא אותם, או נרשמו דרך קישור הזמנה אישי.'],
     ['דירוג ממוצע (יעד 4)', 'ממוצע "הדירוג הכללי" במשובים על מפגשי התקופה.'],

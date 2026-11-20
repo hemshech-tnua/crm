@@ -86,7 +86,7 @@ export function GeneralSettings() {
     <form onSubmit={submit} className="flex flex-col gap-5">
       <Panel title="היעדים לשנה">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Input label="ממוצע משתתפים למפגש" type="number" min={0} inputMode="numeric" {...bind('goal_avg_attendance')} />
+          <Input label="ממוצע לוחמים למפגש" type="number" min={0} inputMode="numeric" {...bind('goal_avg_attendance')} />
           <Input label="שיעור הגעה מתוך הנרשמים (%)" type="number" min={0} max={100} {...bind('goal_show_rate')} />
           <Input label="הגיעו ליותר ממפגש אחד (%)" type="number" min={0} max={100} {...bind('goal_return_rate')} />
           <Input label="חדשים שהגיעו דרך חבר (%)" type="number" min={0} max={100} {...bind('goal_friend_share')} />
