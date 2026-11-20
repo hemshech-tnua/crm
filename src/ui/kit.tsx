@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type KeyboardEvent, type RefObject, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Link, type LinkProps } from 'react-router';
 import { Icon, type IconName } from './Icon';
 import { Stripes, Tri } from './Shapes';
@@ -269,10 +269,11 @@ const TONE: Record<Tone, string> = {
   ink: 'bg-ink text-light',
 };
 
-export function Badge({ tone = 'neutral', children, icon, title }: { tone?: Tone; children: ReactNode; icon?: IconName; title?: string }) {
+/** A status tag. `size="md"` (28px, 14px type) where a tag must be read at arm's length (the door list). */
+export function Badge({ tone = 'neutral', children, icon, title, size = 'sm', className = '' }: { tone?: Tone; children: ReactNode; icon?: IconName; title?: string; size?: 'sm' | 'md'; className?: string }) {
   return (
-    <span title={title} className={cx('inline-flex h-6 items-center gap-1 rounded-[2px] px-1.5 text-xs font-medium whitespace-nowrap', TONE[tone])}>
-      {icon && <Icon name={icon} size={13} strokeWidth={2.2} />}
+    <span title={title} className={cx('inline-flex items-center gap-1 rounded-[2px] font-medium whitespace-nowrap', size === 'md' ? 'h-7 px-2 text-sm' : 'h-6 px-1.5 text-xs', TONE[tone], className)}>
+      {icon && <Icon name={icon} size={size === 'md' ? 15 : 13} strokeWidth={2.2} />}
       {children}
     </span>
   );
@@ -363,10 +364,89 @@ export function Notice({ tone = 'tide', icon = 'shield', children }: { tone?: 't
   );
 }
 
-/** Tabs driven by a URL search param, so a tab can be linked and survives reload. */
+// ───────────── sideways strips (tabs, chips) ─────────────
+
+/**
+ * A strip that scrolls sideways on a narrow screen: fades the edge(s) behind which more items hide (only those, only
+ * when the strip overflows), and keeps the chosen item in view. `selector` finds the chosen item inside the strip.
+ * Exported for other sideways strips; returns the style to put on the scrolling element.
+ */
+export function useSidewaysStrip(ref: RefObject<HTMLElement | null>, selector: string, key: unknown): CSSProperties | undefined {
+  const [edges, setEdges] = useState<{ left: boolean; right: boolean }>({ left: false, right: false });
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 1) {
+      setEdges((e) => (e.left || e.right ? { left: false, right: false } : e));
+      return;
+    }
+    const rtl = getComputedStyle(el).direction === 'rtl';
+    const pos = Math.abs(el.scrollLeft); // RTL scrollLeft runs 0 → −max in current browsers
+    const fromStart = pos > 1;
+    const toEnd = pos < max - 1;
+    const left = rtl ? toEnd : fromStart;
+    const right = rtl ? fromStart : toEnd;
+    setEdges((e) => (e.left === left && e.right === right ? e : { left, right }));
+  }, [ref]);
+  // keep the chosen item fully in view (a tab opened from a link, the last tab on a phone); smooth after the first time
+  const first = useRef(true);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const b = el?.querySelector<HTMLElement>(selector);
+    if (el && b && el.scrollWidth > el.clientWidth + 1) {
+      const cr = el.getBoundingClientRect();
+      const br = b.getBoundingClientRect();
+      const pad = 40; // clear of the fade
+      let dx = 0;
+      if (br.left < cr.left + pad) dx = br.left - (cr.left + pad);
+      else if (br.right > cr.right - pad) dx = br.right - (cr.right - pad);
+      if (dx) {
+        const smooth = !first.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollBy({ left: dx, behavior: smooth ? 'smooth' : 'auto' });
+      }
+    }
+    first.current = false;
+    measure();
+  }, [key, ref, selector, measure]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.addEventListener('scroll', measure, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', measure);
+      ro?.disconnect();
+    };
+  }, [ref, measure]);
+  if (!edges.left && !edges.right) return undefined;
+  const fade = 32;
+  const mask = `linear-gradient(to right, ${edges.left ? 'transparent' : '#000'} 0, #000 ${edges.left ? fade : 0}px, #000 calc(100% - ${edges.right ? fade : 0}px), ${edges.right ? 'transparent' : '#000'} 100%)`;
+  return { maskImage: mask, WebkitMaskImage: mask };
+}
+
+/** Tabs driven by a URL search param, so a tab can be linked and survives reload. On a phone the row scrolls sideways:
+ *  the edge with more tabs fades, and the current tab is always scrolled into view. Arrow keys move between tabs. */
 export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs: { value: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void; label: string }) {
+  const strip = useRef<HTMLDivElement>(null);
+  const fade = useSidewaysStrip(strip, '[aria-selected="true"]', value);
+  const keys = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = tabs.findIndex((t) => t.value === value);
+    const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
+    const next = { ArrowLeft: rtl ? 1 : -1, ArrowRight: rtl ? -1 : 1 }[e.key as 'ArrowLeft' | 'ArrowRight'];
+    let to = -1;
+    if (next) to = (i + next + tabs.length) % tabs.length;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = tabs.length - 1;
+    if (to < 0) return;
+    e.preventDefault();
+    onChange(tabs[to].value);
+    requestAnimationFrame(() => strip.current?.querySelectorAll<HTMLElement>('[role="tab"]')[to]?.focus());
+  };
   return (
-    <div role="tablist" aria-label={label} className="-mx-4 mb-5 flex gap-1 overflow-x-auto border-b border-line px-4 [mask-image:linear-gradient(to_right,transparent,#000_28px)] sm:mx-0 sm:px-0 sm:[mask-image:none]">
+    <div ref={strip} role="tablist" aria-label={label} onKeyDown={keys} style={fade}
+      className="-mx-4 mb-5 flex gap-1 overflow-x-auto border-b border-line px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
       {tabs.map((t) => {
         const on = t.value === value;
         return (
@@ -375,6 +455,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs:
             role="tab"
             type="button"
             aria-selected={on}
+            tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.value)}
             className={cx(
               '-mb-px flex h-11 shrink-0 items-center gap-1.5 border-b-[3px] px-2.5 font-semibold transition-colors sm:px-3',
@@ -403,25 +484,53 @@ export function KeyValue({ items }: { items: [ReactNode, ReactNode][] }) {
   );
 }
 
-export function SearchInput({ value, onChange, placeholder, label, inputMode, size = 'md' }: {
+/**
+ * A search box. With text in it, a × clears it (and returns the focus to the box). Extra props are optional and pass
+ * through to the input (autoFocus, onKeyDown, enterKeyHint, id…); `ref` reaches the input.
+ */
+export const SearchInput = forwardRef<HTMLInputElement, {
   value: string; onChange: (v: string) => void; placeholder: string; label: string;
   inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode']; size?: 'md' | 'lg';
-}) {
+  /** called after × clears the box (onChange('') is called first) */
+  onClear?: () => void;
+  className?: string;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'size' | 'placeholder'>>(function SearchInput(
+  { value, onChange, placeholder, label, inputMode, size = 'md', onClear, className = '', ...rest }, ref,
+) {
+  const own = useRef<HTMLInputElement | null>(null);
+  const setRef = (el: HTMLInputElement | null) => {
+    own.current = el;
+    if (typeof ref === 'function') ref(el);
+    else if (ref) ref.current = el;
+  };
   return (
-    <div className="relative">
+    <div className={cx('relative', className)}>
       <Icon name="search" size={18} className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-faint" />
       <input
+        ref={setRef}
         type="search"
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         inputMode={inputMode}
-        className={cx(controlBase, size === 'lg' ? 'h-14 pr-10 text-lg' : 'h-12 pr-10')}
+        {...rest}
+        className={cx(controlBase, size === 'lg' ? 'h-14 pr-10 text-lg' : 'h-12 pr-10', value ? 'pl-12' : null, '[&::-webkit-search-cancel-button]:appearance-none')}
       />
+      {value && (
+        <button
+          type="button"
+          aria-label="ניקוי החיפוש"
+          title="ניקוי החיפוש"
+          onClick={() => { onChange(''); onClear?.(); own.current?.focus(); }}
+          className={cx('absolute top-1/2 left-1 inline-flex -translate-y-1/2 items-center justify-center rounded-[var(--radius-control)] text-muted hover:bg-ink/[0.07] hover:text-ink', size === 'lg' ? 'h-12 w-12' : 'h-11 w-11')}
+        >
+          <Icon name="close" size={18} />
+        </button>
+      )}
     </div>
   );
-}
+});
 
 // ───────────── shared controls (one look for every filter, segment and table) ─────────────
 
@@ -456,19 +565,12 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
 export function FilterChips<T extends string>({ options, value, onChange, label, className = '' }: {
   options: { value: T; label: ReactNode; count?: number; title?: string }[]; value: T; onChange: (v: T) => void; label: string; className?: string;
 }) {
-  // on a phone the chips scroll sideways: keep the chosen one in view (e.g. a filter opened from a link)
+  // on a phone the chips scroll sideways: keep the chosen one in view (e.g. a filter opened from a link), fade the
+  // edge where more chips hide
   const strip = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const c = strip.current;
-    const b = c?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (!c || !b || c.scrollWidth <= c.clientWidth) return;
-    const cr = c.getBoundingClientRect();
-    const br = b.getBoundingClientRect();
-    if (br.left < cr.left + 16) c.scrollLeft -= cr.left + 16 - br.left;
-    else if (br.right > cr.right - 16) c.scrollLeft += br.right - (cr.right - 16);
-  }, [value]);
+  const fade = useSidewaysStrip(strip, '[aria-pressed="true"]', value);
   return (
-    <div ref={strip} role="group" aria-label={label} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [mask-image:linear-gradient(to_right,transparent,#000_28px)] sm:mx-0 sm:flex-wrap sm:px-0 sm:[mask-image:none]', className)}>
+    <div ref={strip} role="group" aria-label={label} style={fade} className={cx('-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0', className)}>
       {options.map((o) => {
         const on = o.value === value;
         return (

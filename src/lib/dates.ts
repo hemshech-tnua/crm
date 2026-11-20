@@ -19,8 +19,35 @@ export const fmtShortDate = (v: string | Date) => shortDateFmt.format(d(v));
 export const fmtLongDate = (v: string | Date) => longDateFmt.format(d(v));
 export const fmtTime = (v: string | Date) => timeFmt.format(d(v));
 export const fmtMonth = (v: string | Date) => monthFmt.format(d(v));
-/** "יום שישי, 14 בנובמבר" */
-export const fmtDayLong = (v: string | Date) => `${fmtDay(v)}, ${fmtLongDate(v)}`;
+const yearFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric' });
+const ddmmFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
+const weekdayIdxFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' });
+const WEEKDAY_IDX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+/** Hebrew weekday letters with a geresh: א׳ … ש׳ */
+const WEEKDAY_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+
+/** Is the moment in the current year (Israel time)? Dates in the current year are shown without the year. */
+export const isThisYear = (v: string | Date, now: Date = new Date()) => yearFmt.format(d(v)) === yearFmt.format(now);
+/** "ו׳" — the weekday as one Hebrew letter. */
+export const fmtWeekdayShort = (v: string | Date) => WEEKDAY_SHORT[WEEKDAY_IDX[weekdayIdxFmt.format(d(v))] ?? 0];
+
+/**
+ * The date in lists: "ו׳ 20.11 · 11:55"; "ו׳ 20.11.25 · 11:55" outside the current year.
+ * `time: false` → "ו׳ 20.11". `weekday: false` → "20.11 · 11:55".
+ */
+export function fmtListDate(v: string | Date, opts: { time?: boolean; weekday?: boolean; now?: Date } = {}): string {
+  const { time = true, weekday = true, now } = opts;
+  const p = Object.fromEntries(ddmmFmt.formatToParts(d(v)).map((x) => [x.type, x.value]));
+  const day = `${Number(p.day)}.${p.month}${isThisYear(v, now) ? '' : `.${String(p.year).slice(-2)}`}`;
+  return [weekday ? `${fmtWeekdayShort(v)} ${day}` : day, time ? fmtTime(v) : null].filter(Boolean).join(' · ');
+}
+
+/** The date in page titles: "יום שישי, 20 בנובמבר"; with the year ("…, 20 בנובמבר 2025") outside the current year. */
+export function fmtTitleDate(v: string | Date, now?: Date): string {
+  return `${fmtDay(v)}, ${fmtLongDate(v)}${isThisYear(v, now) ? '' : ` ${yearFmt.format(d(v))}`}`;
+}
+/** "יום שישי, 14 בנובמבר" (the year only when it is not the current one). Same as fmtTitleDate. */
+export const fmtDayLong = (v: string | Date) => fmtTitleDate(v);
 export const fmtDateTime = (v: string | Date) => `${fmtDate(v)} ${fmtTime(v)}`;
 
 /** Parts of a moment in Israel time. */

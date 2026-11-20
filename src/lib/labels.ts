@@ -3,7 +3,7 @@ import type { Attendance, Engagement, EventStatus, EventType, Membership, Paymen
 export const ROLE_LABEL: Record<Role, string> = { admin: 'ניהול', coordinator: 'ריכוז', volunteer: 'צוות כניסה' };
 export const ROLE_HINT: Record<Role, string> = {
   admin: 'הכול, כולל משתמשים, הגדרות, ייצוא ומחיקת פרטים',
-  coordinator: 'מפגשים, משתתפים, מעקב, מרצים ודוחות',
+  coordinator: 'מפגשים, לוחמים, מעקב, מרצים ודוחות',
   volunteer: 'רק רשימת הנוכחות של המפגש של היום',
 };
 
@@ -11,7 +11,7 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = { friday: 'מפגש �
 export const EVENT_STATUS_LABEL: Record<EventStatus, string> = {
   draft: 'טיוטה', open: 'הרשמה פתוחה', closed: 'הרשמה סגורה', completed: 'התקיים', cancelled: 'בוטל',
 };
-export const REG_STATUS_LABEL: Record<RegStatus, string> = { registered: 'הרשמה פעילה', waitlisted: 'בהמתנה', cancelled: 'ביטול', pending_payment: 'ממתין לתשלום' };
+export const REG_STATUS_LABEL: Record<RegStatus, string> = { registered: 'הרשמה פעילה', waitlisted: 'רשימת המתנה', cancelled: 'ביטול', pending_payment: 'מחכה לתשלום' };
 export const ATTENDANCE_LABEL: Record<Attendance, string> = { unknown: 'טרם סומן', attended: 'הגעה', no_show: 'אי־הגעה' };
 
 export const ENGAGEMENT_LABEL: Record<Engagement, string> = {
@@ -26,7 +26,7 @@ export const ENGAGEMENT_HINT: Record<Engagement, string> = {
   first_timer: 'הגעה למפגש אחד',
   returning: 'הגעה ליותר ממפגש אחד',
   regular: 'הגעה ל-2 מפגשי שישי לפחות ב-30 הימים האחרונים',
-  lapsed: 'הגעה קבועה בעבר, ומאז הביקור האחרון התקיימו 3 מפגשי שישי בלי הגעה',
+  lapsed: 'הגעה קבועה בעבר, ומאז ההגעה האחרונה התקיימו 3 מפגשי שישי בלי הגעה',
 };
 
 export const FOLLOWUP_TYPE_LABEL = {
@@ -75,4 +75,52 @@ const LEGACY_OUTCOMES: [string, string][] = [
 export function taskOutcome(outcome: string): string {
   for (const [old, now] of LEGACY_OUTCOMES) if (outcome.startsWith(old)) return now + outcome.slice(old.length);
   return outcome;
+}
+
+// ───────── shared wording (the glossary), for every screen ─────────
+
+/** Registration counts and filter chips: plural verbs. */
+export const COUNT_LABEL = {
+  all: 'הכול',
+  registered: 'רשומים',
+  waitlisted: 'רשימת המתנה',
+  attended: 'הגיעו',
+  no_show: 'לא הגיעו',
+  cancelled: 'ביטלו',
+  unpaid: 'לא שילמו',
+  walk_in: 'בלי הרשמה',
+} as const;
+
+/** Money: the order and words of the finance tiles everywhere (incoming first, then out, then the result). */
+export const MONEY_LABEL = {
+  collected: 'נגבה',
+  pending: 'ממתין לתשלום',
+  expenses: 'הוצאות',
+  net: 'נטו',
+  forecast: 'צפי',
+  confirm: 'אישור תשלום',
+  paidOnSite: 'שולם במקום',
+  suppliers: 'תשלומים לספקים',
+  matchToRegistration: 'התאמה להרשמה',
+} as const;
+
+export const UNASSIGNED_LABEL = 'בלי אחראי';
+export const SOURCE_LABEL = 'מקור הגעה';
+export const ALL_MEETING_TYPES_LABEL = 'כל סוגי המפגשים';
+export const NO_RESULTS_TITLE = 'אין תוצאות לחיפוש הזה';
+export const CLEAR_SEARCH_LABEL = 'ניקוי החיפוש והסינון';
+
+/**
+ * One count line for a meeting: "24 רשומים · 2 בלי הרשמה · 26 מתוך 28". Registered = active registrations; walk-ins
+ * come without one; free places = capacity − (registered + walk-ins). Parts that are zero or unknown are left out.
+ */
+export function meetingCountLine(registered: number, walkIns = 0, capacity?: number | null): string {
+  const parts = [`${registered} ${COUNT_LABEL.registered}`];
+  if (walkIns > 0) parts.push(`${walkIns} ${COUNT_LABEL.walk_in}`);
+  if (capacity) parts.push(`${registered + walkIns} מתוך ${capacity}`);
+  return parts.join(' · ');
+}
+/** Free places by the same rule: capacity − (registered + walk-ins), never below 0; null without a capacity. */
+export function freePlaces(registered: number, walkIns = 0, capacity?: number | null): number | null {
+  return capacity ? Math.max(0, capacity - registered - walkIns) : null;
 }
