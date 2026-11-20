@@ -6,7 +6,7 @@ import { useStaffList } from '@/lib/data';
 import { ROLE_HINT, ROLE_LABEL } from '@/lib/labels';
 import { formatPhone, normalizePhone, whatsappLink } from '@/lib/phone';
 import { firstEntryUrl } from '@/lib/links';
-import { MoreMenu } from '@/ui/MoreMenu';
+import { RowMenu } from '@/features/events/shared';
 import type { Role, Staff } from '@/lib/types';
 import { fmtListDate } from '@/lib/dates';
 import { Badge, Button, ChoiceGroup, ErrorBox, FilterChips, Input, Notice, Panel, SearchInput, Select, Skeleton } from '@/ui/kit';
@@ -156,7 +156,7 @@ export function UsersSettings() {
                         {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                       </Select>
                       {busy !== s.user_id && (
-                        <MoreMenu variant="icon" label={`פעולות ל${s.full_name}`} items={[
+                        <RowMenu label={`פעולות ל${s.full_name}`} items={[
                           ...(!self && s.is_active ? [{ label: 'קישור כניסה ראשונה', icon: 'link' as const, onClick: async () => {
                             const r = await run(s.user_id, { action: 'invite', user_id: s.user_id }, 'נוצר קישור כניסה ראשונה');
                             if (r && 'token' in r) setInvite({ staff: s, url: firstEntryUrl(String((r as { token: string }).token)) });
