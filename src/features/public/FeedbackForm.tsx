@@ -45,7 +45,7 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
     if (busy) return;
     setError(null);
     const errs: typeof errors = {};
-    if (!overall) errs.overall = 'בחרו דירוג למפגש (מ-1 עד 5).';
+    if (!overall) errs.overall = 'בחרו ציון למפגש, מ-1 עד 5.';
     if (!personal && phone.trim() && !normalizePhone(phone)) errs.phone = errorMessage({ message: 'invalid_phone' });
     setErrors(errs);
     if (errs.overall) return focus(`${ids}-overall`);
@@ -76,7 +76,7 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6" aria-label="משוב על המפגש">
       <div id={`${ids}-overall`}>
-        <Rating legend="איך היה המפגש?" required value={overall} error={errors.overall} onChange={(n) => { setOverall(n); setErrors((x) => ({ ...x, overall: undefined })); }} />
+        <Rating legend="הציון שלך למפגש" required value={overall} error={errors.overall} onChange={(n) => { setOverall(n); setErrors((x) => ({ ...x, overall: undefined })); }} />
       </div>
       {ctx.has_activity && (
         <Rating legend={`מה דעתך על ${theActivity(e)}?`} value={activity} onChange={setActivity} />
@@ -88,7 +88,7 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
         label="רוצה להוסיף משהו?"
         hint={
           <span className="flex justify-between gap-3">
-            <span>לא חובה. מה היה טוב, מה אפשר לשפר, רעיון לנושא הבא.</span>
+            <span>לא חובה. מה היה טוב, מה לשפר, רעיון לנושא הבא.</span>
             <span className="num shrink-0">{comment.length}/{MAX_COMMENT}</span>
           </span>
         }

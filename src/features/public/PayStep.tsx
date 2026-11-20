@@ -10,7 +10,7 @@ import { useCopy } from '@/ui/feedback';
 import { PAYMENT_POLL_FOR_MS } from './api';
 import { EventTicket } from './EventTicket';
 import { Glyph } from './marks';
-import { Block, ResultTitle, SectionTitle, payUrl, type Payer } from './shared';
+import { Block, ResultTitle, SectionTitle, TriList, payUrl, type Payer } from './shared';
 
 /** A meeting where registering means paying first: a fee and a payment link. */
 export const paysFirst = (e: Pick<PublicEvent, 'price' | 'payment_url'>) => Number(e.price ?? 0) > 0 && !!e.payment_url;
@@ -69,7 +69,7 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
         <PayMark />
         <ResultTitle className="mt-4">עוד צעד אחד: תשלום</ResultTitle>
         <p className="mx-auto mt-2 max-w-sm text-lg text-balance text-ink-soft">
-          {name}המקום נשמר רק אחרי התשלום. ההרשמה תושלם מיד כשהתשלום&nbsp;יעבור.
+          {name}המקום נשמר רק אחרי התשלום. כשהתשלום עובר, ההרשמה מאושרת מיד בעמוד&nbsp;הזה.
         </p>
       </div>
 
@@ -84,27 +84,26 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
         <ExternalButton href={url} variant="primary" size="lg" cta className="mt-3 w-full">
           לתשלום <span className="num">{amount}</span>
         </ExternalButton>
-        {prefilled ? (
-          <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
-            השם והטלפון כבר ממולאים בדף התשלום. נשאר רק להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.
-          </p>
-        ) : (
-          <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
-            בדף התשלום כתבו את אותו שם ואותו טלפון שנרשמתם איתם, כדי שההרשמה תאושר&nbsp;מיד.
-          </p>
-        )}
-        <p className="mt-2 text-[0.9375rem] text-ink-soft">התשלום נעשה בדף המאובטח של חברת&nbsp;התשלום.</p>
+        <TriList
+          className="mt-3 text-[0.9375rem] text-ink"
+          items={[
+            'נפתח דף התשלום המאובטח של חברת התשלום, בחלון\u00a0חדש.',
+            prefilled
+              ? <span className="font-semibold">השם והטלפון כבר ממולאים שם. נשאר להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.</span>
+              : <span className="font-semibold">כותבים שם וטלפון כמו בהרשמה, כדי שנזהה את התשלום, ומשלמים בכרטיס&nbsp;אשראי.</span>,
+          ]}
+        />
 
         <div className="mt-4 border-t border-edge pt-3" aria-live="polite" data-testid="pay-status">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <Button size="sm" variant="secondary" busy={checking} onClick={check}>כבר שילמתי</Button>
             <span className="flex items-center gap-2 text-small text-ink-soft">
               {!expired && <span className="text-ink"><Spinner size={14} /></span>}
-              {expired ? 'אחרי התשלום לוחצים כאן, ונבדוק\u00a0שוב.' : 'בודקים כל כמה שניות. ההרשמה תאושר כאן\u00a0מעצמה.'}
+              {expired ? 'שילמתם? לחצו ״כבר שילמתי״ ונבדוק\u00a0שוב.' : 'אחרי התשלום חוזרים לכאן. ההרשמה תאושר בעמוד הזה\u00a0מעצמה.'}
             </span>
           </div>
           {notYet && (
-            <p className="mt-2 text-small text-ink">עוד לא קיבלנו אישור מחברת התשלום. בדרך כלל זה לוקח פחות מדקה.</p>
+            <p className="mt-2 text-small text-ink">עוד לא קיבלנו אישור מחברת התשלום. בדרך כלל זה לוקח פחות מדקה, אז נסו שוב עוד&nbsp;רגע.</p>
           )}
         </div>
       </section>
@@ -123,7 +122,7 @@ function PendingLink({ token }: { token: string }) {
   return (
     <Block title="לא מסתדר לשלם עכשיו?">
       <p className="text-[0.9375rem] text-ink-soft">
-        אפשר לחזור לתשלום בקישור האישי, כל עוד יש&nbsp;מקום.
+        שמרו את הקישור האישי. דרכו אפשר לחזור ולשלם, כל עוד יש&nbsp;מקום.
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>

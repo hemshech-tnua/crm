@@ -92,7 +92,7 @@ export function ProposePage() {
     return (
       <div className="mx-auto flex max-w-xl flex-col items-center gap-3 pt-2 text-center">
         <SuccessMark />
-        <ResultTitle className="mt-2">תודה! קיבלנו את ההצעה</ResultTitle>
+        <ResultTitle className="mt-2">ההצעה התקבלה. תודה!</ResultTitle>
         <p className="max-w-sm text-lg text-ink-soft">צוות העמותה יעבור עליה ויחזור אליך בטלפון.</p>
         <ButtonLink to="/" variant="secondary" className="mt-3">למפגשים הקרובים</ButtonLink>
       </div>
@@ -105,11 +105,12 @@ export function ProposePage() {
       <div className="lg:sticky lg:top-6">
         <h1 className="font-display text-title">רוצים להרצות או להדריך?</h1>
         <p className="mt-2 text-[1.0625rem] text-ink-soft">
-          בכל מפגש שישי יש פעילות תנועה והרצאת אורח. אם יש לכם משהו לתת ללוחמים וללוחמות באזרחות, נשמח להכיר.
+          בכל מפגש שישי יש פעילות תנועה והרצאת אורח.
+          <span className="mt-2 block">יש לכם משהו לתת ללוחמים וללוחמות באזרחות? נשמח&nbsp;להכיר.</span>
         </p>
         <TriList
           className="mt-4 text-ink-soft"
-          items={['ממלאים כמה פרטים על ההצעה', 'צוות העמותה עובר על כל הצעה', 'חוזרים אליכם בטלפון']}
+          items={['ממלאים כאן כמה פרטים על ההצעה', 'צוות העמותה עובר על כל הצעה', 'חוזרים אליכם בטלפון']}
         />
       </div>
       <form onSubmit={submit} noValidate className="mt-6 flex flex-col gap-5 lg:mt-0 lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8" aria-label="הצעה להרצות או להדריך">

@@ -49,7 +49,7 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
     if (c === 'token_invalid') {
       return (
         <EmptyState icon="link" title="הקישור האישי לא תקין" action={<ButtonLink to={`/f/${code}`}>למשוב בלי הקישור האישי</ButtonLink>}>
-          ייתכן שהקישור ישן. אפשר עדיין לתת משוב על המפגש.
+          ייתכן שהקישור ישן. אפשר לתת משוב גם בלי הקישור האישי.
         </EmptyState>
       );
     }
@@ -70,9 +70,9 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
         <h1 className="font-display text-title">משוב על המפגש</h1>
         <EventTicket event={c.event} showStatus={false} />
         <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
-          <h2 className="text-lg font-bold">כבר שלחת מהטלפון הזה משוב על המפגש. תודה!</h2>
+          <h2 className="text-lg font-bold">מהטלפון הזה כבר נשלח משוב על המפגש. תודה!</h2>
           <button type="button" onClick={() => setAgain(true)} className="mt-3 min-h-11 px-3 font-semibold text-tide underline underline-offset-4">
-            משוב של מישהו אחר מאותו טלפון
+            משוב של מישהו נוסף מהטלפון הזה
           </button>
         </section>
       </div>
@@ -125,8 +125,8 @@ function Thanks({ token }: { token: string | null }) {
     <div className="flex flex-col gap-5">
       <div className="pt-2 text-center">
         <SuccessMark />
-        <ResultTitle className="mt-4">תודה!</ResultTitle>
-        <p className="mx-auto mt-2 max-w-sm text-lg text-ink-soft">המשוב התקבל. הוא עוזר לנו לבנות את המפגשים הבאים.</p>
+        <ResultTitle className="mt-4">המשוב התקבל. תודה!</ResultTitle>
+        <p className="mx-auto mt-2 max-w-sm text-lg text-ink-soft">נשתמש בו כדי לבנות את המפגשים הבאים.</p>
       </div>
       {invite && <InviteBlock url={allEventsUrl(invite)} message={inviteMessage(null)} />}
       <ButtonLink to="/" variant="secondary" className="self-center">למפגשים הקרובים</ButtonLink>

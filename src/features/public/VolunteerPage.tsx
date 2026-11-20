@@ -10,6 +10,7 @@ import { Icon } from '@/ui/Icon';
 import { Tri } from '@/ui/Shapes';
 import { roleLabel } from '@/features/volunteers/model';
 import { Glyph } from './marks';
+import { ContactLine, usePageTitle } from './shared';
 
 type VShift = PublicVolunteer['shifts'][number];
 type Answer = 'confirmed' | 'declined';
@@ -34,13 +35,14 @@ const respond = async (token: string, shiftId: string, answer: Answer) =>
 export function VolunteerPage() {
   const { token = '' } = useParams();
   const q = useVolunteer(token);
+  usePageTitle('ההתנדבות שלי');
 
   if (q.isPending) return <Skeleton lines={8} className="py-6" />;
   if (q.isError) {
     const code = errorCode(q.error);
     return code === 'not_found' || code === 'invalid_input' ? (
       <EmptyState icon="link" title="הקישור לא בתוקף">
-        הקישור לא בתוקף, אפשר לבקש קישור חדש מהצוות.
+        אפשר לבקש מהצוות קישור חדש: <ContactLine inline />
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(q.error)} onRetry={code === 'rate_limited' ? undefined : () => q.refetch()} />
@@ -54,7 +56,7 @@ export function VolunteerPage() {
       <div>
         <h1 className="font-display text-title">היי {first_name}</h1>
         <p className="mt-2 text-[1.05rem] text-ink-soft">
-          {shifts.length ? 'אלה המפגשים שביקשנו את עזרתך בהם. תודה על העזרה!' : 'תודה שהצטרפת לצוות המתנדבים של המשך תנועה.'}
+          {shifts.length ? 'אלה המפגשים שביקשנו בהם את עזרתך. בכל מפגש בוחרים אם מגיעים.' : 'תודה שהצטרפת לצוות המתנדבים של המשך\u00a0תנועה.'}
         </p>
         {waiting > 0 && (
           <p className="mt-2 text-[0.9375rem] font-semibold text-ink">
@@ -74,7 +76,7 @@ export function VolunteerPage() {
 }
 
 const STATUS: Record<VShift['status'], { badge: ReactNode; text: string }> = {
-  invited: { badge: <Badge tone="warn" icon="alert">מחכים לתשובה שלך</Badge>, text: 'אפשר לבחור, ואפשר לשנות אחר כך.' },
+  invited: { badge: <Badge tone="warn" icon="alert">מחכים לתשובה שלך</Badge>, text: 'בחרו תשובה. אפשר לשנות אותה אחר כך.' },
   confirmed: { badge: <Badge tone="good" icon="check">אישרת הגעה</Badge>, text: 'תודה! נשלח תזכורת לפני המפגש.' },
   declined: { badge: <Badge>עדכנת שלא מסתדר</Badge>, text: 'תודה שעדכנת. אם בכל זאת יסתדר, אפשר לשנות כאן.' },
 };

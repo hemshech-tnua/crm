@@ -190,7 +190,7 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
         error={phoneErr}
       />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">צ׳ק־אין</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">הגעתי</Button>
       <p className="text-center text-[0.95rem] text-muted">לא נרשמת מראש? גם בסדר. מקלידים טלפון וממשיכים משם.</p>
     </form>
   );
@@ -210,15 +210,15 @@ function Walkin({ code, phone, onBack, onResult }: {
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
-        <h1 className="font-display text-title">עוד רגע בפנים</h1>
+        <h1 className="font-display text-title">{name == null ? 'עוד רגע בפנים' : 'פעם ראשונה אצלנו?'}</h1>
         <p className="mt-1 text-lg text-ink-soft">
           {name == null
-            ? 'רק עוד דבר אחד: איך קוראים לך? (שם מלא, כמו בהרשמה)'
-            : 'לא מצאנו את השם הזה עם המספר הזה. אם זו הפעם הראשונה, עוד כמה פרטים ונכנסים.'}
+            ? 'המספר הזה לא רשום למפגש הזה. מה השם המלא שלך?'
+            : 'עוד כמה פרטים, ונכנסים.'}
         </p>
         {name != null && (
           <p className="mt-2 text-[1.05rem] text-ink-soft">
-            כבר נרשמת או היית אצלנו?{' '}
+            כבר היית אצלנו? לא מצאנו את השם הזה עם המספר הזה.{' '}
             <button type="button" onClick={() => { setTyped(name); setName(null); }} className="min-h-11 font-semibold text-tide underline underline-offset-4">
               לנסות שוב עם השם מההרשמה
             </button>
@@ -301,7 +301,7 @@ function NameStep({ code, phone, initialName = '', onResult, onNeedDetails }: {
         value={name}
         onChange={(e) => { setName(e.target.value); setErr(undefined); }}
         error={err}
-        hint="אם כבר היית אצלנו, זה כל מה שצריך."
+        hint="כבר היית אצלנו? השם מספיק, ונכנסים."
       />
       <Honeypot value={website} onChange={setWebsite} />
       {error && <ErrorBox error={error} />}
@@ -367,12 +367,16 @@ function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: 
   const status = useSavedStatuses(saved.filter((o) => o.kind === 'token').map((o) => o.value));
   const big = 'h-24! w-full rounded-[var(--radius-panel)]! font-display text-[2.2rem]! font-normal!';
   const one = saved.length === 1 ? saved[0] : null;
+  // the one saved registration already checked in (e.g. after "צ׳ק־אין של מישהו נוסף"): say so, not "one tap"
+  const oneInside = !!one && one.kind === 'token' && status.data?.[one.value] === 'attended';
   return (
     <div className="flex flex-col gap-5 pt-1">
       <CheckinTitle event={event} focus={announce} />
       {one ? (
         <p className="text-lg">
-          {one.kind === 'device'
+          {oneInside
+            ? `הצ׳ק־אין${one.name ? ` של ${one.name}` : ''} כבר נקלט. מישהו נוסף הגיע? ממשיכים עם מספר טלפון.`
+            : one.kind === 'device'
             ? (one.name ? `${one.name}, הטלפון זוכר אותך מהביקור הקודם, אז מספיקה לחיצה אחת.` : 'הטלפון זוכר אותך מהביקור הקודם, אז מספיקה לחיצה אחת.')
             : (one.name ? `נרשמת מהטלפון הזה בשם ${one.name}, אז מספיקה לחיצה אחת.` : 'נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.')}
         </p>
@@ -393,7 +397,7 @@ function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: 
         })}
       </div>
       <button type="button" onClick={onOther} className="min-h-11 self-center px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
-        {one?.name ? `לא ${one.name}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
+        {one?.name && !oneInside ? `לא ${one.name}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
       </button>
     </div>
   );
@@ -439,7 +443,7 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
         )}
       </ResultTitle>
       <p className="text-xl text-ink-soft">
-        {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה!'}
+        {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה.'}
       </p>
       {owes && event && (
         <div className="w-full text-start">
@@ -468,7 +472,7 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
         </div>
       )}
       {r.membership === 'none' && (
-        <ButtonLink to="/member" variant="secondary" className="mt-1">רוצים להצטרף לעמותה?</ButtonLink>
+        <ButtonLink to="/member" variant="secondary" className="mt-1">הצטרפות לעמותה</ButtonLink>
       )}
       <button type="button" onClick={onAnother} className="min-h-11 px-3 text-[0.95rem] font-semibold text-muted underline underline-offset-4">
         צ׳ק־אין של מישהו נוסף מהטלפון הזה

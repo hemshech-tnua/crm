@@ -193,14 +193,14 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
     <form onSubmit={submit} noValidate className="flex flex-col gap-5" aria-label="טופס הרשמה">
       {waitlist && (
         <Notice tone="warn" icon="alert">
-          המפגש מלא כרגע. אפשר להצטרף לרשימת ההמתנה: אם יתפנה מקום, נחזור אליך. ההצטרפות לרשימה עוד לא מבטיחה מקום.
+          המפגש מלא כרגע. אפשר להצטרף לרשימת ההמתנה, ואם יתפנה מקום נחזור אליך. ההצטרפות לרשימה עוד לא מבטיחה מקום.
         </Notice>
       )}
       {isPriced(event.price) && (
         <p className="flex flex-wrap items-baseline gap-x-2 rounded-[var(--radius-control)] border-s-[3px] border-ink bg-mist px-3.5 py-2.5">
           <span className="font-bold">השתתפות: <span className="num">{fmtMoney(event.price)}</span></span>
           <span className="text-small text-ink-soft">
-            {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים בהרשמה, בכרטיס אשראי, וההרשמה מאושרת מיד אחרי התשלום.' : 'משלמים בכניסה למפגש.'}
+            {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים בכרטיס אשראי, מיד אחרי מילוי הפרטים.' : 'משלמים בכניסה למפגש.'}
           </span>
           {event.payment_note && <span className="basis-full text-small text-muted">{event.payment_note}</span>}
         </p>
@@ -210,12 +210,12 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
       <Button type="submit" size="lg" cta busy={busy} className="w-full">
-        {waitlist ? 'הצטרפות לרשימת ההמתנה' : 'הרשמה'}
+        {waitlist ? 'הצטרפות לרשימת ההמתנה' : paysFirst(event) ? 'המשך לתשלום' : 'הרשמה'}
       </Button>
       {!waitlist && (
         <p className="-mt-2 text-center text-small text-balance text-muted">
           {paysFirst(event)
-            ? 'בשלב הבא משלמים בכרטיס אשראי. בלי תשלום ההרשמה לא נשמרת.'
+            ? 'המקום נשמר רק אחרי התשלום.'
             : 'אחרי ההרשמה יופיע כאן קישור אישי. דרכו אפשר לבטל אם משהו משתנה.'}
         </p>
       )}
@@ -335,7 +335,7 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
       )}
       <EventTicket event={event} highlight showStatus={false}>
         <p className="mt-4 text-[0.9375rem] font-medium text-pretty text-ink">
-          עוד צעד קטן: מכניסים ליומן עכשיו, כדי ש{event.type === 'friday' ? 'השישי הזה' : 'המפגש'} לא ייבלע&nbsp;בשבוע.
+          כדאי להכניס ליומן עכשיו, כדי ש{event.type === 'friday' ? 'השישי הזה' : 'המפגש'} לא ייבלע&nbsp;בשבוע.
         </p>
         <div className="mt-3">
           <CalendarButtons event={event} />

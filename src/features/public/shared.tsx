@@ -143,7 +143,7 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
         {lead ?? (
           <>
             מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
-            <span className="block">שלחו להם את קישור ההזמנה שלכם. כך&nbsp;נדע שהגיעו&nbsp;דרככם.</span>
+            <span className="block">שלחו להם את קישור ההזמנה שלכם, וכך&nbsp;נדע שהגיעו&nbsp;דרככם.</span>
           </>
         )}
       </p>
@@ -171,8 +171,8 @@ export function PersonalLink({ url, token, waitlist }: { url: string; token: str
     <Block title={waitlist ? 'הקישור האישי שלך' : 'השתנו התוכניות?'}>
       <p className="text-[0.9375rem] text-ink-soft">
         {waitlist
-          ? 'כדאי לשמור את הקישור: דרכו אפשר לבדוק את המקום שלך בתור או לצאת מרשימת ההמתנה.'
-          : 'מבטלים בקישור האישי, וכך המקום עובר למישהו\u00a0אחר.'}
+          ? 'שמרו את הקישור. דרכו רואים את המקום שלך בתור, ואפשר גם לצאת מרשימת ההמתנה.'
+          : 'אפשר לבטל בקישור האישי שלך. כך המקום עובר למי שמחכה.'}
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
@@ -265,8 +265,8 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
       <p>
         {children ?? (
           <>
-            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים וכדי לחזור אליך לגביהם. אין חובה חוקית למסור אותם, אבל בלעדיהם אי אפשר
-            להירשם. רק צוות העמותה רואה אותם, כל אחד לפי תפקידו.{' '}
+            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים, וכדי לחזור אליך לגביהם. אין חובה חוקית למסור אותם, אבל בלעדיהם אי
+            אפשר להירשם. רק צוות העמותה רואה אותם, כל אחד לפי תפקידו.{' '}
           </>
         )}
         <a href="#/privacy" target="_blank" rel="noopener" className="font-semibold text-tide underline underline-offset-2">
@@ -316,15 +316,15 @@ export function PayBlock({ event, payer = null, className = '' }: { event: Publi
           {/* one payment link serves everyone, so the team matches payments to registrations by name and phone */}
           {payUrl(event.payment_url, payer) !== event.payment_url ? (
             <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
-              השם והטלפון כבר ממולאים בדף התשלום. נשאר רק להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.
+              השם והטלפון כבר ממולאים בדף התשלום. נשאר להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.
             </p>
           ) : (
             <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
-              בדף התשלום כתבו את אותו שם ואותו טלפון שנרשמתם איתם, כדי שנדע לסמן שהתשלום שלכם&nbsp;התקבל.
+              בדף התשלום כתבו את השם והטלפון שנרשמתם איתם. כך נדע לשייך את התשלום להרשמה&nbsp;שלכם.
             </p>
           )}
           <p className="mt-2 text-[0.9375rem] text-ink-soft">
-            התשלום נעשה בדף המאובטח של חברת התשלום. אם לא מסתדר לשלם עכשיו, אפשר לשלם אחר כך בקישור&nbsp;האישי.
+            דף התשלום המאובטח של חברת התשלום נפתח בחלון חדש. לא מסתדר עכשיו? אפשר לשלם אחר כך בקישור&nbsp;האישי.
           </p>
         </>
       ) : (

@@ -96,7 +96,7 @@ function statusLine(r: RegistrationInfo): { badge: ReactNode; text: string } {
   if (r.attendance === 'attended') return { badge: <Badge tone="good" icon="check">הגעת</Badge>, text: 'תודה שבאת! היה כיף לראות אותך.' };
   if (r.attendance === 'no_show') return { badge: <Badge>לא הגעת הפעם</Badge>, text: 'נשמח לראות אותך במפגש הבא.' };
   if (new Date(e.starts_at).getTime() <= Date.now()) return { badge: <Badge tone="good">נרשמת</Badge>, text: 'המפגש כבר התחיל.' };
-  return { badge: <Badge tone="good" icon="check">נרשמת</Badge>, text: 'ההרשמה שלך בתוקף. מחכים לך!' };
+  return { badge: <Badge tone="good" icon="check">נרשמת</Badge>, text: 'ההרשמה שלך בתוקף. נתראה במפגש.' };
 }
 
 function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; token: string; justPaid?: boolean }) {
@@ -124,7 +124,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
       title: waitlisted ? 'לצאת מרשימת ההמתנה?' : 'לבטל את ההרשמה?',
       body: (
         <div className="flex flex-col gap-4">
-          <p>{waitlisted ? 'המקום שלך בתור יעבור לבאים אחריך.' : 'המקום יתפנה למי שמחכה. אם בכל זאת יסתדר, אפשר להירשם שוב כל עוד יש מקום.'}</p>
+          <p>{waitlisted ? 'המקום שלך בתור יעבור לבאים אחריך.' : 'המקום שלך יתפנה למי שמחכה. אם בכל זאת יסתדר, אפשר להירשם שוב כל עוד יש מקום.'}</p>
           <Textarea
             label="רוצה לספר לנו למה? (לא חובה)"
             maxLength={300}
@@ -134,7 +134,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
           />
         </div>
       ),
-      confirm: waitlisted ? 'כן, לצאת מהרשימה' : 'כן, לבטל',
+      confirm: waitlisted ? 'כן, לצאת מהרשימה' : 'כן, לבטל את ההרשמה',
       cancel: 'השארת ההרשמה',
       danger: true,
     });
@@ -162,10 +162,11 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
   return (
     <div className="flex flex-col gap-5">
       <div>
+        {r.first_name && <p className="text-small font-semibold text-muted">העמוד האישי שלך למפגש</p>}
         <h1 className="font-display text-title">{r.first_name ? `היי ${r.first_name}` : 'ההרשמה שלך'}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {line.badge}
-          {unpaid && <Badge tone="warn" icon="alert">ממתין לתשלום</Badge>}
+          {unpaid && <Badge tone="warn" icon="alert">עוד לא שולם</Badge>}
           {paid && <Badge tone="good" icon="check">שולם, תודה</Badge>}
         </div>
         <p className="mt-2 text-[1.05rem] text-ink-soft">{line.text}</p>
@@ -189,7 +190,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
       {active && upcoming && r.status === 'registered' && (
         <Block title="בכניסה למפגש">
           <p className="text-[0.9375rem] text-ink-soft">
-            הטלפון הזה כבר זוכר את ההרשמה שלך. בכניסה סורקים את הברקוד ולוחצים ״הגעתי״, בלי להקליד כלום.
+            בכניסה סורקים את הברקוד ולוחצים ״הגעתי״. לא צריך להקליד כלום: הטלפון הזה כבר זוכר את ההרשמה&nbsp;שלך.
           </p>
         </Block>
       )}
@@ -201,7 +202,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
       {r.can_cancel && active && (
         <Block title={waitlisted ? 'כבר לא צריך את המקום בתור?' : 'לא מסתדר לך להגיע?'}>
           <p className="text-[0.9375rem] text-ink-soft">
-            {waitlisted ? 'אפשר לצאת מרשימת ההמתנה בלחיצה.' : 'עדכון מראש מפנה את המקום למי שמחכה. זה עוזר לכולם.'}
+            {waitlisted ? 'אפשר לצאת מרשימת ההמתנה בכל רגע.' : 'ביטול מראש מפנה את המקום שלך למי שמחכה.'}
           </p>
           {error && <div className="mt-3"><ErrorBox error={error} /></div>}
           <Button variant="danger" className="mt-3" busy={busy} onClick={cancel}>
@@ -226,7 +227,7 @@ function ManageFeedback({ token, given }: { token: string; given: boolean }) {
   if ((sent || given) && !editing) {
     return (
       <Block title="המשוב שלך">
-        <p className="text-[0.9375rem] text-ink-soft">{sent ? 'תודה! המשוב התקבל.' : 'כבר שלחת משוב על המפגש הזה. תודה!'}</p>
+        <p className="text-[0.9375rem] text-ink-soft">{sent ? 'המשוב התקבל. תודה!' : 'כבר שלחת משוב על המפגש הזה. תודה!'}</p>
         <Button variant="ghost" className="mt-2 -ms-3" icon="edit" onClick={() => setEditing(true)}>עדכון המשוב</Button>
       </Block>
     );

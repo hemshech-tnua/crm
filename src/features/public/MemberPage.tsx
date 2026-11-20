@@ -25,7 +25,8 @@ export function MemberPage() {
       <div className="lg:sticky lg:top-6">
         <h1 className="font-display text-title">הצטרפו לעמותה</h1>
         <p className="mt-2 text-lg text-ink-soft">
-          המשך תנועה היא הבית ללוחמים ולוחמות באזרחות, ואתם מוזמנים להיות חלק ממנה. השאירו פרטים, ומישהו מהצוות יחזור אליכם עם כל מה שצריך לדעת על ההצטרפות.
+          המשך&nbsp;תנועה היא הבית ללוחמים וללוחמות באזרחות, ואתם מוזמנים להיות חלק ממנה.
+          <span className="mt-2 block">השאירו שם וטלפון, ומישהו מהצוות יחזור אליכם עם כל הפרטים על ההצטרפות.</span>
         </p>
         <TriList
           className="mt-4"
@@ -42,7 +43,7 @@ export function MemberPage() {
               forgetPerson(device);
               const rest = knownPeople();
               setPeople(rest);
-              setNotice('הטלפון כבר לא זוכר אותך. אפשר להשאיר שם וטלפון.');
+              setNotice('הטלפון כבר לא זוכר אותך. אפשר להשאיר כאן שם וטלפון.');
               if (!rest.length) setForm(true);
             }}
             onOther={() => setForm(true)}
@@ -79,7 +80,7 @@ function ByPhone({ people, onDone, onForgotten, onOther }: {
   };
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-lg">{one ? (one.name ? `${one.name}, הטלפון זוכר אותך מהמפגש. מספיקה לחיצה אחת.` : 'הטלפון זוכר אותך מהמפגש. מספיקה לחיצה אחת.') : 'מהטלפון הזה נכנסו כמה אנשים. מי רוצה להצטרף?'}</p>
+      <p className="text-lg">{one ? (one.name ? `${one.name}, הטלפון זוכר אותך מהמפגש, אז מספיקה לחיצה אחת.` : 'הטלפון זוכר אותך מהמפגש, אז מספיקה לחיצה אחת.') : 'מהטלפון הזה נכנסו כמה אנשים. מי רוצה להצטרף?'}</p>
       {error && <ErrorBox error={error} />}
       {people.map((p) => (
         <Button key={p.device} size="lg" busy={busy === p.device} disabled={!!busy && busy !== p.device} onClick={() => pick(p)}
@@ -164,7 +165,7 @@ function Done({ result: r }: { result: MembershipResult }) {
   const title = r.result === 'already_member' ? `${name}כבר יש לך חברות בעמותה` : r.result === 'already_requested' ? `${name}הבקשה שלך כבר אצלנו` : `תודה${r.first_name ? `, ${r.first_name}` : ''}! קיבלנו`;
   const body = r.result === 'already_member'
     ? 'תודה שבחרת להיות חלק מהעמותה. נתראה במפגש הבא!'
-    : 'מישהו מהצוות יחזור אליך בימים הקרובים עם כל הפרטים על ההצטרפות.';
+    : 'מישהו מהצוות יחזור אליך בימים הקרובים, בטלפון, עם כל הפרטים על ההצטרפות.';
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center gap-3 pt-2 text-center">
       <SuccessMark />
