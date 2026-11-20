@@ -62,14 +62,14 @@ test('pay first: the pay step, the webhook turns the open tab into "נרשמת!"
     await p.getByLabel('עיר מגורים').fill('חיפה');
     await p.getByLabel('גיל').fill('27');
     await p.getByRole('radio', { name: /אינסטגרם/ }).check();
-    await p.getByRole('button', { name: 'הרשמה', exact: true }).click();
+    await p.getByRole('button', { name: 'להרשמה ולתשלום', exact: true }).click();
     await expect(p.getByRole('heading', { name: 'עוד צעד אחד: תשלום' })).toBeVisible();
   };
   await pub.goto(`#/r/${ev!.public_code}`);
-  await expect(pub.getByText('משלמים בהרשמה, בכרטיס אשראי, וההרשמה מאושרת מיד אחרי התשלום.')).toBeVisible();
+  await expect(pub.getByText('משלמים בכרטיס אשראי, מיד אחרי מילוי הפרטים.')).toBeVisible();
   const noaPhone = phone();
   await register(pub, 'נועה תשלומים', noaPhone);
-  await expect(pub.getByText('המקום נשמר רק אחרי התשלום. ההרשמה תושלם מיד כשהתשלום')).toBeVisible();
+  await expect(pub.getByText('המקום נשמר רק אחרי')).toBeVisible();
   await expect(pub.getByRole('heading', { name: 'נרשמת!' })).toHaveCount(0);
   await expect(pub.getByText('בכניסה למפגש')).toHaveCount(0);
   const pay = pub.getByRole('link', { name: /לתשלום/ });
@@ -156,7 +156,7 @@ test('a priced meeting without a link keeps today\'s flow: registered, pay at th
   await p.getByLabel('עיר מגורים').fill('חיפה');
   await p.getByLabel('גיל').fill('31');
   await p.getByRole('radio', { name: /אינסטגרם/ }).check();
-  await p.getByRole('button', { name: 'הרשמה', exact: true }).click();
+  await p.getByRole('button', { name: 'להרשמה', exact: true }).click();
   await expect(p.getByRole('heading', { name: 'נרשמת!' })).toBeVisible();
   await expect(p.getByText('משלמים בכניסה למפגש.')).toBeVisible();
   expect(errs).toEqual([]);

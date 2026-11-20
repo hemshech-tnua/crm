@@ -62,7 +62,7 @@ test('QR @phone: a nickname in brackets still finds the card, and an open fee is
   const [first, ...rest] = me.n.split(' ');
   await page.goto(`#/c/${ev.checkin_code}`);
   await page.getByLabel('מספר הטלפון שלך').fill(me.p);
-  await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
+  await page.getByRole('button', { name: 'הגעתי' }).click();
   await page.getByLabel('שם מלא').fill(`${first} (ניקי) ${rest.join(' ')}`);
   await page.getByRole('button', { name: 'המשך' }).click();
   await expect(page.getByRole('heading', { name: new RegExp(first) })).toBeVisible();

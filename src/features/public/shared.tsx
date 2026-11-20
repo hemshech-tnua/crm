@@ -172,7 +172,7 @@ export function PersonalLink({ url, token, waitlist }: { url: string; token: str
       <p className="text-[0.9375rem] text-ink-soft">
         {waitlist
           ? 'שמרו את הקישור. דרכו רואים את המקום שלך בתור, ואפשר גם לצאת מרשימת ההמתנה.'
-          : 'אפשר לבטל בקישור האישי שלך. כך המקום עובר למי שמחכה.'}
+          : 'אפשר לבטל בקישור האישי. כך המקום עובר למי שמחכה.'}
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
@@ -222,8 +222,8 @@ export function BeforeYouCome({ event }: { event: PublicEvent }) {
       {friday && (
         <section aria-labelledby="after-bring" className="p-4 sm:p-5">
           <SectionTitle id="after-bring">מה להביא</SectionTitle>
-          <TriList items={['בגדים ונעליים נוחים לאימון', 'בקבוק מים']} className="mt-2 text-ink" />
-          <p className="mt-2 text-[0.9375rem] text-ink-soft">את הקפה והנשנושים אנחנו&nbsp;מביאים.</p>
+          <p className="mt-2 text-ink">בגדים ונעליים נוחים לאימון, ובקבוק&nbsp;מים.</p>
+          <p className="mt-1 text-[0.9375rem] text-ink-soft">את הקפה והנשנושים אנחנו&nbsp;מביאים.</p>
         </section>
       )}
       {now && (
@@ -265,7 +265,7 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
       <p>
         {children ?? (
           <>
-            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים, וכדי לחזור אליך לגביהם. אין חובה חוקית למסור אותם, אבל בלעדיהם אי
+            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים, וכדי לחזור אליכם לגביהם. אין חובה חוקית למסור אותם, אבל בלעדיהם אי
             אפשר להירשם. רק צוות העמותה רואה אותם, כל אחד לפי תפקידו.{' '}
           </>
         )}
@@ -307,7 +307,7 @@ export function PayBlock({ event, payer = null, className = '' }: { event: Publi
   const amount = fmtMoney(event.price);
   return (
     <section aria-label="תשלום" className={cx('rounded-[var(--radius-panel)] border-2 border-ink bg-paper p-4 sm:p-5', className)}>
-      <SectionTitle>דמי השתתפות: <span className="num">{amount}</span></SectionTitle>
+      <SectionTitle>מחיר: <span className="num">{amount}</span></SectionTitle>
       {event.payment_url ? (
         <>
           <ExternalButton href={payUrl(event.payment_url, payer)} variant="primary" size="lg" cta className="mt-3 w-full sm:w-auto">

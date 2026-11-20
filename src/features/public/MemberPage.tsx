@@ -152,7 +152,7 @@ function ByForm({ onDone }: { onDone: (r: MembershipResult) => void }) {
       />
       <Honeypot value={v.website} onChange={(w) => setV((x) => ({ ...x, website: w }))} />
       <PrivacyNote>
-        נשתמש בפרטים רק כדי לחזור אליך לגבי ההצטרפות לעמותה. אין חובה חוקית למסור אותם, אבל בלעדיהם לא נוכל לחזור אליך. רק צוות העמותה רואה אותם.{' '}
+        נשתמש בפרטים רק כדי לחזור אליכם לגבי ההצטרפות לעמותה. אין חובה חוקית למסור אותם, אבל בלעדיהם לא נוכל לחזור אליכם. רק צוות העמותה רואה אותם.{' '}
       </PrivacyNote>
       {error && <ErrorBox error={error} />}
       <Button type="submit" size="lg" cta busy={busy} className="w-full">אני רוצה להצטרף</Button>

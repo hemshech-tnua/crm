@@ -10,8 +10,8 @@ async function fillRegistration(page: Page, p: { name: string; phone: string; ci
   await page.getByLabel('עיר מגורים').fill(p.city);
   await page.getByLabel('גיל').fill(p.age);
   await page.getByRole('radio', { name: p.source }).check();
-  if (p.referrer) await page.getByLabel('דרך מי הגעת? שם או טלפון').fill(p.referrer);
-  await page.getByRole('button', { name: 'הרשמה', exact: true }).click();
+  if (p.referrer) await page.getByLabel('דרך מי הגעתם? שם או טלפון').fill(p.referrer);
+  await page.getByRole('button', { name: 'להרשמה', exact: true }).click();
 }
 
 test('scenario 3 + 4: register a new participant, then the same person again for another meeting', async ({ page, context }) => {
@@ -83,7 +83,7 @@ test('a friend registers through a personal invite link and is credited to the i
   await page.getByLabel('טלפון נייד').fill(friendPhone);
   await page.getByLabel('עיר מגורים').fill('לוד');
   await page.getByLabel('גיל').fill('27');
-  await page.getByRole('button', { name: 'הרשמה', exact: true }).click();
+  await page.getByRole('button', { name: 'להרשמה', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'נרשמת!' })).toBeVisible();
   const { data: friend } = await coord.from('participants').select('referred_by_participant_id').eq('phone', e164(friendPhone)).single();
   expect(friend!.referred_by_participant_id).toBe(inviter!.id);

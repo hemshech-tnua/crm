@@ -4,7 +4,7 @@ const MESSAGES: Record<string, string> = {
   invalid_phone: 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.',
   invalid_city: 'צריך לכתוב את שם העיר (לפחות 2 אותיות, בלי ספרות).',
   invalid_age: 'צריך לכתוב גיל בין 16 ל-99.',
-  invalid_source: 'צריך לבחור איך שמעת עלינו.',
+  invalid_source: 'צריך לבחור איך שמעתם עלינו.',
   invalid_topic: 'צריך לכתוב נושא (לפחות 2 אותיות).',
   invalid_url: 'הקישור צריך להתחיל ב-https://',
   invalid_kind: 'בחירה לא תקינה.',

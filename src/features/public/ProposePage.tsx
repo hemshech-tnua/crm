@@ -93,7 +93,7 @@ export function ProposePage() {
       <div className="mx-auto flex max-w-xl flex-col items-center gap-3 pt-2 text-center">
         <SuccessMark />
         <ResultTitle className="mt-2">ההצעה התקבלה. תודה!</ResultTitle>
-        <p className="max-w-sm text-lg text-ink-soft">צוות העמותה יעבור עליה ויחזור אליך בטלפון.</p>
+        <p className="max-w-sm text-lg text-ink-soft">צוות העמותה יעבור עליה ויחזור אליכם בטלפון.</p>
         <ButtonLink to="/" variant="secondary" className="mt-3">למפגשים הקרובים</ButtonLink>
       </div>
     );
@@ -116,7 +116,7 @@ export function ProposePage() {
       <form onSubmit={submit} noValidate className="mt-6 flex flex-col gap-5 lg:mt-0 lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8" aria-label="הצעה להרצות או להדריך">
         <div id={`${ids}-kind`}>
           <ChoiceGroup<Kind>
-            legend="מה בא לך להציע?"
+            legend="מה בא לכם להציע?"
             required
             columns={2}
             options={[
@@ -154,8 +154,8 @@ export function ProposePage() {
           error={errors.topic}
         />
         <Input
-          label="משפט אחד עליך"
-          hint="לא חובה. כך נציג אותך למשתתפים."
+          label="משפט אחד עליכם"
+          hint="לא חובה. כך נציג אתכם למשתתפים."
           maxLength={240}
           value={v.bio_line}
           onChange={(e) => set('bio_line', e.target.value)}
@@ -174,7 +174,7 @@ export function ProposePage() {
           error={errors.social_url}
         />
         <Textarea
-          label="משהו נוסף שחשוב לך שנדע?"
+          label="משהו נוסף שחשוב לכם שנדע?"
           hint="לא חובה."
           maxLength={1000}
           rows={3}
@@ -183,7 +183,7 @@ export function ProposePage() {
         />
         <Honeypot value={v.website} onChange={(w) => set('website', w)} />
         <PrivacyNote>
-          נשתמש בפרטים רק כדי לחזור אליך לגבי ההצעה. אין חובה חוקית למסור אותם, אבל בלעדיהם לא נוכל לחזור אליך. רק צוות העמותה רואה אותם.{' '}
+          נשתמש בפרטים רק כדי לחזור אליכם לגבי ההצעה. אין חובה חוקית למסור אותם, אבל בלעדיהם לא נוכל לחזור אליכם. רק צוות העמותה רואה אותם.{' '}
         </PrivacyNote>
         {error && <ErrorBox error={error} />}
         <Button type="submit" size="lg" cta busy={busy} className="w-full">שליחת ההצעה</Button>

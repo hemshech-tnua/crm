@@ -69,18 +69,18 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
         <PayMark />
         <ResultTitle className="mt-4">עוד צעד אחד: תשלום</ResultTitle>
         <p className="mx-auto mt-2 max-w-sm text-lg text-balance text-ink-soft">
-          {name}המקום נשמר רק אחרי התשלום. כשהתשלום עובר, ההרשמה מאושרת מיד בעמוד&nbsp;הזה.
+          {name}המקום נשמר רק אחרי&nbsp;התשלום.
         </p>
       </div>
 
       {e.is_full && (
         <Notice tone="warn" icon="alert">
-          המפגש התמלא בינתיים. תשלום עכשיו יכניס אותך לרשימת ההמתנה, והצוות יחזור אליך.
+          המפגש התמלא בינתיים. תשלום עכשיו יכניס אתכם לרשימת ההמתנה, והצוות יחזור אליכם.
         </Notice>
       )}
 
       <section aria-label="תשלום" className="rounded-[var(--radius-panel)] border-2 border-ink bg-paper p-4 sm:p-5">
-        <SectionTitle>דמי השתתפות: <span className="num">{amount}</span></SectionTitle>
+        <SectionTitle>מחיר: <span className="num">{amount}</span></SectionTitle>
         <ExternalButton href={url} variant="primary" size="lg" cta className="mt-3 w-full">
           לתשלום <span className="num">{amount}</span>
         </ExternalButton>

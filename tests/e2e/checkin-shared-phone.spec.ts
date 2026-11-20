@@ -15,7 +15,7 @@ test('a phone that registered two people asks who arrived; a mistaken check-in c
     await page.getByLabel('עיר מגורים').fill('מודיעין');
     await page.getByLabel('גיל').fill('30');
     await page.getByRole('radio', { name: /אינסטגרם/ }).check();
-    await page.getByRole('button', { name: 'הרשמה', exact: true }).click();
+    await page.getByRole('button', { name: 'להרשמה', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'נרשמת!' })).toBeVisible();
   }
   await page.goto(`#/c/${ev.checkin_code}`);
@@ -34,7 +34,7 @@ test('a phone that registered two people asks who arrived; a mistaken check-in c
   await page.getByRole('button', { name: 'צ׳ק־אין של מישהו נוסף מהטלפון הזה' }).click();
   await page.getByRole('button', { name: /מישהו אחר\? צ׳ק־אין עם מספר טלפון/ }).click();
   await page.getByLabel('מספר הטלפון שלך').fill(people[1].p);
-  await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
+  await page.getByRole('button', { name: 'הגעתי' }).click();
   // a phone number alone is not enough: the full name, as registered
   await page.getByLabel('שם מלא').fill(people[1].n);
   await page.getByRole('button', { name: 'המשך' }).click();

@@ -213,7 +213,7 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
       </div>
       <div id={ids.source}>
         <ChoiceGroup
-          legend="איך שמעת עלינו?"
+          legend="איך שמעתם עלינו?"
           required
           columns={2}
           options={sources.map((s) => ({ value: s.key, label: s.label }))}
@@ -223,10 +223,10 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
         />
       </div>
       {src?.is_friend && (invitedBy ? (
-        <p className="-mt-2 text-sm text-muted">רשמנו שהגעת בהזמנה של {invitedBy}.</p>
+        <p className="-mt-2 text-sm text-muted">רשמנו שהגעתם בהזמנה של {invitedBy}.</p>
       ) : (
         <Input
-          label="דרך מי הגעת? שם או טלפון"
+          label="דרך מי הגעתם? שם או טלפון"
           hint="לא חובה. כך נדע להגיד תודה."
           maxLength={80}
           autoComplete="off"
@@ -236,7 +236,7 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
       ))}
       {src?.asks_detail && (
         <Input
-          label="רוצה לפרט?"
+          label="רוצים לפרט?"
           hint="לא חובה."
           maxLength={120}
           autoComplete="off"
@@ -263,7 +263,7 @@ export function ConsentFields({ form }: { form: PersonForm }) {
         />
         <Checkbox
           label="לא לפרסם תמונות שלי מהמפגשים"
-          hint="לפעמים מצלמים במפגשים לעמודים של העמותה. סימון כאן אומר לצוות לא לפרסם תמונות שלך."
+          hint="לפעמים מצלמים במפגשים לעמודים של העמותה. סימון כאן אומר לצוות לא לפרסם תמונות שלכם."
           checked={v.photo_opt_out}
           onChange={(c) => set('photo_opt_out', c)}
         />

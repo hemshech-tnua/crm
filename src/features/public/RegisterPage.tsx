@@ -126,9 +126,9 @@ function pageTitle(done: RegisterResult | null, e: PublicEvent | undefined): str
 function ClosedState({ event: e, home }: { event: PublicEvent; home: string }) {
   const [title, body] =
     e.status === 'cancelled'
-      ? ['המפגש הזה בוטל', 'מצטערים על השינוי. נשמח לראות אותך באחד המפגשים הבאים.']
+      ? ['המפגש הזה בוטל', 'מצטערים על השינוי. נשמח לראות אתכם באחד המפגשים הבאים.']
       : e.registration_open && e.is_full
-        ? ['כל המקומות נתפסו', 'למפגש הזה אין רשימת המתנה. נשמח לראות אותך במפגש הבא.']
+        ? ['כל המקומות נתפסו', 'למפגש הזה אין רשימת המתנה. נשמח לראות אתכם במפגש הבא.']
         : ['ההרשמה למפגש הזה נסגרה', 'אפשר להירשם לאחד המפגשים הבאים.'];
   return (
     <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center lg:border-0 lg:p-0">
@@ -193,12 +193,12 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
     <form onSubmit={submit} noValidate className="flex flex-col gap-5" aria-label="טופס הרשמה">
       {waitlist && (
         <Notice tone="warn" icon="alert">
-          המפגש מלא כרגע. אפשר להצטרף לרשימת ההמתנה, ואם יתפנה מקום נחזור אליך. ההצטרפות לרשימה עוד לא מבטיחה מקום.
+          המפגש מלא כרגע. אפשר להצטרף לרשימת ההמתנה, ואם יתפנה מקום נחזור אליכם. ההצטרפות לרשימה עוד לא מבטיחה מקום.
         </Notice>
       )}
       {isPriced(event.price) && (
         <p className="flex flex-wrap items-baseline gap-x-2 rounded-[var(--radius-control)] border-s-[3px] border-ink bg-mist px-3.5 py-2.5">
-          <span className="font-bold">השתתפות: <span className="num">{fmtMoney(event.price)}</span></span>
+          <span className="font-bold">מחיר: <span className="num">{fmtMoney(event.price)}</span></span>
           <span className="text-small text-ink-soft">
             {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים בכרטיס אשראי, מיד אחרי מילוי הפרטים.' : 'משלמים בכניסה למפגש.'}
           </span>
@@ -210,7 +210,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
       <Button type="submit" size="lg" cta busy={busy} className="w-full">
-        {waitlist ? 'הצטרפות לרשימת ההמתנה' : paysFirst(event) ? 'המשך לתשלום' : 'הרשמה'}
+        {waitlist ? 'להרשמה לרשימת ההמתנה' : paysFirst(event) ? 'להרשמה ולתשלום' : 'להרשמה'}
       </Button>
       {!waitlist && (
         <p className="-mt-2 text-center text-small text-balance text-muted">

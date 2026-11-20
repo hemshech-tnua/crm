@@ -41,7 +41,7 @@ test('scenario 2: a coordinator creates a Friday meeting, opens registration, an
   const pub = await context.newPage();
   await pub.goto(`#/r/${ev!.public_code}`);
   await expect(pub.getByText(title)).toBeVisible();
-  await expect(pub.getByRole('button', { name: 'הרשמה', exact: true })).toBeVisible();
+  await expect(pub.getByRole('button', { name: 'להרשמה', exact: true })).toBeVisible();
   expect(errors, errors.join('\n')).toEqual([]);
 });
 
@@ -114,7 +114,7 @@ test('scenario 8 @phone: register, check in, and the door list on a phone', asyn
   await page.getByLabel('עיר מגורים').fill('מודיעין');
   await page.getByLabel('גיל').fill('34');
   await page.getByRole('radio', { name: /קבוצת וואטסאפ/ }).check();
-  await page.getByRole('button', { name: 'הרשמה', exact: true }).click();
+  await page.getByRole('button', { name: 'להרשמה', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'נרשמת!' })).toBeVisible();
   // no horizontal scrolling on the phone
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
@@ -134,7 +134,7 @@ test('scenario 8 @phone: register, check in, and the door list on a phone', asyn
   await friend.goto(`#/c/${ev.checkin_code}`);
   const fp = phone();
   await friend.getByLabel('מספר הטלפון שלך').fill(fp);
-  await friend.getByRole('button', { name: 'צ׳ק־אין' }).click();
+  await friend.getByRole('button', { name: 'הגעתי' }).click();
   await friend.getByLabel('שם מלא').fill('חבר בכניסה');
   await friend.getByRole('button', { name: 'המשך' }).click();
   // unknown to us: on to the short form, with the name already filled in

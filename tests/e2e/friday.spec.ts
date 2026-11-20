@@ -99,7 +99,7 @@ async function register(page: Page, code: string) {
   await page.getByLabel('עיר מגורים').fill('חיפה');
   await page.getByLabel('גיל').fill('29');
   await page.getByRole('radio', { name: /אינסטגרם/ }).check();
-  await page.getByRole('button', { name: 'הרשמה', exact: true }).click();
+  await page.getByRole('button', { name: 'להרשמה', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'נרשמת!' })).toBeVisible();
 }
 

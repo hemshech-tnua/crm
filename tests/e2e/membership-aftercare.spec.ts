@@ -14,7 +14,7 @@ test('@phone a walk-in is remembered: the next meeting is one tap, and joining t
   // first meeting: not registered, so the short walk-in form
   await page.goto(`#/c/${ev1.checkin_code}`);
   await page.getByLabel('מספר הטלפון שלך').fill(who.p);
-  await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
+  await page.getByRole('button', { name: 'הגעתי' }).click();
   await page.getByLabel('שם מלא').fill(who.n);
   await page.getByRole('button', { name: 'המשך' }).click();
   await page.getByLabel('עיר מגורים').fill('מודיעין');
@@ -56,8 +56,8 @@ test('@phone someone already on file, not registered for this meeting: phone and
 
   await page.goto(`#/c/${ev.checkin_code}`);
   await page.getByLabel('מספר הטלפון שלך').fill(who.p);
-  await page.getByRole('button', { name: 'צ׳ק־אין' }).click();
-  await expect(page.getByText('רק עוד דבר אחד: איך קוראים לך? (שם מלא, כמו בהרשמה)')).toBeVisible();
+  await page.getByRole('button', { name: 'הגעתי' }).click();
+  await expect(page.getByText('המספר הזה לא רשום למפגש הזה. מה השם המלא שלך?')).toBeVisible();
   await page.getByLabel('שם מלא').fill(`  ${who.n} `);
   await page.getByRole('button', { name: 'המשך' }).click();
   await expect(page.getByRole('heading', { name: /ענבר/ })).toBeVisible();
