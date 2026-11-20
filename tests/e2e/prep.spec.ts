@@ -69,6 +69,8 @@ test('a coordinator prepares a Friday meeting: checklist, equipment, payment, th
   await page.goto('#/app/prep');
   await expect(page.getByRole('tab', { name: 'השבוע שלי' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('list', { name: 'ימי השבוע' })).toBeVisible();
+  // "השבוע שלי" is mine by default (my tasks and the team's with no one in charge: the template's tasks are those)
+  await expect(page.getByRole('group', { name: 'של מי המשימות' }).getByRole('button', { name: 'שלי' })).toHaveAttribute('aria-pressed', 'true');
   const today = todayIl();
   if (next!.due_date < today) {
     await expect(page.getByText('נשאר פתוח מלפני')).toBeVisible();

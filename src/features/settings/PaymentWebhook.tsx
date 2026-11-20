@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { supabase, functionsUrl } from '@/lib/supabase';
 import { errorMessage, must } from '@/lib/errors';
-import { fmtDateTime } from '@/lib/dates';
+import { fmtListDate } from '@/lib/dates';
 import { Badge, Button, ErrorBox, Panel, Skeleton } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 
@@ -19,10 +19,10 @@ type Status = {
 
 const OUTCOME: Record<NonNullable<Status['last_outcome']>, string> = {
   received: 'התקבל',
-  registered: 'שויך להרשמה, וההרשמה הושלמה',
-  waitlisted: 'שויך להרשמה, שנכנסה לרשימת ההמתנה',
-  paid: 'שויך להרשמה שחיכתה לתשלום',
-  unmatched: 'לא זוהה, מחכה לשיוך',
+  registered: 'הותאם להרשמה, וההרשמה הושלמה',
+  waitlisted: 'הותאם להרשמה, שנכנסה לרשימת ההמתנה',
+  paid: 'הותאם להרשמה שחיכתה לתשלום',
+  unmatched: 'לא זוהה, מחכה להתאמה להרשמה',
   ignored: 'לא קשור למפגש, לא נשמר',
 };
 
@@ -37,7 +37,7 @@ export function PaymentWebhookPanel() {
   const base = webhookUrl();
   const s = q.data;
   return (
-    <Panel title='תשלומים: חיבור ל"יש חשבונית"' description="כשתשלום עובר בדף התשלום, ההרשמה מאושרת כאן מעצמה.">
+    <Panel title='חיבור ל"יש חשבונית"' description="כשתשלום עובר בדף התשלום, ההרשמה מאושרת כאן מעצמה. כאן רואים אם החיבור עובד.">
       <div className="flex flex-col gap-4" data-testid="payment-webhook">
         <div>
           <p className="text-small font-medium text-muted">הכתובת להדבקה ב"יש חשבונית" (Webhook מסוג "מסמך נוצר")</p>
@@ -58,15 +58,15 @@ export function PaymentWebhookPanel() {
             <div className="flex flex-col gap-1.5 text-body">
               <p className="flex flex-wrap items-center gap-2">
                 <Badge tone="good" icon="check">מחובר</Badge>
-                <span>הודעה אחרונה: <span className="num">{fmtDateTime(s.last_received_at)}</span>{s.last_outcome && <> · {OUTCOME[s.last_outcome]}</>}</span>
+                <span>הודעה אחרונה: <span className="tabular-nums">{fmtListDate(s.last_received_at)}</span>{s.last_outcome && <> · {OUTCOME[s.last_outcome]}</>}</span>
               </p>
               <p className="text-small text-ink-soft">
-                ב-30 הימים האחרונים: <span className="num">{s.received_30d}</span> מסמכים, מהם <span className="num">{s.matched_30d}</span> שויכו להרשמות.
+                ב-30 הימים האחרונים: <span className="num">{s.received_30d}</span> מסמכים, מהם <span className="num">{s.matched_30d}</span> הותאמו להרשמות.
               </p>
               {s.unmatched_open > 0 && (
                 <p className="text-small">
-                  <span className="num font-bold">{s.unmatched_open}</span> תשלומים מחכים לשיוך.{' '}
-                  <Link to="/app/reports?tab=finance" className="font-semibold text-tide underline underline-offset-2">לשיוך</Link>
+                  <span className="num font-bold">{s.unmatched_open}</span> תשלומים מחכים להתאמה להרשמה.{' '}
+                  <Link to="/app/reports?tab=finance" className="font-semibold text-tide underline underline-offset-2">להתאמה ◀</Link>
                 </p>
               )}
             </div>

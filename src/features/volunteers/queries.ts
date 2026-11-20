@@ -95,10 +95,7 @@ export function useSetShiftStatus() {
       invalidate();
       const prev = v.shift.status;
       const text = v.status === 'cancelled' ? `השיבוץ של ${v.name} בוטל` : `${v.name}: ${STATUS_LABEL[v.status]}`;
-      toast.success(text, {
-        label: 'ביטול',
-        run: () => { write(v.shift.id, prev).then(invalidate, (e) => toast.error(errorMessage(e))); },
-      });
+      toast.undo(text, () => { write(v.shift.id, prev).then(invalidate, (e) => toast.error(errorMessage(e))); });
     },
     onError: (e) => {
       invalidate();

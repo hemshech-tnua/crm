@@ -76,7 +76,7 @@ export function PlannerTab() {
         value={filter}
         onChange={setFilter}
         options={[
-          { value: 'all', label: 'כל המפגשים', count: data.events.length },
+          { value: 'all', label: 'הכול', count: data.events.length },
           { value: 'missing', label: 'חסרים מתנדבים', count: counts.missing },
           { value: 'waiting', label: 'מחכים לתשובה', count: counts.waiting },
         ]}

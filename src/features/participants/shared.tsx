@@ -12,6 +12,7 @@ import type { TemplateContext } from '@/lib/templates';
 import type { Engagement } from '@/lib/types';
 import { Badge, SearchInput, Spinner, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
+import { SEARCH_PLACEHOLDER_CITY, phoneTail } from '@/ui/search';
 
 /** Questionnaire Q27: shown next to every free-text field about a person. */
 export const NOTES_GUIDANCE = 'לא רושמים כאן מידע רפואי, יחידה צבאית או הערות על אופי ואישיות.';
@@ -51,21 +52,16 @@ export function useDebounced<T>(value: T, ms = 300): T {
 }
 
 /**
- * PostgREST `or` filter for a free-text search over name, city and phone.
- * Phone digits match in any format: "050-123", "0501234567", "+972 50…" and "4567" all find +972501234567.
+ * PostgREST filter for a free-text search: words search the name and the city; a phone in any format ("4567",
+ * "050-1234567", "0501234567", "+972 50…") matches the end of the stored number (the shared rule of '@/ui/search').
  */
 export function searchOrFilter(term: string): string | null {
   const text = term.replace(/[,()"\\*%:]/g, ' ').replace(/\s+/g, ' ').trim();
   if (!text) return null;
-  const parts = [`full_name.ilike."*${text}*"`, `city.ilike."*${text}*"`];
-  let digits = term.replace(/\D/g, '');
-  if (digits.length >= 3) {
-    if (digits.startsWith('00')) digits = digits.slice(2);
-    if (digits.startsWith('972')) digits = digits.slice(3);
-    if (digits.startsWith('0')) digits = digits.slice(1);
-    if (digits) parts.push(`phone.like."*${digits}*"`);
-  }
-  return parts.join(',');
+  // a phone in any form (last digits, local, +972…) matches the END of the stored number; words search name and city
+  const tail = phoneTail(term);
+  if (tail) return `phone.like."*${tail}"`;
+  return [`full_name.ilike."*${text}*"`, `city.ilike."*${text}*"`].join(',');
 }
 
 /** "לפני 3 שבועות": coarse, friendly distance from a past moment (Israel calendar days). */
@@ -151,12 +147,27 @@ export function useParticipantSearch(term: string, opts: { excludeId?: string; l
   });
 }
 
+/** Engagement and last arrival for a few cards (the picker shows them, so the right person is easy to tell apart). */
+export function usePickStats(ids: string[]) {
+  return useQuery({
+    queryKey: ['participants', 'pick_stats', ids],
+    enabled: ids.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const rows = must(await supabase.from('participant_stats').select('participant_id,engagement_status,last_attended_at').in('participant_id', ids)) as
+        { participant_id: string; engagement_status: Engagement; last_attended_at: string | null }[];
+      return new Map(rows.map((r) => [r.participant_id, r]));
+    },
+  });
+}
+
 /** Search box + tappable results. Used to link a referrer, open a task for someone, etc. */
-export function ParticipantPicker({ onPick, excludeId, label = 'חיפוש כרטיס', placeholder = 'שם, טלפון או עיר' }: {
+export function ParticipantPicker({ onPick, excludeId, label = 'חיפוש כרטיס', placeholder = SEARCH_PLACEHOLDER_CITY }: {
   onPick: (p: PickedParticipant) => void; excludeId?: string; label?: string; placeholder?: string;
 }) {
   const [term, setTerm] = useState('');
   const res = useParticipantSearch(term, { excludeId });
+  const stats = usePickStats((res.data ?? []).map((p) => p.id));
   const typing = term.trim().length >= 2;
   return (
     <div className="flex flex-col gap-2">
@@ -164,24 +175,33 @@ export function ParticipantPicker({ onPick, excludeId, label = 'חיפוש כר�
       {!typing && <p className="text-small text-muted">כותבים לפחות 2 תווים מהשם או 3 ספרות מהטלפון.</p>}
       {typing && res.isFetching && !res.data && <div className="flex items-center gap-2 py-2 text-small text-muted"><Spinner size={16} />מחפשים…</div>}
       {typing && res.isError && <p className="text-small text-bad">החיפוש נכשל. נסו שוב.</p>}
-      {typing && res.data && res.data.length === 0 && <p className="py-2 text-small text-muted">לא נמצאו לוחמים מתאימים.</p>}
+      {typing && res.data && res.data.length === 0 && <p className="py-2 text-small text-muted">אין תוצאות לחיפוש הזה.</p>}
       {typing && res.data && res.data.length > 0 && (
         <ul className="flex flex-col divide-y divide-edge rounded-[var(--radius-control)] border border-edge bg-paper">
-          {res.data.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                onClick={() => onPick(p)}
-                className="flex min-h-12 w-full items-center justify-between gap-3 px-3.5 py-2 text-right hover:bg-ink/[0.05] focus-visible:bg-ink/[0.05]"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">{p.full_name}</span>
-                  {p.city && <span className="block text-small text-muted">{p.city}</span>}
-                </span>
-                <span className="num shrink-0 text-small text-muted">{formatPhone(p.phone)}</span>
-              </button>
-            </li>
-          ))}
+          {res.data.map((p) => {
+            const st = stats.data?.get(p.id);
+            const last = st?.last_attended_at ? ago(st.last_attended_at) : null;
+            return (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => onPick(p)}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 px-3.5 py-2 text-right hover:bg-ink/[0.05] focus-visible:bg-ink/[0.05]"
+                >
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="truncate font-semibold">{p.full_name}</span>
+                      <EngagementBadge status={st?.engagement_status} />
+                    </span>
+                    <span className="block text-small text-muted">
+                      {[p.city, st ? (last ? `הגעה אחרונה ${last}` : 'עוד לא הייתה הגעה') : null].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                  <span className="num shrink-0 text-small text-muted">{formatPhone(p.phone)}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

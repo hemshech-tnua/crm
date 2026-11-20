@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
 import type { EventWithStats } from '@/lib/data';
-import type { Attendance, ContactLog, EventRow, EventStats, EventType, Feedback, Membership, PaymentStatus, RegStatus, Registration } from '@/lib/types';
+import type { Attendance, ContactLog, EventRow, EventStats, EventStatus, EventType, Feedback, Membership, PaymentStatus, RegStatus, Registration } from '@/lib/types';
 
 export const eventKeys = {
   registrations: (id: string) => ['event-registrations', id] as const,
@@ -44,24 +44,78 @@ export function chunk<T>(xs: T[], size = 60): T[][] {
 
 // ───────────── events list ─────────────
 
+export type EventListOpts = {
+  /** starts_at >= from */
+  from?: string;
+  /** starts_at < to */
+  to?: string;
+  /** ends_at > endsAfter: still running or ahead */
+  endsAfter?: string;
+  /** ends_at < endsBefore: over */
+  endsBefore?: string;
+  ascending: boolean;
+  limit?: number;
+  statuses?: EventStatus[];
+  notStatuses?: EventStatus[];
+  type?: EventType | null;
+  /** a free-text match on the title, the lecture topic or the activity */
+  search?: string;
+};
+
 /**
  * Events with their stats, like lib/data useEventsWithStats, but the stats are fetched in chunks:
  * one `in.(…)` filter with hundreds of ids makes the URL too long for the API gateway.
+ * Ask for exactly the slice needed (and a limit): the API returns at most 1000 rows, so "everything from a date,
+ * oldest first" silently loses the newest rows.
  */
-export function useEventList(opts: { from?: string; to?: string; ascending: boolean; limit?: number }) {
+export function useEventList(opts: EventListOpts, enabled = true) {
   return useQuery({
     queryKey: ['events', 'list', opts],
-    queryFn: async (): Promise<EventWithStats[]> => {
-      let q = supabase.from('events').select('*').order('starts_at', { ascending: opts.ascending });
-      if (opts.from) q = q.gte('starts_at', opts.from);
-      if (opts.to) q = q.lt('starts_at', opts.to);
-      if (opts.limit) q = q.limit(opts.limit);
-      const events = must(await q) as EventRow[];
-      const stats = (
-        await Promise.all(chunk(events.map((e) => e.id)).map(async (c) => must(await supabase.from('event_stats').select('*').in('event_id', c)) as EventStats[]))
-      ).flat();
-      const byId = new Map(stats.map((x) => [x.event_id, x]));
-      return events.map((e) => ({ ...e, stats: byId.get(e.id) ?? null }));
+    enabled,
+    queryFn: () => fetchEventList(opts),
+  });
+}
+
+export async function fetchEventList(opts: EventListOpts): Promise<EventWithStats[]> {
+  let q = supabase.from('events').select('*').order('starts_at', { ascending: opts.ascending });
+  if (opts.from) q = q.gte('starts_at', opts.from);
+  if (opts.to) q = q.lt('starts_at', opts.to);
+  if (opts.endsAfter) q = q.gt('ends_at', opts.endsAfter);
+  if (opts.endsBefore) q = q.lt('ends_at', opts.endsBefore);
+  if (opts.statuses?.length) q = q.in('status', opts.statuses);
+  if (opts.notStatuses?.length) q = q.not('status', 'in', `(${opts.notStatuses.join(',')})`);
+  if (opts.type) q = q.eq('type', opts.type);
+  const term = opts.search ? cleanSearch(opts.search) : '';
+  if (term) q = q.or(`title.ilike.%${term}%,lecture_topic.ilike.%${term}%,activity_name.ilike.%${term}%`);
+  if (opts.limit) q = q.limit(opts.limit);
+  const events = must(await q) as EventRow[];
+  const stats = (
+    await Promise.all(chunk(events.map((e) => e.id)).map(async (c) => must(await supabase.from('event_stats').select('*').in('event_id', c)) as EventStats[]))
+  ).flat();
+  const byId = new Map(stats.map((x) => [x.event_id, x]));
+  return events.map((e) => ({ ...e, stats: byId.get(e.id) ?? null }));
+}
+
+/** How many meetings ahead were cancelled (they are listed only on request). */
+export function useCancelledAheadCount(nowIso: string) {
+  return useQuery({
+    queryKey: ['events', 'cancelled-ahead-count', nowIso],
+    queryFn: async () => {
+      const { count, error } = await supabase.from('events').select('id', { count: 'exact', head: true }).eq('status', 'cancelled').gt('ends_at', nowIso);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
+/** How many meetings are over and still not closed (no-shows and follow-ups are created on closing). */
+export function useUnclosedCount(nowIso: string) {
+  return useQuery({
+    queryKey: ['events', 'unclosed-count', nowIso],
+    queryFn: async () => {
+      const { count, error } = await supabase.from('events').select('id', { count: 'exact', head: true }).in('status', ['open', 'closed']).lt('ends_at', nowIso);
+      if (error) throw error;
+      return count ?? 0;
     },
   });
 }

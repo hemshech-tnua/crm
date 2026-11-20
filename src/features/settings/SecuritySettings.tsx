@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fmtDateTime } from '@/lib/dates';
+import { fmtListDate } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import { ROLE_LABEL } from '@/lib/labels';
 import { supabase } from '@/lib/supabase';
@@ -71,8 +71,8 @@ export function SecuritySettings() {
           <ul className="mt-3 divide-y divide-edge">
             {s.unknown_accounts.map((u, i) => (
               <li key={i} className="flex flex-wrap justify-between gap-2 py-2 text-body">
-                <span className="num" dir="ltr">{u.email ?? u.phone ?? 'ללא פרטים'}</span>
-                <span className="num text-muted">{fmtDateTime(u.created_at)}</span>
+                <span className="num" dir="ltr">{u.email ?? u.phone ?? 'בלי פרטים'}</span>
+                <span className="tabular-nums text-muted">{fmtListDate(u.created_at)}</span>
               </li>
             ))}
           </ul>
@@ -104,7 +104,7 @@ export function SecuritySettings() {
               <div>
                 <span className="font-semibold">{m.full_name}</span>
                 <span className="ms-2 text-small text-muted">{ROLE_LABEL[m.role]}{!m.is_active ? ' · חשבון חסום' : ''}</span>
-                <div className="text-small text-muted">כניסה אחרונה: {m.last_sign_in_at ? <span className="num">{fmtDateTime(m.last_sign_in_at)}</span> : 'עוד לא הייתה כניסה'}</div>
+                <div className="text-small text-muted">כניסה אחרונה: {m.last_sign_in_at ? <span className="tabular-nums">{fmtListDate(m.last_sign_in_at)}</span> : 'עוד לא הייתה כניסה'}</div>
               </div>
               {m.mfa ? <Badge tone="good" icon="check">אימות דו־שלבי</Badge> : <Badge>סיסמה בלבד</Badge>}
             </li>
@@ -120,7 +120,7 @@ export function SecuritySettings() {
             {s.recent.map((r, i) => (
               <li key={i} className="flex flex-wrap justify-between gap-2 py-2 text-body">
                 <span>{ACTION_LABEL[r.action] ?? r.action}{r.target ? `: ${r.target}` : ''}{r.actor ? <span className="text-muted"> (על ידי {r.actor})</span> : null}</span>
-                <span className="num text-muted">{fmtDateTime(r.at)}</span>
+                <span className="tabular-nums text-muted">{fmtListDate(r.at)}</span>
               </li>
             ))}
           </ul>

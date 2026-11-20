@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
-import { supabase } from '@/lib/supabase';
+import { personPhotoUrl, supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { useSpeakers } from '@/lib/data';
 import { fmtDate, fmtShortDate } from '@/lib/dates';
@@ -10,11 +10,13 @@ import { num } from '@/lib/metrics';
 import { proposeUrl } from '@/lib/links';
 import { telLink } from '@/lib/phone';
 import type { Role, Speaker } from '@/lib/types';
-import { Badge, Button, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, Tabs, Td, Th, cx } from '@/ui/kit';
+import { Badge, Button, EmptyState, ErrorBox, Notice, PageHeader, Panel, SearchInput, Skeleton, Tabs, Td, Th, cx } from '@/ui/kit';
 import { useConfirm, useCopy, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { PhoneText, ago } from '@/features/participants/shared';
 import { SpeakerDialog } from './SpeakerDialog';
+import { NoResults } from '@/ui/toolbar';
+import { matchesSearch } from '@/ui/search';
 
 type Tab = 'speaker' | 'instructor' | 'proposed';
 export type PresenterStats = {
@@ -25,8 +27,8 @@ type Booking = { id: string; title: string; starts_at: string; status: string; s
 
 const KIND_LABEL: Record<Speaker['kind'], string> = { speaker: 'מרצה', instructor: 'הדרכה' };
 const STATUS: Record<Speaker['status'], { label: string; tone: 'good' | 'warn' | 'neutral' | 'bad' }> = {
-  approved: { label: 'אישור ניתן', tone: 'good' },
-  proposed: { label: 'בהמתנה לאישור', tone: 'warn' },
+  approved: { label: 'מאושר', tone: 'good' },
+  proposed: { label: 'מחכה לאישור', tone: 'warn' },
   declined: { label: 'ההצעה נדחתה', tone: 'neutral' },
   archived: { label: 'בארכיון', tone: 'neutral' },
 };
@@ -39,6 +41,10 @@ export function SpeakersPage() {
   const setTab = (t: Tab) => setSp(t === 'speaker' ? {} : { tab: t }, { replace: true });
   const [editing, setEditing] = useState<Speaker | 'new' | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [term, setTerm] = useState('');
+  const needle = term.trim();
+  const hit = (s: Speaker) => matchesSearch(needle, { name: s.full_name, phone: s.phone, also: [s.topic, s.bio_line] });
+  const newLabel = tab === 'instructor' ? 'מדריך חדש' : 'מרצה חדש';
 
   const stats = useQuery({
     queryKey: ['report_presenters', 'all'],
@@ -60,17 +66,21 @@ export function SpeakersPage() {
     }
     return m;
   }, [bookings.data]);
-  const proposed = all.filter((s) => s.status === 'proposed').sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const proposedAll = all.filter((s) => s.status === 'proposed').sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const proposed = proposedAll.filter(hit);
   const ofKind = (k: Speaker['kind']) => all.filter((s) => s.kind === k);
-  const active = tab === 'proposed' ? [] : ofKind(tab).filter((s) => s.status === 'approved');
-  const inactive = tab === 'proposed' ? [] : ofKind(tab).filter((s) => s.status === 'declined' || s.status === 'archived');
+  // most meetings first, then by name: the people the team books most are on top
+  const byUse = (a: Speaker, b: Speaker) => (statsById.get(b.id)?.events ?? 0) - (statsById.get(a.id)?.events ?? 0) || a.full_name.localeCompare(b.full_name, 'he');
+  const active = tab === 'proposed' ? [] : ofKind(tab).filter((s) => s.status === 'approved' && hit(s)).sort(byUse);
+  const inactive = tab === 'proposed' ? [] : ofKind(tab).filter((s) => (s.status === 'declined' || s.status === 'archived') && hit(s));
+  const activeAll = tab === 'proposed' ? 0 : ofKind(tab).filter((s) => s.status === 'approved').length;
 
   return (
     <div>
       <PageHeader
         title="מרצים ומדריכים"
         subtitle="מי מעבירים את המפגשים, ומי מביאים הכי הרבה לוחמים"
-        actions={<Button icon="plus" onClick={() => setEditing('new')}>הוספה</Button>}
+        actions={<Button icon="plus" onClick={() => setEditing('new')}>{newLabel}</Button>}
       />
       <Tabs<Tab>
         label="סוג"
@@ -79,9 +89,14 @@ export function SpeakersPage() {
         tabs={[
           { value: 'speaker', label: 'מרצים', count: speakers.data ? ofKind('speaker').filter((s) => s.status === 'approved').length : undefined },
           { value: 'instructor', label: 'מדריכים', count: speakers.data ? ofKind('instructor').filter((s) => s.status === 'approved').length : undefined },
-          { value: 'proposed', label: 'הצעות ממתינות', count: speakers.data ? proposed.length : undefined },
+          { value: 'proposed', label: 'מחכים לאישור', count: speakers.data ? proposedAll.length : undefined },
         ]}
       />
+      {all.length > 0 && (
+        <div className="mb-4 sm:max-w-md">
+          <SearchInput value={term} onChange={setTerm} label="חיפוש מרצים ומדריכים" placeholder="חיפוש לפי שם, נושא או טלפון" />
+        </div>
+      )}
 
       {speakers.isError ? (
         <ErrorBox error={errorMessage(speakers.error)} onRetry={() => speakers.refetch()} />
@@ -94,21 +109,25 @@ export function SpeakersPage() {
             <ul className="flex flex-col gap-3">
               {proposed.map((s) => <SpeakerCard key={s.id} s={s} role={role} onEdit={() => setEditing(s)} bookings={bookingsBy.get(s.id)} />)}
             </ul>
+          ) : needle && proposedAll.length ? (
+            <NoHits onClear={() => setTerm('')} />
           ) : (
             <Panel><EmptyState icon="mic" title="אין הצעות שמחכות">הצעות מהטופס הציבורי ומרצים שרכזים מוסיפים מחכים כאן לאישור מנהלים.</EmptyState></Panel>
           )}
         </div>
       ) : (
         <div className="flex flex-col gap-5">
-          <Ranking kind={tab} q={stats} />
+          {!needle && <Ranking kind={tab} q={stats} />}
           {active.length ? (
             <ul className="grid gap-3 xl:grid-cols-2">
               {active.map((s) => <SpeakerCard key={s.id} s={s} role={role} stats={statsById.get(s.id)} bookings={bookingsBy.get(s.id)} onEdit={() => setEditing(s)} />)}
             </ul>
+          ) : needle && activeAll ? (
+            <NoHits onClear={() => setTerm('')} />
           ) : (
             <Panel>
-              <EmptyState icon="mic" title={tab === 'speaker' ? 'עוד אין מרצים מאושרים' : 'עוד אין מדריכים מאושרים'} action={<Button icon="plus" onClick={() => setEditing('new')}>הוספה</Button>}>
-                {proposed.length ? <>יש <span className="num">{proposed.length}</span> הצעות שמחכות לאישור בלשונית "הצעות ממתינות".</> : 'אפשר להוסיף ידנית, או לשתף את הקישור לטופס ההצעה העצמית.'}
+              <EmptyState icon="mic" title={tab === 'speaker' ? 'עוד אין מרצים מאושרים' : 'עוד אין מדריכים מאושרים'} action={<Button icon="plus" onClick={() => setEditing('new')}>{newLabel}</Button>}>
+                {proposedAll.length ? <>יש <span className="num">{proposedAll.length}</span> הצעות בלשונית "מחכים לאישור".</> : 'אפשר להוסיף ידנית, או לשתף את הקישור לטופס ההצעה העצמית.'}
               </EmptyState>
             </Panel>
           )}
@@ -129,6 +148,22 @@ export function SpeakersPage() {
       )}
 
       {editing && <SpeakerDialog speaker={editing === 'new' ? null : editing} defaultKind={tab === 'instructor' ? 'instructor' : 'speaker'} onClose={() => setEditing(null)} />}
+    </div>
+  );
+}
+
+function NoHits({ onClear }: { onClear: () => void }) {
+  return <Panel><NoResults onClear={onClear} /></Panel>;
+}
+
+/** The photo from the meeting page (4:5), or a quiet placeholder: easier to tell people apart at a glance. */
+function Thumb({ s }: { s: Speaker }) {
+  const [broken, setBroken] = useState<string | null>(null);
+  return (
+    <div className="flex h-[70px] w-14 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-control)] border border-edge bg-mist text-muted">
+      {s.photo_path && broken !== s.photo_path
+        ? <img src={personPhotoUrl(s.photo_path)} alt="" width={56} height={70} loading="lazy" onError={() => setBroken(s.photo_path)} className="h-full w-full object-cover" />
+        : <Icon name={s.kind === 'instructor' ? 'sun' : 'mic'} size={22} />}
     </div>
   );
 }
@@ -169,7 +204,7 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
             <Th>{KIND_LABEL[kind]}</Th>
             <Th>{kind === 'speaker' ? 'נושאים' : 'פעילות'}</Th>
             <Th numeric>מפגשים</Th>
-            <Th numeric><span title="ממוצע המגיעים למפגש">ממוצע משתתפים</span></Th>
+            <Th numeric><span title="ממוצע המגיעים למפגש">ממוצע הגעה</span></Th>
             <Th numeric><span title="כמה הגיעו בפעם הראשונה, בכל המפגשים יחד">חדשים</span></Th>
             <Th numeric><span title={kind === 'speaker' ? 'ממוצע דירוג ההרצאה במשוב' : 'ממוצע דירוג הפעילות במשוב'}>דירוג</span></Th>
           </tr>
@@ -206,7 +241,7 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
         ))}
       </ol>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-edge px-4 py-2 sm:px-5">
-        <p className="text-small text-muted">לפי המפגשים שכבר התקיימו. ממוצע משתתפים = סימוני "הגעה".</p>
+        <p className="text-small text-muted">לפי המפגשים שכבר התקיימו. ממוצע הגעה = סימוני "הגעה" למפגש.</p>
         {ranked.length > TOP && (
           <Button size="sm" variant="ghost" onClick={() => setAll((v) => !v)}>{all ? 'רק 5 הראשונים' : <>כל ה-{ranked.length}</>}</Button>
         )}
@@ -230,15 +265,13 @@ function useSetStatus() {
       qc.invalidateQueries({ queryKey: ['report_presenters'] });
       qc.invalidateQueries({ queryKey: ['attention'] });
       const undo = v.undo;
-      toast.success(v.done, undo ? {
-        label: 'ביטול',
-        run: async () => {
-          const { error } = await supabase.from('speakers').update({ status: undo }).eq('id', v.s.id);
-          if (error) toast.error(errorMessage(error));
-          qc.invalidateQueries({ queryKey: ['speakers'] });
-          qc.invalidateQueries({ queryKey: ['attention'] });
-        },
-      } : undefined);
+      if (!undo) return toast.success(v.done);
+      toast.undo(v.done, async () => {
+        const { error } = await supabase.from('speakers').update({ status: undo }).eq('id', v.s.id);
+        if (error) toast.error(errorMessage(error));
+        qc.invalidateQueries({ queryKey: ['speakers'] });
+        qc.invalidateQueries({ queryKey: ['attention'] });
+      });
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
@@ -266,6 +299,8 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
   return (
     <li className="rounded-[var(--radius-panel)] border border-edge bg-paper p-4 sm:p-5">
       <div className="flex h-full flex-col gap-3">
+        <div className="flex min-w-0 flex-1 gap-3.5">
+        <Thumb s={s} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-heading font-bold">{s.full_name}</h3>
@@ -274,6 +309,18 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
             {s.source === 'public_form' && <Badge icon="link">מהטופס הציבורי</Badge>}
           </div>
           {s.topic && <p className="mt-0.5 font-medium text-ink">{s.topic}</p>}
+          {s.status !== 'proposed' && (
+            <p className="mt-0.5 text-small text-ink-soft" data-testid="presenter-stats">
+              {stats && stats.events > 0 ? (
+                <>
+                  <span className="font-semibold text-ink">{meetings(stats.events)}</span>
+                  {' · '}ממוצע <span className="num font-semibold text-ink">{num(stats.avg_attendance, 1)}</span> בכל מפגש
+                  {' · '}<span className="num">{num(stats.new_attendees)}</span> חדשים
+                  {stats.avg_rating != null && <>{' · '}דירוג <span className="num">{num(stats.avg_rating, 1)}/5</span></>}
+                </>
+              ) : <span className="text-muted">עוד אין מפגשים שהתקיימו</span>}
+            </p>
+          )}
           {s.bio_line && <p className="text-body text-ink-soft">{s.bio_line}</p>}
           <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-small">
             {s.phone && <a href={telLink(s.phone)} className="inline-flex min-h-8 items-center gap-1 text-tide hover:underline pointer-coarse:min-h-11"><Icon name="phone" size={15} /><PhoneText phone={s.phone} /></a>}
@@ -291,14 +338,6 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
           )}
           {s.notes && <p className="mt-2 whitespace-pre-line text-small text-ink-soft"><span className="font-semibold text-muted">הערות: </span>{s.notes}</p>}
 
-          {stats && stats.events > 0 && (
-            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-small text-ink-soft">
-              <span className="font-semibold text-ink">{meetings(stats.events)}</span>
-              <span>ממוצע <span className="num font-semibold text-ink">{num(stats.avg_attendance, 1)}</span> משתתפים</span>
-              <span><span className="num font-semibold text-ink">{num(stats.new_attendees)}</span> חדשים</span>
-              <span>דירוג <span className="num font-semibold text-ink">{stats.avg_rating == null ? '—' : `${num(stats.avg_rating, 1)}/5`}</span></span>
-            </p>
-          )}
           {bookings && bookings.length > 0 && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-small">
               <span className="text-muted">שיבוצים:</span>
@@ -312,12 +351,13 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
           )}
           {s.status === 'approved' && s.approved_at && <p className="mt-1.5 text-micro text-faint">אישור: <span className="num">{fmtDate(s.approved_at)}</span></p>}
         </div>
+        </div>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-edge pt-3">
           {s.status === 'proposed' && (admin ? (
             <Button size="sm" icon="check" busy={busy} onClick={() => setStatus.mutate({ s, status: 'approved', done: `${s.full_name}: ההצעה אושרה`, undo: 'proposed' })}>אישור</Button>
           ) : (
-            <span className="text-small font-medium text-warn">בהמתנה לאישור מנהלים</span>
+            <span className="text-small font-medium text-warn">מחכה לאישור מנהלים</span>
           ))}
           <Button size="sm" variant="secondary" icon="edit" onClick={onEdit}>עריכה</Button>
           {s.status === 'proposed' && (
@@ -335,7 +375,7 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
              
               onClick={() => setStatus.mutate(admin
                 ? { s, status: 'approved', done: `${s.full_name} שוב ברשימת הפעילים`, undo: s.status }
-                : { s, status: 'proposed', done: `${s.full_name} שוב בהצעות הממתינות לאישור`, undo: s.status })}
+                : { s, status: 'proposed', done: `${s.full_name} שוב ב"מחכים לאישור"`, undo: s.status })}
             >
               {admin ? 'החזרה לפעילים' : 'החזרה להצעות'}
             </Button>

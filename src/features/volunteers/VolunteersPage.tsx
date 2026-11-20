@@ -11,7 +11,7 @@ import { usePlanEvents, useShifts, useVolunteers } from './queries';
 
 type Tab = 'plan' | 'pool';
 
-/** #/app/volunteers — booking volunteers months ahead ("שיבוץ") and the pool ("מאגר"). */
+/** #/app/volunteers — booking volunteers months ahead ("שיבוץ למפגשים") and the list of volunteers. */
 export function VolunteersPage() {
   const [sp, setSp] = useSearchParams();
   const tab: Tab = sp.get('tab') === 'pool' ? 'pool' : 'plan';
@@ -29,15 +29,15 @@ export function VolunteersPage() {
       <PageHeader
         title="מתנדבים"
         subtitle="משבצים מראש לחודשים הקרובים, ושולחים קישור אישי לאישור"
-        actions={<Button icon="userPlus" onClick={() => setEditing('new')}>הוספה למאגר</Button>}
+        actions={<Button icon="userPlus" onClick={() => setEditing('new')}>מתנדב חדש</Button>}
       />
       <Tabs<Tab>
         label="מתנדבים"
         value={tab}
         onChange={setTab}
         tabs={[
-          { value: 'plan', label: 'שיבוץ' },
-          { value: 'pool', label: 'מאגר', count: volunteers.data?.filter((v) => v.is_active).length },
+          { value: 'plan', label: 'שיבוץ למפגשים' },
+          { value: 'pool', label: 'רשימת מתנדבים', count: volunteers.data?.filter((v) => v.is_active).length },
         ]}
       />
       {failed ? (

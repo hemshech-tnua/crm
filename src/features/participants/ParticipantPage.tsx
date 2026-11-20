@@ -7,6 +7,9 @@ import { age, fmtDate, fmtLongDate } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import { FOLLOWUP_TYPE_LABEL, MEMBERSHIP_LABEL, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
+import { Link } from 'react-router';
+import { fmtMoney } from '@/lib/money';
+import { MoreMenu, type MoreMenuItem } from '@/ui/MoreMenu';
 import { Badge, Button, ButtonLink, EmptyState, ErrorBox, KeyValue, Notice, PageHeader, Panel, Skeleton, buttonClass, cx } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
@@ -14,11 +17,11 @@ import {
   CompleteTaskDialog, EditTaskDialog, NewTaskDialog, TaskComposer, useAssignees, type TaskRow,
 } from '@/features/followups/shared';
 import { useCard, useCardFeedback, useCardRegistrations, useCardStats, useCardTasks, useContactLog, type Card, type CardRegistration } from './cardData';
-import { EditParticipantDialog, LogContactDialog, MessageChooser, ReferrerDialog } from './cardDialogs';
+import { EditParticipantDialog, LogContactDialog, MergeDialog, MessageChooser, ReferrerDialog } from './cardDialogs';
 import { History } from './History';
 import { CREATED_VIA_LABEL, EngagementBadge, PersonLink, PhoneText, ago, daysUntil, useNextOpenEvent } from './shared';
 
-type Open = 'edit' | 'log' | 'task' | 'message' | 'referrer' | null;
+type Open = 'edit' | 'log' | 'task' | 'message' | 'referrer' | 'merge' | null;
 
 export function ParticipantPage() {
   const { id = '' } = useParams();
@@ -81,6 +84,11 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
     [regs.data],
   );
   const historyError = regs.error ?? feedback.error ?? contacts.error ?? tasks.error;
+  const anonymize = useAnonymize(card);
+  const more: MoreMenuItem[] = [
+    { label: 'מיזוג עם כרטיס אחר', icon: 'merge', onClick: () => setOpen('merge') },
+    ...(can.admin(role) ? [{ label: 'מחיקת פרטים אישיים', icon: 'shield' as const, danger: true, onClick: anonymize.ask }] : []),
+  ];
 
   return (
     <div>
@@ -98,35 +106,40 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
         }
       />
 
-      <div className="mb-5 grid grid-cols-6 gap-2 sm:flex sm:flex-wrap">
-        <Button icon="message" className="col-span-3" onClick={() => setOpen('message')}>וואטסאפ</Button>
-        <a href={telLink(card.phone!)} className={buttonClass('secondary', 'md', 'col-span-3')}>
+      {/* each action lives in one place: talk and record here, edit on the details panel, merge and erase in ⋯ */}
+      <div className="mb-5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 sm:flex sm:flex-wrap sm:items-center">
+        <Button icon="message" className="min-w-0" onClick={() => setOpen('message')}>וואטסאפ</Button>
+        <a href={telLink(card.phone!)} className={buttonClass('secondary', 'md', 'min-w-0')}>
           <Icon name="phone" size={18} />
           חיוג
         </a>
-        <Button variant="secondary" icon="task" className="col-span-2 px-2 sm:px-4" onClick={() => setOpen('task')}>משימה</Button>
-        <Button variant="secondary" icon="phone" className="col-span-2 px-2 sm:px-4" onClick={() => setOpen('log')}>תיעוד שיחה</Button>
-        <Button variant="secondary" icon="edit" className="col-span-2 px-2 sm:px-4" onClick={() => setOpen('edit')}>עריכה</Button>
+        <div className="flex items-center justify-center sm:order-last"><MoreMenu items={more} label="עוד פעולות לכרטיס">עוד</MoreMenu></div>
+        <div className="col-span-3 grid grid-cols-2 gap-2 sm:contents">
+          <Button variant="secondary" icon="task" className="min-w-0 px-2 sm:px-4" onClick={() => setOpen('task')}>משימה חדשה</Button>
+          <Button variant="secondary" icon="edit" className="min-w-0 px-2 sm:px-4" onClick={() => setOpen('log')}>תיעוד שיחה</Button>
+        </div>
       </div>
+
+      <OpenDebt regs={regs.data ?? []} />
 
       <StatStrip loading={stats.isLoading} items={[
         ['מפגשי שישי', s?.friday_count ?? null, 'הגעות למפגשי שישי'],
         ['כל הפעילויות', s?.attended_count ?? null, 'כולל ערבי מדורה'],
-        ['ביקור אחרון', s?.last_attended_at ? ago(s.last_attended_at) : null, s?.last_attended_at ? fmtDate(s.last_attended_at) : undefined],
-        ['ביקור ראשון', s?.first_attended_at ? fmtDate(s.first_attended_at) : null],
+        ['הגעה אחרונה', s?.last_attended_at ? ago(s.last_attended_at) : null, s?.last_attended_at ? fmtDate(s.last_attended_at) : undefined],
+        ['הגעה ראשונה', s?.first_attended_at ? fmtDate(s.first_attended_at) : null],
         ['הרשמות בלי הגעה', s?.no_show_count ?? null, 'פעמים שהייתה הרשמה ולא הייתה הגעה'],
         ['חברים שהופנו', s?.friends_brought ?? null],
       ]} />
 
       {openTasks.length > 0 && (
-        <OpenTasks tasks={openTasks} staffName={staffName} nextEvent={next.data} onNew={() => setOpen('task')} name={card.full_name} />
+        <OpenTasks tasks={openTasks} staffName={staffName} nextEvent={next.data} name={card.full_name} />
       )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="flex flex-col gap-5">
-          <Panel title="מקור ההגעה">
+          <Panel title="מקור הגעה">
             <KeyValue items={[
-              ['מקור היכרות', card.first_source ? <>{card.first_source.label}{card.first_source_detail && <span className="text-ink-soft">: {card.first_source_detail}</span>}</> : null],
+              ['מקור הגעה', card.first_source ? <>{card.first_source.label}{card.first_source_detail && <span className="text-ink-soft">: {card.first_source_detail}</span>}</> : null],
               ['מי הביא', <Referrer key="r" card={card} onLink={() => setOpen('referrer')} />],
               ['ערוץ ההרשמה הראשונה', firstReg ? channelText(firstReg) : null],
             ]} />
@@ -168,7 +181,7 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
           </Panel>
         </div>
 
-        <Panel title="היסטוריה" actions={<Button size="sm" variant="ghost" icon="plus" onClick={() => setOpen('log')}>תיעוד שיחה</Button>}>
+        <Panel title="היסטוריה">
           {historyError ? (
             <ErrorBox error={errorMessage(historyError)} onRetry={() => { regs.refetch(); feedback.refetch(); contacts.refetch(); tasks.refetch(); }} />
           ) : regs.isLoading || feedback.isLoading || contacts.isLoading || tasks.isLoading ? (
@@ -179,12 +192,12 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
         </Panel>
       </div>
 
-      {can.admin(role) && <DangerZone card={card} />}
 
       {open === 'edit' && <EditParticipantDialog card={card} onClose={close} />}
       {open === 'log' && <LogContactDialog participantId={id} name={card.full_name} onClose={close} />}
       {open === 'referrer' && <ReferrerDialog card={card} onClose={close} />}
       {open === 'task' && <NewTaskDialog participant={{ id, full_name: card.full_name }} onClose={close} />}
+      {open === 'merge' && <MergeDialog card={card} onClose={close} />}
       {open === 'message' && <MessageChooser recipient={recipient} regs={regs.data ?? []} nextEvent={next.data} onClose={close} />}
     </div>
   );
@@ -241,6 +254,33 @@ function AgeText({ card }: { card: Card }) {
   return <span title="שנת לידה משוערת, לפי הגיל שנמסר בהרשמה">כ-<span className="num">{a}</span> <span className="text-small text-muted">(משוער)</span></span>;
 }
 
+/** "חוב פתוח": registrations that still owe the meeting's fee (the same rule as the registrations tab's "לא שילמו"). */
+function OpenDebt({ regs }: { regs: CardRegistration[] }) {
+  const owing = regs.filter((r) =>
+    r.event && r.event.status !== 'cancelled' && Number(r.event.price ?? 0) > 0
+    && r.status === 'registered' && r.payment_status === 'pending' && r.attendance !== 'no_show')
+    .sort((a, b) => a.event!.starts_at.localeCompare(b.event!.starts_at));
+  if (!owing.length) return null;
+  const total = owing.reduce((sum, r) => sum + Number(r.event!.price ?? 0), 0);
+  return (
+    <section aria-label="חוב פתוח" className="mb-5 flex flex-col gap-2 rounded-[var(--radius-panel)] border border-edge bg-paper px-4 py-3 sm:flex-row sm:items-center sm:gap-5 sm:px-5">
+      <div className="flex items-baseline gap-2.5">
+        <span className="whitespace-nowrap text-small font-semibold text-muted">חוב פתוח</span>
+        <span className="num font-display text-[1.75rem] font-bold leading-none text-ink">{fmtMoney(total)}</span>
+      </div>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-small">
+        {owing.map((r) => (
+          <li key={r.id}>
+            <Link to={`/app/events/${r.event!.id}?tab=registrations`} className="inline-flex min-h-8 items-center font-semibold text-tide hover:underline pointer-coarse:min-h-11">
+              {r.event!.title} · <span className="num ms-1">{fmtDate(r.event!.starts_at)}</span> · <span className="num ms-1">{fmtMoney(r.event!.price)}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function StatStrip({ items, loading }: { items: [string, ReactNode, string?][]; loading: boolean }) {
   return (
     <dl className="grid grid-cols-3 overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper lg:grid-cols-6">
@@ -265,12 +305,12 @@ function StatStrip({ items, loading }: { items: [string, ReactNode, string?][]; 
   );
 }
 
-function OpenTasks({ tasks, staffName, nextEvent, onNew, name }: {
-  tasks: TaskRow[]; staffName: Map<string, string>; nextEvent: Parameters<typeof TaskComposer>[0]['nextEvent']; onNew: () => void; name: string | null;
+function OpenTasks({ tasks, staffName, nextEvent, name }: {
+  tasks: TaskRow[]; staffName: Map<string, string>; nextEvent: Parameters<typeof TaskComposer>[0]['nextEvent']; name: string | null;
 }) {
   const [doing, setDoing] = useState<{ kind: 'done' | 'edit' | 'msg'; task: TaskRow } | null>(null);
   return (
-    <Panel className="mt-5" title={<>משימות פתוחות <span className="num text-muted">({tasks.length})</span></>} actions={<Button size="sm" variant="ghost" icon="plus" onClick={onNew}>משימה חדשה</Button>} padded={false}>
+    <Panel className="mt-5" title={<>משימות פתוחות <span className="num text-muted">({tasks.length})</span></>} padded={false}>
       <ul className="divide-y divide-edge">
         {tasks.map((t) => {
           const d = t.due_date ? daysUntil(t.due_date) : null;
@@ -282,7 +322,7 @@ function OpenTasks({ tasks, staffName, nextEvent, onNew, name }: {
                   <span>{FOLLOWUP_TYPE_LABEL[t.type]}</span>
                   {t.due_date && <><span aria-hidden="true">·</span><span className={cx(d! < 0 && 'font-semibold text-bad')}>{d! < 0 ? `באיחור (יעד ${fmtDate(t.due_date)})` : `יעד ${fmtDate(t.due_date)}`}</span></>}
                   <span aria-hidden="true">·</span>
-                  <span>{t.assignee_id ? staffName.get(t.assignee_id) ?? 'הצוות' : 'ללא שיוך'}</span>
+                  {t.assignee_id ? <span>{staffName.get(t.assignee_id) ?? 'הצוות'}</span> : <span className="text-muted">בלי אחראי</span>}
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">
@@ -301,7 +341,8 @@ function OpenTasks({ tasks, staffName, nextEvent, onNew, name }: {
   );
 }
 
-function DangerZone({ card }: { card: Card }) {
+/** Erase the personal details (admins only; the server checks the role). Opened from the card's ⋯ menu. */
+function useAnonymize(card: Card) {
   const confirm = useConfirm();
   const toast = useToast();
   const qc = useQueryClient();
@@ -343,14 +384,5 @@ function DangerZone({ card }: { card: Card }) {
     });
     if (ok) anonymize.mutate();
   };
-  return (
-    <section className="mt-8 rounded-[var(--radius-panel)] border border-bad/25 bg-paper p-4 sm:p-5">
-      <h2 className="font-bold">מחיקת פרטים אישיים (התממה)</h2>
-      <p className="mt-1 max-w-2xl text-body text-ink-soft">
-        לפי בקשה אישית או לפי מדיניות שמירת המידע. הפרטים המזהים נמחקים, ונתוני ההשתתפות נשארים בלי שם לסטטיסטיקה. רק מנהלים רואים את האפשרות הזו.
-      </p>
-      <Button variant="danger" className="mt-3" icon="shield" busy={anonymize.isPending} onClick={ask}>מחיקת פרטים אישיים</Button>
-    </section>
-  );
+  return { ask, busy: anonymize.isPending };
 }
-

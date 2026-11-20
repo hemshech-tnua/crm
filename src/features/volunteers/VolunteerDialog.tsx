@@ -68,7 +68,7 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
     },
     onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: ['volunteers'] });
-      if (!onSaved) toast.success(volunteer ? 'הפרטים נשמרו' : `${f.full_name.trim()} במאגר עכשיו`);
+      if (!onSaved) toast.success(volunteer ? `הפרטים של ${f.full_name.trim()} נשמרו` : `${f.full_name.trim()} ברשימת המתנדבים עכשיו`);
       onSaved?.(id, f.full_name.trim());
       onClose();
     },
@@ -90,9 +90,9 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
     <Dialog
       open
       onClose={onClose}
-      title={volunteer ? `עריכה: ${volunteer.full_name}` : 'הוספה למאגר המתנדבים'}
+      title={volunteer ? `עריכה: ${volunteer.full_name}` : 'מתנדב חדש'}
       footer={<>
-        <Button busy={save.isPending} onClick={submit}>{volunteer ? 'שמירה' : onSaved ? 'הוספה ושיבוץ' : 'הוספה למאגר'}</Button>
+        <Button busy={save.isPending} onClick={submit}>{volunteer ? 'שמירה' : onSaved ? 'הוספה ושיבוץ' : 'הוספה לרשימה'}</Button>
         <Button variant="ghost" onClick={onClose}>ביטול</Button>
       </>}
     >

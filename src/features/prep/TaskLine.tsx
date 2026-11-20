@@ -3,8 +3,10 @@ import type { EventTask } from '@/lib/types';
 import { IconButton, cx } from '@/ui/kit';
 import { TickBox, useToggleTask } from './shared';
 
-/** One task: the big tick, the title, a line of facts (date, hour, hours, meeting…) and the notes. */
-export function TaskLine({ task, meta, onEdit, className = '' }: { task: EventTask; meta?: ReactNode; onEdit?: () => void; className?: string }) {
+/** One task: the big tick, the title, a line of facts (date, hour, hours, meeting…), the notes and an optional hint. */
+export function TaskLine({ task, meta, hint, onEdit, compact, className = '' }: {
+  task: EventTask; meta?: ReactNode; /** e.g. "נראה שבוצע" */ hint?: ReactNode; onEdit?: () => void; /** without the notes (the dashboard) */ compact?: boolean; className?: string;
+}) {
   const toggle = useToggleTask();
   const done = !!task.done_at;
   return (
@@ -13,7 +15,8 @@ export function TaskLine({ task, meta, onEdit, className = '' }: { task: EventTa
       <div className="min-w-0 flex-1 pt-1">
         <p className={cx('leading-snug', done ? 'text-muted line-through decoration-ink/35' : 'font-medium text-ink')}>{task.title}</p>
         {meta && <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-muted">{meta}</div>}
-        {task.notes && !done && <p className="mt-0.5 text-small whitespace-pre-line text-ink-soft">{task.notes}</p>}
+        {task.notes && !done && !compact && <p className="mt-0.5 text-small whitespace-pre-line text-ink-soft">{task.notes}</p>}
+        {hint && !done && <div className="mt-1">{hint}</div>}
       </div>
       {onEdit && <IconButton icon="edit" label={`עריכה: ${task.title}`} onClick={onEdit} className="-my-0.5" />}
     </li>

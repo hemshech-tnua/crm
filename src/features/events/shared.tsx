@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import QRCode from 'qrcode';
 import { fmtDay, fmtShortDate, fmtTime } from '@/lib/dates';
-import { EVENT_STATUS_LABEL } from '@/lib/labels';
-import type { EventRow, EventStatus, EventType } from '@/lib/types';
+import { EVENT_STATUS_LABEL, freePlaces, meetingCountLine } from '@/lib/labels';
+import type { EventRow, EventStats, EventStatus, EventType } from '@/lib/types';
 import { Badge, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
 
@@ -48,6 +48,37 @@ export const inDoorWindow = (e: Pick<EventRow, 'starts_at' | 'ends_at'>, now = D
 /** The meeting is over but nobody pressed "סגירת המפגש" (no-shows and tasks are still missing). */
 export const isUnclosed = (e: Pick<EventRow, 'ends_at' | 'status'>, now = Date.now()) =>
   (e.status === 'open' || e.status === 'closed') && hasEnded(e, now);
+
+/**
+ * The one count definition for a meeting's places (used on the dashboard, the list, the meeting page and its tab):
+ * registered = active registrations made ahead, walkIns = came without registering, taken = both together,
+ * free = capacity − taken. "24 רשומים · 2 בלי הרשמה · 26 מתוך 28".
+ */
+export function seats(e: Pick<EventRow, 'capacity'> & { stats?: Pick<EventStats, 'registered_count' | 'walk_in_count' | 'waitlisted_count'> | null }) {
+  const registered = e.stats?.registered_count ?? 0;
+  const walkIns = e.stats?.walk_in_count ?? 0;
+  const taken = registered + walkIns;
+  const capacity = e.capacity ?? null;
+  return {
+    registered, walkIns, taken, capacity,
+    waitlisted: e.stats?.waitlisted_count ?? 0,
+    free: freePlaces(registered, walkIns, capacity),
+    full: capacity != null && taken >= capacity,
+  };
+}
+
+/** "24 רשומים · 2 בלי הרשמה · 26 מתוך 28" (parts that are 0 or unknown are left out). */
+export function seatText(e: Parameters<typeof seats>[0], { waitlist = false }: { waitlist?: boolean } = {}) {
+  const s = seats(e);
+  const line = meetingCountLine(s.registered, s.walkIns, s.capacity);
+  return waitlist && s.waitlisted ? `${line} · ${s.waitlisted} ברשימת המתנה` : line;
+}
+
+/** "3 מקומות פנויים" / "מקום פנוי אחד" / "אין מקומות פנויים" / "בלי הגבלת מקומות". */
+export function freeText(e: Parameters<typeof seats>[0]) {
+  const { free } = seats(e);
+  return free == null ? 'בלי הגבלת מקומות' : free === 1 ? 'מקום פנוי אחד' : free ? `${free} מקומות פנויים` : 'אין מקומות פנויים';
+}
 
 /** A big number with its label. `highlight` uses the brand highlight: only for the one live/next number. */
 export function BigStat({ label, value, sub, highlight, className = '' }: {

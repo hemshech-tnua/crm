@@ -1,14 +1,19 @@
+import { Link } from 'react-router';
 import type { EventWithStats } from '@/lib/data';
 import { errorMessage } from '@/lib/errors';
 import { fmtDate, fmtDayLong } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
-import { Badge, Button, EmptyState, ErrorBox, Panel, Skeleton } from '@/ui/kit';
+import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Panel, Skeleton } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { useEventFeedback } from './queries';
-import { BigStat, hasStarted } from './shared';
+import { BigStat, hasEnded, hasStarted } from './shared';
+import { useMeetingActions } from './OverviewTab';
+import type { EventTab } from './EventPage';
 
-export function SummaryTab({ event: e }: { event: EventWithStats }) {
+export function SummaryTab({ event: e, onTab }: { event: EventWithStats; onTab: (t: EventTab, extra?: Record<string, string>) => void }) {
+  // held here, not in the close card: the card goes away once the meeting is closed, the "המפגש נסגר" dialog stays
+  const actions = useMeetingActions(e, onTab);
   const started = hasStarted(e);
   const fb = useEventFeedback(e.id, started);
   const copy = useCopy();
@@ -42,8 +47,12 @@ export function SummaryTab({ event: e }: { event: EventWithStats }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {e.status !== 'completed' && (
-        <p className="flex items-center gap-1.5 text-small text-ink-soft"><Icon name="alert" size={15} className="text-warn" />המפגש עוד לא נסגר: "לא הגיעו" ושיעור ההגעה יהיו סופיים אחרי "סגירת המפגש".</p>
+      {actions.dialogs}
+      {e.status !== 'completed' ? <CloseCard e={e} a={actions} /> : (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-edge bg-paper px-4 py-3">
+          <p className="flex items-center gap-2 text-body"><Icon name="checkCircle" size={18} />המפגש נסגר. מי שלא הגיעו סומנו, והמשימות שנפתחו מחכות במעקב.</p>
+          <ButtonLink to={`/app/followups?event=${e.id}`} variant="secondary" icon="task" cta>למשימות המעקב של המפגש</ButtonLink>
+        </div>
       )}
       <section aria-label="נוכחות" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <BigStat highlight label="הגיעו" value={attended} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : 'כולם נרשמו מראש'} />
@@ -94,6 +103,34 @@ export function SummaryTab({ event: e }: { event: EventWithStats }) {
         )}
       </Panel>
     </div>
+  );
+}
+
+/** The meeting is over (or running) and not closed: closing is this tab's first thing. */
+function CloseCard({ e, a }: { e: EventWithStats; a: ReturnType<typeof useMeetingActions> }) {
+  const s = e.stats;
+  const none = (s?.attended_count ?? 0) === 0 && (s?.registered_count ?? 0) > 0;
+  return (
+    <section aria-label="סגירת המפגש" className="rounded-[var(--radius-panel)] border border-ink bg-paper p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0 max-w-xl">
+          <h2 className="text-heading font-semibold">{hasEnded(e) ? 'המפגש הסתיים ועוד לא נסגר' : 'המפגש מתקיים עכשיו'}</h2>
+          <p className="mt-1 text-small text-ink-soft">
+            בסגירה מסומנים מי שלא הגיעו ונפתחות משימות מעקב. עד אז "לא הגיעו" ושיעור ההגעה אינם סופיים, והמפגש לא נכלל ביעדים.
+          </p>
+        </div>
+        <Button icon="checkCircle" cta size="lg" busy={a.completing} onClick={a.askComplete}>סגירת המפגש</Button>
+      </div>
+      {none && (
+        <p className="mt-3 flex items-start gap-2 rounded-[var(--radius-control)] bg-warn-wash px-3 py-2.5 text-small font-medium text-warn">
+          <Icon name="alert" size={16} className="mt-0.5" />
+          <span>
+            עוד לא סומנה אף הגעה. אם המפגש התקיים, כדאי לסמן קודם מי הגיעו, אחרת כל <span className="num">{s?.registered_count}</span> הרשומים יסומנו כאי־הגעה.{' '}
+            <Link to={`/app/events/${e.id}/door`} className="font-bold underline">לסימון הגעה</Link>
+          </span>
+        </p>
+      )}
+    </section>
   );
 }
 

@@ -49,7 +49,10 @@ function usePatchPayment() {
   });
 }
 
-export function PaymentsPanel({ eventId }: { eventId: string }) {
+/** Someone this meeting surely pays (its speaker, its coach), offered as a one-tap "למי משלמים". */
+export type PayeeHint = { name: string; what: string };
+
+export function PaymentsPanel({ eventId, people = [] }: { eventId: string; people?: PayeeHint[] }) {
   const q = useEventPayments(eventId);
   const patch = usePatchPayment();
   const [editing, setEditing] = useState<EventPayment | 'new' | null>(null);
@@ -63,7 +66,7 @@ export function PaymentsPanel({ eventId }: { eventId: string }) {
   return (
     <Panel
       id="payments"
-      title="תשלומים"
+      title="תשלומים לספקים"
       description={rows.length ? (
         <span className="flex flex-wrap gap-x-3">
           <span>סה״כ <b className="num text-ink">{fmtMoney(total)}</b></span>
@@ -126,12 +129,19 @@ export function PaymentsPanel({ eventId }: { eventId: string }) {
             </ul>
           </>
         )}
-      {editing && <PaymentDialog payment={editing === 'new' ? null : editing} eventId={eventId} onClose={() => setEditing(null)} />}
+      {editing && (
+        <PaymentDialog
+          payment={editing === 'new' ? null : editing}
+          eventId={eventId}
+          hints={people.filter((h) => !rows.some((p) => p.supplier.trim() === h.name.trim()))}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </Panel>
   );
 }
 
-function PaymentDialog({ payment, eventId, onClose }: { payment: EventPayment | null; eventId: string; onClose: () => void }) {
+function PaymentDialog({ payment, eventId, hints = [], onClose }: { payment: EventPayment | null; eventId: string; hints?: PayeeHint[]; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
@@ -234,8 +244,23 @@ function PaymentDialog({ payment, eventId, onClose }: { payment: EventPayment | 
           error={errors.supplier}
           maxLength={80}
           hint={known ? [known.what, known.cost_note].filter(Boolean).join(' · ') || 'מספר הספקים' : 'בוחרים מספר הספקים, או כותבים שם חדש'}
-          autoFocus={!payment}
+          autoFocus={!payment && !hints.length}
         />
+        {!payment && hints.length > 0 && !f.supplier.trim() && (
+          <div className="-mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="הצעות מהמפגש">
+            <span className="text-small text-muted">מהמפגש:</span>
+            {hints.map((h) => (
+              <button
+                key={h.name}
+                type="button"
+                onClick={() => setF((x) => ({ ...x, supplier: h.name, description: x.description || h.what }))}
+                className="inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border border-control-line px-3 text-small font-medium text-ink hover:border-ink pointer-coarse:h-11"
+              >
+                {h.name}<span className="text-muted">· {h.what}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <datalist id={listId}>{active.map((s) => <option key={s.id} value={s.name}>{s.what ?? ''}</option>)}</datalist>
         {isNew && <Checkbox label="להוסיף לספר הספקים" hint="כדי לבחור אותו בפעם הבאה בלי להקליד" checked={f.addToBook} onChange={(v) => set('addToBook', v)} />}
         <Input label="עבור מה" value={f.description} onChange={(e) => set('description', e.target.value)} error={errors.description} maxLength={160} placeholder="למשל: ארוחת בוקר ל-30" />

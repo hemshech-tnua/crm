@@ -107,8 +107,8 @@ export function GeneralSettings() {
           <Checkbox checked={!!f.auto_task_no_show} onChange={(v) => setF({ ...f, auto_task_no_show: v })} label='מי שנרשם ולא הגיע: "חסרת לנו" ושיחה' />
           <Checkbox checked={!!f.auto_task_first_time} onChange={(v) => setF({ ...f, auto_task_first_time: v })} label="מי שהגיע בפעם הראשונה: שיחת היכרות ותודה" />
           <Checkbox checked={!!f.auto_task_lapsed} onChange={(v) => setF({ ...f, auto_task_lapsed: v })} label="קבוע שהפסיק להגיע: לשאול מה שלומו" hint="המשימה רק מזכירה. שום הודעה לא נשלחת בלי שמישהו בצוות לוחץ שליחה." />
-          <Select label="למי משייכים את המשימות" value={str('default_task_assignee')} onChange={(e) => setF({ ...f, default_task_assignee: e.target.value })} className="max-w-sm">
-            <option value="">בלי שיוך (כולם רואים)</option>
+          <Select label="מי אחראי על המשימות" value={str('default_task_assignee')} onChange={(e) => setF({ ...f, default_task_assignee: e.target.value })} className="max-w-sm">
+            <option value="">בלי אחראי (כל הצוות רואה)</option>
             {(staff.data ?? []).filter((s) => s.is_active && s.role !== 'volunteer').map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
           </Select>
         </div>

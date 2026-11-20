@@ -6,7 +6,7 @@ import type { VolunteerRole } from '@/lib/types';
 import { Badge, Td, Th, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { ReminderLink, StatusBadge, useVolunteerActions } from './actions';
-import { ROLE_LABEL, ROLE_ORDER, SLOTS, dayAndDate, remindable, shortDay, slotsFor, type PlanEvent, type Shift, type Slot } from './model';
+import { ROLE_LABEL, ROLE_ORDER, SLOTS, dayAndDate, isSoon, remindable, shortDay, slotsFor, type PlanEvent, type Shift, type Slot } from './model';
 
 const dayNum = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, day: 'numeric' });
 const monthShort = new Intl.DateTimeFormat('he-IL', { timeZone: TZ, month: 'short' });
@@ -26,7 +26,6 @@ export function SlotBody({ event, slot, compact }: { event: PlanEvent; slot: Slo
             onClick={() => manage(s)}
             className={cx(
               'flex min-h-11 w-full rounded-[var(--radius-control)] border border-transparent px-2 py-1 text-start transition-colors hover:border-ink/40 hover:bg-ink/[0.03]',
-              s.status === 'declined' && 'opacity-80',
               compact ? 'flex-row flex-wrap items-center gap-x-2.5 gap-y-0.5' : 'flex-col items-start justify-center gap-0.5',
             )}
           >
@@ -38,31 +37,34 @@ export function SlotBody({ event, slot, compact }: { event: PlanEvent; slot: Slo
           </button>
         );
       })}
+      {/* an empty place: a dashed outline that invites, not a warning */}
       {slot.missing > 0 && (
         <button
           type="button"
           onClick={() => assign(event, slot.def)}
-          className="group inline-flex min-h-11 w-full items-center gap-1.5 rounded-[var(--radius-control)] bg-warn-wash px-2.5 font-semibold text-warn ring-1 ring-warn/40 ring-inset transition-shadow hover:ring-2 hover:ring-warn"
+          aria-label={`שיבוץ ל${where}${slot.missing > 1 ? ` (${slot.missing} מקומות)` : ''}`}
+          className={cx(
+            'inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-dashed border-ink/40 px-3 text-small font-semibold text-ink-soft transition-colors hover:border-ink hover:bg-ink/[0.03] hover:text-ink',
+            compact ? 'self-start' : 'w-full',
+          )}
         >
-          <Icon name="alert" size={16} />
-          חסר
-          {slot.missing > 1 && <span className="num text-small">({slot.missing})</span>}
-          <span className="sr-only"> {where}.</span>
-          <span className="ms-auto inline-flex items-center gap-1 text-small font-medium">
-            <Icon name="plus" size={15} />
-            שיבוץ
-          </span>
+          <Icon name="plus" size={15} />
+          שיבוץ
+          {slot.missing > 1 && <span className="num font-medium text-muted">({slot.missing})</span>}
         </button>
       )}
     </div>
   );
 }
 
-/** Ready / missing / waiting, for one meeting. */
-export function MeetingState({ slots }: { slots: Slot[] }) {
+/** Ready / missing / waiting, for one meeting (the warning colour only when the meeting is within a week). */
+export function MeetingState({ slots, event }: { slots: Slot[]; event?: Pick<PlanEvent, 'starts_at'> }) {
   const missing = slots.reduce((n, s) => n + s.missing, 0);
   const waiting = slots.reduce((n, s) => n + s.filled - s.confirmed, 0);
-  if (missing) return <Badge tone="warn" icon="alert">{missing === 1 ? 'חסר 1' : <>חסרים <span className="num">{missing}</span></>}</Badge>;
+  if (missing) {
+    const text = missing === 1 ? 'חסר 1' : <>חסרים <span className="num">{missing}</span></>;
+    return event && !isSoon(event) ? <Badge>{text}</Badge> : <Badge tone="warn" icon="alert">{text}</Badge>;
+  }
   if (waiting) return <Badge tone="tide" icon="clock">{waiting === 1 ? 'תשובה 1 חסרה' : <><span className="num">{waiting}</span> מחכים לתשובה</>}</Badge>;
   return <Badge tone="good" icon="check">הכול סגור</Badge>;
 }
@@ -133,7 +135,7 @@ export function PlannerTable({ events, shiftsByEvent, roles }: { events: PlanEve
                     </Td>
                   );
                 })}
-                <Td><div className="pt-2"><MeetingState slots={slots} /></div></Td>
+                <Td><div className="pt-2"><MeetingState slots={slots} event={e} /></div></Td>
               </tr>,
             ];
           })}
@@ -166,13 +168,13 @@ export function MeetingCard({ event, shifts, showLink = true, className = '' }: 
               </p>
               <TypeLine event={event} />
             </div>
-            <MeetingState slots={slots} />
+            <MeetingState slots={slots} event={event} />
           </div>
         </header>
       ) : (
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-3">
           <h2 className="text-heading font-semibold">מי עושה מה</h2>
-          <MeetingState slots={slots} />
+          <MeetingState slots={slots} event={event} />
         </header>
       )}
       <ul className="divide-y divide-edge">

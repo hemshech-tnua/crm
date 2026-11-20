@@ -12,24 +12,39 @@ test('a coordinator books a volunteer ahead, the volunteer confirms from the per
   const full = name();
   const first = full.split(' ')[0];
 
-  // 1. the pool: add a volunteer who likes the entrance
+  // 1. the list of volunteers: a new volunteer who likes the entrance
   await loginAs(page, 'coord');
   await page.goto('#/app/volunteers?tab=pool');
-  await page.getByRole('button', { name: 'הוספה למאגר' }).first().click();
-  const add = page.getByRole('dialog');
+  await expect(page.getByRole('tab', { name: 'רשימת מתנדבים' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'מתנדב חדש' }).first().click();
+  const add = page.getByRole('dialog', { name: 'מתנדב חדש' });
   await add.getByLabel('שם מלא').fill(full);
-  await add.getByLabel('טלפון נייד').fill(phone());
+  const tel = phone();
+  await add.getByLabel('טלפון נייד').fill(tel);
   await add.getByRole('button', { name: 'קבלת פנים' }).click();
-  await add.getByRole('button', { name: 'הוספה למאגר' }).click();
-  await expect(page.getByRole('table', { name: 'מאגר המתנדבים' }).getByRole('cell', { name: full, exact: true })).toBeVisible();
+  await add.getByRole('button', { name: 'הוספה לרשימה' }).click();
+  const table = page.getByRole('table', { name: 'רשימת המתנדבים' });
+  await expect(table.getByRole('cell', { name: full, exact: true })).toBeVisible();
+  // found by a full number in another format, and by its last 4 digits
+  const search = page.getByRole('searchbox', { name: 'חיפוש מתנדבים' });
+  await search.fill(`+972 ${tel.slice(1, 3)}-${tel.slice(3)}`);
+  await expect(table.getByRole('cell', { name: full, exact: true })).toBeVisible();
+  await search.fill(tel.slice(-4));
+  await expect(table.getByRole('cell', { name: full, exact: true })).toBeVisible();
+  await search.fill('');
 
-  // 2. the planner: the meeting's entrance is missing; two taps fill it
-  await page.getByRole('tab', { name: 'שיבוץ' }).click();
-  await page.getByRole('button', { name: new RegExp(`^חסר קבלת פנים ב${title},`) }).click();
+  // 2. the planner: the meeting's entrance is an empty place ("+ שיבוץ"); two taps fill it, and the dialog moves on
+  //    to the meeting's next empty role, so the whole meeting is booked without reopening it
+  await page.getByRole('tab', { name: 'שיבוץ למפגשים' }).click();
+  await page.getByRole('button', { name: new RegExp(`^שיבוץ לקבלת פנים ב${title},`) }).click();
   const pick = page.getByRole('dialog', { name: 'שיבוץ לקבלת פנים' });
-  await pick.getByRole('searchbox', { name: 'חיפוש במאגר' }).fill(first);
+  await pick.getByRole('searchbox', { name: 'חיפוש מתנדבים' }).fill(first);
   await pick.getByRole('button', { name: new RegExp(full) }).click();
-  await expect(pick).toBeHidden();
+  const more = page.getByRole('dialog', { name: 'שיבוץ להקמה' });
+  await expect(more.getByRole('status')).toContainText(`${full}: קבלת פנים`);
+  await expect(more.getByRole('group', { name: 'תפקיד במפגש' }).getByRole('button', { name: /^הקמה/ })).toHaveAttribute('aria-pressed', 'true');
+  await more.getByRole('button', { name: 'סיום', exact: true }).click();
+  await expect(more).toBeHidden();
   const slot = page.getByRole('button', { name: new RegExp(`${full} · קבלת פנים ב${title}`) });
   await expect(slot).toContainText('בהמתנה');
 

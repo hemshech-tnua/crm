@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useEvent, useSettings, useSites, useSpeakers, useEventsWithStats } from '@/lib/data';
@@ -41,6 +41,17 @@ type Form = {
 type Errors = Partial<Record<keyof Form | 'form', string>>;
 
 const ACTIVITY_SUGGESTIONS = ['יוגה', 'פילאטיס', 'יוגה ופילאטיס', 'יוגה עדינה'];
+
+/**
+ * A payment link typed without its scheme ("pay.example.org/x", "//pay…") gets https:// in front. Anything with a
+ * scheme is left as typed, so an http:// link is still refused by the check below.
+ */
+function withHttps(v: string): string {
+  const t = v.trim();
+  if (!t || /^[a-z][a-z0-9+.-]*:/i.test(t)) return t;
+  if (t.startsWith('//')) return `https:${t}`;
+  return /^[^\s/]+\.[^\s/]+/.test(t) ? `https://${t}` : t;
+}
 
 /** The coming Friday at 09:00 that has not started yet. */
 function defaultFriday(): string {
@@ -169,7 +180,7 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   if (price != null && (!/^\d+(\.\d{1,2})?$/.test(f.price.replace(/[,₪\s]/g, '')) || price > 10000)) {
     errors.price = 'סכום בשקלים, למשל 20. ריק = בלי תשלום.';
   }
-  if (f.payment_url.trim() && !isPaymentUrl(f.payment_url)) errors.payment_url = 'הקישור צריך להתחיל ב-https:// (עד 500 תווים).';
+  if (f.payment_url.trim() && !isPaymentUrl(withHttps(f.payment_url))) errors.payment_url = 'הקישור צריך להתחיל ב-https:// (עד 500 תווים).';
   if (f.payment_url.trim() && !price && !errors.price) errors.price = 'יש קישור לתשלום: צריך גם סכום.';
   if (f.payment_note.length > 200) errors.payment_note = 'עד 200 תווים.';
   if (errors.date || errors.start || errors.end) return { errors };
@@ -191,6 +202,8 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
 
 function EventForm({ event, initial, sites, speakers }: { event?: EventRow; initial: Form; sites: Site[]; speakers: Speaker[] }) {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const fromDup = params.get('from') === 'dup';
   const toast = useToast();
   const invalidate = useInvalidateEvent();
   const [f, setF] = useState<Form>(initial);
@@ -262,7 +275,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
         description: f.description.trim() || null,
         internal_notes: f.internal_notes.trim() || null,
         price: parseAmount(f.price) || null,
-        payment_url: f.payment_url.trim() || null,
+        payment_url: withHttps(f.payment_url) || null,
         payment_note: f.payment_note.trim() || null,
         ...(lockedStatus ? {} : { status: f.status }),
       };
@@ -279,13 +292,17 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
       await invalidate(id);
       toast.success(event ? 'השינויים נשמרו' : f.status === 'draft' ? 'המפגש נוצר כטיוטה. כשהכול מוכן, פותחים הרשמה.' : 'המפגש נוצר');
       navigate(`/app/events/${id}`);
+      // the form ends far down the page: the meeting opens at its top
+      window.scrollTo({ top: 0 });
     },
     onError: (err) => setErrors({ form: errorMessage(err) }),
   });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const v = validate(f);
+    const url = withHttps(f.payment_url);
+    if (url !== f.payment_url) setF((p) => ({ ...p, payment_url: url }));
+    const v = validate({ ...f, payment_url: url });
     setErrors(v.errors);
     if (Object.keys(v.errors).length || !v.starts || !v.ends) {
       requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"], [role="alert"]')?.focus?.());
@@ -300,6 +317,12 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+      {fromDup && event?.status === 'draft' && (
+        <Notice tone="tide" icon="copy">
+          <span className="font-semibold">טיוטה חדשה, משוכפלת מהמפגש הקודם.</span> המרצה והנושא התאפסו: בוחרים מרצה ונושא ושומרים.
+          אחרי השמירה, בעמוד המפגש מופיע מה עוד חסר והכפתור "פתיחת הרשמה".
+        </Notice>
+      )}
       {started && (
         <Notice tone="warn" icon="alert">המפגש כבר התחיל. שינוי של התאריך או השעה ישפיע על הדוחות ועל חלון הצ׳ק־אין.</Notice>
       )}
@@ -364,7 +387,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               <option value="">לא נקבע</option>
               {lecturers.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.full_name}{s.topic ? ` · ${s.topic}` : ''}{s.status === 'proposed' ? ' (ממתין לאישור)' : s.status !== 'approved' ? ' (בלי אישור)' : ''}
+                  {s.full_name}{s.topic ? ` · ${s.topic}` : ''}{s.status === 'proposed' ? ' (מחכה לאישור)' : s.status !== 'approved' ? ' (בלי אישור)' : ''}
                 </option>
               ))}
             </Select>
@@ -470,10 +493,11 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               ltr
               value={f.payment_url}
               onChange={(e) => set('payment_url', e.target.value)}
+              onBlur={() => { const url = withHttps(f.payment_url); if (url !== f.payment_url) set('payment_url', url); }}
               error={errors.payment_url}
               maxLength={500}
               placeholder="https://"
-              hint="קישור לדף התשלום של ספק הסליקה, Bit או PayBox. בלי קישור, משלמים בכניסה."
+              hint="קישור לדף התשלום של ספק הסליקה, Bit או PayBox (https:// נוסף לבד). בלי קישור, משלמים בכניסה."
             />
           </div>
           <Input

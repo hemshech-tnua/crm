@@ -6,9 +6,11 @@
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
 import type { Engagement } from '@/lib/types';
+import { addDays, fromIl, todayIl } from '@/lib/dates';
 import { searchOrFilter } from './shared';
 
-export type RosterSort = 'last' | 'fridays' | 'name' | 'joined';
+/** 'longest': the longest time since the last arrival first (who hasn't come back); never-arrived cards go last. */
+export type RosterSort = 'last' | 'longest' | 'fridays' | 'name' | 'joined';
 export type RosterFilters = {
   q: string;
   status: Engagement | '';
@@ -16,8 +18,14 @@ export type RosterFilters = {
   city: string;
   task: boolean; // has an open follow-up
   consent: '' | 'yes' | 'no';
+  /** last arrival more than GONE_DAYS ago ("לא הגיעו מעל חודשיים") */
+  gone: boolean;
   sort: RosterSort;
 };
+
+/** "מעל חודשיים" */
+export const GONE_DAYS = 60;
+const goneCutoff = () => fromIl(addDays(todayIl(), -GONE_DAYS), '00:00');
 
 export type RosterStats = {
   participant_id: string;
@@ -57,13 +65,14 @@ interface Q extends PromiseLike<Res> {
   eq(column: string, value: unknown): Q;
   in(column: string, values: readonly unknown[]): Q;
   not(column: string, operator: string, value: unknown): Q;
+  lt(column: string, value: unknown): Q;
   order(column: string, opts?: { ascending?: boolean; nullsFirst?: boolean }): Q;
   range(from: number, to: number): PromiseLike<Res>;
 }
 const sel = (table: string, cols: string, opts?: { count?: 'exact'; head?: boolean }): Q =>
   supabase.from(table).select(cols, opts) as unknown as Q;
 
-const statsSort = (s: RosterSort) => s === 'last' || s === 'fridays';
+const statsSort = (s: RosterSort) => s === 'last' || s === 'longest' || s === 'fridays';
 
 function applyP(q: Q, f: RosterFilters): Q {
   let out = q.is('anonymized_at', null);
@@ -78,11 +87,18 @@ function applyP(q: Q, f: RosterFilters): Q {
 const orderP = (q: Q, sort: RosterSort): Q =>
   sort === 'joined' ? q.order('created_at', { ascending: false }).order('id') : q.order('full_name').order('id');
 
-const applyS = (q: Q, f: RosterFilters): Q => (f.status ? q.eq('engagement_status', f.status) : q);
+function applyS(q: Q, f: RosterFilters): Q {
+  let out = f.status ? q.eq('engagement_status', f.status) : q;
+  if (f.gone) out = out.lt('last_attended_at', goneCutoff());
+  return out;
+}
+const hasSFilters = (f: RosterFilters) => !!(f.status || f.gone);
 const orderS = (q: Q, sort: RosterSort): Q =>
   sort === 'fridays'
     ? q.order('friday_count', { ascending: false }).order('last_attended_at', { ascending: false, nullsFirst: false }).order('participant_id')
-    : q.order('last_attended_at', { ascending: false, nullsFirst: false }).order('friday_count', { ascending: false }).order('participant_id');
+    : sort === 'longest'
+      ? q.order('last_attended_at', { ascending: true, nullsFirst: false }).order('friday_count', { ascending: false }).order('participant_id')
+      : q.order('last_attended_at', { ascending: false, nullsFirst: false }).order('friday_count', { ascending: false }).order('participant_id');
 
 const hasPFilters = (f: RosterFilters) => !!(searchOrFilter(f.q) || f.city || f.source || f.consent);
 
@@ -131,7 +147,7 @@ async function constraintFor(f: RosterFilters, openIds: string[] | null): Promis
   let c: string[] | null = f.task ? openIds ?? [] : null;
   if (statsSort(f.sort)) {
     if (hasPFilters(f)) c = intersect(c, (await allRows<{ id: string }>(() => applyP(sel('participants', 'id'), f))).map((r) => r.id));
-  } else if (f.status) {
+  } else if (hasSFilters(f)) {
     c = intersect(c, (await allRows<{ participant_id: string }>(() => applyS(sel('participant_stats', 'participant_id'), f))).map((r) => r.participant_id));
   }
   return c;
@@ -200,15 +216,41 @@ export async function cityCounts(): Promise<{ city: string; n: number }[]> {
   return [...m.entries()].map(([city, n]) => ({ city, n })).sort((a, b) => b.n - a.n || a.city.localeCompare(b.city, 'he'));
 }
 
-/** How many participants are in each engagement status (for the filter chips). */
-export async function engagementCounts(): Promise<Record<Engagement | 'all', number>> {
-  const statuses: Engagement[] = ['registered', 'first_timer', 'returning', 'regular', 'lapsed'];
-  const counts = await Promise.all(statuses.map(async (s) => {
-    const { count, error } = await sel('participant_stats', 'participant_id', { count: 'exact', head: true }).eq('engagement_status', s);
+/** How many participants are in each engagement status, plus "לא הגיעו מעל חודשיים" (for the filter chips). */
+export type RosterCounts = Record<Engagement | 'all' | 'gone', number>;
+const STATUSES: Engagement[] = ['registered', 'first_timer', 'returning', 'regular', 'lapsed'];
+
+export async function engagementCounts(): Promise<RosterCounts> {
+  const head = () => sel('participant_stats', 'participant_id', { count: 'exact', head: true });
+  const counts = await Promise.all(STATUSES.map(async (s) => {
+    const { count, error } = await head().eq('engagement_status', s);
     if (error) throw error;
     return [s, count ?? 0] as const;
   }));
-  const out = Object.fromEntries(counts) as Record<Engagement | 'all', number>;
+  const gone = await head().lt('last_attended_at', goneCutoff());
+  if (gone.error) throw gone.error;
+  const out = Object.fromEntries(counts) as RosterCounts;
   out.all = counts.reduce((a, [, n]) => a + n, 0);
+  out.gone = gone.count ?? 0;
+  return out;
+}
+
+/**
+ * The same counts within the search and the other filters (city, source, consent, open task), so the chips say what
+ * a tap will show. The engagement status and the "gone" chip themselves are not applied (each chip counts its own).
+ */
+export async function engagementCountsFor(f: RosterFilters, openIds: string[] | null): Promise<RosterCounts> {
+  let ids: string[] | null = f.task ? openIds ?? [] : null;
+  if (hasPFilters(f)) ids = intersect(ids, (await allRows<{ id: string }>(() => applyP(sel('participants', 'id'), f))).map((r) => r.id));
+  if (ids == null) return engagementCounts();
+  const out = Object.fromEntries([...STATUSES, 'all', 'gone'].map((k) => [k, 0])) as RosterCounts;
+  const cutoff = goneCutoff();
+  const rows = (await Promise.all(chunks(ids).map(async (c) =>
+    must(await sel('participant_stats', 'participant_id,engagement_status,last_attended_at').in('participant_id', c)) as Pick<RosterStats, 'engagement_status' | 'last_attended_at'>[]))).flat();
+  for (const r of rows) {
+    out[r.engagement_status] += 1;
+    out.all += 1;
+    if (r.last_attended_at && new Date(r.last_attended_at) < new Date(cutoff)) out.gone += 1;
+  }
   return out;
 }

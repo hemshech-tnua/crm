@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { staffAdmin, useMe } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
@@ -8,10 +8,15 @@ import { formatPhone, normalizePhone, whatsappLink } from '@/lib/phone';
 import { firstEntryUrl } from '@/lib/links';
 import { RowMenu } from '@/features/events/shared';
 import type { Role, Staff } from '@/lib/types';
-import { Badge, Button, ChoiceGroup, ErrorBox, Input, Notice, Panel, Select, Skeleton } from '@/ui/kit';
+import { fmtListDate } from '@/lib/dates';
+import { Badge, Button, ChoiceGroup, ErrorBox, FilterChips, Input, Notice, Panel, SearchInput, Select, Skeleton } from '@/ui/kit';
+import { useSecurityOverview } from './SecuritySettings';
+import { NoResults } from '@/ui/toolbar';
+import { matchesSearch } from '@/ui/search';
 import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
 
 const ROLES: Role[] = ['admin', 'coordinator', 'volunteer'];
+type Show = '' | Role | 'blocked';
 
 export function UsersSettings() {
   const staff = useStaffList();
@@ -26,15 +31,23 @@ export function UsersSettings() {
   const [emailFor, setEmailFor] = useState<Staff | null>(null);
   const [invite, setInvite] = useState<{ staff: Staff; url: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [term, setTerm] = useState('');
+  const [show, setShow] = useState<Show>('');
+  // last sign-in and two-step status come from the security overview (same admin-only data as the security tab)
+  const security = useSecurityOverview();
+  const signIn = useMemo(() => new Map((security.data?.staff ?? []).map((m) => [m.user_id, m])), [security.data]);
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ['staff'] });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['security_overview'] });
+    return qc.invalidateQueries({ queryKey: ['staff'] });
+  };
 
-  const run = async (id: string, body: Record<string, unknown>, done: string) => {
+  const run = async (id: string, body: Record<string, unknown>, done: string | null) => {
     setBusy(id);
     try {
       const res = await staffAdmin<{ temp_password?: string }>(body);
       await refresh();
-      toast.success(done);
+      if (done) toast.success(done);
       return res;
     } catch (e) {
       toast.error(errorMessage(e));
@@ -55,16 +68,71 @@ export function UsersSettings() {
       const ok = await confirm({ title: `חסימת ${s.full_name}`, body: 'המשתמש לא יוכל להיכנס, והגישה שלו לנתונים נחסמת מיד גם במכשירים שבהם הוא מחובר. אפשר להחזיר בכל רגע.', confirm: 'חסימה', danger: true });
       if (!ok) return;
     }
-    await run(s.user_id, { action: 'update', user_id: s.user_id, is_active: !s.is_active }, s.is_active ? 'המשתמש נחסם' : 'המשתמש הופעל');
+    await run(s.user_id, { action: 'update', user_id: s.user_id, is_active: !s.is_active }, s.is_active ? `החשבון של ${s.full_name} נחסם` : `החשבון של ${s.full_name} הופעל מחדש`);
   };
+
+  /**
+   * Role change from the row. Giving "ניהול" asks first (it opens users, settings, export and erasing details);
+   * every change ends with a named toast and "החזרה" to put the previous role back (the same rules apply to it).
+   */
+  const changeRole = async (s: Staff, next: Role, undoing = false) => {
+    if (next === s.role) return;
+    if (next === 'admin') {
+      const ok = await confirm({
+        title: `לתת ל${s.full_name} הרשאת ניהול?`,
+        body: (
+          <div className="flex flex-col gap-2">
+            <p>הרשאת ניהול פותחת הכול: הוספה וחסימה של משתמשים ושינוי תפקידים, שינוי הגדרות ותבניות, ייצוא נתונים ומחיקת פרטים אישיים של לוחמים.</p>
+            <p>נותנים הרשאה כזו רק למי שאחראי על המערכת. לעבודה השוטפת מספיק "ריכוז".</p>
+          </div>
+        ),
+        confirm: 'מתן הרשאת ניהול',
+        cancel: 'חזרה',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    const prev = s.role;
+    const res = await run(s.user_id, { action: 'update', user_id: s.user_id, role: next }, null);
+    if (!res) return;
+    const text = `התפקיד של ${s.full_name} שונה ל${ROLE_LABEL[next]}`;
+    if (undoing) toast.success(text);
+    else toast.undo(text, () => void changeRole({ ...s, role: next }, prev, true));
+  };
+
+  const counts = useMemo(() => {
+    const all = staff.data ?? [];
+    const c: Record<Show, number> = { '': all.length, admin: 0, coordinator: 0, volunteer: 0, blocked: 0 };
+    for (const s of all) {
+      if (s.is_active) c[s.role] += 1;
+      else c.blocked += 1;
+    }
+    return c;
+  }, [staff.data]);
+  const shown = (staff.data ?? []).filter((s) =>
+    (show === '' || (show === 'blocked' ? !s.is_active : s.is_active && s.role === show))
+    && matchesSearch(term, { name: s.full_name, phone: s.phone, also: [s.email] }));
 
   return (
     <div className="flex flex-col gap-5">
       <Panel title="אנשי הצוות" padded={false} actions={<Button icon="userPlus" onClick={() => setCreating(true)}>משתמש חדש</Button>}>
         {staff.isLoading ? <div className="p-5"><Skeleton lines={4} /></div> : staff.error ? <div className="p-5"><ErrorBox error={errorMessage(staff.error)} /></div> : (
+          <>
+          <div className="flex flex-col gap-2 border-b border-edge px-4 py-3 sm:px-5">
+            <SearchInput value={term} onChange={setTerm} label="חיפוש אנשי צוות" placeholder="חיפוש לפי שם, טלפון או אימייל" />
+            <FilterChips<Show> label="סינון לפי תפקיד" value={show} onChange={setShow} options={[
+              { value: '', label: 'הכול', count: counts[''] },
+              ...ROLES.map((r) => ({ value: r as Show, label: ROLE_LABEL[r], count: counts[r] })),
+              { value: 'blocked', label: 'חסומים', count: counts.blocked },
+            ]} />
+          </div>
+          {shown.length === 0 ? (
+            <NoResults onClear={() => { setTerm(''); setShow(''); }} />
+          ) : (
           <ul className="divide-y divide-edge">
-            {(staff.data ?? []).map((s) => {
+            {shown.map((s) => {
               const self = s.user_id === me.data?.user_id;
+              const sec = signIn.get(s.user_id);
               return (
                 <li key={s.user_id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5">
                   <div className="min-w-0 flex-1 basis-48">
@@ -72,13 +140,19 @@ export function UsersSettings() {
                     <div className="num text-small text-muted" dir="ltr" style={{ textAlign: 'right' }}>
                       {[s.phone ? formatPhone(s.phone) : null, s.email].filter(Boolean).join(' · ')}
                     </div>
+                    {sec && (
+                      <div className="text-small text-muted">
+                        כניסה אחרונה: {sec.last_sign_in_at ? <span className="tabular-nums">{fmtListDate(sec.last_sign_in_at)}</span> : 'עוד לא הייתה כניסה'}
+                        {' · '}{sec.mfa ? <span className="font-medium text-ink">אימות דו־שלבי</span> : 'סיסמה או קוד בלבד'}
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {!s.is_active && <Badge tone="bad" icon="alert">חסום</Badge>}
                     {s.is_active && s.must_change_password && <Badge tone="warn" icon="alert">ממתין לבחירת סיסמה</Badge>}
                     <div className="flex items-center gap-1">
                       <Select aria-label={`תפקיד של ${s.full_name}`} value={s.role} disabled={self || busy === s.user_id} className="h-10 w-36"
-                        onChange={(e) => run(s.user_id, { action: 'update', user_id: s.user_id, role: e.target.value }, 'התפקיד עודכן')}>
+                        onChange={(e) => void changeRole(s, e.target.value as Role)}>
                         {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                       </Select>
                       {busy !== s.user_id && (
@@ -107,6 +181,8 @@ export function UsersSettings() {
               );
             })}
           </ul>
+          )}
+          </>
         )}
       </Panel>
       <Panel title="מה כל תפקיד רואה">

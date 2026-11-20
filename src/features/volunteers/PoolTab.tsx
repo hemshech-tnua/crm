@@ -8,6 +8,9 @@ import type { Volunteer } from '@/lib/types';
 import { Badge, Button, EmptyState, Panel, SearchInput, Td, Th, cx } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
+import { MoreMenu } from '@/ui/MoreMenu';
+import { NoResults } from '@/ui/toolbar';
+import { SEARCH_PLACEHOLDER, matchesSearch } from '@/ui/search';
 import { PhoneText } from '@/features/participants/shared';
 import { useVolunteerActions } from './actions';
 import { ROLE_LABEL, dayAndDate, isUpcoming, roleLabel, type Shift } from './model';
@@ -29,13 +32,13 @@ function useSetActive() {
     onSuccess: (_d, { v, active, cancel }) => {
       void qc.invalidateQueries({ queryKey: ['volunteers'] });
       void qc.invalidateQueries({ queryKey: ['volunteer_shifts'] });
-      toast.success(active ? `${v.full_name} שוב במאגר הפעיל` : `${v.full_name} ברשימת הלא פעילים עכשיו${cancel.length ? ` ו-${cancel.length} שיבוצים בוטלו` : ''}`);
+      toast.success(active ? `${v.full_name} שוב ברשימה הפעילה` : `${v.full_name} ב"לא פעילים" עכשיו${cancel.length ? `, ${cancel.length} שיבוצים בוטלו` : ''}`);
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
 }
 
-/** "מאגר": the volunteer pool, with how many meetings each is booked for and the next one. */
+/** "רשימת מתנדבים": everyone who helps, with how many meetings each is booked for and the next one. */
 export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) {
   const { data, send } = useVolunteerActions();
   const [q, setQ] = useState('');
@@ -59,21 +62,18 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
   }, [data.volunteers, data.shifts]);
 
   const term = q.trim().toLowerCase();
-  const digits = term.replace(/\D/g, '');
-  const match = (r: Row) => !term || r.v.full_name.toLowerCase().includes(term)
-    || (digits.length >= 3 && (r.v.phone ?? '').replace(/^\+972/, '0').includes(digits))
-    || r.v.roles.some((x) => ROLE_LABEL[x].includes(term));
+  const match = (r: Row) => matchesSearch(q, { name: r.v.full_name, phone: r.v.phone, also: r.v.roles.map((x) => ROLE_LABEL[x]) });
   const active = rows.filter((r) => r.v.is_active && match(r));
   const inactive = rows.filter((r) => !r.v.is_active && match(r));
 
   const deactivate = async (r: Row) => {
     const n = r.upcoming.length;
     const ok = await confirm({
-      title: `להעביר את ${r.v.full_name} ללא פעילים?`,
+      title: `להעביר את ${r.v.full_name} ל"לא פעילים"?`,
       body: n
         ? `יש ${n === 1 ? 'שיבוץ קרוב אחד' : `${n} שיבוצים קרובים`}. הם יבוטלו, והמקומות יסומנו "חסר". הקישור האישי יפסיק לעבוד.`
         : 'השם לא יופיע ברשימת השיבוץ, והקישור האישי יפסיק לעבוד. אפשר להחזיר בכל עת.',
-      confirm: 'העברה ללא פעילים',
+      confirm: 'העברה ל"לא פעילים"',
       cancel: 'חזרה',
       danger: n > 0,
     });
@@ -85,13 +85,18 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
       {r.v.is_active ? (
         <>
           <Button size="sm" variant="secondary" icon="link" onClick={() => send(r.v.id)} aria-label={`שליחת קישור ל${r.v.full_name}`}>שליחת קישור</Button>
-          <Button size="sm" variant="ghost" icon="edit" onClick={() => onEdit(r.v)} aria-label={`עריכת ${r.v.full_name}`}>עריכה</Button>
-          <Button size="sm" variant="ghost" disabled={setActive.isPending} onClick={() => deactivate(r)}>ללא פעילים</Button>
+          <Button size="sm" variant="ghost" icon="edit" onClick={() => onEdit(r.v)} aria-label={`עריכה: ${r.v.full_name}`}>עריכה</Button>
+          <MoreMenu
+            variant="icon"
+            size="sm"
+            label={`פעולות נוספות ל${r.v.full_name}`}
+            items={[{ label: 'העברה ל"לא פעילים"', icon: 'close', danger: true, disabled: setActive.isPending, onClick: () => { void deactivate(r); } }]}
+          />
         </>
       ) : (
         <>
-          <Button size="sm" variant="ghost" icon="undo" disabled={setActive.isPending} onClick={() => setActive.mutate({ v: r.v, active: true, cancel: [] })}>החזרה למאגר</Button>
-          <Button size="sm" variant="ghost" icon="edit" onClick={() => onEdit(r.v)} aria-label={`עריכת ${r.v.full_name}`}>עריכה</Button>
+          <Button size="sm" variant="ghost" icon="undo" disabled={setActive.isPending} onClick={() => setActive.mutate({ v: r.v, active: true, cancel: [] })}>החזרה לרשימה הפעילה</Button>
+          <Button size="sm" variant="ghost" icon="edit" onClick={() => onEdit(r.v)} aria-label={`עריכה: ${r.v.full_name}`}>עריכה</Button>
         </>
       )}
     </div>
@@ -115,7 +120,7 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
   const list = (rs: Row[]) => (
     <>
       <div className="hidden overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
-        <table className="w-full border-collapse text-body" aria-label="מאגר המתנדבים">
+        <table className="w-full border-collapse text-body" aria-label="רשימת המתנדבים">
           <thead>
             <tr>
               <Th>שם</Th>
@@ -176,14 +181,16 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
 
   return (
     <div className="flex flex-col gap-4">
-      <SearchInput value={q} onChange={setQ} label="חיפוש במאגר" placeholder="שם, טלפון או תפקיד" />
+      <SearchInput value={q} onChange={setQ} label="חיפוש מתנדבים" placeholder={SEARCH_PLACEHOLDER} />
       {active.length ? list(active) : (
         <Panel>
           {term ? (
-            <EmptyState icon="search" title="אין תוצאות">אין במאגר שם שמתאים לחיפוש.</EmptyState>
+            <NoResults onClear={() => setQ('')}>
+              {inactive.length ? <>יש <span className="num">{inactive.length}</span> תוצאות ברשימת הלא פעילים, למטה.</> : 'אפשר לחפש לפי חלק מהשם, מספר טלפון מלא או 4 הספרות האחרונות.'}
+            </NoResults>
           ) : (
-            <EmptyState icon="people" title="המאגר ריק" action={<Button icon="userPlus" onClick={() => onEdit('new')}>הוספה למאגר</Button>}>
-              מוסיפים כאן את מי שעוזר במפגשים: קבלת פנים, הקמה, פירוק, צילום. אחר כך משבצים אותם מראש בלשונית "שיבוץ".
+            <EmptyState icon="people" title="עוד אין מתנדבים ברשימה" action={<Button icon="userPlus" onClick={() => onEdit('new')}>מתנדב חדש</Button>}>
+              מוסיפים כאן את מי שעוזר במפגשים: קבלת פנים, הקמה, פירוק, צילום. אחר כך משבצים אותם מראש בלשונית "שיבוץ למפגשים".
             </EmptyState>
           )}
         </Panel>

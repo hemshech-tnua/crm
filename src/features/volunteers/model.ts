@@ -126,6 +126,9 @@ export const dayAndDate = (v: string) => `${shortDay(v)} ${fmtShortDate(v)}`;
 
 export const firstName = (full: string) => full.trim().split(/\s+/)[0] ?? '';
 
+/** Within a week: a gap that has to be filled now (the warning colour is kept for these). */
+export const isSoon = (e: Pick<PlanEvent, 'starts_at'>, now = Date.now()) => new Date(e.starts_at).getTime() - now <= 7 * 864e5;
+
 /** The volunteer's personal page (hash route: the token never reaches a server log). */
 export const volunteerUrl = (token: string) => `${appBase()}#/v/${token}`;
 

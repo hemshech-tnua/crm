@@ -4,8 +4,8 @@ import { errorMessage } from '@/lib/errors';
 import { fmtDayLong, relativeDays } from '@/lib/dates';
 import { EmptyState, ErrorBox, ButtonLink, Notice, PageHeader, Panel, Skeleton, Tabs } from '@/ui/kit';
 import { useEventPeople } from './context';
-import { StatusBadge, TypeBadge, isUnclosed, timeRange } from './shared';
-import { OverviewTab } from './OverviewTab';
+import { StatusBadge, TypeBadge, isUnclosed, seats, timeRange } from './shared';
+import { EventHeaderActions, EventStatusStrip, OverviewTab } from './OverviewTab';
 import { RegistrationsTab } from './RegistrationsTab';
 import { MessagesTab } from './MessagesTab';
 import { MarketingTab } from './MarketingTab';
@@ -38,8 +38,6 @@ export function EventPage() {
     );
   }
 
-  const s = e.stats;
-
   return (
     <>
       <PageHeader
@@ -54,6 +52,7 @@ export function EventPage() {
             {e.status !== 'completed' && e.status !== 'cancelled' && <span>· {relativeDays(e.starts_at)}</span>}
           </div>
         }
+        actions={<EventHeaderActions e={e} onTab={go} />}
       />
 
       {e.status === 'cancelled' && (
@@ -61,13 +60,15 @@ export function EventPage() {
           <Notice tone="warn" icon="alert">המפגש בוטל.{e.cancel_reason ? ` הסיבה: ${e.cancel_reason}` : ''}</Notice>
         </div>
       )}
-      {isUnclosed(e) && tab !== 'overview' && (
+      {isUnclosed(e) && tab !== 'summary' && (
         <div className="mb-5">
           <Notice tone="warn" icon="alert">
-            המפגש הסתיים ועדיין לא נסגר. <button type="button" className="font-bold underline" onClick={() => go('overview')}>לסגירת המפגש</button>
+            המפגש הסתיים ועדיין לא נסגר. בסגירה מסומנים מי שלא הגיעו ונוצרות משימות מעקב (הכפתור "סגירת המפגש" למעלה).
           </Notice>
         </div>
       )}
+
+      <EventStatusStrip e={e} people={people} onTab={go} />
 
       <Tabs<EventTab>
         label="לשוניות המפגש"
@@ -77,7 +78,7 @@ export function EventPage() {
           { value: 'overview', label: 'סקירה' },
           { value: 'prep', label: 'הכנות' },
           { value: 'volunteers', label: 'מתנדבים' },
-          { value: 'registrations', label: 'נרשמים', count: s ? s.registered_count + s.walk_in_count + s.waitlisted_count : undefined },
+          { value: 'registrations', label: 'נרשמים', count: e.stats ? seats(e).taken : undefined },
           { value: 'messages', label: 'הודעות' },
           { value: 'marketing', label: 'שיווק' },
           { value: 'summary', label: 'סיכום' },
@@ -88,7 +89,7 @@ export function EventPage() {
       {tab === 'registrations' && <RegistrationsTab event={e} people={people} initialFilter={params.get('filter')} />}
       {tab === 'messages' && <MessagesTab event={e} people={people} initialGroup={params.get('group')} />}
       {tab === 'marketing' && <MarketingTab event={e} people={people} />}
-      {tab === 'summary' && <SummaryTab event={e} />}
+      {tab === 'summary' && <SummaryTab event={e} onTab={go} />}
       {tab === 'prep' && <EventPrepTab event={e} />}
       {tab === 'volunteers' && <EventVolunteersTab event={e} />}
     </>

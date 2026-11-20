@@ -25,23 +25,25 @@ export function EventVolunteersTab({ event }: { event: EventWithStats }) {
 
   return (
     <VolunteerActions data={{ volunteers: volunteers.data, events: events.data, shifts }}>
-      <div className="flex max-w-3xl flex-col gap-4">
+      <div className="flex flex-col gap-4">
         {event.status === 'cancelled' && <Notice tone="warn" icon="alert">המפגש בוטל. כדאי לבטל את השיבוצים ולעדכן את המתנדבים.</Notice>}
-        <MeetingCard event={e} shifts={here.data} showLink={false} />
-        {upcoming && (
-          <Panel>
-            <div className="flex flex-col gap-4">
-              <Reminders shifts={here.data} />
-              <PendingLinks shifts={here.data} />
-              {!here.data.some((s) => s.status === 'invited' || s.status === 'confirmed') && (
-                <p className="text-small text-muted">לחיצה על "חסר" פותחת את המאגר. אפשר לשבץ את אותו אדם גם למפגשים הבאים בבת אחת.</p>
-              )}
-              <div>
-                <ButtonLink to="/app/volunteers" variant="ghost" size="sm" icon="calendar" className="-ms-3">כל המפגשים הקרובים בשיבוץ</ButtonLink>
+        <div className={upcoming ? 'grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]' : ''}>
+          <MeetingCard event={e} shifts={here.data} showLink={false} />
+          {upcoming && (
+            <Panel>
+              <div className="flex flex-col gap-4">
+                <Reminders shifts={here.data} />
+                <PendingLinks shifts={here.data} />
+                {!here.data.some((s) => s.status === 'invited' || s.status === 'confirmed') && (
+                  <p className="text-small text-muted">לחיצה על "+ שיבוץ" פותחת את רשימת המתנדבים. משבצים את כל התפקידים של המפגש בלי לסגור את החלון, ואפשר לשבץ את אותו אדם גם למפגשים הבאים בבת אחת.</p>
+                )}
+                <div>
+                  <ButtonLink to="/app/volunteers" variant="ghost" size="sm" icon="calendar" className="-ms-3">כל המפגשים הקרובים בשיבוץ</ButtonLink>
+                </div>
               </div>
-            </div>
-          </Panel>
-        )}
+            </Panel>
+          )}
+        </div>
       </div>
     </VolunteerActions>
   );

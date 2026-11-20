@@ -1,17 +1,18 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { useReferralLinks, useSettings, useSources, type EventWithStats } from '@/lib/data';
 import { errorMessage } from '@/lib/errors';
-import { addDays, fmtDateTime, fmtDayLong, fromIl, ilParts } from '@/lib/dates';
+import { addDays, fmtDateTime, fmtDayLong, fromIl, ilParts, todayIl } from '@/lib/dates';
 import { checkinUrl, feedbackUrl, registerUrl } from '@/lib/links';
 import { downloadFile } from '@/lib/csv';
 import { pct, ratio } from '@/lib/metrics';
 import { Badge, Button, ButtonLink, Input, KeyValue, Notice, Panel, Select, Textarea, cx } from '@/ui/kit';
+import type { IconName } from '@/ui/Icon';
 import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { Logo } from '@/ui/Logo';
@@ -19,8 +20,12 @@ import { Stripes, Tri } from '@/ui/Shapes';
 import type { EventTab } from './EventPage';
 import { dataUrlToBlob, type EventPeople } from './context';
 import { useInvalidateEvent } from './queries';
-import { BigStat, LinkRow, QrImage, hasEnded, hasStarted, isUnclosed, timeRange } from './shared';
-import { FinancePanel } from './finance';
+import { BigStat, LinkRow, QrImage, freeText, hasEnded, hasStarted, isUnclosed, seats, timeRange } from './shared';
+import { MoreMenu, type MoreMenuItem } from '@/ui/MoreMenu';
+import { FinancePanel, useEventFinance } from './finance';
+import { isOverdue, useEventTasks } from '@/features/prep/shared';
+import { slotsFor } from '@/features/volunteers/model';
+import { useShifts } from '@/features/volunteers/queries';
 import { fmtMoney, isPriced } from '@/lib/money';
 import './entrance-sign.css';
 
@@ -29,7 +34,7 @@ type Props = { event: EventWithStats; people: EventPeople; onTab: (t: EventTab, 
 export function OverviewTab({ event: e, people, onTab }: Props) {
   return (
     <div className="flex flex-col gap-5">
-      <Actions e={e} onTab={onTab} />
+      {e.status === 'draft' && <OpenChecklist e={e} people={people} onTab={onTab} />}
       <Counters e={e} />
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
@@ -50,22 +55,17 @@ export function OverviewTab({ event: e, people, onTab }: Props) {
 function Counters({ e }: { e: EventWithStats }) {
   const s = e.stats;
   const started = hasStarted(e);
-  const reg = s?.registered_count ?? 0;
-  // the server counts walk-ins against capacity too
-  const free = e.capacity != null ? Math.max(0, e.capacity - reg - (s?.walk_in_count ?? 0)) : null;
-  if (e.status === 'cancelled' && !reg && !s?.waitlisted_count) return null;
+  const st = seats(e);
+  if (e.status === 'cancelled' && !st.registered && !st.waitlisted) return null;
+  // one definition everywhere: "24 רשומים · 2 בלי הרשמה · 26 מתוך 28", free = capacity − (registered + walk-ins)
+  const regSub = [st.walkIns ? `${st.walkIns} בלי הרשמה` : null, st.capacity != null ? `${st.taken} מתוך ${st.capacity}` : null, freeText(e)].filter(Boolean).join(' · ');
   return (
     <section aria-label="מספרים" className={cx('grid gap-3', started && e.status !== 'cancelled' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3')}>
       {started && e.status !== 'cancelled' && (
         <BigStat highlight label="הגיעו" value={s?.attended_count ?? 0} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : undefined} />
       )}
-      <BigStat
-        highlight={!started && e.status === 'open'}
-        label="נרשמו"
-        value={<>{reg}<span className="text-xl text-muted">/{e.capacity ?? '∞'}</span></>}
-        sub={free != null ? (free === 1 ? 'מקום פנוי אחד' : free ? `${free} מקומות פנויים` : 'אין מקומות פנויים') : 'בלי הגבלת מקומות'}
-      />
-      <BigStat label="בהמתנה" value={s?.waitlisted_count ?? 0} />
+      <BigStat highlight={!started && e.status === 'open'} label="רשומים" value={st.registered} sub={regSub} />
+      <BigStat label="רשימת המתנה" value={st.waitlisted} />
       <BigStat label="ביטלו" value={s?.cancelled_count ?? 0} />
       {started && e.status !== 'cancelled' && (
         <>
@@ -93,9 +93,9 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
           ['מרצה', sp ? (
             <span key="s" className="inline-flex flex-wrap items-center gap-1.5">
               {sp.full_name}
-              {sp.status !== 'approved' && <Badge tone="warn">{sp.status === 'proposed' ? 'ממתין לאישור' : 'בלי אישור'}</Badge>}
+              {sp.status !== 'approved' && <Badge tone="neutral">{sp.status === 'proposed' ? 'מחכה לאישור' : 'בלי אישור'}</Badge>}
             </span>
-          ) : e.type === 'friday' ? <Badge key="s" tone="warn" icon="mic">עוד אין</Badge> : null],
+          ) : e.type === 'friday' ? <span key="s" className="text-muted">עוד אין</span> : null],
           ['נושא', e.lecture_topic],
           ['מקומות', e.capacity != null ? <span key="c"><span className="num">{e.capacity}</span>{e.waitlist_enabled ? ' · עם רשימת המתנה' : ' · בלי רשימת המתנה'}</span> : 'בלי הגבלה'],
           ['השתתפות', isPriced(e.price) ? (
@@ -116,11 +116,17 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
 
 type CompleteResult = { no_shows: number; tasks_no_show: number; tasks_first_time: number; tasks_lapsed: number };
 
-function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
+/**
+ * Everything the meeting can do, by stage (draft → open/closed → running → over → completed / cancelled):
+ * `primary` is the one next step, `secondary` stays visible next to it, `menu` holds the rest ("⋯ עוד", destructive
+ * last). `dialogs` must be rendered once wherever the hook is used.
+ */
+export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
   const role = useRole();
   const navigate = useNavigate();
   const confirm = useConfirm();
   const toast = useToast();
+  const copy = useCopy();
   const invalidate = useInvalidateEvent();
   const qc = useQueryClient();
   const settings = useSettings();
@@ -166,6 +172,7 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
     },
     onSuccess: async (r) => {
       await invalidate(e.id);
+      void qc.invalidateQueries({ queryKey: ['followups'] });
       setResult(r);
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -192,6 +199,7 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
 
   const askComplete = async () => {
     const st = settings.data;
+    const attended = s?.attended_count ?? 0;
     const unmarked = Math.max(0, (s?.registered_count ?? 0) - (s?.attended_registered_count ?? 0) - (s?.no_show_count ?? 0));
     const tasks = [
       st?.auto_task_no_show !== false && '"חסרת לנו" ושיחה לכל מי שלא הגיע',
@@ -203,6 +211,11 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
       confirm: 'סגירת המפגש',
       body: (
         <div className="flex flex-col gap-2.5">
+          {attended === 0 && (s?.registered_count ?? 0) > 0 && (
+            <Notice tone="warn" icon="alert">
+              עוד לא סומנה אף הגעה. אם המפגש התקיים, כדאי לסמן קודם מי הגיעו (ב"מצב כניסה"). אחרת כל <b className="num">{s?.registered_count}</b> הרשומים יסומנו כאי־הגעה ויקבלו משימת מעקב.
+            </Notice>
+          )}
           <p>מה יקרה עכשיו:</p>
           <ul className="flex list-disc flex-col gap-1.5 pr-5">
             <li>
@@ -240,57 +253,52 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
     if (ok) remove.mutate();
   };
 
-  const primary: ReactNode[] = [];
-  const secondary: ReactNode[] = [];
+  const copyLink = () => copy(registerUrl(e.public_code), 'קישור ההרשמה הועתק');
+  const doorTo = `/app/events/${e.id}/door`;
 
+  // the one next step, by stage
+  let primary: ReactNode = null;
+  let primaryKey: 'open' | 'complete' | 'door' | 'copy' | 'reopen' | 'dup' | null = null;
   if (e.status === 'draft') {
-    primary.push(<Button key="open" size="lg" icon="check" busy={setStatus.isPending} onClick={askOpen}>פתיחת הרשמה</Button>);
+    primaryKey = 'open';
+    primary = <Button key="open" icon="check" cta busy={setStatus.isPending} onClick={askOpen}>פתיחת הרשמה</Button>;
+  } else if (active && ended) {
+    primaryKey = 'complete';
+    primary = <Button key="complete" icon="checkCircle" cta busy={complete.isPending} onClick={askComplete}>סגירת המפגש</Button>;
+  } else if (active && (started || doorSoon)) {
+    primaryKey = 'door';
+    primary = <ButtonLink key="door" icon="door" cta to={doorTo}>מצב כניסה</ButtonLink>;
+  } else if (e.status === 'open') {
+    primaryKey = 'copy';
+    primary = <Button key="copy" icon="copy" cta onClick={copyLink}>העתקת קישור ההרשמה</Button>;
+  } else if (e.status === 'closed') {
+    primaryKey = 'reopen';
+    primary = <Button key="reopen" icon="undo" cta busy={setStatus.isPending} onClick={() => setStatus.mutate('open')}>פתיחת הרשמה מחדש</Button>;
+  } else if (e.status === 'completed') {
+    primaryKey = 'dup';
+    primary = <Button key="dup" icon="copy" cta onClick={() => setDupOpen(true)}>שכפול לשבוע הבא</Button>;
   }
-  if (active && started) {
-    primary.push(<Button key="complete" size="lg" icon="checkCircle" busy={complete.isPending} onClick={askComplete}>סגירת המפגש</Button>);
-  }
-  if (active && doorSoon && !started) {
-    primary.push(<ButtonLink key="door" size="lg" icon="door" to={`/app/events/${e.id}/door`}>מצב כניסה</ButtonLink>);
-  } else if (active && !ended) {
-    secondary.push(<ButtonLink key="door" variant="secondary" icon="door" to={`/app/events/${e.id}/door`}>מצב כניסה</ButtonLink>);
-  } else if (active || e.status === 'completed') {
-    secondary.push(<ButtonLink key="door" variant="secondary" icon="door" to={`/app/events/${e.id}/door`}>רשימת נוכחות</ButtonLink>);
-  }
-  if (e.status === 'open' && !started) {
-    secondary.push(<Button key="close" variant="secondary" icon="close" busy={setStatus.isPending} onClick={() => setStatus.mutate('closed')}>סגירת הרשמה</Button>);
-  }
-  if (e.status === 'closed' && !started) {
-    secondary.push(<Button key="reopen" variant="secondary" icon="undo" busy={setStatus.isPending} onClick={() => setStatus.mutate('open')}>פתיחת הרשמה מחדש</Button>);
-  }
-  if (e.status === 'completed') {
-    primary.push(<Button key="dup" size="lg" icon="copy" onClick={() => setDupOpen(true)}>שכפול לשבוע הבא</Button>);
-    secondary.push(<Button key="sum" variant="secondary" icon="chart" onClick={() => onTab('summary')}>סיכום המפגש</Button>);
-  } else {
-    secondary.push(<Button key="dup" variant="secondary" icon="copy" onClick={() => setDupOpen(true)}>שכפול לשבוע הבא</Button>);
+
+  const secondary: ReactNode[] = [];
+  // while it runs, closing is one step away (the door is the main thing)
+  if (active && started && !ended) {
+    secondary.push(<Button key="complete" variant="secondary" icon="checkCircle" busy={complete.isPending} onClick={askComplete}>סגירת המפגש</Button>);
   }
   secondary.push(<ButtonLink key="edit" variant="secondary" icon="edit" to={`/app/events/${e.id}/edit`}>עריכה</ButtonLink>);
 
-  const canCancel = (e.status === 'draft' || active) && !ended;
-  const canDelete = can.admin(role) && regCount.data === 0;
+  const menu: MoreMenuItem[] = [];
+  if (e.status === 'open' && primaryKey !== 'copy') menu.push({ label: 'העתקת קישור ההרשמה', icon: 'copy', onClick: copyLink });
+  if ((active || e.status === 'completed') && primaryKey !== 'door') {
+    menu.push({ label: active && !ended ? 'מצב כניסה' : 'רשימת נוכחות', icon: 'door', onClick: () => navigate(doorTo) });
+  }
+  if (e.status === 'open' && !started) menu.push({ label: 'סגירת הרשמה', icon: 'close', disabled: setStatus.isPending, onClick: () => setStatus.mutate('closed') });
+  if (e.status === 'closed' && !started && primaryKey !== 'reopen') menu.push({ label: 'פתיחת הרשמה מחדש', icon: 'undo', disabled: setStatus.isPending, onClick: () => setStatus.mutate('open') });
+  if (primaryKey !== 'dup') menu.push({ label: 'שכפול לשבוע הבא', icon: 'copy', onClick: () => setDupOpen(true) });
+  if ((e.status === 'draft' || active) && !ended) menu.push({ label: 'ביטול המפגש', icon: 'close', danger: true, onClick: () => setCancelOpen(true) });
+  if (can.admin(role) && regCount.data === 0) menu.push({ label: 'מחיקת המפגש', danger: true, disabled: remove.isPending, onClick: askDelete });
 
-  return (
-    <Panel title="פעולות">
-      {isUnclosed(e, now) && (
-        <div className="mb-4">
-          <Notice tone="warn" icon="alert">המפגש הסתיים ועדיין לא נסגר. בסגירה מסומנים מי שלא הגיעו ונוצרות משימות מעקב.</Notice>
-        </div>
-      )}
-      <div className="flex flex-col gap-3">
-        {primary.length > 0 && <div className="grid gap-2 sm:flex sm:flex-wrap [&>*]:w-full sm:[&>*]:w-auto">{primary}</div>}
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>*]:w-full sm:[&>*]:w-auto">{secondary}</div>
-        {(canCancel || canDelete) && (
-          <div className="flex flex-wrap gap-2 border-t border-line-soft pt-3">
-            {canCancel && <Button variant="danger" size="sm" icon="close" onClick={() => setCancelOpen(true)}>ביטול המפגש</Button>}
-            {canDelete && <Button variant="danger" size="sm" busy={remove.isPending} onClick={askDelete}>מחיקת המפגש</Button>}
-          </div>
-        )}
-      </div>
-
+  const dialogs = (
+    <>
       <DuplicateDialog open={dupOpen} onClose={() => setDupOpen(false)} e={e} />
       <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} e={e} onTab={onTab} />
       <Dialog
@@ -299,8 +307,8 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
         title="המפגש נסגר"
         footer={
           <>
-            <Button onClick={() => { setResult(null); onTab('summary'); }} icon="chart">לסיכום המפגש</Button>
-            <ButtonLink to="/app/followups" variant="secondary" icon="task">למשימות המעקב</ButtonLink>
+            <ButtonLink to={`/app/followups?event=${e.id}`} icon="task">למשימות המעקב של המפגש</ButtonLink>
+            <Button variant="secondary" onClick={() => { setResult(null); onTab('summary'); }} icon="chart">לסיכום המפגש</Button>
             <Button variant="ghost" onClick={() => setResult(null)}>סגירה</Button>
           </>
         }
@@ -322,6 +330,173 @@ function Actions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
           </div>
         )}
       </Dialog>
+    </>
+  );
+
+  return { primary, secondary, menu, dialogs, askComplete, askOpen, openDuplicate: () => setDupOpen(true), completing: complete.isPending, opening: setStatus.isPending };
+}
+
+/**
+ * The meeting's actions in the page header: the stage's one primary step, "עריכה", and "⋯ עוד".
+ * Links may ask for a dialog: `?dup=1` opens the duplicate dialog, `?close=1` the closing confirmation.
+ */
+export function EventHeaderActions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
+  const a = useMeetingActions(e, onTab);
+  const [params, setParams] = useSearchParams();
+  const asked = useRef(false);
+  useEffect(() => {
+    if (asked.current) return;
+    const dup = params.get('dup') === '1';
+    const close = params.get('close') === '1' && isUnclosed(e);
+    if (!dup && !params.has('close')) return;
+    asked.current = true;
+    const next = new URLSearchParams(params);
+    next.delete('dup');
+    next.delete('close');
+    setParams(next, { replace: true });
+    if (dup) a.openDuplicate();
+    else if (close) void a.askComplete();
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <>
+      {a.primary}
+      {a.secondary}
+      <MoreMenu items={a.menu} label="פעולות נוספות למפגש" />
+      {a.dialogs}
+    </>
+  );
+}
+
+// ───────────── status at a glance ─────────────
+
+type StripItem = { key: string; icon?: IconName; text: ReactNode; state: 'done' | 'todo' | 'warn' | 'info'; go: () => void; label: string };
+
+/**
+ * One line under the title: places, speaker, coach, volunteers, payments and tasks. Each item opens its tab.
+ * ✓ when done, muted when still missing, the warning colour only for what needs doing today (late tasks).
+ */
+export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; people: EventPeople; onTab: Props['onTab'] }) {
+  const navigate = useNavigate();
+  const live = e.status !== 'cancelled';
+  /** not closed yet: tasks still count */
+  const open = live && e.status !== 'completed';
+  /** still ahead or running: who speaks, who coaches, who volunteers still matter */
+  const ahead = open && !hasEnded(e);
+  const tasks = useEventTasks(e.id);
+  const shifts = useShifts(e.id);
+  const finance = useEventFinance(e.id, live && isPriced(e.price));
+  const st = seats(e);
+  const started = hasStarted(e);
+  const items: StripItem[] = [];
+  const edit = () => navigate(`/app/events/${e.id}/edit`);
+
+  items.push({
+    key: 'seats', icon: 'people', state: 'info', label: 'לנרשמים', go: () => onTab('registrations'),
+    text: <>
+      {started && live ? <><span className="num font-bold">{e.stats?.attended_count ?? 0}</span> הגיעו · </> : null}
+      <span className="num font-bold">{st.registered}</span> רשומים
+      {st.walkIns ? <> · <span className="num">{st.walkIns}</span> בלי הרשמה</> : null}
+      {st.capacity != null ? <> · <span className="num">{st.taken}</span> מתוך <span className="num">{st.capacity}</span></> : null}
+      {st.waitlisted ? <> · <span className="num">{st.waitlisted}</span> ברשימת המתנה</> : null}
+    </>,
+  });
+  if (ahead && (e.type === 'friday' || e.speaker_id)) {
+    const sp = people.speaker;
+    items.push(sp
+      ? { key: 'sp', icon: 'mic', state: sp.status === 'approved' ? 'done' : 'todo', label: 'לעריכת המרצה', go: edit, text: sp.status === 'approved' ? 'מרצה' : 'מרצה מחכה לאישור' }
+      : { key: 'sp', icon: 'mic', state: 'todo', label: 'לשיבוץ מרצה', go: edit, text: 'בלי מרצה' });
+  }
+  if (ahead && (e.type === 'friday' || e.instructor_id)) {
+    items.push(e.instructor_id
+      ? { key: 'in', state: 'done', label: 'לעריכת המדריך', go: edit, text: 'מדריך' }
+      : { key: 'in', state: 'todo', label: 'לשיבוץ מדריך', go: edit, text: 'בלי מדריך' });
+  }
+  if (ahead && shifts.data) {
+    const slots = slotsFor(e, shifts.data).filter((x) => (x.def.need ?? 1) > 0);
+    const need = slots.reduce((n, x) => n + (x.def.need ?? 1), 0);
+    const filled = slots.reduce((n, x) => n + Math.min(x.filled, x.def.need ?? 1), 0);
+    if (need > 0) {
+      items.push({ key: 'vol', state: filled >= need ? 'done' : 'todo', label: 'למתנדבים', go: () => onTab('volunteers'),
+        text: <>מתנדבים <span className="num">{filled}/{need}</span></> });
+    }
+  }
+  const pending = finance.data?.income.pending_count ?? 0;
+  if (live && pending > 0) {
+    items.push({ key: 'pay', state: e.status === 'completed' || hasEnded(e) ? 'warn' : 'info', label: 'למי שלא שילמו', go: () => onTab('registrations', { filter: 'unpaid' }),
+      text: <><span className="num font-bold">{pending}</span> לא שילמו</> });
+  }
+  if (open && tasks.data) {
+    const list = tasks.data.filter((t) => t.kind === 'task' && !t.dismissed);
+    const late = list.filter((t) => isOverdue(t, todayIl())).length;
+    const done = list.filter((t) => t.done_at).length;
+    if (late > 0) items.push({ key: 'tasks', icon: 'task', state: 'warn', label: 'להכנות', go: () => onTab('prep'), text: <><span className="num font-bold">{late}</span> משימות באיחור</> });
+    else if (list.length) items.push({ key: 'tasks', icon: 'task', state: done === list.length ? 'done' : 'info', label: 'להכנות', go: () => onTab('prep'), text: <>הכנות <span className="num">{done}/{list.length}</span></> });
+  }
+  if (e.status === 'completed' && (e.stats?.feedback_count ?? 0) > 0) {
+    items.push({ key: 'fb', icon: 'star', state: 'info', label: 'לסיכום', go: () => onTab('summary'),
+      text: <><span className="num">{e.stats!.feedback_count}</span> משובים{e.stats?.avg_overall != null ? <> · דירוג <span className="num">{Number(e.stats.avg_overall).toFixed(1)}</span></> : null}</> });
+  }
+
+  const tone = {
+    done: 'border-ink/40 text-ink',
+    todo: 'border-dashed border-ink/35 text-muted',
+    warn: 'border-warn/50 bg-warn-wash text-warn',
+    info: 'border-edge text-ink',
+  };
+  return (
+    <ul aria-label="מצב המפגש" className="mb-4 flex flex-wrap gap-2">
+      {items.map((it) => (
+        <li key={it.key}>
+          <button
+            type="button"
+            onClick={it.go}
+            title={it.label}
+            className={cx('inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] border bg-paper px-3 text-small font-medium transition-colors hover:border-ink', tone[it.state], it.state === 'warn' && 'bg-warn-wash')}
+          >
+            {it.icon && <Icon name={it.icon} size={16} />}
+            <span>{it.text}</span>
+            {it.state === 'done' && <Icon name="check" size={15} strokeWidth={2.4} label="מוכן" />}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// ───────────── a draft: what is missing before registration opens ─────────────
+
+function OpenChecklist({ e, people, onTab }: { e: EventWithStats; people: EventPeople; onTab: Props['onTab'] }) {
+  const a = useMeetingActions(e, onTab);
+  const friday = e.type === 'friday';
+  const rows: { label: string; ok: boolean; note?: string; optional?: boolean }[] = [
+    { label: 'תאריך, שעה ומקום', ok: true, note: `${fmtDayLong(e.starts_at)} · ${people.place ?? 'בלי כתובת'}` },
+    ...(friday || e.speaker_id ? [{ label: 'מרצה', ok: !!people.speaker, note: people.speaker?.full_name, optional: true }] : []),
+    ...(friday || e.lecture_topic ? [{ label: 'נושא ההרצאה', ok: !!e.lecture_topic?.trim(), note: e.lecture_topic ?? undefined, optional: true }] : []),
+    ...(friday || e.activity_name ? [{ label: 'פעילות ומדריך', ok: !!e.activity_name && !!e.instructor_id, note: [e.activity_name, people.instructor?.full_name].filter(Boolean).join(' עם '), optional: true }] : []),
+    { label: 'מספר מקומות', ok: true, note: e.capacity != null ? `${e.capacity}${e.waitlist_enabled ? ' · עם רשימת המתנה' : ''}` : 'בלי הגבלה' },
+  ];
+  const missing = rows.filter((r) => !r.ok);
+  return (
+    <Panel title="מה חסר כדי לפתוח הרשמה" description={missing.length ? 'אפשר לפתוח גם עכשיו ולהשלים אחר כך. כל עוד המפגש טיוטה, הוא לא מוצג ללוחמים.' : 'הכול מוכן. כשפותחים הרשמה, הקישור מתחיל לעבוד.'}>
+      <ul className="mb-4 flex flex-col gap-2">
+        {rows.map((r) => (
+          <li key={r.label} className="flex items-start gap-2.5">
+            <span className={cx('mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px]', r.ok ? 'bg-ink text-light' : 'border border-dashed border-ink/40')} aria-hidden="true">
+              {r.ok && <Icon name="check" size={13} strokeWidth={2.6} />}
+            </span>
+            <span className="min-w-0">
+              <span className={cx('font-semibold', !r.ok && 'text-ink-soft')}>{r.label}</span>
+              {r.ok && r.note ? <span className="text-muted"> · {r.note}</span> : null}
+              {!r.ok && <span className="text-muted"> · עוד לא נקבע</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-2">
+        <Button icon="check" cta busy={a.opening} onClick={a.askOpen}>פתיחת הרשמה</Button>
+        {missing.length > 0 && <ButtonLink variant="secondary" icon="edit" to={`/app/events/${e.id}/edit`}>השלמת הפרטים</ButtonLink>}
+      </div>
+      {a.dialogs}
     </Panel>
   );
 }
@@ -349,8 +524,9 @@ function DuplicateDialog({ open, onClose, e }: { open: boolean; onClose: () => v
     onSuccess: async (id) => {
       await invalidate(e.id);
       onClose();
-      toast.success('נוצרה טיוטה. מעדכנים מרצה ונושא, שומרים ופותחים הרשמה.');
-      navigate(`/app/events/${id}/edit`);
+      toast.success('נוצרה טיוטה. מעדכנים מרצה ונושא ושומרים');
+      navigate(`/app/events/${id}/edit?from=dup`);
+      window.scrollTo({ top: 0 });
     },
     onError: (x) => setErr(errorMessage(x)),
   });
@@ -430,6 +606,7 @@ function LinksPanel({ e }: { e: EventWithStats }) {
   const copy = useCopy();
   const links = useReferralLinks();
   const [creating, setCreating] = useState(false);
+  const [more, setMore] = useState(false);
   const pub = registerUrl(e.public_code);
   const active = (links.data ?? []).filter((l) => l.is_active);
 
@@ -452,6 +629,13 @@ function LinksPanel({ e }: { e: EventWithStats }) {
       </div>
       {links.isError ? (
         <p className="mt-3 text-sm text-bad">{errorMessage(links.error)}</p>
+      ) : active.length > 0 && !more ? (
+        <div className="mt-3 border-t border-line-soft pt-2">
+          <button type="button" aria-expanded={false} onClick={() => setMore(true)} className="-mx-2 inline-flex min-h-11 items-center gap-1.5 px-2 text-small font-semibold text-tide hover:underline">
+            {active.length === 1 ? 'עוד ערוץ אחד' : <>עוד <span className="num">{active.length}</span> ערוצים</>}
+            <Icon name="chevron" size={15} className="-rotate-90" />
+          </button>
+        </div>
       ) : active.length > 0 ? (
         <div className="mt-3 border-t border-line-soft pt-1">
           {active.map((l) => {
@@ -547,7 +731,7 @@ function NewLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }
         <Input label="תיאור" required value={label} onChange={(x) => setLabel(x.target.value)} error={errors.label} placeholder="קבוצת הוואטסאפ של מודיעין" maxLength={80} />
         <Input label="קוד" required ltr value={code} onChange={(x) => setCode(x.target.value.toLowerCase().replace(/\s+/g, '-'))} error={errors.code} placeholder="wa-modiin" maxLength={40} hint="אותיות באנגלית, ספרות ומקף. מופיע בקישור." />
         <Select label="מקור" value={sourceId} onChange={(x) => setSourceId(x.target.value)} hint="איך שמעו עלינו מי שנרשמים דרך הקישור">
-          <option value="">ללא</option>
+          <option value="">בלי מקור</option>
           {(sources.data ?? []).filter((s) => s.is_active).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </Select>
         <Input label="קמפיין" value={campaign} onChange={(x) => setCampaign(x.target.value)} maxLength={80} placeholder="לא חובה" />

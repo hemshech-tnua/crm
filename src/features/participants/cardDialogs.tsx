@@ -1,7 +1,7 @@
 // Dialogs on the participant card: edit, log a conversation, link the referrer, choose a WhatsApp message.
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useSources, useTemplates } from '@/lib/data';
 import { errorCode, errorMessage } from '@/lib/errors';
@@ -333,6 +333,92 @@ export function MessageChooser({ recipient, regs, nextEvent, onClose }: {
           );
         })}
       </ul>
+    </Dialog>
+  );
+}
+
+// ───────────── merge with another card of the same person ─────────────
+
+/**
+ * Pick the other card, choose which one stays, confirm. The merge itself is the same server call as on the
+ * duplicates page (staff_merge_participants): history moves to the card that stays, the other card and its phone go.
+ */
+export function MergeDialog({ card, onClose }: { card: Card; onClose: () => void }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [other, setOther] = useState<PickedParticipant | null>(null);
+  const [keepThis, setKeepThis] = useState(true);
+  const self: PickedParticipant = { id: card.id, full_name: card.full_name, phone: card.phone, city: card.city };
+  const kept = other ? (keepThis ? self : other) : null;
+  const gone = other ? (keepThis ? other : self) : null;
+
+  const merge = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('staff_merge_participants', { p_keep: kept!.id, p_merge: gone!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['participants'] });
+      qc.invalidateQueries({ queryKey: ['participant', kept!.id] });
+      qc.removeQueries({ queryKey: ['participant', gone!.id] });
+      qc.invalidateQueries({ queryKey: ['followups'] });
+      qc.invalidateQueries({ queryKey: ['attention'] });
+      toast.success(`הכרטיסים מוזגו לכרטיס של ${kept!.full_name}`);
+      onClose();
+      if (kept!.id !== card.id) navigate(`/app/participants/${kept!.id}`, { replace: true });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="מיזוג עם כרטיס אחר"
+      footer={other ? <>
+        <Button variant="danger" icon="merge" busy={merge.isPending} onClick={() => merge.mutate()}>מיזוג הכרטיסים</Button>
+        <Button variant="ghost" onClick={onClose}>חזרה</Button>
+      </> : <Button variant="ghost" onClick={onClose}>חזרה</Button>}
+    >
+      {!other ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-body text-ink-soft">כשלאותו אדם יש שני כרטיסים (למשל נרשם פעם עם מספר אחר). מחפשים את הכרטיס השני:</p>
+          <ParticipantPicker onPick={setOther} excludeId={card.id} label="חיפוש הכרטיס השני" />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1.5 text-small font-medium text-ink">איזה כרטיס נשאר?</legend>
+            {[{ p: self, keep: true }, { p: other, keep: false }].map(({ p, keep }) => (
+              <label key={p.id} className={cx(
+                'flex min-h-14 cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border-2 px-3.5 py-2.5',
+                keepThis === keep ? 'border-ink' : 'border-edge hover:border-control-line',
+              )}>
+                <input type="radio" name="merge-keep" checked={keepThis === keep} onChange={() => setKeepThis(keep)} className="h-5 w-5 accent-tide" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{p.full_name}{keep && <span className="font-normal text-muted"> (הכרטיס הזה)</span>}</span>
+                  <span className="block text-small text-muted"><span className="num">{formatPhone(p.phone)}</span>{p.city ? ` · ${p.city}` : ''}</span>
+                </span>
+                <span className={cx('text-small font-semibold', keepThis === keep ? 'text-tide' : 'text-muted')}>{keepThis === keep ? 'נשאר' : 'יתמזג'}</span>
+              </label>
+            ))}
+          </fieldset>
+          <div className="flex flex-col gap-2 text-body text-ink-soft">
+            <p>
+              ההרשמות וההגעות, המשובים, משימות המעקב ויומן השיחות של <strong className="text-ink">{gone!.full_name}</strong> עוברים לכרטיס של <strong className="text-ink">{kept!.full_name}</strong>.
+              פרטים שחסרים בכרטיס שנשאר יושלמו מהכרטיס השני.
+            </p>
+            <Notice tone="warn" icon="alert">
+              <span>
+                הטלפון <strong className="num" dir="ltr">{formatPhone(gone!.phone)}</strong> יימחק יחד עם הכרטיס השני. בכרטיס שנשאר יישאר רק הטלפון <span className="num" dir="ltr">{formatPhone(kept!.phone)}</span>.
+                אם צריך את המספר השני, כדאי לרשום אותו קודם בהערות. אי אפשר לבטל את המיזוג.
+              </span>
+            </Notice>
+          </div>
+          <Button variant="ghost" size="sm" className="self-start" onClick={() => setOther(null)}>בחירת כרטיס אחר</Button>
+        </div>
+      )}
     </Dialog>
   );
 }

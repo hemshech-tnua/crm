@@ -1,6 +1,8 @@
 // Shared pieces of the preparation screens: queries, the one-tap tick, and Itai's way of saying dates.
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useMe } from '@/lib/auth';
 import { addDays, todayIl } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
 import type { EventRow, EventTask, EventType, PrepCategory, PrepTemplate, Supplier } from '@/lib/types';
@@ -146,6 +148,86 @@ export function useToggleTask() {
     },
   });
 }
+
+/** Tick several tasks at once ("לסמן שבוצעו?"), with "החזרה" to untick the same ones. */
+export function useTickMany() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const write = async (ids: string[], done: boolean) => {
+    const { error } = await supabase.from('event_tasks').update({ done_at: done ? new Date().toISOString() : null }).in('id', ids);
+    if (error) throw error;
+  };
+  return useMutation({
+    mutationFn: async (ids: string[]) => write(ids, true),
+    onMutate: async (ids) => {
+      await qc.cancelQueries({ queryKey: ['event_tasks'] });
+      const set = new Set(ids);
+      const now = new Date().toISOString();
+      qc.setQueriesData<EventTask[]>({ queryKey: ['event_tasks'] }, (old) => (Array.isArray(old) ? old.map((t) => (set.has(t.id) ? { ...t, done_at: now } : t)) : old));
+    },
+    onSuccess: (_d, ids) => {
+      qc.invalidateQueries({ queryKey: ['event_tasks'] });
+      toast.undo(ids.length === 1 ? 'משימה אחת סומנה כבוצעה' : `${ids.length} משימות סומנו כבוצעו`, () => {
+        write(ids, false).then(() => qc.invalidateQueries({ queryKey: ['event_tasks'] }), (e) => toast.error(errorMessage(e)));
+      });
+    },
+    onError: (e) => {
+      qc.invalidateQueries({ queryKey: ['event_tasks'] });
+      toast.error(errorMessage(e));
+    },
+  });
+}
+
+/** How far each meeting is (done / all its tasks), for the meeting headers of "השבוע שלי". */
+export function useMeetingProgress(eventIds: string[]) {
+  const ids = [...new Set(eventIds)].sort();
+  return useQuery({
+    queryKey: ['event_tasks', 'progress', ids],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const rows: { event_id: string; done_at: string | null }[] = [];
+      // in chunks: a single in.(…) with hundreds of ids exceeds the gateway's URL limit
+      for (let i = 0; i < ids.length; i += 60) {
+        rows.push(...(must(await supabase.from('event_tasks').select('event_id,done_at').eq('kind', 'task').eq('dismissed', false)
+          .in('event_id', ids.slice(i, i + 60)).limit(5000)) as { event_id: string; done_at: string | null }[]));
+      }
+      const m = new Map<string, { done: number; total: number }>();
+      for (const r of rows) {
+        const x = m.get(r.event_id) ?? { done: 0, total: 0 };
+        x.total += 1;
+        if (r.done_at) x.done += 1;
+        m.set(r.event_id, x);
+      }
+      return m;
+    },
+  });
+}
+
+// ───────────── whose tasks: "שלי | כל הצוות" ─────────────
+
+export type Who = 'mine' | 'team';
+const WHO_KEY = 'prep.who';
+/** Mine = given to me, or to the coordination team as a whole (no one in charge). Tasks of a colleague are hers. */
+export const isMine = (t: Pick<EventTask, 'assignee_id'>, myId: string | null | undefined) => !t.assignee_id || t.assignee_id === myId;
+
+/** The "שלי | כל הצוות" choice, remembered on this device (default: שלי). */
+export function useWho(): [Who, (w: Who) => void, string | null | undefined] {
+  const me = useMe();
+  const [who, setWho] = useState<Who>(() => {
+    try { return localStorage.getItem(WHO_KEY) === 'team' ? 'team' : 'mine'; } catch { return 'mine'; }
+  });
+  const set = (w: Who) => {
+    setWho(w);
+    try { localStorage.setItem(WHO_KEY, w); } catch { /* private window: the choice lasts until reload */ }
+  };
+  return [who, set, me.data?.user_id];
+}
+
+/** "מפגש שישי · בוקר בפארק" → "בוקר בפארק": the part that tells meetings of the same kind apart. */
+export const shortTitle = (title: string, max = 22) => {
+  const tail = title.includes(' · ') ? title.split(' · ').slice(1).join(' · ') : title;
+  return tail.length > max ? `${tail.slice(0, max - 1).trimEnd()}…` : tail;
+};
 
 // ───────────── the tick ─────────────
 

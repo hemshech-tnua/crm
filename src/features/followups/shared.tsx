@@ -6,7 +6,7 @@ import { useMe } from '@/lib/auth';
 import { useStaffList } from '@/lib/data';
 import { addDays, todayIl } from '@/lib/dates';
 import { errorCode, errorMessage, must } from '@/lib/errors';
-import { CHANNEL_LABEL, taskTitle } from '@/lib/labels';
+import { CHANNEL_LABEL, UNASSIGNED_LABEL, taskTitle } from '@/lib/labels';
 import type { FollowUp } from '@/lib/types';
 import { Button, Checkbox, ChoiceGroup, Input, Select, Textarea } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
@@ -251,7 +251,7 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
       <div className="flex flex-col gap-4">
         <Input label="כותרת" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} />
         <Select label="באחריות" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-          <option value="">ללא שיוך</option>
+          <option value="">{UNASSIGNED_LABEL}</option>
           {list.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
         </Select>
         <Input label="תאריך יעד" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
@@ -323,7 +323,7 @@ export function NewTaskDialog({ participant, onClose, onCreated }: {
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="תאריך יעד" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           <Select label="באחריות" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">ללא שיוך</option>
+            <option value="">{UNASSIGNED_LABEL}</option>
             {list.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
           </Select>
         </div>

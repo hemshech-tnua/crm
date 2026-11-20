@@ -1,17 +1,18 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
 import { fmtDate, fmtShortDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
-import { FOLLOWUP_TYPE_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
+import { FOLLOWUP_TYPE_LABEL, UNASSIGNED_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
 import { Badge, Button, EmptyState, ErrorBox, FilterChips, IconButton, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
+import { useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { PersonLink, ago, daysUntil, useNextOpenEvent, type EventForMessage } from '@/features/participants/shared';
 import {
-  CompleteTaskDialog, EditTaskDialog, NewTaskDialog, TASK_SELECT, TaskComposer, useAssignees, useOpenLapsedTask, type TaskRow,
+  CompleteTaskDialog, EditTaskDialog, NewTaskDialog, TASK_SELECT, TaskComposer, useAssignees, useInvalidateTasks, useOpenLapsedTask, type TaskRow,
 } from './shared';
 
 type Tab = 'mine' | 'open' | 'done';
@@ -27,8 +28,11 @@ export function FollowUpsPage() {
   const [sp, setSp] = useSearchParams();
   const requested = sp.get('tab') as Tab | null;
   const typeFilter = sp.get('type') as TaskRow['type'] | null;
-  const setTab = (t: Tab) => setSp({ tab: t }, { replace: true });
-  const setType = (t: string | null) => { const n = new URLSearchParams(sp); if (t) n.set('type', t); else n.delete('type'); setSp(n, { replace: true }); };
+  // ?event=<id>: the follow-ups a meeting left behind (linked from the meeting's summary after it is closed)
+  const eventFilter = sp.get('event');
+  const setParam = (k: string, v: string | null) => { const n = new URLSearchParams(sp); if (v) n.set(k, v); else n.delete(k); setSp(n, { replace: true }); };
+  const setTab = (t: Tab) => setParam('tab', t);
+  const setType = (t: string | null) => setParam('type', t);
   const [creating, setCreating] = useState(false);
 
   const open = useQuery({
@@ -48,12 +52,13 @@ export function FollowUpsPage() {
   });
   const next = useNextOpenEvent();
 
-  const allOpen = useMemo(() => [...(open.data ?? [])].sort(byDue), [open.data]);
+  const allOpen = useMemo(() => [...(open.data ?? [])].filter((t) => !eventFilter || t.event_id === eventFilter).sort(byDue), [open.data, eventFilter]);
   const all = useMemo(() => (typeFilter ? allOpen.filter((t) => t.type === typeFilter) : allOpen), [allOpen, typeFilter]);
   const mine = useMemo(() => all.filter((t) => t.assignee_id === myId), [all, myId]);
-  // S5: without a chosen tab, open on "mine" only when there is something of mine; otherwise on all open tasks
+  // S5: without a chosen tab, open on "mine" only when there is something of mine; otherwise on all open tasks.
+  // A meeting's follow-ups open on all of them: right after closing, none has anyone in charge yet.
   const tab: Tab = requested && ['mine', 'open', 'done'].includes(requested) ? requested
-    : open.data && !allOpen.some((t) => t.assignee_id === myId) ? 'open' : 'mine';
+    : eventFilter || (open.data && !allOpen.some((t) => t.assignee_id === myId)) ? 'open' : 'mine';
   const typeCounts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const t of allOpen) c[t.type] = (c[t.type] ?? 0) + 1;
@@ -69,7 +74,9 @@ export function FollowUpsPage() {
         actions={<Button icon="plus" onClick={() => setCreating(true)}>משימה חדשה</Button>}
       />
 
-      {tab !== 'done' && lapsed.length > 0 && (
+      {eventFilter && <EventScope eventId={eventFilter} tasks={allOpen} loading={open.isLoading} onClear={() => setParam('event', null)} />}
+
+      {tab !== 'done' && !eventFilter && lapsed.length > 0 && (
         <button
           type="button"
           onClick={() => document.getElementById('lapsed')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
@@ -98,7 +105,7 @@ export function FollowUpsPage() {
       )}
 
       {tab === 'done' ? (
-        <DoneList q={done} />
+        <DoneList q={{ ...done, data: eventFilter ? done.data?.filter((t) => t.event_id === eventFilter) : done.data }} />
       ) : open.isError ? (
         <ErrorBox error={errorMessage(open.error)} onRetry={() => open.refetch()} />
       ) : open.isLoading ? (
@@ -110,18 +117,70 @@ export function FollowUpsPage() {
           showAssignee={tab === 'open'}
           empty={tab === 'mine'
             ? <EmptyState icon="checkCircle" title="אין משימות פתוחות עליך" action={all.length ? <Button variant="secondary" onClick={() => setTab('open')}>לכל המשימות הפתוחות</Button> : undefined}>
-                {all.length ? <>יש <span className="num">{all.length}</span> משימות פתוחות של אחרים או בלי שיוך.</> : 'כל הכבוד, הכול מטופל.'}
+                {all.length ? <>יש <span className="num">{all.length}</span> משימות פתוחות של אחרים או בלי אחראי.</> : 'כל הכבוד, הכול מטופל.'}
               </EmptyState>
-            : <EmptyState icon="checkCircle" title="אין משימות פתוחות">משימות נפתחות לבד כשסוגרים מפגש (מי שלא הגיע ומי שהגיע בפעם הראשונה), או ידנית.</EmptyState>}
+            : eventFilter
+              ? <EmptyState icon="checkCircle" title="אין משימות פתוחות מהמפגש הזה" action={<Button variant="secondary" onClick={() => setParam('event', null)}>לכל המשימות</Button>}>כל משימות המעקב של המפגש טופלו, או שהמפגש עוד לא נסגר.</EmptyState>
+              : <EmptyState icon="checkCircle" title="אין משימות פתוחות">משימות נפתחות לבד כשסוגרים מפגש (מי שלא הגיע ומי שהגיע בפעם הראשונה), או ידנית.</EmptyState>}
         />
       )}
 
-      {tab !== 'done' && (
+      {tab !== 'done' && !eventFilter && (
         <LapsedSection lapsed={lapsed} loading={attention.isLoading} error={attention.error} onRetry={() => attention.refetch()} />
       )}
 
       {creating && <NewTaskDialog onClose={() => setCreating(false)} />}
     </div>
+  );
+}
+
+// ───────────── one meeting's follow-ups ─────────────
+
+/** The head of the list when it shows one meeting's follow-ups: which meeting, and "לקחת את כולן". */
+function EventScope({ eventId, tasks, loading, onClear }: { eventId: string; tasks: TaskRow[]; loading: boolean; onClear: () => void }) {
+  const me = useMe();
+  const toast = useToast();
+  const invalidate = useInvalidateTasks();
+  const fromTask = tasks.find((t) => t.event)?.event;
+  const ev = useQuery({
+    queryKey: ['events', 'followup-scope', eventId],
+    enabled: !fromTask,
+    queryFn: async () => must(await supabase.from('events').select('id,title,starts_at').eq('id', eventId).maybeSingle()) as { id: string; title: string; starts_at: string } | null,
+  });
+  const event = fromTask ?? ev.data;
+  const free = tasks.filter((t) => !t.assignee_id);
+  const setOwner = async (ids: string[], owner: string | null) => {
+    const { error } = await supabase.from('follow_ups').update({ assignee_id: owner }).in('id', ids);
+    if (error) throw error;
+  };
+  const take = useMutation({
+    mutationFn: async (ids: string[]) => setOwner(ids, me.data!.user_id),
+    onSuccess: (_d, ids) => {
+      invalidate();
+      toast.undo(ids.length === 1 ? 'המשימה עברה אליך' : `${ids.length} משימות עברו אליך`, () => {
+        setOwner(ids, null).then(() => invalidate(), (e) => toast.error(errorMessage(e)));
+      });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  return (
+    <section aria-label="משימות של מפגש אחד" className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--radius-panel)] border border-edge border-s-[3px] border-s-ink bg-paper px-4 py-3 sm:px-5">
+      <div className="min-w-0 flex-1">
+        <p className="text-small text-muted">משימות מעקב מהמפגש</p>
+        <p className="font-semibold">
+          {event ? <Link to={`/app/events/${event.id}`} className="hover:underline">{event.title}, <span className="num">{fmtShortDate(event.starts_at)}</span></Link> : ev.isLoading ? '…' : 'מפגש שלא נמצא'}
+          {!loading && <span className="font-normal text-muted"> · <span className="num">{tasks.length}</span> {tasks.length === 1 ? 'פתוחה' : 'פתוחות'}{free.length > 0 && <>, <span className="num">{free.length}</span> בלי אחראי</>}</span>}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {free.length > 0 && me.data && (
+          <Button icon="check" busy={take.isPending} onClick={() => take.mutate(free.map((t) => t.id))}>
+            {free.length === tasks.length ? 'לקחת את כולן' : <>לקחת את <span className="num">{free.length}</span> שבלי אחראי</>}
+          </Button>
+        )}
+        <Button variant="ghost" icon="close" onClick={onClear}>לכל המשימות</Button>
+      </div>
+    </section>
   );
 }
 
@@ -202,7 +261,7 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
           {showAssignee && (
             <>
               <span aria-hidden="true">·</span>
-              <span>{t.assignee_id ? name.get(t.assignee_id) ?? 'הצוות' : <Badge tone="warn" icon="alert">בלי שיוך</Badge>}</span>
+              <span className={t.assignee_id ? undefined : 'text-muted'}>{t.assignee_id ? name.get(t.assignee_id) ?? 'הצוות' : UNASSIGNED_LABEL}</span>
             </>
           )}
         </p>
@@ -219,7 +278,7 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
             </a>
           </>
         )}
-        <IconButton icon="edit" label="עריכה: שיוך, תאריך יעד או ביטול" onClick={() => onAct('edit')} />
+        <IconButton icon="edit" label="עריכה: אחראי, תאריך יעד או ביטול" onClick={() => onAct('edit')} />
       </div>
     </li>
   );
@@ -263,7 +322,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
     <section id="lapsed" className="mt-8 scroll-mt-20">
       <Panel title="קבועים שהפסיקו להגיע" padded={false}>
         <p className="border-b border-edge px-4 py-3 text-small text-ink-soft sm:px-5">
-          היו קבועים, ומאז הביקור האחרון התקיימו 3 מפגשי שישי בלי שהגיעו. לפני שפונים אליהם פותחים משימה: זה האישור שמישהו מהצוות ידבר איתם.
+          היו קבועים, ומאז ההגעה האחרונה התקיימו 3 מפגשי שישי בלי שהגיעו. לפני שפונים אליהם פותחים משימה: זה האישור שמישהו מהצוות ידבר איתם.
         </p>
         {error ? (
           <div className="p-4"><ErrorBox error={errorMessage(error)} onRetry={onRetry} /></div>
@@ -278,7 +337,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
                 <div className="min-w-0">
                   <PersonLink id={l.participant_id} name={l.full_name} />
                   <p className="text-small text-muted">
-                    <span className="num">{l.friday_count}</span> מפגשי שישי · ביקור אחרון {l.last_attended_at ? <span title={fmtDate(l.last_attended_at)}>{ago(l.last_attended_at)}</span> : '—'} · מאז התקיימו <span className="num">{l.fridays_missed}</span> מפגשים
+                    <span className="num">{l.friday_count}</span> מפגשי שישי · הגעה אחרונה {l.last_attended_at ? <span title={fmtDate(l.last_attended_at)}>{ago(l.last_attended_at)}</span> : '—'} · מאז התקיימו <span className="num">{l.fridays_missed}</span> מפגשים
                   </p>
                 </div>
                 <Button

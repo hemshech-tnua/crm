@@ -4,11 +4,13 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { errorMessage } from '@/lib/errors';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { formatPhone, telLink, whatsappLink } from '@/lib/phone';
-import type { Volunteer } from '@/lib/types';
+import type { Volunteer, VolunteerRole } from '@/lib/types';
 import { Badge, Button, ErrorBox, Notice, SearchInput, Spinner, Textarea, buttonClass, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useCopy } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { ago } from '@/features/participants/shared';
+import { shortTitle } from '@/features/prep/shared';
+import { SEARCH_PLACEHOLDER, matchesSearch } from '@/ui/search';
 import {
   ROLE_LABEL, STATUS_LABEL, dayAndDate, firstName, groupByEvent, isUpcoming, linkMessage, reminderMessage, remindable, roleLabel, slotsFor,
   volunteerUrl, type PlanEvent, type Shift, type SlotDef,
@@ -54,7 +56,7 @@ export function VolunteerActions({ data, children }: { data: PlanData; children:
   return (
     <Ctx.Provider value={api}>
       {children}
-      {open?.kind === 'assign' && <AssignDialog key={`${open.event.id}-${open.def.role}`} event={open.event} def={open.def} replace={open.replace} onClose={close} />}
+      {open?.kind === 'assign' && <AssignDialog key={`${open.event.id}-${open.def.role}-${open.replace?.id ?? ''}`} event={open.event} def={open.def} replace={open.replace} onClose={close} />}
       {managed && <ShiftDialog shift={managed} onClose={close} />}
       {sendTo && <SendLinkDialog key={sendTo.id} volunteer={sendTo} onClose={close} />}
     </Ctx.Provider>
@@ -91,13 +93,22 @@ export function ReminderLink({ shift, volunteer, size = 'sm', className = '' }: 
 
 type Candidate = { v: Volunteer; prefers: boolean; upcoming: number; here: Shift[]; declinedHere: boolean };
 
-function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def: SlotDef; replace?: Shift; onClose: () => void }) {
+/**
+ * Pick who fills a place. After a pick the dialog stays open on the meeting's next empty role, so a whole meeting is
+ * booked in one go ("סיום" when done); a replacement closes at once.
+ */
+function AssignDialog({ event, def: firstDef, replace, onClose }: { event: PlanEvent; def: SlotDef; replace?: Shift; onClose: () => void }) {
   const { data, volunteer } = useVolunteerActions();
   const assign = useAssign();
   const [q, setQ] = useState('');
   const [also, setAlso] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
+  const [role, setRole] = useState<VolunteerRole>(firstDef.role);
+  const [booked, setBooked] = useState<string[]>([]);
+  const slots = useMemo(() => slotsFor(event, data.shifts.filter((s) => s.event_id === event.id)), [event, data.shifts]);
+  const def: SlotDef = slots.find((s) => s.def.role === role)?.def ?? (role === firstDef.role ? firstDef : { role, label: roleLabel(event.type, role) });
   const label = def.label;
+  const switchRole = (r: VolunteerRole) => { setRole(r); setAlso([]); setQ(''); };
 
   const upcomingBy = useMemo(() => {
     const m = new Map<string, number>();
@@ -109,14 +120,13 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
 
   const candidates = useMemo(() => {
     const here = data.shifts.filter((s) => s.event_id === event.id);
-    const term = q.trim().toLowerCase();
     const out: Candidate[] = [];
     for (const v of data.volunteers) {
       if (!v.is_active) continue;
       const mine = here.filter((s) => s.volunteer_id === v.id);
       // already fills this very slot
       if (mine.some((s) => s.role === def.role && (s.status === 'invited' || s.status === 'confirmed'))) continue;
-      if (term && !v.full_name.toLowerCase().includes(term) && !(v.phone ?? '').includes(term.replace(/\D/g, '') || '¤')) continue;
+      if (!matchesSearch(q, { name: v.full_name, phone: v.phone })) continue;
       out.push({
         v, prefers: v.roles.includes(def.role), upcoming: upcomingBy.get(v.id) ?? 0,
         here: mine.filter((s) => s.status !== 'declined'), declinedHere: mine.some((s) => s.status === 'declined'),
@@ -139,6 +149,15 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
       .slice(0, 8);
   }, [data.events, data.shifts, event, def.role]);
 
+  /** After a booking: on to the next empty role of this meeting, or close when none is left. */
+  const after = (doneText: string) => {
+    if (replace) return onClose();
+    const nextRole = slots.find((s) => s.def.role !== role && (s.def.need ?? 1) > 0 && s.missing > 0);
+    if (!nextRole) return onClose();
+    setBooked((b) => [...b, doneText]);
+    switchRole(nextRole.def.role);
+  };
+
   const pick = (v: Pick<Volunteer, 'id' | 'full_name'>) => {
     // skip meetings where this person already has this role
     const taken = new Set(data.shifts.filter((s) => s.volunteer_id === v.id && s.role === def.role && s.status !== 'declined').map((s) => s.event_id));
@@ -149,7 +168,7 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
         volunteerId: v.id, role: def.role, eventIds: ids, replace: replace?.id ?? null,
         done: n > 1 ? `${v.full_name}: שיבוץ ל${label} ב-${n} מפגשים` : `${v.full_name}: שיבוץ ל${label}`,
       },
-      { onSuccess: onClose },
+      { onSuccess: () => after(`${v.full_name}: ${label}${n > 1 ? ` (${n} מפגשים)` : ''}`) },
     );
   };
 
@@ -180,6 +199,8 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
     </li>
   );
 
+  const roleSlots = slots.filter((s) => (s.def.need ?? 1) > 0);
+
   return (
     <>
       <Dialog
@@ -187,15 +208,45 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
         onClose={onClose}
         title={`שיבוץ ל${label}`}
         footer={<>
-          <Button variant="secondary" icon="userPlus" onClick={() => setAdding(true)}>הוספה למאגר</Button>
-          <Button variant="ghost" onClick={onClose}>סגירה</Button>
+          <Button variant="secondary" icon="userPlus" onClick={() => setAdding(true)}>מתנדב חדש</Button>
+          <Button variant="ghost" onClick={onClose}>{booked.length ? 'סיום' : 'סגירה'}</Button>
         </>}
       >
         <div className="flex flex-col gap-4">
           <p className="text-body text-ink-soft">
             <span className="font-semibold text-ink">{event.title}</span> · {fmtDayLong(event.starts_at)}, <span className="num">{fmtTime(event.starts_at)}</span>
           </p>
+          {booked.length > 0 && (
+            <div role="status" className="flex items-start gap-2 rounded-[var(--radius-control)] border-s-[3px] border-ink bg-sky-wash px-3.5 py-2.5 text-small">
+              <Icon name="checkCircle" size={17} className="mt-0.5 shrink-0" />
+              <p><span className="font-semibold">שובצו: </span>{booked.join(' · ')}. ממשיכים ל{label}, או "סיום".</p>
+            </div>
+          )}
           {replace && <Notice icon="undo">במקום {volunteer(replace.volunteer_id)?.full_name ?? 'השיבוץ הקודם'}. השיבוץ הקודם יבוטל.</Notice>}
+          {!replace && roleSlots.length > 1 && (
+            <div role="group" aria-label="תפקיד במפגש" className="flex flex-wrap gap-2">
+              {roleSlots.map((s) => {
+                const on = s.def.role === role;
+                const full = s.missing === 0;
+                return (
+                  <button
+                    key={s.def.role}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => switchRole(s.def.role)}
+                    className={cx(
+                      'inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-medium pointer-coarse:h-11',
+                      on ? 'border-ink bg-ink text-light' : full ? 'border-edge text-muted hover:border-ink hover:text-ink' : 'border-dashed border-ink/40 text-ink-soft hover:border-ink hover:text-ink',
+                    )}
+                  >
+                    {full ? <Icon name="check" size={14} /> : <Icon name="plus" size={14} />}
+                    {s.def.label}
+                    <span className="sr-only">{full ? ' (משובץ)' : ' (מקום פנוי)'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {!replace && next.length > 0 && (
             <fieldset>
               <legend className="mb-1.5 text-small font-medium">לשבץ את אותו אדם גם למפגשים הבאים שחסר בהם {label}?</legend>
@@ -210,23 +261,26 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
                       title={e.title}
                       onClick={() => setAlso(on ? also.filter((x) => x !== e.id) : [...also, e.id])}
                       className={cx(
-                        'inline-flex h-10 items-center gap-1.5 rounded-[var(--radius-control)] border px-2.5 text-small font-medium pointer-coarse:h-11',
+                        'inline-flex h-10 max-w-full items-center gap-1.5 rounded-[var(--radius-control)] border px-2.5 text-small font-medium pointer-coarse:h-11',
                         on ? 'border-ink bg-ink text-light' : 'border-control-line text-ink-soft hover:border-ink hover:text-ink',
                       )}
                     >
                       {on && <Icon name="check" size={14} />}
-                      <span className="num">{dayAndDate(e.starts_at)}</span>
-                      {e.type !== event.type && <span className="text-micro opacity-80">({e.title})</span>}
+                      <span className="num whitespace-nowrap">{dayAndDate(e.starts_at)}</span>
+                      <span className={cx('truncate text-micro', on ? 'text-light/80' : 'text-muted')}>· {shortTitle(e.title, 18)}</span>
                     </button>
                   );
                 })}
               </div>
             </fieldset>
           )}
-          <SearchInput value={q} onChange={setQ} label="חיפוש במאגר" placeholder="שם או טלפון" />
+          <SearchInput value={q} onChange={setQ} label="חיפוש מתנדבים" placeholder={SEARCH_PLACEHOLDER} />
           {assign.isError && <ErrorBox error={errorMessage(assign.error)} />}
           {candidates.length === 0 ? (
-            <p className="py-4 text-center text-muted">{q ? 'אין במאגר מישהו בשם הזה.' : 'אין במאגר מתנדבים פעילים פנויים.'} אפשר להוסיף מתנדבים חדשים.</p>
+            <div className="flex flex-col items-center gap-2 py-4 text-center text-muted">
+              <p className="font-semibold text-ink">{q ? 'אין תוצאות לחיפוש הזה' : 'אין מתנדבים פעילים פנויים'}</p>
+              {q ? <Button size="sm" variant="secondary" onClick={() => setQ('')}>ניקוי החיפוש והסינון</Button> : <p>אפשר להוסיף מתנדב חדש מכאן.</p>}
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
               {preferred.length > 0 && (
@@ -237,7 +291,7 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
               )}
               {others.length > 0 && (
                 <section aria-labelledby="pick-rest">
-                  <h3 id="pick-rest" className="mb-1 text-small font-semibold text-muted">{preferred.length ? 'שאר המאגר' : 'המאגר'}</h3>
+                  <h3 id="pick-rest" className="mb-1 text-small font-semibold text-muted">{preferred.length ? 'שאר המתנדבים' : 'המתנדבים'}</h3>
                   <ul className="-mx-3 flex flex-col">{others.map(row)}</ul>
                 </section>
               )}
@@ -252,8 +306,8 @@ function AssignDialog({ event, def, replace, onClose }: { event: PlanEvent; def:
           onClose={() => setAdding(false)}
           onSaved={(id, name) => {
             assign.mutate(
-              { volunteerId: id, role: def.role, eventIds: [event.id, ...also], replace: replace?.id ?? null, done: `${name}: הוספה למאגר ושיבוץ ל${label}` },
-              { onSuccess: onClose },
+              { volunteerId: id, role: def.role, eventIds: [event.id, ...also], replace: replace?.id ?? null, done: `${name}: הוספה לרשימה ושיבוץ ל${label}` },
+              { onSuccess: () => after(`${name}: ${label}`) },
             );
           }}
         />
@@ -366,7 +420,7 @@ function SendLinkDialog({ volunteer: v, onClose }: { volunteer: Volunteer; onClo
         ) : (
           <Textarea label="הטקסט (אפשר לערוך לפני השליחה)" value={text} onChange={(e) => setText(e.target.value)} rows={9} />
         )}
-        {!v.phone && <Notice tone="warn" icon="alert">אין מספר טלפון במאגר. אפשר להעתיק את ההודעה ולשלוח בדרך אחרת, או להוסיף טלפון בעריכה.</Notice>}
+        {!v.phone && <Notice tone="warn" icon="alert">אין מספר טלפון ברשימה. אפשר להעתיק את ההודעה ולשלוח בדרך אחרת, או להוסיף טלפון בעריכה.</Notice>}
       </div>
       <div className="mt-5 flex flex-wrap gap-2">
         {v.phone && link.url && (
@@ -397,8 +451,9 @@ export function PendingLinks({ shifts, className = '' }: { shifts: Shift[]; clas
       <ul className="flex flex-wrap gap-2">
         {rows.map(({ v, n }) => (
           <li key={v!.id}>
-            <Button size="sm" variant="secondary" icon="link" onClick={() => send(v!.id)} aria-label={`שליחת קישור ל${v!.full_name}`}>
-              {v!.full_name}
+            {/* the name says the visible text ("דנה כהן 2") inside it, for voice control */}
+            <Button size="sm" variant="secondary" icon="link" onClick={() => send(v!.id)} aria-label={`${v!.full_name} ${n}: שליחת קישור אישי`} title={`${n} מחכים לתשובה`}>
+              {v!.full_name}{' '}
               <span className="num text-micro text-muted">{n}</span>
             </Button>
           </li>

@@ -128,13 +128,16 @@ function Meta({ children }: { children: (string | null | undefined)[] }) {
 function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; future: boolean }) {
   const ev = r.event!;
   const badges: ReactNode[] = [];
-  if (r.status === 'cancelled') badges.push(<Badge key="s">{r.cancelled_by === 'staff' ? 'בוטל ע״י הצוות' : 'ביטול עצמי'}</Badge>);
+  if (r.status === 'cancelled') badges.push(<Badge key="s">{r.cancelled_by === 'staff' ? 'ביטול על ידי הצוות' : 'ביטול עצמי'}</Badge>);
   else if (r.status === 'waitlisted') badges.push(<Badge key="s" tone="warn" icon="alert">ברשימת המתנה</Badge>);
   else if (r.status === 'pending_payment') badges.push(<Badge key="s" tone="warn" icon="alert">ההרשמה לא הושלמה: לא שולם</Badge>);
   else if (r.attendance === 'attended') badges.push(<Badge key="s" tone="good" icon="check">הגעה</Badge>);
   else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="bad" icon="alert">אי־הגעה</Badge>);
   else badges.push(<Badge key="s" tone={future ? 'light' : 'neutral'}>{future ? 'הרשמה פעילה' : 'טרם סומן'}</Badge>);
   if (r.is_walk_in) badges.push(<Badge key="w">הגעה בלי הרשמה</Badge>);
+  if (r.status === 'registered' && r.payment_status === 'pending' && r.attendance !== 'no_show' && Number(ev.price ?? 0) > 0 && ev.status !== 'cancelled') {
+    badges.push(<Badge key="p" tone="warn" icon="alert">לא שולם</Badge>);
+  }
 
   const checkin = r.attendance === 'attended' && r.checked_in_at
     ? `${r.checkin_method === 'self_qr' ? 'צ׳ק־אין עצמי ב-QR' : 'סימון בכניסה'} ב-${fmtTime(r.checked_in_at)}`
@@ -152,7 +155,7 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
       <p className="text-small text-ink-soft">{fmtDayLong(ev.starts_at)}</p>
       <ul className="mt-1 flex flex-col gap-0.5 text-small text-muted">
         {checkin && <li>{checkin}</li>}
-        {!r.is_walk_in && <li>הרשמה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (ע״י הצוות)' : ''}</li>}
+        {!r.is_walk_in && <li>הרשמה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (על ידי הצוות)' : ''}</li>}
         {(r.how_heard || r.how_heard_detail) && <li>איך שמעו עלינו: {[r.how_heard?.label, r.how_heard_detail].filter(Boolean).join(': ')}</li>}
         {(r.referrer || r.referrer_name) && (
           <li>הפניה: {r.referrer ? <PersonLink id={r.referrer.id} name={r.referrer.full_name} className="font-medium" /> : r.referrer_name}</li>

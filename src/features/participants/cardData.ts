@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
-import type { ContactLog, Participant, ParticipantStats, RegStatus, Attendance, EventType, EventStatus } from '@/lib/types';
+import type { ContactLog, Participant, ParticipantStats, PaymentStatus, RegStatus, Attendance, EventType, EventStatus } from '@/lib/types';
 import { TASK_SELECT, type TaskRow } from '@/features/followups/shared';
 import { EVENT_FOR_MESSAGE, type EventForMessage } from './shared';
 
@@ -13,7 +13,7 @@ export type Card = Participant & {
   friends: { id: string; full_name: string | null; created_at: string; anonymized_at: string | null }[];
 };
 
-export type RegEvent = EventForMessage & { type: EventType; status: EventStatus };
+export type RegEvent = EventForMessage & { type: EventType; status: EventStatus; price: number | null };
 export type CardRegistration = {
   id: string;
   status: RegStatus;
@@ -30,6 +30,7 @@ export type CardRegistration = {
   utm_medium: string | null;
   utm_campaign: string | null;
   created_via: string;
+  payment_status: PaymentStatus;
   event: RegEvent | null;
   how_heard: { label: string } | null;
   link: { code: string; label: string } | null;
@@ -51,7 +52,7 @@ export type CardFeedback = {
 const CARD_SELECT =
   '*, first_source:acquisition_sources(label,key,asks_detail), referrer:referred_by_participant_id(id,full_name), friends:participants!referred_by_participant_id(id,full_name,created_at,anonymized_at)';
 const REG_SELECT =
-  `id,status,attendance,is_walk_in,registered_at,cancelled_at,cancelled_by,checked_in_at,checkin_method,how_heard_detail,referrer_name,utm_source,utm_medium,utm_campaign,created_via,event:events(${EVENT_FOR_MESSAGE},type,status),how_heard:acquisition_sources(label),link:referral_links(code,label),referrer:participants!referrer_participant_id(id,full_name)`;
+  `id,status,attendance,is_walk_in,registered_at,cancelled_at,cancelled_by,checked_in_at,checkin_method,how_heard_detail,referrer_name,utm_source,utm_medium,utm_campaign,created_via,payment_status,event:events(${EVENT_FOR_MESSAGE},type,status,price),how_heard:acquisition_sources(label),link:referral_links(code,label),referrer:participants!referrer_participant_id(id,full_name)`;
 
 export const useCard = (id: string) =>
   useQuery({

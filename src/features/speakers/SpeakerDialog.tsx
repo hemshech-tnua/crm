@@ -126,7 +126,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
     <Dialog
       open
       onClose={cancel}
-      title={speaker ? `עריכה: ${speaker.full_name}` : 'הוספה למרצים ולמדריכים'}
+      title={speaker ? `עריכה: ${speaker.full_name}` : f.kind === 'instructor' ? 'מדריך חדש' : 'מרצה חדש'}
       footer={<>
         <Button busy={save.isPending} disabled={photoBusy} onClick={submit}>שמירה</Button>
         <Button variant="ghost" onClick={cancel}>ביטול</Button>
@@ -139,14 +139,25 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
           onChange={(v) => set('kind', v)}
           options={[{ value: 'speaker', label: 'מרצה' }, { value: 'instructor', label: 'הדרכה (יוגה, פילאטיס)' }]}
         />
+        <PhotoField
+          name={f.full_name.trim() || 'האדם'}
+          path={f.photo_path}
+          busy={photoBusy}
+          error={photoError}
+          removed={!f.photo_path && !!speaker?.photo_path}
+          onPick={() => fileInput.current?.click()}
+          onRemove={() => { setPhotoError(null); set('photo_path', null); }}
+        />
+        <input ref={fileInput} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void pickPhoto(e.target.files?.[0])} />
         <Input label="שם מלא" required value={f.full_name} onChange={(e) => set('full_name', e.target.value)} error={errors.full_name} maxLength={80} />
         <Input label={f.kind === 'speaker' ? 'נושא ההרצאה' : 'פעילות'} required value={f.topic} onChange={(e) => set('topic', e.target.value)} error={errors.topic} maxLength={160} />
-        <Input
+        <Textarea
           label="שורה קצרה לכרטיס"
           value={f.bio_line}
           onChange={(e) => set('bio_line', e.target.value)}
           error={errors.bio_line}
           maxLength={240}
+          rows={2}
           hint={<>מופיעה ליד השם בעמוד ההרשמה ובדף המפגש (רק אחרי אישור). <span className={cx('whitespace-nowrap', f.bio_line.length > LINE_SOFT_MAX && 'font-semibold text-warn')}><span className="num">{f.bio_line.length}</span> תווים, מומלץ עד <span className="num">{LINE_SOFT_MAX}</span>.</span></>}
         />
 
@@ -171,16 +182,6 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
             rows={5}
             hint={<>נפתח בלחיצה על ״קראו עוד״. אפשר לחלק לפסקאות. <span className="whitespace-nowrap"><span className="num">{f.about.length}</span> מתוך <span className="num">600</span> תווים.</span></>}
           />
-          <PhotoField
-            name={f.full_name.trim() || 'האדם'}
-            path={f.photo_path}
-            busy={photoBusy}
-            error={photoError}
-            removed={!f.photo_path && !!speaker?.photo_path}
-            onPick={() => fileInput.current?.click()}
-            onRemove={() => { setPhotoError(null); set('photo_path', null); }}
-          />
-          <input ref={fileInput} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void pickPhoto(e.target.files?.[0])} />
         </fieldset>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="טלפון" ltr type="tel" inputMode="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} error={errors.phone} />
@@ -190,7 +191,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
         {!speaker && (admin ? (
           <Checkbox label="לאשר מיד" hint="אחרי אישור אפשר לשבץ במפגש ולהציג בעמוד ההרשמה." checked={f.approve} onChange={(v) => set('approve', v)} />
         ) : (
-          <Notice icon="shield">ההצעה תחכה ב"הצעות ממתינות" עד לאישור מנהלים.</Notice>
+          <Notice icon="shield">ההצעה תחכה ב"מחכים לאישור" עד לאישור מנהלים.</Notice>
         ))}
         {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />

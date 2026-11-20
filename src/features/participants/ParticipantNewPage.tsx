@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useSources } from '@/lib/data';
 import { fmtDayLong, fmtTime, todayIl } from '@/lib/dates';
@@ -30,7 +30,19 @@ export function ParticipantNewPage() {
   const toast = useToast();
   const qc = useQueryClient();
   const sources = useSources();
-  const [f, setF] = useState(EMPTY);
+  // prefill from a link (the registrations tab: "no match → new card" with the name or phone already typed)
+  const [params] = useSearchParams();
+  const fromEvent = params.get('event') ?? '';
+  const [f, setF] = useState(() => {
+    const term = params.get('name') ?? '';
+    const looksLikePhone = /^[\d\s+()-]{7,}$/.test(term.trim());
+    return {
+      ...EMPTY,
+      full_name: looksLikePhone ? '' : term.trim(),
+      phone: params.get('phone') ?? (looksLikePhone ? term.trim() : ''),
+      event: fromEvent,
+    };
+  });
   const [referrer, setReferrer] = useState<PickedParticipant | null>(null);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -56,6 +68,17 @@ export function ParticipantNewPage() {
       must(await supabase.from('events').select('id,title,starts_at,capacity').eq('status', 'open').gt('starts_at', new Date().toISOString())
         .order('starts_at').limit(8)) as UpcomingEvent[],
   });
+  // the meeting from the link, also when it is not among the next open ones (e.g. today's, already started)
+  const linked = useQuery({
+    queryKey: ['events', 'pick_one', fromEvent],
+    enabled: !!fromEvent,
+    queryFn: async () => must(await supabase.from('events').select('id,title,starts_at,capacity').eq('id', fromEvent).maybeSingle()) as UpcomingEvent | null,
+  });
+  const eventOptions = [
+    ...(linked.data && !(events.data ?? []).some((e) => e.id === linked.data!.id) ? [linked.data] : []),
+    ...(events.data ?? []),
+  ];
+  const chosenEvent = eventOptions.find((e) => e.id === f.event);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -92,11 +115,15 @@ export function ParticipantNewPage() {
         qc.invalidateQueries({ queryKey: ['events'] });
         qc.invalidateQueries({ queryKey: ['event', f.event] });
       }
-      if (regError) toast.error(`הכרטיס נוצר, אבל הרישום למפגש לא הצליח: ${errorMessage(regError)}`);
-      else if (reg?.status === 'waitlisted') toast.success('הכרטיס נוצר. המפגש מלא, אז ההרשמה נכנסה לרשימת ההמתנה.');
-      else if (reg) toast.success('הכרטיס נוצר, וההרשמה למפגש נשמרה');
-      else toast.success('הכרטיס נוצר');
-      navigate(`/app/participants/${id}`, { replace: true });
+      const name = f.full_name.trim();
+      const toCard = { label: 'לכרטיס', run: () => navigate(`/app/participants/${id}`) };
+      if (regError) toast.error(`הכרטיס נוצר, אבל ההרשמה למפגש לא הצליחה: ${errorMessage(regError)}`);
+      else if (reg?.status === 'waitlisted') toast.success(`הכרטיס של ${name} נוצר. המפגש מלא: ההרשמה ברשימת ההמתנה`, fromEvent ? toCard : undefined);
+      else if (reg) toast.success(`הכרטיס של ${name} נוצר ונרשם למפגש`, fromEvent ? toCard : undefined);
+      else toast.success(`הכרטיס של ${name} נוצר`);
+      // came from a meeting's registrations: back there, where the work continues
+      if (fromEvent && f.event === fromEvent && !regError) navigate(`/app/events/${fromEvent}?tab=registrations`, { replace: true });
+      else navigate(`/app/participants/${id}`, { replace: true });
     },
     onError: (e) => {
       if (errorCode(e) === 'duplicate_phone') {
@@ -123,7 +150,11 @@ export function ParticipantNewPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="כרטיס חדש" back={{ to: '/app/participants', label: 'לכל הלוחמים' }} subtitle="למי שפנה בטלפון או בוואטסאפ. מי שנרשם בטופס נוסף לבד." />
+      <PageHeader
+        title="כרטיס חדש"
+        back={fromEvent ? { to: `/app/events/${fromEvent}?tab=registrations`, label: 'לנרשמים של המפגש' } : { to: '/app/participants', label: 'לכל הלוחמים' }}
+        subtitle="למי שפנה בטלפון או בוואטסאפ. מי שנרשם בטופס נוסף לבד. שדות עם * הם חובה."
+      />
       <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate className="flex flex-col gap-5">
         <Panel title="פרטים בסיסיים">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -161,15 +192,15 @@ export function ParticipantNewPage() {
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Input label="עיר" value={f.city} onChange={(e) => set('city', e.target.value)} error={errors.city} maxLength={60} />
-            <Input label="עיסוק" value={f.occupation} onChange={(e) => set('occupation', e.target.value)} maxLength={80} hint="לא חובה" />
+            <Input label="עיסוק" value={f.occupation} onChange={(e) => set('occupation', e.target.value)} maxLength={80} />
             <Input label="גיל" inputMode="numeric" value={f.age} onChange={(e) => set('age', e.target.value.replace(/\D/g, '').slice(0, 2))} error={errors.age} hint="או תאריך לידה, אם ידוע" disabled={!!f.birth_date} />
-            <Input label="תאריך לידה" type="date" min="1920-01-01" max="2015-12-31" value={f.birth_date} onChange={(e) => set('birth_date', e.target.value)} error={errors.birth_date} hint="לא חובה" />
+            <Input label="תאריך לידה" type="date" min="1920-01-01" max="2015-12-31" value={f.birth_date} onChange={(e) => set('birth_date', e.target.value)} error={errors.birth_date} />
           </div>
         </Panel>
 
         <Panel title="איך שמעו עלינו">
           <div className="flex flex-col gap-4">
-            <Select label="מקור היכרות" value={f.source} onChange={(e) => set('source', e.target.value)} hint="נשמר בכרטיס כמקור הראשון ולא משתנה בהרשמות הבאות.">
+            <Select label="מקור הגעה" value={f.source} onChange={(e) => set('source', e.target.value)} hint="נשמר בכרטיס כמקור הראשון ולא משתנה בהרשמות הבאות.">
               <option value="">לא ידוע</option>
               {(sources.data ?? []).filter((s) => s.is_active).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </Select>
@@ -210,20 +241,20 @@ export function ParticipantNewPage() {
         </Panel>
 
         <Panel title="לרשום גם למפגש?">
-          {events.data && events.data.length === 0 ? (
+          {events.data && eventOptions.length === 0 ? (
             <p className="text-body text-muted">אין כרגע מפגש פתוח להרשמה.</p>
           ) : (
             <Select label="מפגש" value={f.event} onChange={(e) => set('event', e.target.value)} hint="אם המפגש מלא, ההרשמה תיכנס לרשימת ההמתנה.">
               <option value="">לא עכשיו</option>
-              {(events.data ?? []).map((ev) => <option key={ev.id} value={ev.id}>{ev.title} · {fmtDayLong(ev.starts_at)} · {fmtTime(ev.starts_at)}</option>)}
+              {eventOptions.map((ev) => <option key={ev.id} value={ev.id}>{ev.title} · {fmtDayLong(ev.starts_at)} · {fmtTime(ev.starts_at)}</option>)}
             </Select>
           )}
         </Panel>
 
         {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" size="lg" icon="userPlus" busy={create.isPending} disabled={!!byPhone}>יצירת הכרטיס</Button>
-          <ButtonLink to="/app/participants" variant="ghost" size="lg">ביטול</ButtonLink>
+          <Button type="submit" size="lg" icon="userPlus" busy={create.isPending} disabled={!!byPhone}>{chosenEvent ? 'יצירת הכרטיס והרשמה למפגש' : 'יצירת הכרטיס'}</Button>
+          <ButtonLink to={fromEvent ? `/app/events/${fromEvent}?tab=registrations` : '/app/participants'} variant="ghost" size="lg">חזרה בלי שמירה</ButtonLink>
         </div>
       </form>
     </div>

@@ -1,22 +1,44 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import type { EventWithStats } from '@/lib/data';
+import { useSpeakers, type EventWithStats } from '@/lib/data';
 import { ilParts, todayIl } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import type { EventTask } from '@/lib/types';
-import { Badge, Button, EmptyState, ErrorBox, IconButton, Panel, Skeleton, cx } from '@/ui/kit';
+import { Button, EmptyState, ErrorBox, IconButton, Panel, Skeleton, cx } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { useAssignees } from '@/features/followups/shared';
+import { useShifts } from '@/features/volunteers/queries';
+import { slotsFor, type Shift } from '@/features/volunteers/model';
 import {
-  Progress, TickBox, DayShort, byDue, fmtHours, fmtTotal, isOverdue, sumHours, useEventTasks, usePrepTemplates, useToggleTask,
+  Progress, TickBox, DayShort, byDue, fmtHours, fmtTotal, isOverdue, sumHours, useEventTasks, usePrepTemplates, useTickMany, useToggleTask,
 } from './shared';
 import { Dot, TaskLine } from './TaskLine';
 import { TaskDialog } from './TaskDialog';
 import { PaymentsPanel } from './Payments';
 
 type Stage = 'before' | 'on' | 'after';
+/**
+ * Tasks the system can see were done (the speaker is set, registration is open…): a "נראה שבוצע" hint with a one-tap
+ * tick. Matched by the template's wording; the tick itself stays a person's decision.
+ */
+function seemsDone(t: EventTask, e: EventWithStats, shifts: Shift[] | undefined): string | null {
+  const title = t.title.trim();
+  if (/^סגירת (מרצה|מנחה)/.test(title)) {
+    return (e.speaker_id || e.instructor_id) && (e.lecture_topic || e.activity_name) ? 'המרצה והנושא כבר בפרטי המפגש' : null;
+  }
+  if (/^אישור (מאמן|מדריך)/.test(title)) return e.instructor_id ? 'המדריך כבר בפרטי המפגש' : null;
+  if (/^פתיחת (המפגש|האירוע) במערכת/.test(title)) return e.status === 'open' || e.status === 'closed' ? 'ההרשמה למפגש כבר פתוחה' : null;
+  if (/^גיוס/.test(title) && /מתנדב/.test(title) && shifts) {
+    const slots = slotsFor(e, shifts);
+    const entrance = slots.find((x) => x.def.role === 'entrance');
+    if (/קבלת פנים/.test(title)) return entrance && entrance.filled > 0 ? 'כבר יש שיבוץ לקבלת פנים' : null;
+    return slots.length && slots.every((x) => x.missing === 0) ? 'כל המקומות למתנדבים משובצים' : null;
+  }
+  return null;
+}
+
 const STAGES: { key: Stage; label: string }[] = [
   { key: 'before', label: 'לפני המפגש' },
   { key: 'on', label: 'ביום המפגש' },
@@ -30,6 +52,10 @@ export function EventPrepTab({ event }: { event: EventWithStats }) {
   const qc = useQueryClient();
   const toast = useToast();
   const { name: staffName } = useAssignees();
+  const shifts = useShifts(event.id);
+  const speakers = useSpeakers();
+  const toggle = useToggleTask();
+  const tickMany = useTickMany();
   const [editing, setEditing] = useState<EventTask | 'new' | null>(null);
   const day = ilParts(event.starts_at).date;
   const today = todayIl();
@@ -76,7 +102,16 @@ export function EventPrepTab({ event }: { event: EventWithStats }) {
 
   const done = tasks.filter((t) => t.done_at).length;
   const open = tasks.filter((t) => !t.done_at);
-  const next = open[0];
+  // past-due tasks get one question at the top instead of a red badge each (a new meeting starts with several)
+  const late = live ? open.filter((t) => isOverdue(t, today)) : [];
+  const next = open.find((t) => !isOverdue(t, today)) ?? open[0];
+  const people = [
+    ...(event.speaker_id ? [{ id: event.speaker_id, what: 'הרצאה' }] : []),
+    ...(event.instructor_id ? [{ id: event.instructor_id, what: 'הדרכה' }] : []),
+  ].flatMap(({ id, what }) => {
+    const p = speakers.data?.find((x) => x.id === id);
+    return p ? [{ name: p.full_name, what }] : [];
+  });
   const stageOf = (t: EventTask): Stage => (!t.due_date || t.due_date < day ? 'before' : t.due_date === day ? 'on' : 'after');
   const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const packed = equipment.filter((t) => t.done_at).length;
@@ -101,19 +136,33 @@ export function EventPrepTab({ event }: { event: EventWithStats }) {
               <p className="mt-1 font-semibold leading-snug">{next.title}</p>
               <p className="mt-0.5 flex flex-wrap items-center gap-2 text-small text-muted">
                 {next.due_date && <DayShort day={next.due_date} time={next.due_time} />}
-                {isOverdue(next, today) && <Badge tone="warn" icon="alert">באיחור</Badge>}
               </p>
             </>
           ) : <p className="mt-1 flex items-center gap-1.5 font-semibold"><Icon name="checkCircle" size={18} />הכול מוכן</p>}
         </div>
       </section>
 
-      <nav aria-label="קפיצה בתוך ההכנות" className="-mt-1 flex gap-2 lg:hidden">
+      {late.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-control)] border-s-[3px] border-warn bg-warn-wash px-4 py-3">
+          <Icon name="alert" size={18} className="shrink-0 self-start text-warn sm:self-center" />
+          <div className="min-w-0 flex-1 basis-60">
+            <p className="font-semibold text-warn">
+              {late.length === 1 ? 'משימה אחת הייתה אמורה להיעשות כבר. לסמן שבוצעה?' : <><span className="num">{late.length}</span> משימות היו אמורות להיעשות כבר. לסמן שבוצעו?</>}
+            </p>
+            <p className="text-small text-ink-soft">אפשר גם לסמן אחת־אחת ברשימה. מה שלא מסומן נשאר ב"השבוע שלי".</p>
+          </div>
+          <Button size="sm" variant="secondary" icon="check" busy={tickMany.isPending} onClick={() => tickMany.mutate(late.map((t) => t.id))}>
+            {late.length === 1 ? 'סימון כבוצעה' : <>סימון <span className="num">{late.length}</span> כבוצעו</>}
+          </Button>
+        </div>
+      )}
+
+      <nav aria-label="קפיצה בתוך ההכנות" className="-mt-1 flex flex-wrap gap-2 lg:hidden">
         <Button size="sm" variant="secondary" onClick={() => jump('equipment')}>ציוד <span className="num text-muted">{packed}/{equipment.length}</span></Button>
-        <Button size="sm" variant="secondary" onClick={() => jump('payments')}>תשלומים</Button>
+        <Button size="sm" variant="secondary" onClick={() => jump('payments')}>תשלומים לספקים</Button>
       </nav>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Panel
           title="משימות"
           actions={<Button size="sm" variant="secondary" icon="plus" onClick={() => setEditing('new')}>הוספת משימה</Button>}
@@ -132,19 +181,32 @@ export function EventPrepTab({ event }: { event: EventWithStats }) {
                   </span>
                 </h3>
                 <ul className="mt-1">
-                  {list.map((t) => (
-                    <TaskLine
-                      key={t.id}
-                      task={t}
-                      onEdit={() => setEditing(t)}
-                      meta={<>
-                        {t.due_date ? <DayShort day={t.due_date} time={t.due_time} className={cx(isOverdue(t, today) && 'font-semibold text-warn')} /> : <span>בלי תאריך</span>}
-                        {t.hours ? <><Dot /><span>{fmtHours(t.hours)}</span></> : null}
-                        {t.assignee_id && <><Dot /><span>{staffName.get(t.assignee_id) ?? 'צוות'}</span></>}
-                        {isOverdue(t, today) && <Badge tone="warn" icon="alert">באיחור</Badge>}
-                      </>}
-                    />
-                  ))}
+                  {list.map((t) => {
+                    const why = live ? seemsDone(t, event, shifts.data) : null;
+                    return (
+                      <TaskLine
+                        key={t.id}
+                        task={t}
+                        onEdit={() => setEditing(t)}
+                        meta={<>
+                          {t.due_date ? <DayShort day={t.due_date} time={t.due_time} className={cx(isOverdue(t, today) && 'font-semibold text-warn')} /> : <span>בלי תאריך</span>}
+                          {t.hours ? <><Dot /><span>{fmtHours(t.hours)}</span></> : null}
+                          {t.assignee_id && <><Dot /><span>{staffName.get(t.assignee_id) ?? 'צוות'}</span></>}
+                        </>}
+                        hint={why && (
+                          <button
+                            type="button"
+                            onClick={() => toggle.mutate({ id: t.id, done: true })}
+                            className="inline-flex min-h-9 items-center gap-1.5 rounded-[var(--radius-control)] border border-ink/30 bg-paper px-2.5 text-small text-ink hover:border-ink pointer-coarse:min-h-11"
+                          >
+                            <Icon name="checkCircle" size={15} className="shrink-0" />
+                            <span>נראה שבוצע: {why}.</span>
+                            <span className="font-semibold text-tide underline underline-offset-2">סימון</span>
+                          </button>
+                        )}
+                      />
+                    );
+                  })}
                 </ul>
               </section>
             );
@@ -160,7 +222,7 @@ export function EventPrepTab({ event }: { event: EventWithStats }) {
         <EquipmentPanel eventId={event.id} items={equipment} />
       </div>
 
-      <PaymentsPanel eventId={event.id} />
+      <PaymentsPanel eventId={event.id} people={people} />
 
       {editing && <TaskDialog task={editing === 'new' ? null : editing} eventId={event.id} meetingDay={day} onClose={() => setEditing(null)} />}
     </div>

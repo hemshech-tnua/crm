@@ -1,41 +1,113 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useSpeakers, type EventWithStats } from '@/lib/data';
 import { errorMessage } from '@/lib/errors';
-import { fmtDay, fmtShortDate, fmtTime, ilParts, relativeDays, todayIl } from '@/lib/dates';
+import { fmtListDate, ilParts, relativeDays, todayIl } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
-import type { Speaker } from '@/lib/types';
-import { Badge, ButtonLink, Button, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, Table, Tabs, Td, Th, cx } from '@/ui/kit';
+import type { EventType, Speaker } from '@/lib/types';
+import { Badge, ButtonLink, Button, EmptyState, ErrorBox, FilterChips, Notice, PageHeader, Panel, SearchInput, Segmented, Skeleton, Table, Tabs, Td, Th, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
-import { StatusBadge, TypeBadge, isUnclosed, timeRange } from './shared';
-import { useEventList } from './queries';
+import { NoResults } from '@/ui/toolbar';
+import { StatusBadge, TypeBadge, isUnclosed, seats, timeRange, useDebounced } from './shared';
+import { useCancelledAheadCount, useEventList, useUnclosedCount } from './queries';
 
 type Show = 'upcoming' | 'past';
+type UpStatus = 'all' | 'draft' | 'nospeaker' | 'waitlist' | 'cancelled';
+type PastStatus = 'all' | 'unclosed';
+type TypeFilter = 'all' | EventType;
 const PAST_PAGE = 30;
+const UP_STATUSES: UpStatus[] = ['all', 'draft', 'nospeaker', 'waitlist', 'cancelled'];
+
+/** A Friday meeting with no speaker yet (cancelled ones need none). */
+const noSpeaker = (e: EventWithStats) => e.type === 'friday' && !e.speaker_id && e.status !== 'cancelled';
 
 export function EventsPage() {
   const [params, setParams] = useSearchParams();
-  const show: Show = params.get('show') === 'past' ? 'past' : 'upcoming';
+  const rawStatus = params.get('status') ?? 'all';
+  // "לא נסגרו" lives under "קודמים": a link with ?status=unclosed opens it there
+  const show: Show = params.get('show') === 'past' || rawStatus === 'unclosed' ? 'past' : 'upcoming';
+  const upStatus: UpStatus = UP_STATUSES.includes(rawStatus as UpStatus) ? (rawStatus as UpStatus) : 'all';
+  const pastStatus: PastStatus = rawStatus === 'unclosed' ? 'unclosed' : 'all';
+  const rawType = params.get('type');
+  const type: TypeFilter = rawType === 'friday' || rawType === 'bonfire' || rawType === 'other' ? rawType : 'all';
+  const query = params.get('q') ?? '';
+  const [typed, setTyped] = useState(query);
+  const search = useDebounced(typed, 300).trim();
+  const patch = (p: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(p)) {
+      if (v == null || v === '' || v === 'all') next.delete(k);
+      else next.set(k, v);
+    }
+    setParams(next, { replace: true });
+  };
+  // the settled search goes into the URL, so going back from a meeting returns to the same list
+  useEffect(() => { if (search !== query) patch({ q: search || null }); }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // one "now" per visit, so the query keys stay stable
   const [now] = useState(() => Date.now());
   const [pastLimit, setPastLimit] = useState(PAST_PAGE);
-  // the longest event is 24h, so anything that started more than a day ago has ended
-  const dayAgo = useMemo(() => new Date(now - 24 * 3600_000).toISOString(), [now]);
   const nowIso = useMemo(() => new Date(now).toISOString(), [now]);
 
-  const upcomingQ = useEventList({ from: dayAgo, ascending: true });
-  const pastQ = useEventList({ to: nowIso, ascending: false, limit: pastLimit });
+  // cancelled meetings are hidden from "קרובים" unless asked for: fetched apart, so they never crowd out the rest
+  const activeQ = useEventList({ endsAfter: nowIso, notStatuses: ['cancelled'], ascending: true });
+  const cancelledQ = useEventList({ endsAfter: nowIso, statuses: ['cancelled'], ascending: true, limit: 200 }, show === 'upcoming' && upStatus === 'cancelled');
+  const cancelledCount = useCancelledAheadCount(nowIso).data ?? 0;
+  const upcomingQ = upStatus === 'cancelled' ? cancelledQ : activeQ;
+  const pastQ = useEventList({
+    to: nowIso, endsBefore: nowIso, ascending: false, limit: pastLimit,
+    type: type === 'all' ? null : type, search: search || undefined,
+    statuses: pastStatus === 'unclosed' ? ['open', 'closed'] : undefined,
+  }, show === 'past');
+  const unclosedQ = useUnclosedCount(nowIso);
+  const unclosed = unclosedQ.data ?? 0;
   const speakers = useSpeakers();
   const byId = useMemo(() => new Map((speakers.data ?? []).map((s) => [s.id, s])), [speakers.data]);
 
-  const upcoming = useMemo(() => (upcomingQ.data ?? []).filter((e) => new Date(e.ends_at).getTime() >= now), [upcomingQ.data, now]);
+  const upcomingAll = useMemo(() => (upcomingQ.data ?? []).filter((e) => new Date(e.ends_at).getTime() >= now), [upcomingQ.data, now]);
+  // type and search first, then the status chips count what is left
+  const upcomingBase = useMemo(() => {
+    const t = search.toLowerCase();
+    return upcomingAll.filter((e) => {
+      if (type !== 'all' && e.type !== type) return false;
+      if (!t) return true;
+      const sp = e.speaker_id ? byId.get(e.speaker_id)?.full_name : null;
+      return [e.title, e.lecture_topic, e.activity_name, sp].some((x) => x?.toLowerCase().includes(t));
+    });
+  }, [upcomingAll, type, search, byId]);
+  const upCounts: Record<UpStatus, number> = {
+    all: upcomingBase.filter((e) => e.status !== 'cancelled').length,
+    draft: upcomingBase.filter((e) => e.status === 'draft').length,
+    nospeaker: upcomingBase.filter(noSpeaker).length,
+    waitlist: upcomingBase.filter((e) => e.status !== 'cancelled' && seats(e).waitlisted > 0).length,
+    cancelled: upStatus === 'cancelled' ? upcomingBase.length : cancelledCount,
+  };
+  const upcoming = upcomingBase.filter((e) =>
+    upStatus === 'all' ? e.status !== 'cancelled'
+      : upStatus === 'draft' ? e.status === 'draft'
+        : upStatus === 'nospeaker' ? noSpeaker(e)
+          : upStatus === 'waitlist' ? e.status !== 'cancelled' && seats(e).waitlisted > 0
+            : e.status === 'cancelled');
   const past = useMemo(() => (pastQ.data ?? []).filter((e) => new Date(e.ends_at).getTime() < now), [pastQ.data, now]);
-  const unclosed = past.filter((e) => isUnclosed(e, now)).length;
   // the next real meeting gets the single highlight (navy edge)
-  const nextId = upcoming.find((e) => e.status === 'open' || e.status === 'closed')?.id;
+  const nextId = (activeQ.data ?? []).find((e) => e.status === 'open' || e.status === 'closed')?.id;
 
   const q = show === 'upcoming' ? upcomingQ : pastQ;
   const list = show === 'upcoming' ? upcoming : past;
+  const filtered = !!search || type !== 'all' || (show === 'upcoming' ? upStatus !== 'all' : pastStatus !== 'all');
+  const clear = () => { setTyped(''); patch({ q: null, type: null, status: null }); };
+
+  const upChips: { value: UpStatus; label: string; count?: number }[] = [
+    { value: 'all', label: 'הכול', count: upCounts.all },
+    { value: 'draft', label: 'טיוטה', count: upCounts.draft },
+    { value: 'nospeaker', label: 'בלי מרצה', count: upCounts.nospeaker },
+    ...(upCounts.waitlist || upStatus === 'waitlist' ? [{ value: 'waitlist' as const, label: 'רשימת המתנה', count: upCounts.waitlist }] : []),
+    ...(upCounts.cancelled || upStatus === 'cancelled' ? [{ value: 'cancelled' as const, label: 'בוטלו', count: upCounts.cancelled }] : []),
+  ];
+  const pastChips: { value: PastStatus; label: string; count?: number }[] = [
+    { value: 'all', label: 'הכול' },
+    { value: 'unclosed', label: 'לא נסגרו', count: unclosedQ.data },
+  ];
 
   return (
     <>
@@ -47,12 +119,36 @@ export function EventsPage() {
       <Tabs
         label="מפגשים"
         value={show}
-        onChange={(v) => setParams(v === 'past' ? { show: 'past' } : {}, { replace: true })}
+        onChange={(v) => patch({ show: v === 'past' ? 'past' : null, status: null })}
         tabs={[
-          { value: 'upcoming', label: 'קרובים', count: upcomingQ.data ? upcoming.length : undefined },
+          { value: 'upcoming', label: 'קרובים', count: activeQ.data && upStatus !== 'cancelled' ? upCounts.all : undefined },
           { value: 'past', label: unclosed ? <span className="flex items-center gap-1.5">קודמים<span className="h-2 w-2 rounded-[var(--radius-control)] bg-warn" aria-label={`${unclosed} לא נסגרו`} /></span> : 'קודמים' },
         ]}
       />
+
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="min-w-0 sm:w-80">
+            <SearchInput value={typed} onChange={setTyped} label="חיפוש מפגש" placeholder={show === 'upcoming' ? 'חיפוש לפי שם, מרצה או נושא' : 'חיפוש לפי שם או נושא'} />
+          </div>
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <Segmented<TypeFilter>
+              label="סוג המפגש"
+              value={type}
+              onChange={(v) => patch({ type: v })}
+              options={[
+                { value: 'all', label: 'כל סוגי המפגשים' },
+                { value: 'friday', label: 'שישי' },
+                { value: 'bonfire', label: 'מדורה' },
+                { value: 'other', label: 'אחר' },
+              ]}
+            />
+          </div>
+        </div>
+        {show === 'upcoming'
+          ? <FilterChips<UpStatus> label="סינון לפי מצב" value={upStatus} onChange={(v) => patch({ status: v })} options={upChips} />
+          : <FilterChips<PastStatus> label="סינון לפי מצב" value={pastStatus} onChange={(v) => patch({ status: v })} options={pastChips} />}
+      </div>
 
       {q.isLoading ? (
         <Panel><Skeleton lines={6} /></Panel>
@@ -60,7 +156,11 @@ export function EventsPage() {
         <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />
       ) : list.length === 0 ? (
         <Panel>
-          {show === 'upcoming' ? (
+          {filtered ? (
+            <NoResults onClear={clear}>
+              {show === 'past' && pastStatus === 'unclosed' && !search && type === 'all' ? 'כל המפגשים שהסתיימו כבר נסגרו.' : null}
+            </NoResults>
+          ) : show === 'upcoming' ? (
             <EmptyState icon="calendar" title="אין מפגשים קרובים" action={<ButtonLink to="/app/events/new" icon="plus">מפגש חדש</ButtonLink>}>
               אפשר ליצור מפגש חדש, או לשכפל את המפגש האחרון מלשונית "קודמים".
             </EmptyState>
@@ -69,13 +169,14 @@ export function EventsPage() {
           )}
         </Panel>
       ) : show === 'upcoming' ? (
-        <UpcomingList events={list} speakers={byId} nextId={nextId} />
+        <UpcomingList events={list} speakers={byId} nextId={nextId} now={now} />
       ) : (
         <>
-          {unclosed > 0 && (
+          {unclosed > 0 && pastStatus !== 'unclosed' && (
             <div className="mb-4">
               <Notice tone="warn" icon="alert">
-                {unclosed === 1 ? 'מפגש אחד הסתיים ולא נסגר.' : `${unclosed} מפגשים הסתיימו ולא נסגרו.`} בסגירה מסומנים מי שלא הגיעו ונוצרות משימות מעקב.
+                {unclosed === 1 ? 'מפגש אחד הסתיים ולא נסגר.' : <><span className="num">{unclosed}</span> מפגשים הסתיימו ולא נסגרו.</>} בסגירה מסומנים מי שלא הגיעו ונוצרות משימות מעקב.{' '}
+                <button type="button" className="font-bold underline" onClick={() => patch({ status: 'unclosed' })}>להצגת המפגשים שלא נסגרו</button>
               </Notice>
             </div>
           )}
@@ -98,15 +199,21 @@ function speakerText(e: EventWithStats, speakers: Map<string, Speaker>) {
   return { name: sp?.full_name ?? null, pending: sp ? sp.status !== 'approved' : false, topic: e.lecture_topic };
 }
 
+/** Places taken (registered + walk-ins) out of capacity: the same numbers as the meeting page. */
 function Capacity({ e }: { e: EventWithStats }) {
-  const reg = e.stats?.registered_count ?? 0;
-  const full = e.capacity != null && reg >= e.capacity;
+  const st = seats(e);
   return (
-    <span className={cx('num font-semibold', full && 'text-bad')}>
-      {reg}
-      <span className="font-normal text-muted">/{e.capacity ?? '∞'}</span>
+    <span className={cx('num font-semibold', st.full && 'text-bad')} title={`${st.registered} רשומים${st.walkIns ? ` · ${st.walkIns} בלי הרשמה` : ''}`}>
+      {st.taken}
+      <span className="font-normal text-muted">/{st.capacity ?? '∞'}</span>
     </span>
   );
+}
+
+/** "בלי מרצה": the warning colour only when it is close (a week or less), muted before that. */
+function NoSpeakerBadge({ e, now }: { e: EventWithStats; now: number }) {
+  const soon = new Date(e.starts_at).getTime() - now < 7 * 864e5;
+  return <Badge tone={soon ? 'warn' : 'neutral'} icon="mic">בלי מרצה</Badge>;
 }
 
 function WhenCell({ e, highlight }: { e: EventWithStats; highlight?: boolean }) {
@@ -115,7 +222,7 @@ function WhenCell({ e, highlight }: { e: EventWithStats; highlight?: boolean }) 
     <div className="flex items-stretch gap-3">
       <span className={cx('w-1 shrink-0 rounded-[var(--radius-control)]', highlight ? 'bg-ink' : 'bg-transparent')} aria-hidden="true" />
       <div>
-        <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span></div>
+        <div className="font-semibold tabular-nums">{fmtListDate(e.starts_at, { time: false })}</div>
         <div className="flex items-center gap-1.5 text-small text-muted">
           <span className="num">{timeRange(e)}</span>
           {today ? <Badge tone="light">היום</Badge> : highlight ? <span>· {relativeDays(e.starts_at)}</span> : null}
@@ -125,7 +232,7 @@ function WhenCell({ e, highlight }: { e: EventWithStats; highlight?: boolean }) 
   );
 }
 
-function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; speakers: Map<string, Speaker>; nextId?: string }) {
+function UpcomingList({ events, speakers, nextId, now }: { events: EventWithStats[]; speakers: Map<string, Speaker>; nextId?: string; now: number }) {
   const navigate = useNavigate();
   return (
     <>
@@ -154,13 +261,13 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
                 {(sp.name || sp.topic) && (
                   <div className="mt-1 text-small text-ink-soft">
                     {sp.name ?? 'עוד אין מרצה'}{sp.topic ? `: ${sp.topic}` : ''}
-                    {sp.pending && <span className="ms-1.5 font-medium text-warn">(ממתין לאישור)</span>}
+                    {sp.pending && <span className="ms-1.5 font-medium text-muted">(מחכה לאישור)</span>}
                   </div>
                 )}
                 <div className="mt-2.5 flex items-center gap-4 text-small">
-                  <span className="flex items-center gap-1.5"><Icon name="people" size={16} className="text-muted" />נרשמו <Capacity e={e} /></span>
-                  {(e.stats?.waitlisted_count ?? 0) > 0 && <span>בהמתנה <span className="num font-semibold">{e.stats!.waitlisted_count}</span></span>}
-                  {e.type === 'friday' && !e.speaker_id && e.status !== 'cancelled' && <Badge tone="warn" icon="mic">בלי מרצה</Badge>}
+                  <span className="flex items-center gap-1.5"><Icon name="people" size={16} className="text-muted" />רשומים <Capacity e={e} /></span>
+                  {(e.stats?.waitlisted_count ?? 0) > 0 && <span>רשימת המתנה <span className="num font-semibold">{e.stats!.waitlisted_count}</span></span>}
+                  {noSpeaker(e) && <NoSpeakerBadge e={e} now={now} />}
                 </div>
               </Link>
             </li>
@@ -175,8 +282,8 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
               <Th>מתי</Th>
               <Th>מפגש</Th>
               <Th>סטטוס</Th>
-              <Th numeric>נרשמו</Th>
-              <Th numeric>המתנה</Th>
+              <Th numeric>רשומים</Th>
+              <Th numeric>רשימת המתנה</Th>
               <Th>מרצה ונושא</Th>
             </tr>
           </thead>
@@ -206,12 +313,12 @@ function UpcomingList({ events, speakers, nextId }: { events: EventWithStats[]; 
                       <div className="leading-snug">
                         <div className="font-medium">
                           {sp.name ?? <span className="text-muted">עוד אין מרצה</span>}
-                          {sp.pending && <span className="ms-1.5 text-small text-warn">(ממתין לאישור)</span>}
+                          {sp.pending && <span className="ms-1.5 text-small text-muted">(מחכה לאישור)</span>}
                         </div>
                         {sp.topic && <div className="truncate text-small text-muted">{sp.topic}</div>}
                       </div>
-                    ) : e.type === 'friday' && e.status !== 'cancelled' ? (
-                      <Badge tone="warn" icon="mic">בלי מרצה</Badge>
+                    ) : noSpeaker(e) ? (
+                      <NoSpeakerBadge e={e} now={now} />
                     ) : (
                       <span className="text-faint">—</span>
                     )}
@@ -255,7 +362,7 @@ function PastList({ events, now }: { events: EventWithStats[]; now: number }) {
               <Link to={`/app/events/${e.id}`} className={cx('block rounded-[var(--radius-panel)] border border-edge bg-paper p-4 hover:border-ink', e.status === 'cancelled' && 'opacity-70')}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span> <span className="num text-small font-normal text-muted">{fmtTime(e.starts_at)}</span></div>
+                    <div className="font-semibold tabular-nums">{fmtListDate(e.starts_at)}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2"><TypeBadge type={e.type} /><span className="font-bold">{e.title}</span></div>
                   </div>
                   {isUnclosed(e, now) ? <UnclosedBadge /> : <StatusBadge status={e.status} />}
@@ -292,8 +399,7 @@ function PastList({ events, now }: { events: EventWithStats[]; now: number }) {
               return (
                 <tr key={e.id} onClick={() => navigate(`/app/events/${e.id}`)} className={cx('cursor-pointer hover:bg-mist/60', e.status === 'cancelled' && 'text-muted')}>
                   <Td>
-                    <div className="font-semibold">{fmtDay(e.starts_at)}, <span className="num">{fmtShortDate(e.starts_at)}</span></div>
-                    <div className="num text-right text-small text-muted">{fmtTime(e.starts_at)}</div>
+                    <div className="font-semibold tabular-nums">{fmtListDate(e.starts_at)}</div>
                   </Td>
                   <Td>
                     <div className="flex items-center gap-2">

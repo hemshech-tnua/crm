@@ -4,11 +4,14 @@ import { Link, useNavigate } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { fmtDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
-import { Button, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, cx } from '@/ui/kit';
+import { Button, EmptyState, ErrorBox, PageHeader, Panel, SearchInput, Skeleton, cx } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { rosterDetails, type RosterStats } from './roster';
-import { EngagementBadge, PhoneText, ago } from './shared';
+import { EngagementBadge, PhoneText, ago, useDebounced } from './shared';
+import { formatPhone } from '@/lib/phone';
+import { NoResults } from '@/ui/toolbar';
+import { SEARCH_PLACEHOLDER, matchesSearch } from '@/ui/search';
 
 type Side = { id: string; full_name: string; phone: string | null; city: string | null; created_at: string };
 type Pair = { a: Side; b: Side; similarity: number };
@@ -21,11 +24,42 @@ function suggestedKeep(p: Pair, stats: Map<string, RosterStats | null>): string 
   return p.a.created_at <= p.b.created_at ? p.a.id : p.b.id;
 }
 
+/** Pairs that share a card belong to the same person: one group per connected set of cards. */
+function groupPairs(pairs: Pair[]): Pair[][] {
+  const parent = new Map<string, string>();
+  const find = (x: string): string => {
+    const p = parent.get(x) ?? x;
+    if (p === x) return x;
+    const r = find(p);
+    parent.set(x, r);
+    return r;
+  };
+  for (const p of pairs) parent.set(find(p.a.id), find(p.b.id));
+  const groups = new Map<string, Pair[]>();
+  for (const p of pairs) {
+    const k = find(p.a.id);
+    groups.set(k, [...(groups.get(k) ?? []), p]);
+  }
+  return [...groups.values()].sort((x, y) => Math.max(...y.map((p) => p.similarity)) - Math.max(...x.map((p) => p.similarity)));
+}
+
+const matches = (s: Side, q: string) => matchesSearch(q, { name: s.full_name, phone: s.phone, also: [s.city] });
+
 export function DuplicatesPage() {
   const pairs = useQuery({
     queryKey: ['participants', 'duplicates'],
     queryFn: async () => must(await supabase.rpc('staff_find_duplicates')) as Pair[],
   });
+  // cards merged away on this page: their pairs disappear at once (the list is also fetched again)
+  const [goneIds, setGoneIds] = useState<Set<string>>(() => new Set());
+  const [term, setTerm] = useState('');
+  const q = useDebounced(term.trim(), 200);
+  const live = useMemo(() => (pairs.data ?? []).filter((p) => !goneIds.has(p.a.id) && !goneIds.has(p.b.id)), [pairs.data, goneIds]);
+  const groups = useMemo(() => {
+    const all = groupPairs(live);
+    if (!q) return all;
+    return all.filter((g) => g.some((p) => matches(p.a, q) || matches(p.b, q)));
+  }, [live, q]);
   const ids = useMemo(() => [...new Set((pairs.data ?? []).flatMap((p) => [p.a.id, p.b.id]))], [pairs.data]);
   const stats = useQuery({
     queryKey: ['participants', 'duplicates', 'stats', ids],
@@ -44,25 +78,45 @@ export function DuplicatesPage() {
         <ErrorBox error={errorMessage(pairs.error)} onRetry={() => pairs.refetch()} />
       ) : pairs.isLoading ? (
         <Panel><Skeleton lines={6} /></Panel>
-      ) : !pairs.data?.length ? (
+      ) : !live.length ? (
         <Panel><EmptyState icon="checkCircle" title="לא נמצאו כפילויות">אין כרגע כרטיסים עם שמות דומים. כדאי לבדוק שוב מדי פעם.</EmptyState></Panel>
       ) : (
         <>
-          <p className="mb-3 text-body text-ink-soft">
-            <span className="num font-semibold text-ink">{pairs.data.length}</span> זוגות לבדיקה. בוחרים איזה כרטיס להשאיר ולוחצים "מיזוג". אם אלה שני אנשים שונים, פשוט ממשיכים הלאה.
-          </p>
-          <ul className="flex flex-col gap-4">
-            {pairs.data.map((p) => (
-              <PairCard key={`${p.a.id}-${p.b.id}`} pair={p} stats={stats.data} />
-            ))}
-          </ul>
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-body text-ink-soft">
+              <span className="num font-semibold text-ink">{groupPairs(live).length}</span> אנשים לבדיקה. בוחרים איזה כרטיס להשאיר ולוחצים "מיזוג". אם אלה אנשים שונים: "אלה שני אנשים שונים".
+            </p>
+            <div className="sm:w-80"><SearchInput value={term} onChange={setTerm} label="חיפוש בכפילויות" placeholder={SEARCH_PLACEHOLDER} /></div>
+          </div>
+          {groups.length === 0 ? (
+            <Panel><NoResults onClear={() => setTerm('')} /></Panel>
+          ) : (
+            <ul className="flex flex-col gap-4">
+              {groups.map((g) => (
+                <li key={g.map((p) => `${p.a.id}-${p.b.id}`).join('|')}>
+                  {g.length > 1 && (
+                    <p className="mb-1.5 flex items-center gap-1.5 text-small font-semibold text-ink">
+                      <Icon name="people" size={16} />
+                      {g[0].a.full_name}: <span className="num">{new Set(g.flatMap((p) => [p.a.id, p.b.id])).size}</span> כרטיסים שאולי של אותו אדם
+                    </p>
+                  )}
+                  <ul className={cx('flex flex-col gap-3', g.length > 1 && 'border-s-2 border-ink/20 ps-3')}>
+                    {g.map((p) => (
+                      <PairCard key={`${p.a.id}-${p.b.id}`} pair={p} stats={stats.data}
+                        onMerged={(gone) => setGoneIds((x) => new Set([...x, gone]))} />
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </div>
   );
 }
 
-function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats | null> }) {
+function PairCard({ pair, stats, onMerged }: { pair: Pair; stats?: Map<string, RosterStats | null>; onMerged: (goneId: string) => void }) {
   const confirm = useConfirm();
   const toast = useToast();
   const qc = useQueryClient();
@@ -83,6 +137,7 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
       qc.removeQueries({ queryKey: ['participant', gone.id] });
       qc.invalidateQueries({ queryKey: ['followups'] });
       qc.invalidateQueries({ queryKey: ['attention'] });
+      onMerged(gone.id);
       toast.success(`הכרטיסים מוזגו לכרטיס של ${kept.full_name}`, { label: 'לכרטיס', run: () => navigate(`/app/participants/${kept.id}`) });
     },
     onError: (e) => toast.error(errorMessage(e)),
@@ -95,7 +150,7 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['participants', 'duplicates'] });
-      toast.success('סומן: שני אנשים שונים. הזוג לא יוצג שוב.');
+      toast.success(`${pair.a.full_name} ו${pair.b.full_name} סומנו כשני אנשים שונים`);
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
@@ -115,7 +170,11 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
             ההרשמות וההגעות, המשובים, משימות המעקב ויומן השיחות של <strong className="text-ink">{gone.full_name}</strong> עוברים לכרטיס שנשאר.
             פרטים שחסרים בכרטיס שנשאר (עיר, גיל, עיסוק, מקור) יושלמו מהכרטיס השני.
           </p>
-          <p>הכרטיס השני והטלפון שלו יימחקו. <strong className="text-bad">אי אפשר לבטל את המיזוג.</strong></p>
+          <p>
+            הכרטיס של {gone.full_name} יימחק, ואיתו הטלפון <strong className="num text-ink" dir="ltr">{formatPhone(gone.phone)}</strong>. בכרטיס שנשאר יישאר רק הטלפון <span className="num" dir="ltr">{formatPhone(kept.phone)}</span>.
+            אם צריך את המספר השני, כדאי לרשום אותו קודם בהערות של הכרטיס שנשאר.
+          </p>
+          <p><strong className="text-bad">אי אפשר לבטל את המיזוג.</strong></p>
         </div>
       ),
     });
@@ -123,7 +182,7 @@ function PairCard({ pair, stats }: { pair: Pair; stats?: Map<string, RosterStats
   };
 
   return (
-    <li className="rounded-[var(--radius-panel)] border border-edge bg-paper">
+    <li className="rounded-[var(--radius-panel)] border border-edge bg-paper" data-testid="duplicate-pair">
       <div className="flex items-center justify-between gap-2 border-b border-edge px-4 py-2.5 text-small text-muted sm:px-5">
         <span>דמיון בשם: <span className="num font-semibold text-ink">{Math.round(pair.similarity * 100)}%</span></span>
         <span>איזה כרטיס להשאיר?</span>
