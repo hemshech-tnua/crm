@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
-import { age, fmtDate, fmtLongDate } from '@/lib/dates';
+import { age, fmtDate, fmtListDate, fmtLongDate } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import { FOLLOWUP_TYPE_LABEL, MEMBERSHIP_LABEL, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
@@ -101,7 +101,7 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
             {card.membership === 'member' && <Badge tone="good" icon="star">חברות בעמותה</Badge>}
             {card.membership === 'requested' && <Badge tone="warn" icon="alert">בקשת הצטרפות לעמותה</Badge>}
             {card.photo_opt_out && <Badge icon="noCamera" tone="warn">לא להצטלם</Badge>}
-            <span>במערכת מאז <span className="num">{fmtDate(card.created_at)}</span></span>
+            <span>במערכת מאז <span className="tabular-nums">{fmtListDate(card.created_at, { weekday: false, time: false })}</span></span>
           </span>
         }
       />

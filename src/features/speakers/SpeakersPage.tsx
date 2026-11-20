@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { personPhotoUrl, supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { useSpeakers } from '@/lib/data';
-import { fmtDate, fmtShortDate } from '@/lib/dates';
+import { fmtListDate, fmtShortDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
 import { num } from '@/lib/metrics';
 import { proposeUrl } from '@/lib/links';
@@ -349,7 +349,7 @@ function SpeakerCard({ s, role, stats, bookings, onEdit }: { s: Speaker; role: R
               {bookings.length > 4 && <span className="text-muted">ועוד <span className="num">{bookings.length - 4}</span></span>}
             </div>
           )}
-          {s.status === 'approved' && s.approved_at && <p className="mt-1.5 text-micro text-faint">אישור: <span className="num">{fmtDate(s.approved_at)}</span></p>}
+          {s.status === 'approved' && s.approved_at && <p className="mt-1.5 text-micro text-faint">אישור: <span className="tabular-nums">{fmtListDate(s.approved_at, { weekday: false, time: false })}</span></p>}
         </div>
         </div>
 

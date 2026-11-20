@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
@@ -438,11 +438,13 @@ function QueueComposer({ queue, plan, event: e, templates, context, onClose }: {
   const myLink = link?.for === p.registrationId ? link : null;
   const linkPending = wantsLink && !myLink?.url && !myLink?.error;
 
-  const [text, setText] = useState('');
-  useEffect(() => {
-    setText(body ? renderTemplate(body, { ...context, firstName, personalLink: myLink?.url ?? null }) : '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.id, key, body, myLink?.url]);
+  // the text belongs to one person: an edit is kept only for the person (and template and link) it was made for, so the
+  // dialog never shows or sends someone else's text, not even for one render after moving to the next person
+  const sig = `${p.id}|${key}|${myLink?.url ?? ''}`;
+  const rendered = body ? renderTemplate(body, { ...context, firstName, personalLink: myLink?.url ?? null }) : '';
+  const [edit, setEdit] = useState<{ for: string; value: string } | null>(null);
+  const text = edit?.for === sig ? edit.value : rendered;
+  const setText = (value: string) => setEdit({ for: sig, value });
 
   const next = () => {
     if (!hasNext) { onClose(); return; }
@@ -451,7 +453,11 @@ function QueueComposer({ queue, plan, event: e, templates, context, onClose }: {
     if (!('payment' in np)) setKey(np.defaultKey);
     setI(i + 1);
   };
-  const opened = () => {
+  const opened = (ev: MouseEvent<HTMLAnchorElement>) => {
+    // open this person's chat from what is on screen now, before moving on: the link must never be re-rendered with the
+    // next person's number between the tap and the browser following it
+    ev.preventDefault();
+    window.open(whatsappLink(p.phone!, text), '_blank', 'noopener,noreferrer');
     log.mutate({
       participant_id: p.id, channel: 'whatsapp', template_key: isPayment ? null : tpl?.key ?? null,
       summary: isPayment ? PAYMENT_SUMMARY : null, event_id: e.id,

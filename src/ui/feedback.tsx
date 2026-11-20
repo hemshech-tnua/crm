@@ -120,9 +120,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     // in-app links push history without an event; the staff layout marks the tab bar on <html> as it comes and goes
     const mo = new MutationObserver(again);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-tabbar'] });
+    // a toast raised from a dialog went to the top; once the dialog closes it moves back down, clear of the page's header
+    // (the search box and the next action are there)
+    const settle = () => setToasts((all) => (document.querySelector('dialog[open]') || !all.some((x) => x.top) ? all
+      : all.map((x) => (x.top ? { ...x, top: false, bar: bottomBar() } : x))));
+    const dialogs = new MutationObserver(() => { clearTimeout(t); t = setTimeout(settle, 60); });
+    dialogs.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
     return () => {
       clearTimeout(t);
       mo.disconnect();
+      dialogs.disconnect();
       window.removeEventListener('hashchange', again);
       window.removeEventListener('popstate', again);
     };
@@ -209,7 +216,8 @@ function ToastView({ t, leaving, onPause, onResume, onDismiss, onAction }: {
       )}
     >
       <Icon name={t.tone === 'bad' ? 'alert' : 'checkCircle'} size={18} />
-      <span className="min-w-0 flex-1 py-1.5 leading-snug">{t.text}</span>
+      {/* at most two lines (an error keeps its whole text): a long name must not grow the toast over the list */}
+      <span title={t.text} className={cx('min-w-0 flex-1 py-1.5 leading-snug', t.tone !== 'bad' && 'line-clamp-2')}>{t.text}</span>
       {t.action && (
         <button type="button" onClick={onAction}
           className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-[2px] px-2.5 font-bold text-current underline underline-offset-2 hover:bg-light/10">
@@ -258,7 +266,7 @@ export function Dialog({ open, onClose, title, children, footer, size = 'md' }: 
         <div className="flex max-h-[88vh] flex-col">
           <header className="flex items-center justify-between gap-3 border-b border-edge py-2.5 ps-5 pe-3">
             <h2 id="dialog-title" className="text-heading font-bold">{title}</h2>
-            <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-[var(--radius-control)] p-2.5 text-muted hover:bg-ink/[0.06] hover:text-ink">
+            <button type="button" onClick={onClose} aria-label="סגירה" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-muted hover:bg-ink/[0.06] hover:text-ink">
               <Icon name="close" />
             </button>
           </header>

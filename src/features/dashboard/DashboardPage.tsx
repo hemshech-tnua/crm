@@ -298,7 +298,7 @@ function AttentionList({ a }: { a: Attention }) {
     (n) => ({ icon: 'alert', tone: 'bad', text: <><span className="num font-bold">{n}</span> מפגשים הסתיימו ולא נסגרו. בלי סגירה, מי שלא הגיע לא מקבל מעקב.</>, to: '/app/events?show=past&status=unclosed', action: 'לרשימה' }));
   capped(a.aftercare ?? [],
     (e) => ({ icon: 'message', tone: 'warn', text: <>עברו 24 שעות מ{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>): <span className="num font-bold">{e.pending}</span> הודעות תודה מחכות{e.join_invites > 0 && <>, מהן <span className="num">{e.join_invites}</span> עם הזמנה להצטרף לעמותה</>}</>, to: `/app/events/${e.id}?tab=messages&group=aftercare`, action: 'לשליחה' }),
-    (n) => ({ icon: 'message', tone: 'warn', text: <>ב-<span className="num font-bold">{n}</span> מפגשים מהשבוע האחרון עוד לא נשלחו הודעות תודה</>, to: '/app/events?show=past', action: 'למפגשים' }));
+    (n) => ({ icon: 'message', tone: 'warn', text: <>ב-<span className="num font-bold">{n}</span> מפגשים מהשבוע האחרון עוד לא נשלחו הודעות תודה</>, to: `/app/events/${a.aftercare![0].id}?tab=messages&group=aftercare`, action: 'למפגש הראשון' }));
   if (a.followups_overdue) items.push({ icon: 'task', tone: 'bad', text: <><span className="num font-bold">{a.followups_overdue}</span> משימות מעקב באיחור</>, to: '/app/followups?tab=open', action: 'למשימות' });
   const lapsedNoTask = a.lapsed.filter((l) => !l.has_open_task);
   if (lapsedNoTask.length) items.push({ icon: 'people', tone: 'warn', text: <><span className="num font-bold">{lapsedNoTask.length}</span> קבועים הפסיקו להגיע: {lapsedNoTask.slice(0, 3).map((l) => l.full_name).join(', ')}{lapsedNoTask.length > 3 ? ' ועוד' : ''}</>, to: '/app/followups?tab=open', action: 'לבדיקה' });
@@ -314,7 +314,7 @@ function AttentionList({ a }: { a: Attention }) {
   const mism = a.name_mismatches ?? [];
   capped(mism,
     (m) => ({ icon: 'alert', tone: 'warn', text: <>הרשמה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
-    (n) => ({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: '/app/events', action: 'למפגשים' }));
+    (n) => ({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: `/app/events/${mism[0].event_id}?tab=registrations`, action: 'לבירור הראשונה' }));
   if (a.unmatched_payments) items.push({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{a.unmatched_payments}</span> תשלומים מ"יש חשבונית" לא זוהו ומחכים להתאמה להרשמה</>, to: '/app/reports?tab=finance', action: 'להתאמה' });
   if (a.proposals_pending) items.push({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{a.proposals_pending}</span> הצעות להרצאה או הדרכה מחכות לאישור</>, to: '/app/speakers?tab=proposed', action: 'לצפייה' });
   if (a.followups_mine) items.push({ icon: 'task', tone: 'tide', text: <><span className="num font-bold">{a.followups_mine}</span> משימות פתוחות משויכות אליך</>, to: '/app/followups', action: 'למשימות שלי' });

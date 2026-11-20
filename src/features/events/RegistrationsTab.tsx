@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -452,6 +452,13 @@ type Found = { id: string; full_name: string | null; phone: string | null; city:
 function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
   open: boolean; onClose: () => void; e: EventWithStats; regs: RegRow[]; free: number | null; onRegistered: (r: RegRow | null) => void;
 }) {
+  // typing starts in the search right away (the dialog would otherwise focus its close button first)
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => searchRef.current?.focus(), 30);
+    return () => clearTimeout(t);
+  }, [open]);
   const toast = useToast();
   const invalidate = useInvalidateEvent();
   const qc = useQueryClient();
@@ -562,7 +569,7 @@ function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
   return (
     <Dialog open={open} onClose={onClose} title="הוספת נרשם">
       <div className="flex flex-col gap-4">
-        <SearchInput value={q} onChange={(v) => { setQ(v); setErrors((x) => ({ ...x, phone: null })); }} placeholder={SEARCH_PLACEHOLDER} label="חיפוש כרטיס" />
+        <SearchInput ref={searchRef} value={q} onChange={(v) => { setQ(v); setErrors((x) => ({ ...x, phone: null })); }} placeholder={SEARCH_PLACEHOLDER} label="חיפוש כרטיס" />
         {!showForm && errors.phone && <p className="-mt-2 text-small font-medium text-ink" role="status">{errors.phone}</p>}
         {free === 0 && (
           <Checkbox label="לרשום גם מעבר למכסה" hint="בלי סימון, ההרשמה תיכנס לרשימת ההמתנה" checked={over} onChange={setOver} />

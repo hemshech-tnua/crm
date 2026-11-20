@@ -264,7 +264,7 @@ export function ParticipantsPage() {
           <>
             <div className="mb-2 flex items-center justify-between text-small text-muted">
               <span>
-                {anyFilter ? 'נמצאו ' : ''}<span className="num font-semibold text-ink">{total.toLocaleString('he-IL')}</span> {total === 1 ? 'כרטיס' : 'לוחמים'}
+                {total === 1 ? (anyFilter ? 'נמצא כרטיס אחד' : 'כרטיס אחד') : <>{anyFilter ? 'נמצאו ' : ''}<span className="num font-semibold text-ink">{total.toLocaleString('he-IL')}</span> לוחמים</>}
               </span>
               {roster.isFetching && <span className="flex items-center gap-1.5"><Spinner size={14} />מעדכנים…</span>}
             </div>

@@ -51,7 +51,7 @@ export function MyWeekPanel({ className = '' }: { className?: string }) {
                   compact
                   meta={<>
                     {t.due_date === today
-                      ? <span className="font-semibold text-ink">היום{t.due_time ? <span className="num"> {hhmm(t.due_time)}</span> : ''}</span>
+                      ? <span className="font-semibold text-ink">היום{t.due_time ? <>{' '}<span className="num">{hhmm(t.due_time)}</span></> : ''}</span>
                       : <DayShort day={t.due_date!} time={t.due_time} className="font-semibold text-ink" />}
                     <Dot /><MeetingLink event={t.event} />
                     {t.hours ? <><Dot /><span>{fmtHours(t.hours)}</span></> : null}

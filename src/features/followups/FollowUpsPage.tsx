@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
-import { fmtDate, fmtShortDate } from '@/lib/dates';
+import { fmtDate, fmtListDate, fmtShortDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
 import { FOLLOWUP_TYPE_LABEL, UNASSIGNED_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
@@ -245,7 +245,7 @@ function DueText({ date }: { date: string | null }) {
   if (d < 0) return <span className="font-semibold text-bad">באיחור של {-d === 1 ? 'יום' : <><span className="num">{-d}</span> ימים</>}</span>;
   if (d === 0) return <span className="font-semibold text-ink">יעד: היום</span>;
   if (d === 1) return <span>יעד: מחר</span>;
-  return <span>יעד: <span className="num">{fmtDate(date)}</span></span>;
+  return <span>יעד: <span className="tabular-nums">{fmtListDate(date, { weekday: false, time: false })}</span></span>;
 }
 
 function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssignee: boolean; onAct: (k: 'done' | 'edit' | 'msg') => void }) {
