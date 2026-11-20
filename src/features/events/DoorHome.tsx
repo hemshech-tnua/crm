@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { can, useMe, useRole } from '@/lib/auth';
@@ -11,6 +12,8 @@ import { StatusBadge, TypeBadge, inDoorWindow, timeRange } from './shared';
 
 const WINDOW = 12 * 3600_000;
 const inWindow = (e: DoorEvent, now: number) => inDoorWindow(e, now);
+/** From two hours before the start until the end: the meeting the door is working on now. */
+const isLive = (e: DoorEvent, now: number) => now >= new Date(e.starts_at).getTime() - 2 * 3600_000 && now <= new Date(e.ends_at).getTime();
 
 export function DoorHome() {
   const role = useRole();
@@ -20,6 +23,13 @@ export function DoorHome() {
   const today = todayIl();
   const list = (q.data?.around ?? []).filter((e) => ilParts(e.starts_at).date === today || inWindow(e, now));
   const first = me.data?.full_name?.split(' ')[0];
+  // what the door needs now comes first: the meeting happening now, then the next ones today;
+  // meetings that already ended or were cancelled wait under one line, so nobody opens the wrong list
+  const done = (e: DoorEvent) => e.status === 'cancelled' || new Date(e.ends_at).getTime() < now;
+  const rank = (e: DoorEvent) => (isLive(e, now) ? 0 : 1);
+  const current = list.filter((e) => !done(e)).sort((a, b) => rank(a) - rank(b) || a.starts_at.localeCompare(b.starts_at));
+  const past = list.filter(done);
+  const [showPast, setShowPast] = useState(false);
 
   return (
     <>
@@ -43,9 +53,39 @@ export function DoorHome() {
           </EmptyState>
         </Panel>
       ) : (
-        <ul className="flex flex-col gap-4">
-          {list.map((e) => <DoorCard key={e.id} e={e} now={now} manager={can.manage(role)} />)}
-        </ul>
+        <div className="flex flex-col gap-4">
+          {current.length > 0 ? (
+            <ul className="flex flex-col gap-4">
+              {current.map((e) => <DoorCard key={e.id} e={e} now={now} manager={can.manage(role)} />)}
+            </ul>
+          ) : (
+            <Panel>
+              <EmptyState icon="sun" title="אין עוד מפגשים היום">
+                {q.data?.next ? (
+                  <>המפגש הבא: <b>{q.data.next.title}</b>, {fmtDayLong(q.data.next.starts_at)} בשעה <span className="num">{fmtTime(q.data.next.starts_at)}</span>.</>
+                ) : null}
+              </EmptyState>
+            </Panel>
+          )}
+          {past.length > 0 && (
+            <section>
+              <button
+                type="button"
+                aria-expanded={showPast}
+                onClick={() => setShowPast((v) => !v)}
+                className="flex h-12 w-full items-center justify-between rounded-[var(--radius-control)] px-1 text-right font-bold text-muted"
+              >
+                <span>הסתיימו או בוטלו <span className="num font-normal">({past.length})</span></span>
+                <Icon name="chevron" className={cx('transition-transform', showPast && '-rotate-90')} />
+              </button>
+              {showPast && (
+                <ul className="mt-1 flex flex-col gap-4">
+                  {past.map((e) => <DoorCard key={e.id} e={e} now={now} manager={can.manage(role)} />)}
+                </ul>
+              )}
+            </section>
+          )}
+        </div>
       )}
     </>
   );
@@ -63,7 +103,8 @@ function DoorCard({ e, now, manager }: { e: DoorEvent; now: number; manager: boo
   const rows = counts.data ?? [];
   const arrived = rows.filter((r) => r.attendance === 'attended').length;
   const registered = rows.filter((r) => r.status === 'registered' && !r.is_walk_in).length;
-  const live = now >= new Date(e.starts_at).getTime() - 2 * 3600_000 && now <= new Date(e.ends_at).getTime();
+  const live = isLive(e, now);
+  const notYet = rows.filter((r) => r.status === 'registered' && r.attendance !== 'attended').length;
 
   const body = (
     <div className={cx('rounded-[var(--radius-panel)] border bg-paper p-5 transition-colors', live && !cancelled ? 'border-ink' : 'border-edge', open && !cancelled && 'hover:border-ink')}>
@@ -77,9 +118,14 @@ function DoorCard({ e, now, manager }: { e: DoorEvent; now: number; manager: boo
       </div>
       {e.location && <div className="text-small text-muted">{e.location}</div>}
       {open && !cancelled && counts.data && (
-        <div className="mt-3 flex items-baseline gap-2 text-body">
-          <span className="num font-display text-stat leading-none">{arrived}<span className="text-section text-muted">/{registered}</span></span>
-          <span className="font-medium text-ink-soft">הגיעו מתוך הרשומים</span>
+        <div className="mt-3">
+          <div className="flex items-baseline gap-2">
+            <span className="num font-display text-stat leading-none">{arrived}</span>
+            <span className="font-medium text-ink-soft">הגיעו</span>
+          </div>
+          <p className="mt-1 text-small text-ink-soft">
+            <span className="num font-semibold text-ink">{notYet}</span> עוד לא הגיעו · <span className="num">{registered}</span> רשומים
+          </p>
         </div>
       )}
       <div className="mt-4">

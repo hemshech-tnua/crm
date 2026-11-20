@@ -19,7 +19,7 @@ test('a team-registered person opens the personal link once, then checks in at t
   await page.getByRole('button', { name: `שליחה ל${full.split(' ')[0]}` }).click();
   const text = page.getByLabel('הטקסט (אפשר לערוך לפני השליחה)');
   await expect(text).toHaveValue(/#\/m\/[A-Za-z0-9_-]{20,}/);
-  await expect(page.getByRole('link', { name: 'פתיחה בוואטסאפ' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'פתיחה בוואטסאפ', exact: true })).toBeVisible();
   const link = (await text.inputValue()).match(/https?:\S+#\/m\/[A-Za-z0-9_-]+/)![0];
   expect(errors, errors.join('\n')).toEqual([]);
 

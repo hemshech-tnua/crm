@@ -3,13 +3,14 @@ import { useParams } from 'react-router';
 import type { PublicEvent } from '@/lib/types';
 import { fmtDayLong, fmtTime, relativeDays } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { Button, ButtonLink, EmptyState, ErrorBox, Input, Notice, Skeleton } from '@/ui/kit';
-import { checkIn, checkInKnown, undoCheckin, usePublicSources, useCheckinInfo, useSavedStatuses, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
+import { isPriced, fmtMoney } from '@/lib/money';
+import { Button, ButtonLink, EmptyState, ErrorBox, ExternalButton, Input, Notice, Skeleton } from '@/ui/kit';
+import { checkIn, checkInKnown, undoCheckin, usePublicSources, useCheckinInfo, useRegistration, useSavedStatuses, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
 import { forgetPerson, forgetToken, knownPeople, rememberPerson, saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { timeRange } from './eventText';
 import { ConsentFields, PersonFields, PhoneExample, cleanText, nameError, phoneError, usePersonForm } from './PersonForm';
-import { Honeypot, ResultTitle, SuccessMark, usePageTitle } from './shared';
+import { Honeypot, ResultTitle, SuccessMark, payUrl, usePageTitle } from './shared';
 
 /** #/c/:checkinCode — scanned from the QR sign at the entrance, on the participant's own phone. */
 export function CheckinPage() {
@@ -56,7 +57,7 @@ function Checkin({ code }: { code: string }) {
 function EventLine({ event }: { event: PublicEvent }) {
   return (
     <p className="mt-1 text-[1.05rem] text-ink-soft">
-      {event.title} · <span className="num">{timeRange(event)}</span>
+      {event.title} · <span className="num whitespace-nowrap">{timeRange(event)}</span>
       {event.location && <> · {event.location}</>}
     </p>
   );
@@ -204,6 +205,8 @@ function Walkin({ code, phone, onBack, onResult }: {
   const sources = usePublicSources();
   // first just the name: someone we already know is checked in with it; everyone else continues to the short form
   const [name, setName] = useState<string | null>(null);
+  // the name typed last time, kept when going back to fix it
+  const [typed, setTyped] = useState('');
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
@@ -211,11 +214,20 @@ function Walkin({ code, phone, onBack, onResult }: {
         <p className="mt-1 text-lg text-ink-soft">
           {name == null
             ? 'רק עוד דבר אחד: איך קוראים לך? (שם מלא, כמו בהרשמה)'
-            : 'עוד כמה פרטים ונכנסים. זה רק בפעם הראשונה.'}
+            : 'לא מצאנו את השם הזה עם המספר הזה. אם זו הפעם הראשונה, עוד כמה פרטים ונכנסים.'}
         </p>
+        {name != null && (
+          <p className="mt-2 text-[1.05rem] text-ink-soft">
+            כבר נרשמת או היית אצלנו?{' '}
+            <button type="button" onClick={() => { setTyped(name); setName(null); }} className="min-h-11 font-semibold text-tide underline underline-offset-4">
+              לנסות שוב עם השם מההרשמה
+            </button>
+            {' '}או לגשת לצוות בכניסה.
+          </p>
+        )}
       </div>
       {name == null ? (
-        <NameStep code={code} phone={phone} onResult={onResult} onNeedDetails={setName} />
+        <NameStep code={code} phone={phone} initialName={typed} onResult={onResult} onNeedDetails={setName} />
       ) : sources.isPending ? (
         <Skeleton lines={6} />
       ) : sources.isError ? (
@@ -230,14 +242,20 @@ function Walkin({ code, phone, onBack, onResult }: {
   );
 }
 
+/** A name without what is in brackets or quotes (a nickname), spaces tidied. */
+function withoutNickname(name: string): string {
+  return name.replace(/\([^)]*\)|"[^"]*"|״[^״]*״/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /** Full name only. Known to us (phone + same name on the card): checked in. Anyone else: on to the short form. */
-function NameStep({ code, phone, onResult, onNeedDetails }: {
+function NameStep({ code, phone, initialName = '', onResult, onNeedDetails }: {
   code: string;
   phone: string;
+  initialName?: string;
   onResult: (r: CheckinResult) => void;
   onNeedDetails: (name: string) => void;
 }) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialName);
   const [website, setWebsite] = useState('');
   const [err, setErr] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
@@ -254,8 +272,14 @@ function NameStep({ code, phone, onResult, onNeedDetails }: {
     }
     setBusy(true);
     try {
-      const r = await checkInKnown({ code, phone: phone.trim(), full_name: cleanText(name), website });
-      if (r.result === 'need_details') onNeedDetails(cleanText(name));
+      const full = cleanText(name);
+      let r = await checkInKnown({ code, phone: phone.trim(), full_name: full, website });
+      // "דני (דניאל) כהן", "דני ״הגדול״ כהן": once more without the nickname, the way a card is usually written
+      const plain = withoutNickname(full);
+      if (r.result === 'need_details' && plain !== full && plain.length >= 2) {
+        r = await checkInKnown({ code, phone: phone.trim(), full_name: plain, website });
+      }
+      if (r.result === 'need_details') onNeedDetails(full);
       else onResult(r);
     } catch (x) {
       if (errorCode(x) === 'invalid_name') setErr(errorMessage(x));
@@ -396,6 +420,9 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
       setUndoing(false);
     }
   };
+  // a priced meeting: say honestly when the fee is still open (the registration knows; the check-in answer does not)
+  const reg = useRegistration(event && isPriced(event.price) && r.token ? r.token : null);
+  const owes = !!event && isPriced(event.price) && reg.data?.status === 'registered' && reg.data.payment_status === 'pending';
   const milestone = event?.type === 'friday' ? MILESTONES[r.friday_count ?? 0] : undefined;
   const firstTime = r.result === 'checked_in' && r.attended_count === 1;
   return (
@@ -414,6 +441,19 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
       <p className="text-xl text-ink-soft">
         {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה!'}
       </p>
+      {owes && event && (
+        <div className="w-full text-start">
+          <Notice tone="warn" icon="alert">
+            <span className="block text-[1.05rem] font-semibold">נשאר לשלם <span className="num whitespace-nowrap">{fmtMoney(event.price)}</span></span>
+            <span className="block text-[1.05rem]">אפשר לשלם במזומן בכניסה{event.payment_url ? ', או כאן בכרטיס אשראי' : ''}.</span>
+          </Notice>
+          {event.payment_url && (
+            <ExternalButton href={payUrl(event.payment_url)} variant="secondary" className="mt-2">
+              לתשלום <span className="num">{fmtMoney(event.price)}</span>
+            </ExternalButton>
+          )}
+        </div>
+      )}
       {milestone && (
         <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2.5 font-display text-section text-ink">{milestone}</p>
       )}

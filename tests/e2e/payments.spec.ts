@@ -100,25 +100,26 @@ test('pay first: the pay step, the webhook turns the open tab into "נרשמת!"
 
   // ── the coordinator: who has not paid; confirm one by hand ──
   await page.goto(`#/app/events/${eventId}?tab=registrations`);
-  await page.getByRole('button', { name: /^ממתינים לתשלום/ }).click();
+  await page.getByRole('button', { name: /^לא שילמו/ }).click();
   const row = page.locator('tr', { hasText: 'אורי ממתין' });
-  await expect(row.getByText('ממתין לתשלום')).toBeVisible();
+  await expect(row.getByText('מחכה לתשלום')).toBeVisible();
   await row.getByRole('button', { name: 'אישור תשלום' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel('סכום ששולם (₪)')).toHaveValue('20');
   await dialog.getByLabel('אסמכתה (לא חובה)').fill('50147');
   await dialog.getByRole('button', { name: 'אישור תשלום' }).click();
-  await expect(page.getByText('אורי ממתין: התשלום אושר וההרשמה הושלמה')).toBeVisible();
+  await expect(page.getByText('התשלום של אורי ממתין אושר, ההרשמה הושלמה')).toBeVisible();
   // the second visitor's open personal page follows by itself
   await expect(second.getByText('התשלום התקבל. נרשמת!')).toBeVisible({ timeout: 15_000 });
 
-  // ── the payment that matched nobody: attach it to the third person ──
-  const unmatched = page.locator('section', { has: page.getByRole('heading', { name: 'תשלומים שלא זוהו' }) });
+  // ── the payment that matched nobody: one line on the tab, opened to match it to the third person ──
+  await page.getByTestId('unmatched-banner').getByRole('button', { name: 'להתאמה' }).click();
+  const unmatched = page.locator('section', { has: page.getByRole('heading', { name: /מחכ(ה|ים) להתאמה/ }) });
   await expect(unmatched).toBeVisible();
-  const item = unmatched.getByTestId('unmatched-payment').first();
-  await item.getByLabel('לשייך להרשמה').selectOption({ label: await item.locator('option', { hasText: 'שירה בלי טלפון תואם' }).innerText() });
-  await item.getByRole('button', { name: 'שיוך' }).click();
-  await expect(page.getByText('התשלום שויך לשירה בלי טלפון תואם וההרשמה הושלמה')).toBeVisible();
+  const item = unmatched.getByTestId('unmatched-payment').filter({ has: page.getByRole('radio', { name: /שירה בלי טלפון תואם/ }) }).first();
+  await item.getByRole('radio', { name: /שירה בלי טלפון תואם/ }).check();
+  await item.getByRole('button', { name: 'התאמה' }).click();
+  await expect(page.getByText('התשלום של שירה בלי טלפון תואם הותאם, ההרשמה הושלמה')).toBeVisible();
   await expect(third.getByRole('heading', { name: 'נרשמת!' })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole('button', { name: /^רשומים\s*\d/ }).click();

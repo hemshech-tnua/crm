@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -8,15 +8,58 @@ import { errorCode, errorMessage, must } from '@/lib/errors';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { normalizePhone } from '@/lib/phone';
 import { fmtMoney, isPriced } from '@/lib/money';
-import { Badge, Button, EmptyState, ErrorBox, Input, Notice, Panel, SearchInput, Select, Skeleton, cx } from '@/ui/kit';
+import { Button, EmptyState, ErrorBox, Input, Notice, Panel, SearchInput, Select, Skeleton, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
-import { Icon } from '@/ui/Icon';
+import { Icon, type IconName } from '@/ui/Icon';
+import { scrollToContentTop } from '@/ui/viewport';
 import { eventKeys, fetchCheckinList, useDoorEvent, useInvalidateEvent, type CheckinRow } from './queries';
 import { RowMenu, inDoorWindow, timeRange, type MenuItem } from './shared';
+import { matchScore, searchDigits } from './doorMatch';
 
-const firstName = (n: string) => n.split(' ')[0];
 /** The 5th, 10th, 20th… Friday is a milestone worth greeting at the door. */
 const isMilestone = (n: number) => n === 5 || (n >= 10 && n % 10 === 0);
+/** A row marked in the last few seconds stays where the volunteer can fix it (longer while the fee is still open). */
+const STAY_MS = 6000;
+const STAY_OWES_MS = 20000;
+/** Delay before the full header comes back after the search loses focus: a tap on a row must not move the list. */
+const EXPAND_DELAY_MS = 450;
+
+type Marked = { at: number; pinned: boolean };
+
+/**
+ * How far below the top of the window the door header sticks: under the app bar when the app shows one (phones),
+ * at the very top when it doesn't (desktop, or a door mode that hides the bar). Measured, so it works either way.
+ */
+function useStickyTop() {
+  const [top, setTop] = useState(0);
+  useLayoutEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const main = document.getElementById('main');
+      let h = 0;
+      for (const el of Array.from(main?.parentElement?.children ?? [])) {
+        if (el === main) break;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || (cs.position !== 'sticky' && cs.position !== 'fixed')) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < window.innerWidth * 0.8 || r.top > 1) continue; // a side bar, or not a bar at the top
+        h = Math.max(h, r.bottom);
+      }
+      setTop(Math.max(0, Math.round(h)));
+    };
+    const soon = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    measure();
+    window.addEventListener('resize', soon);
+    window.addEventListener('scroll', soon, { passive: true });
+    return () => {
+      window.removeEventListener('resize', soon);
+      window.removeEventListener('scroll', soon);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+  return top;
+}
 
 export function DoorPage() {
   const { id = '' } = useParams();
@@ -38,25 +81,44 @@ export function DoorPage() {
     // self check-ins via the QR sign show up without reloading; paused while a tap is being saved
     refetchInterval: busy ? false : 15_000,
   });
+  const stickyTop = useStickyTop();
+
   const [search, setSearch] = useState('');
-  // rows marked in the last few seconds stay in place, so a wrong tap is fixed right where it happened
-  const [justMarked, setJustMarked] = useState<Record<string, number>>({});
-  const remember = (id: string) => {
-    setJustMarked((m) => ({ ...m, [id]: Date.now() }));
-    setTimeout(() => setJustMarked((m) => { const n = { ...m }; delete n[id]; return n; }), 6000);
+  const [onlyOwing, setOnlyOwing] = useState(false);
+  const searchBox = useRef<HTMLDivElement>(null);
+  const focusSearch = () => searchBox.current?.querySelector('input')?.focus();
+  // while the search has focus (the phone keyboard is open) the header shrinks to the search row
+  const [typing, setTyping] = useState(false);
+  const expandTimer = useRef<number>(0);
+  const onSearchFocus = () => { window.clearTimeout(expandTimer.current); setTyping(true); };
+  const onSearchBlur = () => { window.clearTimeout(expandTimer.current); expandTimer.current = window.setTimeout(() => setTyping(false), EXPAND_DELAY_MS); };
+
+  // rows marked in the last few seconds stay in place, so a wrong tap is fixed right where it happened;
+  // a row marked from a search goes to the top ("סומנו עכשיו"), because the search is cleared for the next person
+  const [marked, setMarked] = useState<Record<string, Marked>>({});
+  const timers = useRef<Record<string, number>>({});
+  const remember = (rid: string, pinned: boolean, ms = STAY_MS) => {
+    setMarked((m) => ({ ...m, [rid]: { at: m[rid]?.at ?? Date.now(), pinned: pinned || !!m[rid]?.pinned } }));
+    window.clearTimeout(timers.current[rid]);
+    timers.current[rid] = window.setTimeout(() => {
+      setMarked((m) => { const n = { ...m }; delete n[rid]; return n; });
+      delete timers.current[rid];
+    }, ms);
   };
-  const [walkin, setWalkin] = useState<string | null>(null);
+  useEffect(() => () => Object.values(timers.current).forEach((t) => window.clearTimeout(t)), []);
+  useEffect(() => () => window.clearTimeout(expandTimer.current), []);
+
+  const [walkin, setWalkin] = useState<{ name: string; phone: string } | null>(null);
   const [showCancelled, setShowCancelled] = useState(false);
 
   const setAttendance = useMutation({
     mutationKey: ['door', id],
-    mutationFn: async (v: { row: CheckinRow; attendance: 'attended' | 'unknown' }) => {
+    mutationFn: async (v: { row: CheckinRow; attendance: 'attended' | 'unknown'; quiet?: boolean }) => {
       const { error } = await supabase.rpc('staff_set_attendance', { p_registration_id: v.row.registration_id, p_attendance: v.attendance });
       if (error) throw error;
       return v;
     },
     onMutate: async (v) => {
-      if (v.attendance === 'attended') remember(v.row.registration_id);
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<CheckinRow[]>(key);
       qc.setQueryData<CheckinRow[]>(key, (rows) =>
@@ -72,13 +134,15 @@ export function DoorPage() {
     },
     onError: (err, v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
-      toast.error(`${firstName(v.row.display_name)}: לא נשמר. ${errorMessage(err)}`);
+      toast.error(`ההגעה של ${v.row.display_name} לא נשמרה. ${errorMessage(err)}`);
     },
     onSuccess: (v) => {
+      if (v.quiet) return;
       if (v.attendance === 'attended') {
-        toast.success(`${v.row.display_name}: ההגעה סומנה`, { label: 'ביטול', run: () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }) });
+        const unpaid = owes(v.row) ? ' · לא שולם' : '';
+        toast.undo(`ההגעה של ${v.row.display_name} סומנה${unpaid}`, () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }));
       } else {
-        toast.success(`הסימון של ${v.row.display_name} הוסר`, { label: 'החזרה', run: () => setAttendance.mutate({ row: v.row, attendance: 'attended' }) });
+        toast.undo(`הסימון של ${v.row.display_name} הוסר`, () => setAttendance.mutate({ row: v.row, attendance: 'attended' }));
       }
     },
     onSettled: () => {
@@ -91,7 +155,7 @@ export function DoorPage() {
   // "paid at the entrance": one tap, cash, at the meeting's price (undo from the toast or the row menu)
   const doorPay = useMutation({
     mutationKey: ['door', id],
-    mutationFn: async (v: { row: CheckinRow; paid: boolean }) => {
+    mutationFn: async (v: { row: CheckinRow; paid: boolean; arrived?: boolean }) => {
       const { error } = await supabase.rpc('staff_door_payment', { p_registration_id: v.row.registration_id, p_paid: v.paid });
       if (error) throw error;
       return v;
@@ -106,11 +170,13 @@ export function DoorPage() {
     },
     onError: (err, v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
-      toast.error(`${firstName(v.row.display_name)}: לא נשמר. ${errorMessage(err)}`);
+      toast.error(`התשלום של ${v.row.display_name} לא נשמר. ${errorMessage(err)}`);
     },
     onSuccess: (v) => {
-      if (v.paid) toast.success(`${v.row.display_name}: שולם במקום`, { label: 'ביטול', run: () => doorPay.mutate({ row: v.row, paid: false }) });
-      else toast.success(`${v.row.display_name}: הסימון "שולם" הוסר`);
+      if (v.paid) {
+        toast.undo(v.arrived ? `ההגעה והתשלום של ${v.row.display_name} סומנו` : `התשלום של ${v.row.display_name} סומן · שולם במקום`, () =>
+          doorPay.mutate({ row: v.row, paid: false }));
+      } else toast.success(`הסימון "שולם במקום" של ${v.row.display_name} הוסר`);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
@@ -127,7 +193,7 @@ export function DoorPage() {
     },
     onSuccess: async (row) => {
       await invalidate(id);
-      toast.success(`${firstName(row.display_name)}: הביטול סומן`);
+      toast.success(`הביטול של ${row.display_name} סומן`);
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -145,73 +211,168 @@ export function DoorPage() {
 
   const rows = useMemo(() => list.data ?? [], [list.data]);
   const term = search.trim();
-  const digits = term.replace(/\D/g, '');
-  const match = (r: CheckinRow) =>
-    !term || r.display_name.includes(term) || r.display_name.toLowerCase().includes(term.toLowerCase()) || (digits.length >= 2 && (r.phone_last4 ?? '').includes(digits));
-  const shown = rows.filter(match);
-  const stays = (r: CheckinRow) => r.attendance === 'attended' && !!justMarked[r.registration_id];
-  const arrived = shown.filter((r) => r.attendance === 'attended' && !stays(r)).sort((a, b) => (b.checked_in_at ?? '').localeCompare(a.checked_in_at ?? ''));
-  const notYet = shown.filter((r) => (r.status === 'registered' && r.attendance !== 'attended') || stays(r));
-  const waiting = shown.filter((r) => r.status === 'waitlisted' && r.attendance !== 'attended').sort((a, b) => (a.waitlist_position ?? 0) - (b.waitlist_position ?? 0));
-  const cancelled = shown.filter((r) => r.status === 'cancelled' && r.attendance !== 'attended');
+  const e = ev.data;
+  const price = isPriced(e?.price) ? Number(e!.price) : null;
+  // a priced meeting: who still owes the fee (a registered place, or a walk-in); a waitlisted place pays once it is in
+  function owes(r: CheckinRow) {
+    return price != null && r.status === 'registered' && r.payment_status === 'pending';
+  }
+
+  // each new search starts at the top, so the best match sits right under the search box (and above the keyboard)
+  const firstTerm = useRef(true);
+  useEffect(() => {
+    if (firstTerm.current) { firstTerm.current = false; return; }
+    // to the top of the page content, not 0: in door mode on a phone the app bar has scrolled away and stays away
+    scrollToContentTop();
+  }, [term, onlyOwing]);
+
+  const score = (r: CheckinRow) => matchScore(r, term);
+  const pinned = (r: CheckinRow) => !!marked[r.registration_id]?.pinned;
+  const stays = (r: CheckinRow) => r.attendance === 'attended' && !!marked[r.registration_id];
+  const justNow = rows.filter(pinned).sort((a, b) => marked[b.registration_id].at - marked[a.registration_id].at);
+  const shown = rows.filter((r) => !pinned(r) && (!onlyOwing || owes(r)) && score(r) > 0);
+  const best = term ? (a: CheckinRow, b: CheckinRow) => score(b) - score(a) : () => 0;
+  const notYet = shown.filter((r) => (r.status === 'registered' && r.attendance !== 'attended') || stays(r)).sort(best);
+  const arrived = shown.filter((r) => r.attendance === 'attended' && !stays(r)).sort((a, b) => best(a, b) || (b.checked_in_at ?? '').localeCompare(a.checked_in_at ?? ''));
+  const waiting = shown.filter((r) => r.status === 'waitlisted' && r.attendance !== 'attended').sort((a, b) => best(a, b) || (a.waitlist_position ?? 0) - (b.waitlist_position ?? 0));
+  const cancelled = shown.filter((r) => r.status === 'cancelled' && r.attendance !== 'attended').sort(best);
 
   const totalArrived = rows.filter((r) => r.attendance === 'attended').length;
   const totalRegistered = rows.filter((r) => r.status === 'registered' && !r.is_walk_in).length;
+  const totalNotYet = rows.filter((r) => r.status === 'registered' && r.attendance !== 'attended').length;
   const walkIns = rows.filter((r) => r.is_walk_in && r.attendance === 'attended').length;
-  const e = ev.data;
+  const totalOwing = rows.filter(owes).length;
   const inactive = e && (e.status === 'draft' || e.status === 'cancelled');
   const forbidden = outside || (list.isError && errorCode(list.error) === 'forbidden');
+  const filtering = !!term || onlyOwing;
 
-  const price = isPriced(e?.price) ? Number(e!.price) : null;
+  // tap the box: arrived (or back). From a search, the search is cleared and the keyboard stays up for the next person.
+  const toggle = (r: CheckinRow) => {
+    const attend = r.attendance !== 'attended';
+    const fromSearch = !!term;
+    remember(r.registration_id, fromSearch, attend && owes(r) ? STAY_OWES_MS : STAY_MS);
+    // from a search the row itself, highlighted on top under "סומנו עכשיו", is the confirmation (and its box the undo):
+    // no toast over it while the keyboard leaves little room
+    setAttendance.mutate({ row: r, attendance: attend ? 'attended' : 'unknown', quiet: fromSearch && attend });
+    if (fromSearch) {
+      setSearch('');
+      focusSearch();
+    }
+  };
+  // "שולם במקום" also marks the arrival: whoever pays at the entrance is here
+  const payCash = (r: CheckinRow) => {
+    const arrive = r.attendance !== 'attended';
+    remember(r.registration_id, !!term || pinned(r));
+    if (arrive) setAttendance.mutate({ row: r, attendance: 'attended', quiet: true });
+    doorPay.mutate({ row: r, paid: true, arrived: arrive });
+    if (term) setSearch('');
+  };
+  const openWalkin = () => {
+    const d = searchDigits(term);
+    setWalkin(/\d/.test(term) ? { name: '', phone: d.length >= 9 ? term : '' } : { name: term, phone: '' });
+  };
+
   const rowProps = (r: CheckinRow) => ({
     r,
     friday: e?.type === 'friday',
     disabled: !!inactive,
+    owes: owes(r),
+    // the cash button where money changes hands: once in (or just marked), and in the "לא שילמו" view;
+    // the rest of the list keeps one row height, with only the "לא שולם" tag
+    payHere: owes(r) && (r.attendance === 'attended' || pinned(r) || onlyOwing),
     price,
-    onToggle: () => setAttendance.mutate({ row: r, attendance: r.attendance === 'attended' ? 'unknown' : 'attended' }),
-    onPaid: () => doorPay.mutate({ row: r, paid: true }),
+    onToggle: () => toggle(r),
+    onPaid: () => payCash(r),
     menu: [
-      ...(price && r.payment_status === 'paid' && r.cash_just_marked ? [{ label: 'ביטול "שולם במקום"', icon: 'undo' as const, onClick: () => doorPay.mutate({ row: r, paid: false }) }] : []),
+      ...(owes(r) && price != null && r.attendance !== 'attended' ? [{ label: `הגעה ושולם במקום · ${fmtMoney(price)}`, icon: 'check' as const, onClick: () => payCash(r) }] : []),
+      ...(price && r.payment_status === 'paid' && r.cash_just_marked ? [{ label: 'הסרת "שולם במקום"', icon: 'undo' as const, onClick: () => doorPay.mutate({ row: r, paid: false }) }] : []),
       ...(r.status !== 'cancelled' && r.attendance !== 'attended' ? [{ label: 'סימון ביטול', icon: 'close' as const, danger: true, onClick: () => askCancel(r) }] : []),
     ],
   });
 
+  // marked a moment ago from a search: on top while the list is open; under the results while searching again
+  const strip = justNow.length > 0 && (
+    <Section title="סומנו עכשיו" count={justNow.length} live>
+      {justNow.map((r) => <Row key={r.registration_id} {...rowProps(r)} recent />)}
+    </Section>
+  );
+  const compact = typing ? 'max-sm:hidden' : '';
+  const updated = list.dataUpdatedAt ? fmtTime(new Date(list.dataUpdatedAt)) : null;
+  const chipRow = !forbidden && price != null && (totalOwing > 0 || onlyOwing);
+
   return (
     <div className="mx-auto max-w-2xl">
-      {/* sticky header: event, live counter, search */}
-      <div className="sticky top-16 z-20 -mx-4 -mt-5 border-b border-edge bg-sky/95 px-4 pt-1 pb-3 backdrop-blur sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:-mt-9 md:px-10 md:pt-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <Link to={can.manage(role) ? `/app/events/${id}` : '/app/door'} className="inline-flex min-h-11 items-center gap-1 text-small font-medium text-tide hover:underline">
-              <Icon name="back" size={16} />
-              {can.manage(role) ? 'לעמוד המפגש' : 'כניסה'}
-            </Link>
-            <h1 className="truncate text-section font-bold">{e?.title ?? 'רשימת נוכחות'}</h1>
+      {/* sticky header: meeting + live count, then the search; while typing on a phone only the search row stays */}
+      <div
+        style={{ top: stickyTop }}
+        className="sticky z-20 -mx-4 -mt-5 border-b border-edge bg-sky/95 px-4 pt-2 pb-3 backdrop-blur sm:-mx-6 sm:px-6 md:-mx-10 md:-mt-9 md:px-10 md:pt-4"
+      >
+        <div className={cx('flex items-center gap-2', compact)}>
+          <Link
+            to={can.manage(role) ? `/app/events/${id}` : '/app/door'}
+            aria-label={can.manage(role) ? 'לעמוד המפגש' : 'לכל המפגשים של היום'}
+            title={can.manage(role) ? 'לעמוד המפגש' : 'לכל המפגשים של היום'}
+            className="-ms-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-ink hover:bg-ink/[0.07]"
+          >
+            <Icon name="back" size={22} />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-heading font-bold sm:text-section">{e?.title ?? 'רשימת נוכחות'}</h1>
             {e && <div className="hidden text-small text-muted sm:block">{fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span></div>}
-            {!forbidden && walkIns > 0 && <div className="text-small text-ink-soft">מתוכם בלי הרשמה <span className="num font-bold text-ink">{walkIns}</span></div>}
+            {!forbidden && list.data && (
+              <p className="flex flex-wrap items-baseline gap-x-1.5 text-small text-ink-soft">
+                <span><b className="num text-ink">{totalNotYet}</b> עוד לא הגיעו</span>
+                {walkIns > 0 && <span aria-hidden="true">·</span>}
+                {walkIns > 0 && <span><b className="num text-ink">{walkIns}</b> בלי הרשמה</span>}
+                {updated && !chipRow && <span className="text-muted">· עודכן <span className="num">{updated}</span></span>}
+              </p>
+            )}
           </div>
-          {/* one live tile: arrived out of registered */}
-          {!forbidden && <div className="mt-2 shrink-0 rounded-[var(--radius-control)] bg-ink px-3.5 py-2 text-center text-light" aria-live="polite">
-            <div className="num font-display text-[1.75rem] leading-none" aria-label={`הגיעו ${totalArrived} מתוך ${totalRegistered} רשומים`}>
-              {totalArrived}<span className="text-heading text-light/70">/{totalRegistered}</span>
+          {/* one live tile: how many are in */}
+          {!forbidden && list.data && (
+            <div className="shrink-0 rounded-[var(--radius-control)] bg-ink px-3 py-1.5 text-center text-light" aria-live="polite" aria-atomic="true">
+              <div className="num font-display text-[1.75rem] leading-none" aria-label={`הגיעו ${totalArrived}, מתוכם ${walkIns} בלי הרשמה. ${totalRegistered} רשומים`}>
+                {totalArrived}
+              </div>
+              <div className="mt-0.5 text-micro font-medium" aria-hidden="true">הגיעו</div>
             </div>
-            <div className="mt-0.5 text-micro font-medium">הגיעו</div>
-          </div>}
+          )}
         </div>
+
         {!forbidden && (
-          <div className="mt-2.5 flex gap-2">
-            <div className="min-w-0 flex-1">
-              <SearchInput value={search} onChange={setSearch} label="חיפוש לפי שם או 4 ספרות אחרונות" placeholder="שם או 4 ספרות" size="lg" />
+          <div className={cx('mt-2 flex gap-2', typing && 'max-sm:mt-0')} onFocus={onSearchFocus} onBlur={onSearchBlur}>
+            <div ref={searchBox} className="min-w-0 flex-1">
+              <SearchInput value={search} onChange={setSearch} label="חיפוש לפי שם או טלפון" placeholder="שם או טלפון" size="lg" />
             </div>
             <button
               type="button"
-              onClick={() => setWalkin(/\d/.test(term) ? '' : term)}
+              onClick={openWalkin}
               disabled={!!inactive || forbidden}
-              className="flex h-12 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] bg-tide px-3 font-semibold text-light hover:bg-ink-soft active:bg-tide-deep disabled:bg-tide/40 disabled:text-light/80"
+              className="flex h-14 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] bg-tide px-2.5 font-semibold text-light hover:bg-ink-soft active:bg-tide-deep disabled:bg-tide/40 disabled:text-light/80 sm:px-3"
             >
               <Icon name="userPlus" size={20} />
               <span className="text-right text-small leading-tight">הגעה<br />בלי הרשמה</span>
             </button>
+          </div>
+        )}
+
+        {chipRow && (
+          <div className={cx('mt-2 flex items-center gap-2', compact)}>
+            <button
+              type="button"
+              aria-pressed={onlyOwing}
+              onClick={() => setOnlyOwing((v) => !v)}
+              className={cx(
+                'inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
+                onlyOwing ? 'border-ink bg-ink text-light' : 'border-warn/40 bg-warn-wash text-warn hover:border-warn',
+              )}
+            >
+              {onlyOwing ? <Icon name="check" size={16} /> : <span aria-hidden="true" className="font-display">₪</span>}
+              לא שילמו <span className="num">{totalOwing}</span>
+            </button>
+            <span className="ms-auto text-small text-muted">
+              {onlyOwing ? <>רק מי שעוד לא שילמו · <span className="num">{fmtMoney(price!)}</span></> : updated && <>עודכן <span className="num">{updated}</span></>}
+            </span>
           </div>
         )}
       </div>
@@ -235,25 +396,30 @@ export function DoorPage() {
           <ErrorBox error={errorMessage(list.error)} onRetry={() => list.refetch()} />
         ) : rows.length === 0 ? (
           <Panel>
-            <EmptyState icon="people" title="עוד אין רשומים" action={!inactive ? <Button size="lg" icon="userPlus" onClick={() => setWalkin('')}>הגעה בלי הרשמה</Button> : undefined}>
+            <EmptyState icon="people" title="עוד אין רשומים" action={!inactive ? <Button size="lg" icon="userPlus" onClick={() => setWalkin({ name: '', phone: '' })}>הגעה בלי הרשמה</Button> : undefined}>
               מי שמגיע בלי הרשמה נרשם כאן בשנייה.
             </EmptyState>
           </Panel>
         ) : (
           <div className="flex flex-col gap-6">
-            {term && shown.length === 0 && (
-              <Panel>
-                <EmptyState icon="search" title={`אין ברשימה את "${term}"`} action={!inactive ? <Button size="lg" icon="userPlus" onClick={() => setWalkin(/\d/.test(term) ? '' : term)}>הגעה בלי הרשמה</Button> : undefined}>
-                  אולי ההרשמה בשם אחר? אפשר לחפש לפי 4 הספרות האחרונות של הטלפון.
-                </EmptyState>
-              </Panel>
+            {!term && strip}
+            {filtering && shown.length === 0 && (
+              // compact on purpose: with the keyboard open, the way forward ("הגעה בלי הרשמה") must be in view
+              <div className="rounded-[var(--radius-panel)] border border-edge bg-paper p-4" role="status">
+                <p className="text-heading font-bold">{onlyOwing && !term ? 'כולם שילמו' : 'אין תוצאות לחיפוש הזה'}</p>
+                {term && <p className="mt-0.5 text-small text-muted">אין ברשימה את ״{term}״. אולי ההרשמה בשם אחר? אפשר לחפש גם לפי טלפון.</p>}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {term && !inactive && <Button size="lg" icon="userPlus" onClick={openWalkin}>הגעה בלי הרשמה</Button>}
+                  <Button variant="ghost" size="lg" onClick={() => { setSearch(''); setOnlyOwing(false); focusSearch(); }}>ניקוי החיפוש והסינון</Button>
+                </div>
+              </div>
             )}
             {notYet.length > 0 && (
               <Section title="עוד לא הגיעו" count={notYet.length}>
                 {notYet.map((r) => <Row key={r.registration_id} {...rowProps(r)} />)}
               </Section>
             )}
-            {!term && notYet.length === 0 && totalRegistered > 0 && (
+            {!filtering && notYet.length === 0 && totalRegistered > 0 && (
               <p className="flex items-center gap-2 rounded-[var(--radius-control)] bg-ink px-4 py-3 font-semibold text-light">
                 <Icon name="checkCircle" />כל הרשומים הגיעו
               </p>
@@ -286,27 +452,30 @@ export function DoorPage() {
                 )}
               </section>
             )}
-            <p className="text-center text-small text-muted">
-              כל סימון נשמר מיד. הרשימה מתעדכנת לבד כל 15 שניות{list.dataUpdatedAt ? <>, עודכנה ב-<span className="num">{fmtTime(new Date(list.dataUpdatedAt))}</span></> : null}.
-            </p>
+            {term && strip}
+            <p className="text-center text-small text-muted">כל סימון נשמר מיד, והרשימה מתעדכנת לבד.</p>
           </div>
         )}
       </div>
 
       <WalkinDialog
         open={walkin !== null}
-        initialName={walkin ?? ''}
+        initial={walkin ?? { name: '', phone: '' }}
         onClose={() => setWalkin(null)}
         eventId={id}
-        onDone={() => setSearch('')}
+        price={price}
+        onDone={(rid) => {
+          setSearch('');
+          if (rid) remember(rid, true);
+        }}
       />
     </div>
   );
 }
 
-function Section({ title, count, hint, children }: { title: string; count: number; hint?: string; children: ReactNode }) {
+function Section({ title, count, hint, live, children }: { title: string; count: number; hint?: string; live?: boolean; children: ReactNode }) {
   return (
-    <section>
+    <section aria-live={live ? 'polite' : undefined}>
       <h2 className="mb-2 flex items-baseline gap-2 px-1 text-heading font-bold">
         {title}
         <span className="num text-small font-normal text-muted">({count})</span>
@@ -317,15 +486,34 @@ function Section({ title, count, hint, children }: { title: string; count: numbe
   );
 }
 
-function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
-  r: CheckinRow; friday: boolean; disabled: boolean; price: number | null; onToggle: () => void; onPaid: () => void; menu: MenuItem[];
+/** A quiet filled tag: information, not a button. Only "לא שולם" (act now) gets the warning colour. */
+function Tag({ tone = 'plain', icon, title, children }: { tone?: 'plain' | 'warn' | 'bad'; icon?: IconName; title?: string; children: ReactNode }) {
+  return (
+    <span
+      title={title}
+      className={cx(
+        'inline-flex h-7 items-center gap-1 rounded-[2px] px-2 text-small font-medium whitespace-nowrap',
+        tone === 'warn' ? 'bg-warn-wash font-semibold text-warn' : tone === 'bad' ? 'bg-bad-wash text-bad' : 'bg-ink/[0.07] text-ink-soft',
+      )}
+    >
+      {icon && <Icon name={icon} size={14} strokeWidth={2.2} />}
+      {children}
+    </span>
+  );
+}
+
+function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPaid, menu }: {
+  r: CheckinRow; friday: boolean; disabled: boolean; owes: boolean; payHere: boolean; price: number | null; recent?: boolean; onToggle: () => void; onPaid: () => void; menu: MenuItem[];
 }) {
   const on = r.attendance === 'attended';
   const nth = r.prior_fridays + 1;
-  // a priced meeting: who still owes the fee (a registered place, or a walk-in); a waitlisted place pays once it is in
-  const owes = price != null && r.status === 'registered' && r.payment_status === 'pending';
+  const gone = r.status === 'cancelled';
   return (
-    <li className={cx('flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border bg-paper py-2.5 pr-2.5 pl-1.5', on ? 'border-ink/50' : 'border-edge')}>
+    <li className={cx(
+      'flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border py-2.5 pr-2.5 pl-1.5',
+      gone ? 'border-edge bg-paper/60' : 'bg-paper',
+      recent ? 'border-ink ring-1 ring-ink' : on ? 'border-ink/50' : !gone && 'border-edge',
+    )}>
       <button
         type="button"
         onClick={onToggle}
@@ -340,24 +528,25 @@ function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
         {on ? <Icon name="check" size={30} strokeWidth={3} /> : <span aria-hidden="true" className="h-7 w-7 rounded-[var(--radius-control)] border-[3px] border-current" />}
       </button>
       <div className="min-w-0 flex-1">
-        <div className={cx('truncate text-heading font-bold', r.status === 'cancelled' && 'text-muted')}>{r.display_name}</div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-small text-muted">
+        <div className={cx('truncate text-heading font-bold', gone && 'font-semibold text-muted')}>{r.display_name}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-small text-muted">
           {r.phone_last4 && <span className="num" aria-label={`טלפון שמסתיים ב-${r.phone_last4}`}>••{r.phone_last4}</span>}
-          {r.first_time && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
-          {friday && !r.first_time && isMilestone(nth) && <Badge tone="good" icon="star" title={`מפגש שישי מספר ${nth}. כדאי לברך!`}>מפגש שישי {nth}</Badge>}
+          {gone && <Tag>ביטול</Tag>}
+          {owes && <Tag tone="warn" icon="alert">לא שולם</Tag>}
+          {r.attendance === 'no_show' && <Tag tone="bad" icon="alert">סומנה אי־הגעה</Tag>}
           {r.photo_opt_out && (
             <span className="inline-flex items-center gap-1 font-semibold text-bad" title="בקשה לא להופיע בתמונות">
               <Icon name="noCamera" size={17} label="לא מצלמים" />
               בלי צילום
             </span>
           )}
-          {r.is_member && <Badge tone="good" title="חברות בעמותה">חברות בעמותה</Badge>}
+          {r.first_time && <Tag icon="sparkle">פעם ראשונה</Tag>}
+          {friday && !r.first_time && isMilestone(nth) && <Tag icon="star" title={`מפגש שישי מספר ${nth}. כדאי לברך!`}>מפגש שישי {nth}</Tag>}
+          {r.is_member && <Tag title="חברות בעמותה">חברות בעמותה</Tag>}
+          {r.is_walk_in && <Tag>בלי הרשמה</Tag>}
           {r.invited_by && <span title="מי הזמין">בהזמנת {r.invited_by}</span>}
-          {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
           {r.status === 'waitlisted' && r.waitlist_position && <span>בהמתנה <span className="num">#{r.waitlist_position}</span></span>}
-          {r.attendance === 'no_show' && <Badge tone="bad" icon="alert">סומנה אי־הגעה</Badge>}
-          {owes && <Badge tone="warn" icon="alert">לא שולם</Badge>}
-          {price != null && r.payment_status === 'paid' && <Badge tone="good" icon="check">שולם</Badge>}
+          {price != null && r.payment_status === 'paid' && r.cash_just_marked && <span className="inline-flex items-center gap-1"><Icon name="check" size={14} />שולם במקום</span>}
           {on && r.checked_in_at && (
             <span>
               <span className="num">{fmtTime(r.checked_in_at)}</span>
@@ -365,11 +554,11 @@ function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
             </span>
           )}
         </div>
-        {owes && !disabled && (
+        {payHere && !disabled && price != null && (
           <button
             type="button"
             onClick={onPaid}
-            aria-label={`תשלום במקום במזומן, ${fmtMoney(price)}, עבור ${r.display_name}`}
+            aria-label={`שולם במקום במזומן, ${fmtMoney(price)}, עבור ${r.display_name}${on ? '' : '. מסמן גם הגעה'}`}
             className="mt-1.5 inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 text-small font-semibold text-ink hover:border-ink hover:bg-ink/[0.06] active:scale-95"
           >
             <span aria-hidden="true" className="font-display">₪</span>
@@ -384,27 +573,38 @@ function Row({ r, friday, disabled, price, onToggle, onPaid, menu }: {
 
 // ───────────── walk-in ─────────────
 
-function WalkinDialog({ open, initialName, onClose, eventId, onDone }: {
-  open: boolean; initialName: string; onClose: () => void; eventId: string; onDone: () => void;
+function WalkinDialog({ open, initial, onClose, eventId, price, onDone }: {
+  open: boolean; initial: { name: string; phone: string }; onClose: () => void; eventId: string; price: number | null; onDone: (registrationId: string | null) => void;
 }) {
   return (
     <Dialog open={open} onClose={onClose} title="הגעה בלי הרשמה" size="sm">
-      {open && <WalkinForm key={initialName} initialName={initialName} onClose={onClose} eventId={eventId} onDone={onDone} />}
+      {open && <WalkinForm key={`${initial.name}|${initial.phone}`} initial={initial} onClose={onClose} eventId={eventId} price={price} onDone={onDone} />}
     </Dialog>
   );
 }
 
-function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: string; onClose: () => void; eventId: string; onDone: () => void }) {
+function WalkinForm({ initial, onClose, eventId, price, onDone }: {
+  initial: { name: string; phone: string }; onClose: () => void; eventId: string; price: number | null; onDone: (registrationId: string | null) => void;
+}) {
   const toast = useToast();
   const invalidate = useInvalidateEvent();
   const sources = useSources();
-  const [name, setName] = useState(initialName);
-  const [phone, setPhone] = useState('');
+  const [name, setName] = useState(initial.name);
+  const [phone, setPhone] = useState(initial.phone);
   const [city, setCity] = useState('');
   const [age, setAge] = useState('');
   const [source, setSource] = useState('');
   const [more, setMore] = useState(false);
+  // the fee, taken in cash right here: recorded together with the arrival, so the money is not forgotten later
+  const [paid, setPaid] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; phone?: string; age?: string; form?: string }>({});
+
+  /** After the arrival is saved: record the cash, if it was taken. Returns a note for the toast. */
+  const recordCash = async (registrationId: string): Promise<string> => {
+    if (!paid || price == null) return price != null ? ' · לא שולם' : '';
+    const { error } = await supabase.rpc('staff_door_payment', { p_registration_id: registrationId, p_paid: true });
+    return error ? ` · התשלום לא נשמר (${errorMessage(error)})` : ' · שולם במקום';
+  };
 
   // S3: someone we already know, typed by name: suggest the existing card instead of creating a duplicate
   const [q, setQ] = useState('');
@@ -420,14 +620,15 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
   });
   const pick = useMutation({
     mutationFn: async (p: { participant_id: string; full_name: string }) => {
-      const { error } = await supabase.rpc('staff_checkin_existing', { p_event_id: eventId, p_participant_id: p.participant_id });
+      const { data, error } = await supabase.rpc('staff_checkin_existing', { p_event_id: eventId, p_participant_id: p.participant_id });
       if (error) throw error;
-      return p;
+      const rid = (data as { registration_id?: string } | null)?.registration_id ?? null;
+      return { ...p, rid, cash: rid ? await recordCash(rid) : '' };
     },
     onSuccess: async (p) => {
       await invalidate(eventId);
-      toast.success(`${p.full_name}: כרטיס מוכר ממפגשים קודמים, וההגעה סומנה`);
-      onDone();
+      toast.success(`ההגעה של ${p.full_name} סומנה · כרטיס מוכר${p.cash}`);
+      onDone(p.rid);
       onClose();
     },
     onError: (err) => setErrors({ form: errorMessage(err) }),
@@ -440,18 +641,19 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
         p: { full_name: name.trim(), phone: phone.trim(), city: city.trim() || null, age: age.trim() || null, source: source || null },
       });
       if (error) throw error;
-      return data as { registration_id: string; participant_is_new: boolean; already_registered: boolean; card_name?: string | null };
+      const r = data as { registration_id: string; participant_is_new: boolean; already_registered: boolean; card_name?: string | null };
+      return { ...r, cash: await recordCash(r.registration_id) };
     },
     onSuccess: async (r) => {
       await invalidate(eventId);
-      const first = firstName(name.trim());
+      const n = name.trim();
       toast.success(
-        r.card_name ? `המספר הזה שייך ל${r.card_name}. ההגעה נרשמה בכרטיס הזה, והצוות יראה שנכתב שם אחר.`
-        : r.already_registered ? `${first} כבר ברשימה, וההגעה סומנה`
-          : r.participant_is_new ? `${first}: נפתח כרטיס חדש וההגעה סומנה. פעם ראשונה!`
-            : `${first}: כרטיס מוכר ממפגשים קודמים, וההגעה סומנה`,
+        r.card_name ? `המספר שייך ל${r.card_name}. ההגעה סומנה בכרטיס הזה${r.cash}`
+        : r.already_registered ? `${n} כבר ברשימה. ההגעה סומנה${r.cash}`
+          : r.participant_is_new ? `ההגעה של ${n} סומנה · כרטיס חדש${r.cash}`
+            : `ההגעה של ${n} סומנה · כרטיס מוכר${r.cash}`,
       );
-      onDone();
+      onDone(r.registration_id);
       onClose();
     },
     onError: (err) => {
@@ -476,7 +678,7 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-      <Input label="שם מלא" required autoFocus={!initialName} value={name} onChange={(x) => setName(x.target.value)} error={errors.name} autoComplete="off" maxLength={80} />
+      <Input label="שם מלא" required autoFocus={!initial.name} value={name} onChange={(x) => setName(x.target.value)} error={errors.name} autoComplete="off" maxLength={80} />
       {(suggestions.data?.length ?? 0) > 0 && !phone && (
         <div className="rounded-[var(--radius-control)] border border-tide/30 bg-tide-wash p-3" aria-live="polite">
           <p className="mb-2 text-small font-semibold text-tide-deep">כבר מכירים? אם זה אחד מאלה, לוחצים עליו במקום להוסיף כרטיס חדש:</p>
@@ -493,23 +695,43 @@ function WalkinForm({ initialName, onClose, eventId, onDone }: { initialName: st
           </ul>
         </div>
       )}
-      <Input label="טלפון" required type="tel" inputMode="tel" ltr autoFocus={!!initialName} value={phone} onChange={(x) => setPhone(x.target.value)} error={errors.phone} hint="למשל 050-1234567" autoComplete="off" />
+      <Input label="טלפון" required type="tel" inputMode="tel" ltr autoFocus={!!initial.name} value={phone} onChange={(x) => setPhone(x.target.value)} error={errors.phone} hint="למשל 050-1234567" autoComplete="off" />
       {more ? (
         <>
           <Input label="עיר" value={city} onChange={(x) => setCity(x.target.value)} maxLength={60} autoComplete="off" />
           <Input label="גיל" type="number" inputMode="numeric" ltr value={age} onChange={(x) => setAge(x.target.value)} error={errors.age} min={16} max={99} />
-          <Select label="איך שמעו עלינו" value={source} onChange={(x) => setSource(x.target.value)}>
+          <Select label="מקור הגעה" value={source} onChange={(x) => setSource(x.target.value)}>
             <option value="">לא ידוע</option>
             {(sources.data ?? []).filter((s) => s.is_active).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </Select>
         </>
       ) : (
-        <button type="button" onClick={() => setMore(true)} className="h-11 self-start font-semibold text-tide">הוספת עיר, גיל ומקור (לא חובה)</button>
+        <button type="button" onClick={() => setMore(true)} className="h-11 self-start font-semibold text-tide">הוספת עיר, גיל ומקור הגעה (לא חובה)</button>
+      )}
+      {price != null && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={paid}
+          onClick={() => setPaid((v) => !v)}
+          className={cx(
+            'flex min-h-14 items-center gap-3 rounded-[var(--radius-control)] border-2 px-3 text-right transition-colors',
+            paid ? 'border-ink bg-ink/[0.06] text-ink' : 'border-control-line bg-paper text-ink hover:border-ink',
+          )}
+        >
+          <span aria-hidden="true" className={cx('flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-control)] border-2 border-ink', paid ? 'bg-ink text-light' : 'bg-paper')}>
+            {paid && <Icon name="check" size={18} strokeWidth={3} />}
+          </span>
+          <span className="flex-1">
+            <span className="block font-semibold">שולם במקום · <span className="num">{fmtMoney(price)}</span></span>
+            <span className="block text-small text-muted">{paid ? 'התשלום במזומן יירשם עם ההגעה' : 'אם לא שולם עכשיו, השורה תסומן "לא שולם"'}</span>
+          </span>
+        </button>
       )}
       {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button type="submit" size="lg" icon="check" busy={add.isPending}>רישום וסימון הגעה</Button>
-        <Button variant="ghost" size="lg" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" size="lg" onClick={onClose}>חזרה לרשימה</Button>
       </div>
     </form>
   );

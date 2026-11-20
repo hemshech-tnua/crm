@@ -3,18 +3,18 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { errorMessage, must } from '@/lib/errors';
-import { fmtDate, fmtMonth } from '@/lib/dates';
+import { fmtDate, fmtMonth, todayIl } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
-import { toCsv, downloadFile, type Column } from '@/lib/csv';
+import { toCsv, downloadFile, csvFileName, type Column } from '@/lib/csv';
 import { fmtMoney } from '@/lib/money';
-import { EVENT_TYPE_LABEL } from '@/lib/labels';
+import { EVENT_TYPE_LABEL, MONEY_LABEL } from '@/lib/labels';
 import type { EventType } from '@/lib/types';
-import { Badge, Button, EmptyState, ErrorBox, PageHeader, Panel, Skeleton, Tabs } from '@/ui/kit';
+import { Badge, Button, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { Columns, SplitBars } from '@/ui/charts';
-import { FilterBar, rpcArgs, useFilters, type Filters } from './period';
-import { Drilldown, type DrillKind } from './Drilldown';
+import { FilterBar, periodLabel, rpcArgs, useFilters, type Filters } from './period';
+import { Drilldown, UnpaidDrilldown, type DrillKind } from './Drilldown';
 import { UnmatchedPayments } from '@/features/events/UnmatchedPayments';
 
 type Tab = 'events' | 'monthly' | 'sources' | 'presenters' | 'retention' | 'finance' | 'definitions';
@@ -22,7 +22,8 @@ type Tab = 'events' | 'monthly' | 'sources' | 'presenters' | 'retention' | 'fina
 export function ReportsPage() {
   const [params, setParams] = useSearchParams();
   const tab = (params.get('tab') as Tab) ?? 'events';
-  const [filters, set] = useFilters({ period: 'year' });
+  // money is read by the month ("how much came in this month"); the other reports by the year
+  const [filters, set] = useFilters({ period: tab === 'finance' ? 'month' : 'year' });
   const setTab = (t: Tab) => { const p = new URLSearchParams(params); p.set('tab', t); setParams(p, { replace: true }); };
 
   return (
@@ -48,25 +49,29 @@ export function ReportsPage() {
       {tab === 'sources' && <SourcesReport filters={filters} />}
       {tab === 'presenters' && <PresentersReport filters={filters} />}
       {tab === 'retention' && <RetentionReport filters={filters} />}
-      {tab === 'finance' && (
-        <div className="flex flex-col gap-5">
-          <UnmatchedPayments />
-          <FinanceReport filters={filters} />
-        </div>
-      )}
+      {tab === 'finance' && <FinanceReport filters={filters} />}
       {tab === 'definitions' && <Definitions />}
     </>
   );
 }
 
+/**
+ * "ייצוא לאקסל": a Hebrew file name with the period ("כספים 01.11.2026-30.11.2026.csv"), an optional totals row,
+ * and a short toast. The export is logged like every other one.
+ */
 function useExport() {
   const toast = useToast();
-  return async <T,>(kind: string, name: string, rows: T[], cols: Column<T>[]) => {
-    downloadFile(`${name}-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows, cols));
+  return async <T,>(kind: string, title: string, rows: T[], cols: Column<T>[], opts: { filters?: Filters; footer?: (string | number | null)[] } = {}) => {
+    const f = opts.filters;
+    const name = csvFileName(title, f ? { from: f.from, to: f.to ?? todayIl() } : undefined);
+    downloadFile(name, toCsv(rows, cols, opts.footer));
     const { error } = await supabase.rpc('log_export', { p_kind: kind, p_rows: rows.length });
     if (error) toast.error(errorMessage(error));
+    else toast.success('הקובץ ירד');
   };
 }
+
+const sum = <T,>(rows: T[], f: (r: T) => number | null | undefined) => rows.reduce((s, r) => s + Number(f(r) ?? 0), 0);
 
 function State({ q, empty, children }: { q: { isLoading: boolean; error: unknown; refetch: () => void }; empty: boolean; children: ReactNode }) {
   if (q.isLoading) return <Skeleton lines={6} />;
@@ -114,9 +119,20 @@ function EventsReport({ filters }: { filters: Filters }) {
     { header: 'דירוג הרצאה', value: (r) => r.avg_lecture },
     { header: 'משובים', value: (r) => r.feedback_count },
   ];
+  const unclosed = rows.filter((r) => r.status !== 'completed').length;
+  const footer = ['סה״כ', '', `${rows.length} מפגשים`, '', '', sum(rows, (r) => r.registered_count), sum(rows, (r) => r.attended_count), sum(rows, (r) => r.walk_in_count),
+    sum(rows, (r) => r.new_count), sum(rows, (r) => r.returning_count), '', sum(rows, (r) => r.cancelled_count), '', '', '', sum(rows, (r) => r.feedback_count)];
   return (
     <State q={q} empty={!rows.length}>
-      <Panel padded={false} title={`${rows.length} מפגשים שהתקיימו`} actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('events', 'mifgashim', rows, cols)}>ייצוא לאקסל</Button>}>
+      {unclosed > 0 && (
+        <div className="mb-4">
+          <Notice tone="light" icon="alert">
+            <span className="num font-bold">{unclosed}</span> {unclosed === 1 ? 'מפגש מהרשימה עוד לא נסגר' : 'מפגשים מהרשימה עוד לא נסגרו'}, ולכן {unclosed === 1 ? 'הוא לא נספר' : 'הם לא נספרים'} ביעדים. סוגרים בלשונית "סיכום" של המפגש.{' '}
+            <Link to="/app/events?show=past" className="font-semibold text-tide underline underline-offset-2">למפגשים הקודמים</Link>
+          </Notice>
+        </div>
+      )}
+      <Panel padded={false} title={`${rows.length} מפגשים שהתקיימו`} actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('events', 'מפגשים', rows, cols, { filters, footer })}>ייצוא לאקסל</Button>}>
         <div className="overflow-x-auto">
           <table className="w-full text-body">
             <thead className="border-b border-edge">
@@ -132,7 +148,7 @@ function EventsReport({ filters }: { filters: Filters }) {
                   <tr key={r.id} className="hover:bg-mist/60">
                     <td className={td}>
                       <Link to={`/app/events/${r.id}?tab=summary`} className="font-semibold text-ink hover:text-tide hover:underline">{r.title}</Link>
-                      <div className="text-small text-muted"><span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}{r.status !== 'completed' && <> · <Badge tone="warn" icon="alert">לא נסגר</Badge></>}</div>
+                      <div className="text-small text-muted"><span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}{r.status !== 'completed' && <> · לא נסגר</>}</div>
                     </td>
                     <td className={`${td} max-w-60 truncate`} title={[r.speaker_name, r.lecture_topic].filter(Boolean).join(': ')}>
                       {r.speaker_name ?? <span className="text-faint">—</span>}
@@ -170,6 +186,7 @@ function FinanceReport({ filters }: { filters: Filters }) {
     queryKey: ['event_payments', 'summary', filters],
     queryFn: async () => must(await supabase.rpc('staff_finance_summary', rpcArgs(filters))) as { rows: FinanceRow[]; totals: FinanceTotals },
   });
+  const [unpaid, setUnpaid] = useState(false);
   const exp = useExport();
   const rows = [...(q.data?.rows ?? [])].reverse();
   const t = q.data?.totals;
@@ -178,78 +195,116 @@ function FinanceReport({ filters }: { filters: Filters }) {
     { header: 'סוג', value: (r) => EVENT_TYPE_LABEL[r.type] },
     { header: 'כותרת', value: (r) => r.title },
     { header: 'מחיר', value: (r) => r.price },
-    { header: 'נרשמו', value: (r) => r.registered },
+    { header: 'רשומים', value: (r) => r.registered },
     { header: 'שילמו', value: (r) => r.paid_count },
     { header: 'לא שילמו', value: (r) => r.pending_count },
     { header: 'נגבה', value: (r) => r.collected },
-    { header: 'צפי הכנסות', value: (r) => r.expected },
+    { header: 'ממתין לתשלום', value: (r) => r.expected - r.collected },
     { header: 'הוצאות', value: (r) => r.expenses },
     { header: 'הוצאות ששולמו', value: (r) => r.expenses_paid },
     { header: 'נטו', value: (r) => r.net },
+    { header: 'צפי נטו', value: (r) => r.projected_net },
   ];
+  const footer = t ? ['סה״כ', '', `${rows.length} מפגשים`, '', t.registered, t.paid_count, t.pending_count, t.collected, t.expected - t.collected, t.expenses, t.expenses_paid, t.net, t.projected_net] : undefined;
   const money = (v: number) => <span className={v < 0 ? 'text-bad' : undefined}>{fmtMoney(v)}</span>;
+  const label = periodLabel(filters);
+  // a range of dates reads left to right ("1.1–20.11.26"); a month name stays in the sentence's direction
+  const when = /^\d/.test(label) ? <span dir="ltr" className="num inline-block">{label}</span> : label;
+  const pending = t ? t.expected - t.collected : 0;
   return (
-    <State q={q} empty={!rows.length}>
-      {t && (
-        <section aria-label="סיכום כספי" className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {([['נגבה', t.collected, `${t.paid_count} תשלומים`], ['עוד לא שולם', t.expected - t.collected, `${t.pending_count} רשומים`], ['הוצאות', t.expenses, `שולם ${fmtMoney(t.expenses_paid)}`], ['נטו', t.net, `צפי \u2066${fmtMoney(t.projected_net)}\u2069`]] as const).map(([label, v, sub]) => (
-            <div key={label} className="rounded-[var(--radius-panel)] border border-edge bg-paper px-4 py-3">
-              <div className="text-small font-medium text-muted">{label}</div>
-              <div className="num mt-1 text-right font-display text-stat text-ink">{money(v)}</div>
-              <div className="num mt-1 text-right text-small text-muted">{sub}</div>
-            </div>
-          ))}
-        </section>
+    <div className="flex flex-col gap-5">
+      <State q={q} empty={!rows.length}>
+        {t && (
+          // one order everywhere: נגבה · ממתין לתשלום · הוצאות · נטו (the forecast as a sub-line)
+          <section aria-label={`סיכום כספי: ${label}`} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Tile label={MONEY_LABEL.collected} value={money(t.collected)} sub={<><span className="num">{t.paid_count}</span> תשלומים · {when}</>} />
+            <Tile
+              label={MONEY_LABEL.pending}
+              value={money(pending)}
+              sub={t.pending_count ? <><span className="num">{t.pending_count}</span> רשומים לא שילמו</> : 'כל הרשומים שילמו'}
+              onClick={t.pending_count ? () => setUnpaid(true) : undefined}
+              action="מי לא שילמו"
+            />
+            <Tile label={MONEY_LABEL.expenses} value={money(t.expenses)} sub={<>שולם <span className="num">{fmtMoney(t.expenses_paid)}</span></>} />
+            <Tile label={MONEY_LABEL.net} value={money(t.net)} sub={<>צפי <span className="num" dir="ltr">{fmtMoney(t.projected_net)}</span></>} />
+          </section>
+        )}
+      </State>
+
+      <UnmatchedPayments />
+
+      {!!rows.length && (
+        <Panel padded={false} title={`כספים לפי מפגש: ${rows.length} מפגשים`} description={<>{when} · מפגשים עם דמי השתתפות, הוצאות או תשלום</>}
+          actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('finance', 'כספים', rows, cols, { filters, footer })}>ייצוא לאקסל</Button>}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-body" aria-label="כספים לפי מפגש">
+              <thead className="border-b border-edge">
+                <tr>
+                  <th className={th}>מפגש</th><th className={th}>רשומים</th><th className={th}>שילמו</th>
+                  <th className={th}>נגבה</th><th className={th}>ממתין לתשלום</th><th className={th}>הוצאות</th><th className={th}>נטו</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-edge">
+                {rows.map((r) => (
+                  <tr key={r.event_id} className="hover:bg-mist/60">
+                    <td className={td}>
+                      <Link to={`/app/events/${r.event_id}`} className="font-semibold text-ink hover:text-tide hover:underline">{r.title}</Link>
+                      <div className="text-small text-muted">
+                        <span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}
+                        {r.price ? <> · <span className="num">{fmtMoney(r.price)}</span></> : ' · בלי תשלום'}
+                        {r.status === 'cancelled' && <> · <Badge tone="neutral">בוטל</Badge></>}
+                      </div>
+                    </td>
+                    <td className={`${td} num`}>{r.registered}</td>
+                    <td className={`${td} num`}>
+                      {r.paid_count}
+                      {r.pending_count > 0 && (
+                        <Link to={`/app/events/${r.event_id}?tab=registrations&filter=unpaid`} className="text-micro text-ink-soft hover:text-tide hover:underline"> (<span className="num">{r.pending_count}</span> לא שילמו)</Link>
+                      )}
+                    </td>
+                    <td className={`${td} num font-bold`}>{fmtMoney(r.collected)}</td>
+                    <td className={`${td} num`}>{r.expected - r.collected > 0 ? fmtMoney(r.expected - r.collected) : <span className="text-faint">—</span>}</td>
+                    <td className={`${td} num`}>{fmtMoney(r.expenses)}</td>
+                    <td className={`${td} num font-bold`}>{money(r.net)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {t && (
+                <tfoot className="border-t-2 border-ink">
+                  <tr className="font-bold">
+                    <td className={td}>סה״כ</td>
+                    <td className={`${td} num`}>{t.registered}</td>
+                    <td className={`${td} num`}>{t.paid_count}</td>
+                    <td className={`${td} num`}>{fmtMoney(t.collected)}</td>
+                    <td className={`${td} num`}>{fmtMoney(pending)}</td>
+                    <td className={`${td} num`}>{fmtMoney(t.expenses)}</td>
+                    <td className={`${td} num`}>{money(t.net)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </Panel>
       )}
-      <Panel padded={false} title={`כספים: ${rows.length} מפגשים`} description="מפגשים עם דמי השתתפות, הוצאות או תשלום, בתקופה שנבחרה"
-        actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('finance', 'ksafim', rows, cols)}>ייצוא לאקסל</Button>}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-body" aria-label="כספים לפי מפגש">
-            <thead className="border-b border-edge">
-              <tr>
-                <th className={th}>מפגש</th><th className={th}>נרשמו</th><th className={th}>שילמו</th>
-                <th className={th}>נגבה</th><th className={th}>הוצאות</th><th className={th}>נטו</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-edge">
-              {rows.map((r) => (
-                <tr key={r.event_id} className="hover:bg-mist/60">
-                  <td className={td}>
-                    <Link to={`/app/events/${r.event_id}`} className="font-semibold text-ink hover:text-tide hover:underline">{r.title}</Link>
-                    <div className="text-small text-muted">
-                      <span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}
-                      {r.price ? <> · <span className="num">{fmtMoney(r.price)}</span></> : ' · בלי תשלום'}
-                      {r.status === 'cancelled' && <> · <Badge tone="bad" icon="alert">בוטל</Badge></>}
-                    </div>
-                  </td>
-                  <td className={`${td} num`}>{r.registered}</td>
-                  <td className={`${td} num`}>
-                    {r.paid_count}
-                    {r.pending_count > 0 && <span className="text-micro text-warn"> (<span className="num">{r.pending_count}</span> לא שילמו)</span>}
-                  </td>
-                  <td className={`${td} num font-bold`}>{fmtMoney(r.collected)}</td>
-                  <td className={`${td} num`}>{fmtMoney(r.expenses)}</td>
-                  <td className={`${td} num font-bold`}>{money(r.net)}</td>
-                </tr>
-              ))}
-            </tbody>
-            {t && (
-              <tfoot className="border-t-2 border-ink">
-                <tr className="font-bold">
-                  <td className={td}>סה״כ</td>
-                  <td className={`${td} num`}>{t.registered}</td>
-                  <td className={`${td} num`}>{t.paid_count}</td>
-                  <td className={`${td} num`}>{fmtMoney(t.collected)}</td>
-                  <td className={`${td} num`}>{fmtMoney(t.expenses)}</td>
-                  <td className={`${td} num`}>{money(t.net)}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-      </Panel>
-    </State>
+      <UnpaidDrilldown open={unpaid} filters={filters} eventIds={rows.map((r) => r.event_id)} onClose={() => setUnpaid(false)} />
+    </div>
   );
+}
+
+/** A finance tile; with `onClick` the whole tile opens the list behind the number. */
+function Tile({ label, value, sub, onClick, action }: { label: string; value: ReactNode; sub: ReactNode; onClick?: () => void; action?: string }) {
+  const body = (
+    <>
+      <div className="text-small font-medium text-muted">{label}</div>
+      <div className="num mt-1 text-right font-display text-stat text-ink">{value}</div>
+      <div className="mt-1 text-small text-muted">{sub}</div>
+      {onClick && action && <div className="mt-1.5 inline-flex self-start items-center gap-1 text-small font-semibold text-tide underline-offset-2 group-hover:underline">{action}<Icon name="chevron" size={14} /></div>}
+    </>
+  );
+  const box = 'rounded-[var(--radius-panel)] border border-edge bg-paper px-4 py-3';
+  return onClick
+    ? <button type="button" onClick={onClick} className={cx(box, 'group flex min-h-11 flex-col items-stretch text-right transition-colors hover:border-ink focus-visible:border-ink')}>{body}</button>
+    : <div className={box}>{body}</div>;
 }
 
 // ───────────── per month ─────────────
@@ -282,7 +337,7 @@ function MonthlyReport({ filters }: { filters: Filters }) {
           <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 bg-ink" />שאר ההגעות</span>
         </div>
       </Panel>
-      <Panel padded={false} title="פירוט" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('monthly', 'chodashi', rows, cols)}>ייצוא לאקסל</Button>}>
+      <Panel padded={false} title="פירוט" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('monthly', 'הגעות לפי חודש', rows, cols, { filters, footer: ['סה״כ', sum(rows, (r) => r.events), sum(rows, (r) => r.attendances)] })}>ייצוא לאקסל</Button>}>
         <div className="overflow-x-auto">
           <table className="w-full text-body">
             <thead className="border-b border-edge"><tr>{cols.map((c) => <th key={c.header} className={th}>{c.header}</th>)}</tr></thead>
@@ -320,7 +375,7 @@ function SourcesReport({ filters }: { filters: Filters }) {
   ];
   return (
     <div className="flex flex-col gap-5">
-      <Panel title="מקור ההיכרות: מי הגיע לראשונה בתקופה, וכמה חזרו" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('sources', 'mekorot', sources, srcCols)}>ייצוא לאקסל</Button>}>
+      <Panel title="מקור ההיכרות: מי הגיע לראשונה בתקופה, וכמה חזרו" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('sources', 'מקורות', sources, srcCols, { filters })}>ייצוא לאקסל</Button>}>
         <State q={s} empty={!sources.length}>
           <div className="grid gap-6 lg:grid-cols-2">
             <SplitBars totalLabel="הגיעו פעם אחת" partLabel="חזרו" rows={sources.filter((x) => x.participants > 0).map((x) => ({ key: x.source_id ?? 'none', label: x.label, total: x.participants, part: x.returned, note: x.registered_only ? `${x.registered_only} נרשמו ועוד לא הגיעו` : undefined }))} />
@@ -444,7 +499,7 @@ function PresentersReport({ filters }: { filters: Filters }) {
   return (
     <State q={q} empty={!rows.length}>
       <div className="flex flex-col gap-5">
-        <Panel padded={false} title="מרצים אורחים: מי ואיזה נושא מביאים הכי הרבה לוחמים" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('presenters', 'martzim', rows, cols)}>ייצוא לאקסל</Button>}>
+        <Panel padded={false} title="מרצים אורחים: מי ואיזה נושא מביאים הכי הרבה לוחמים" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('presenters', 'מרצים ומדריכים', rows, cols, { filters })}>ייצוא לאקסל</Button>}>
           {table('speaker')}
         </Panel>
         <Panel padded={false} title="מדריכים (יוגה ופילאטיס)">

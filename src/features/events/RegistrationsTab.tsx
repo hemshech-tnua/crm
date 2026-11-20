@@ -1,17 +1,17 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import type { EventWithStats } from '@/lib/data';
-import { errorMessage, must } from '@/lib/errors';
-import { fmtDateTime } from '@/lib/dates';
-import { formatPhone } from '@/lib/phone';
-import { ATTENDANCE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, REG_STATUS_LABEL } from '@/lib/labels';
+import { errorCode, errorMessage, must } from '@/lib/errors';
+import { fmtListDate, ilParts } from '@/lib/dates';
+import { formatPhone, normalizePhone } from '@/lib/phone';
+import { ATTENDANCE_LABEL, COUNT_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, REG_STATUS_LABEL, freePlaces, meetingCountLine } from '@/lib/labels';
 import { isPriced } from '@/lib/money';
-import { downloadFile, toCsv } from '@/lib/csv';
+import { csvFileName, downloadFile, toCsv } from '@/lib/csv';
 import type { RegStatus } from '@/lib/types';
-import { Badge, Button, ButtonLink, Checkbox, EmptyState, ErrorBox, FilterChips, IconButton, Notice, Panel, SearchInput, Skeleton, Spinner, Td, Th, cx } from '@/ui/kit';
+import { Badge, Button, Checkbox, EmptyState, ErrorBox, FilterChips, IconButton, Input, Notice, Panel, SearchInput, Skeleton, Spinner, Td, Th, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { MessageComposer } from '@/ui/MessageComposer';
@@ -20,22 +20,29 @@ import { cleanSearch, useEventRegistrations, useInvalidateEvent, type RegRow } f
 import { RowMenu, hasStarted, useDebounced, type MenuItem } from './shared';
 import { ConfirmPaymentDialog, PaymentBadge, PaymentDialog, showsPayment, type ConfirmTarget, type PaymentTarget } from './finance';
 import { UnmatchedPayments } from './UnmatchedPayments';
+import { nameError, phoneError } from '@/features/participants/shared';
+import { NoResults } from '@/ui/toolbar';
+import { SEARCH_PLACEHOLDER, matchesSearch, phoneTail } from '@/ui/search';
 
-type Filter = 'active' | 'registered' | 'waitlisted' | 'pending_payment' | 'unpaid' | 'attended' | 'no_show' | 'cancelled' | 'all';
+type Filter = 'all' | 'registered' | 'waitlisted' | 'unpaid' | 'attended' | 'no_show' | 'cancelled';
 /** Owes the fee: a registered place, not paid, and not a no-show (a waitlisted place pays only once it is registered). */
 const owes = (r: RegRow) => r.status === 'registered' && r.payment_status === 'pending' && r.attendance !== 'no_show';
+/** Started a pay-first registration and did not pay: no place, not counted; the team may remind them. */
+const startedUnpaid = (r: RegRow) => r.status === 'pending_payment';
+/** A registration made before the meeting (an active registration); a walk-in is counted apart ("בלי הרשמה"). */
+const isRegistered = (r: RegRow) => r.status === 'registered' && !r.is_walk_in;
 const FILTERS: { value: Filter; label: string; test: (r: RegRow) => boolean }[] = [
-  { value: 'active', label: 'רשומים והמתנה', test: (r) => r.status === 'registered' || r.status === 'waitlisted' },
-  { value: 'registered', label: 'רשומים', test: (r) => r.status === 'registered' },
-  { value: 'waitlisted', label: 'בהמתנה', test: (r) => r.status === 'waitlisted' },
-  // started at a meeting with a payment link and did not pay: no place, not counted; the team may reach out
-  { value: 'pending_payment', label: 'ממתינים לתשלום', test: (r) => r.status === 'pending_payment' },
-  { value: 'unpaid', label: 'לא שילמו', test: owes },
-  { value: 'attended', label: 'הגיעו', test: (r) => r.attendance === 'attended' },
-  { value: 'no_show', label: 'לא הגיעו', test: (r) => r.attendance === 'no_show' },
-  { value: 'cancelled', label: 'ביטלו', test: (r) => r.status === 'cancelled' },
-  { value: 'all', label: 'הכול', test: () => true },
+  { value: 'all', label: COUNT_LABEL.all, test: () => true },
+  { value: 'registered', label: COUNT_LABEL.registered, test: isRegistered },
+  { value: 'waitlisted', label: COUNT_LABEL.waitlisted, test: (r) => r.status === 'waitlisted' },
+  { value: 'unpaid', label: COUNT_LABEL.unpaid, test: (r) => owes(r) || startedUnpaid(r) },
+  { value: 'attended', label: COUNT_LABEL.attended, test: (r) => r.attendance === 'attended' },
+  { value: 'no_show', label: COUNT_LABEL.no_show, test: (r) => r.status === 'registered' && r.attendance === 'no_show' },
+  { value: 'cancelled', label: COUNT_LABEL.cancelled, test: (r) => r.status === 'cancelled' },
 ];
+/** Links made before the filters were merged (?filter=active / pending_payment) still land on the right list. */
+const LEGACY: Record<string, Filter> = { active: 'all', pending_payment: 'unpaid' };
+const initial = (v: string | null): Filter => (v && LEGACY[v]) || (FILTERS.some((f) => f.value === v) ? (v as Filter) : 'all');
 const STATUS_RANK: Record<RegStatus, number> = { registered: 0, waitlisted: 1, pending_payment: 2, cancelled: 3 };
 
 type ComposerState = { reg: RegRow; keys?: string[]; defaultKey?: string };
@@ -43,11 +50,14 @@ type ComposerState = { reg: RegRow; keys?: string[]; defaultKey?: string };
 export function RegistrationsTab({ event: e, people, initialFilter }: { event: EventWithStats; people: EventPeople; initialFilter: string | null }) {
   const role = useRole();
   const navigate = useNavigate();
+  const [, setParams] = useSearchParams();
   const toast = useToast();
   const confirm = useConfirm();
   const invalidate = useInvalidateEvent();
   const q = useEventRegistrations(e);
-  const [filter, setFilter] = useState<Filter>(FILTERS.some((f) => f.value === initialFilter) ? (initialFilter as Filter) : 'active');
+  const [filter, setFilter] = useState<Filter>(initial(initialFilter));
+  // a link to another list (?filter=…) while the tab is open moves the chips with it
+  useEffect(() => { if (initialFilter) setFilter(initial(initialFilter)); }, [initialFilter]);
   const [search, setSearch] = useState('');
   const [composer, setComposer] = useState<ComposerState | null>(null);
   const [adding, setAdding] = useState(false);
@@ -73,21 +83,19 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   }, [rows]);
   const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.value, rows.filter(f.test).length])) as Record<Filter, number>, [rows]);
 
-  const term = search.trim().toLowerCase();
-  const digits = search.replace(/\D/g, '');
+  const term = search.trim();
   const shown = rows
     .filter(FILTERS.find((f) => f.value === filter)!.test)
-    .filter((r) => {
-      if (!term) return true;
-      const name = (r.participant?.full_name ?? '').toLowerCase();
-      const phone = (r.participant?.phone ?? '').replace(/\D/g, '');
-      return name.includes(term) || (digits.length >= 3 && phone.includes(digits.replace(/^0/, '')));
-    });
+    .filter((r) => matchesSearch(term, { name: r.participant?.full_name, phone: r.participant?.phone }));
 
-  const registeredNow = rows.filter((r) => r.status === 'registered').length;
+  // one count definition everywhere: registered (before the meeting) · walk-ins ("בלי הרשמה") · places taken of capacity
+  const registered = counts.registered;
+  const walkIns = rows.filter((r) => r.status === 'registered' && r.is_walk_in).length;
   const waiting = counts.waitlisted;
-  const free = e.capacity == null ? null : Math.max(0, e.capacity - registeredNow);
+  const free = freePlaces(registered, walkIns, e.capacity);
   const canRegister = e.status !== 'cancelled' && e.status !== 'completed';
+  const owing = rows.filter(owes).length;
+  const notStarted = rows.filter(startedUnpaid).length;
 
   // ── mutations ──
   const promote = useMutation({
@@ -125,7 +133,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     },
     onSuccess: async ({ r, status }) => {
       await invalidate(e.id);
-      toast.success(status === 'waitlisted' ? `המפגש מלא: ההרשמה של ${r.participant?.full_name ?? ''} ברשימת ההמתנה` : `ההרשמה של ${r.participant?.full_name ?? ''} חודשה`);
+      toast.success(status === 'waitlisted' ? `המפגש מלא: ${r.participant?.full_name ?? ''} ברשימת המתנה` : `ההרשמה של ${r.participant?.full_name ?? ''} חודשה`);
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -138,7 +146,8 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     },
     onSuccess: async (v) => {
       await invalidate(e.id);
-      toast.success(`${v.r.participant?.full_name ?? ''}: ${ATTENDANCE_LABEL[v.attendance]}`);
+      const who = v.r.participant?.full_name ?? '';
+      toast.success(v.attendance === 'attended' ? `ההגעה של ${who} סומנה` : v.attendance === 'no_show' ? `אי־ההגעה של ${who} סומנה` : `סימון ההגעה של ${who} הוסר`);
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -168,8 +177,8 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       { header: 'נוכחות', value: (r) => ATTENDANCE_LABEL[r.attendance] },
       { header: 'הגעה בלי הרשמה', value: (r) => (r.is_walk_in ? 'כן' : '') },
       { header: 'פעם ראשונה', value: (r) => (r.first_time ? 'כן' : '') },
-      { header: 'מועד הרשמה', value: (r) => fmtDateTime(r.registered_at) },
-      { header: 'מקור', value: (r) => r.source?.label },
+      { header: 'מועד הרשמה', value: (r) => fmtListDate(r.registered_at, { weekday: false }) },
+      { header: 'מקור הגעה', value: (r) => r.source?.label },
       { header: 'מי הפנה', value: (r) => r.referrer?.full_name ?? r.referrer_name },
       { header: 'קישור', value: (r) => r.link?.label },
       { header: 'צ׳ק־אין', value: (r) => (r.checkin_method === 'self_qr' ? 'עצמי (QR)' : r.checkin_method === 'staff' ? 'צוות' : '') },
@@ -180,8 +189,8 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
         { header: 'אסמכתה', value: (r: RegRow) => r.payment_ref },
       ] : []),
     ]);
-    downloadFile(`registrations-${e.public_code}-${e.starts_at.slice(0, 10)}.csv`, csv);
-    toast.success('הקובץ ירד. הייצוא נרשם ביומן הפעולות.');
+    downloadFile(csvFileName(`נרשמים ${e.title}`, ilParts(e.starts_at).date.split('-').reverse().join('.')), csv);
+    toast.success('הקובץ ירד');
   };
 
   const menuFor = (r: RegRow): MenuItem[] => {
@@ -202,21 +211,35 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     const key = r.attendance === 'attended' ? 'thanks' : r.attendance === 'no_show' ? 'missed_you' : r.status === 'registered' ? (started ? undefined : 'reminder') : undefined;
     setComposer({ reg: r, defaultKey: key });
   };
+  const toReminders = () => setParams((p) => { const n = new URLSearchParams(p); n.set('tab', 'messages'); n.set('group', 'unpaid'); n.delete('filter'); return n; });
+  const clear = () => { setSearch(''); setFilter('all'); };
 
   if (q.isLoading) return <Panel><Skeleton lines={7} /></Panel>;
   if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
 
+  const addButton = canRegister ? <Button icon="userPlus" onClick={() => setAdding(true)}>הוספת נרשם</Button> : null;
+  const chips = FILTERS
+    // show the exceptions only where they can happen: unpaid with a fee, absent after the meeting starts
+    .filter((f) => (f.value !== 'unpaid' || priced || counts.unpaid > 0) && (f.value !== 'no_show' || counts.no_show > 0) && (f.value !== 'attended' || started || counts.attended > 0))
+    .map((f) => ({ value: f.value, label: f.label, count: counts[f.value] }));
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        {canRegister && <Button icon="userPlus" onClick={() => setAdding(true)}>רישום ידני</Button>}
-        <ButtonLink to="/app/participants/new" variant="secondary" icon="plus">כרטיס חדש</ButtonLink>
-        {can.admin(role) && rows.length > 0 && <Button variant="ghost" icon="download" onClick={exportCsv}>ייצוא לאקסל</Button>}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="text-body text-ink-soft" data-testid="reg-counts">
+          <span className="tabular-nums">{meetingCountLine(registered, walkIns, e.capacity)}</span>
+          {waiting > 0 && <> · <span className="num">{waiting}</span> ברשימת המתנה</>}
+          {started && counts.attended > 0 && <> · <span className="num">{counts.attended}</span> הגיעו</>}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {can.admin(role) && rows.length > 0 && <Button variant="ghost" icon="download" onClick={exportCsv}>ייצוא לאקסל</Button>}
+          {addButton}
+        </div>
       </div>
 
       {waiting > 0 && (free == null || free > 0) && canRegister && !started && (
         <Notice tone="light" icon="userPlus">
-          {free == null ? 'אין הגבלת מקומות' : free === 1 ? 'יש מקום פנוי אחד' : `יש ${free} מקומות פנויים`}, ו-<b className="num">{waiting}</b> ממתינים ברשימה. מקדמים לפי הסדר ושולחים הודעה "התפנה מקום".{' '}
+          {free == null ? 'אין הגבלת מקומות' : free === 1 ? 'יש מקום פנוי אחד' : `יש ${free} מקומות פנויים`}, ו-<b className="num">{waiting}</b> ברשימת המתנה. מקדמים לפי הסדר ושולחים הודעה "התפנה מקום".{' '}
           {filter !== 'waitlisted' && <button type="button" className="font-bold underline" onClick={() => setFilter('waitlisted')}>לרשימת ההמתנה</button>}
         </Notice>
       )}
@@ -224,23 +247,34 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       {paysFirst && <UnmatchedPayments eventId={e.id} />}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <FilterChips label="סינון לפי סטטוס" value={filter} onChange={setFilter} className="min-w-0 flex-1"
-          options={FILTERS
-            .filter((f) => (f.value !== 'unpaid' || priced || counts.unpaid > 0) && (f.value !== 'pending_payment' || paysFirst || counts.pending_payment > 0))
-            .map((f) => ({ value: f.value, label: f.label, count: counts[f.value] }))} />
+        <FilterChips label="סינון לפי סטטוס" value={filter} onChange={setFilter} className="min-w-0 flex-1" options={chips} />
         <div className="shrink-0 sm:mr-auto sm:w-64">
-          <SearchInput value={search} onChange={setSearch} placeholder="שם או טלפון" label="חיפוש בנרשמים" />
+          <SearchInput value={search} onChange={setSearch} placeholder={SEARCH_PLACEHOLDER} label="חיפוש בנרשמים" />
         </div>
       </div>
 
+      {filter === 'unpaid' && counts.unpaid > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-control)] border border-edge bg-paper px-3.5 py-2.5 text-small text-ink-soft">
+          <span className="flex-1">
+            {owing > 0 && <><span className="num font-bold text-ink">{owing}</span> רשומים עוד לא שילמו{notStarted > 0 ? ' · ' : ''}</>}
+            {notStarted > 0 && <><span className="num font-bold text-ink">{notStarted}</span> התחילו הרשמה ולא שילמו (אין להם מקום עד התשלום)</>}
+          </span>
+          <Button size="sm" variant="secondary" icon="message" onClick={toReminders}>תזכורת תשלום בוואטסאפ</Button>
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <Panel>
-          <EmptyState icon="people" title="עוד אין נרשמים" action={canRegister ? <Button icon="userPlus" onClick={() => setAdding(true)}>רישום ידני</Button> : undefined}>
-            {e.status === 'draft' ? 'המפגש עדיין טיוטה. אחרי פתיחת ההרשמה משתפים את הקישור.' : 'משתפים את קישור ההרשמה (בלשונית "סקירה"), או רושמים ידנית מי שפנה בטלפון.'}
+          <EmptyState icon="people" title="עוד אין נרשמים" action={addButton ?? undefined}>
+            {e.status === 'draft' ? 'המפגש עדיין טיוטה. אחרי פתיחת ההרשמה משתפים את הקישור.' : 'משתפים את קישור ההרשמה (בלשונית "סקירה"), ומי שפנה בטלפון מוסיפים כאן.'}
           </EmptyState>
         </Panel>
       ) : shown.length === 0 ? (
-        <Panel><EmptyState icon="filter" title="אין תוצאות">אין נרשמים שמתאימים לסינון או לחיפוש.</EmptyState></Panel>
+        <Panel>
+          <NoResults onClear={clear} title={term ? undefined : 'אין כאן אף אחד כרגע'} icon={term ? 'search' : 'filter'}>
+            {term && canRegister ? 'מי שפנה בטלפון ועוד לא רשום? מוסיפים בכפתור "הוספת נרשם".' : undefined}
+          </NoResults>
+        </Panel>
       ) : (
         <>
           <ul className="flex flex-col gap-2.5 md:hidden">
@@ -253,10 +287,10 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-small text-ink-soft">
                   {r.participant?.phone && <a href={`tel:${r.participant.phone}`} className="num text-tide">{formatPhone(r.participant.phone)}</a>}
                   {r.participant?.city && <span>{r.participant.city}</span>}
-                  <span className="text-muted">הרשמה <span className="num">{fmtDateTime(r.registered_at)}</span></span>
+                  <span className="text-muted">הרשמה <span className="tabular-nums">{fmtListDate(r.registered_at)}</span></span>
                 </div>
                 <SourceCell r={r} className="mt-1" />
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   {r.participant?.phone && <Button size="sm" variant="secondary" icon="message" onClick={() => openComposer(r)}>וואטסאפ</Button>}
                   {r.status === 'waitlisted' && <Button size="sm" icon="userPlus" busy={promote.isPending && promote.variables?.id === r.id} onClick={() => promote.mutate(r)}>קידום לרשומים</Button>}
                   {owes(r) && <Button size="sm" variant="secondary" icon="check" onClick={() => payFor(r)}>סימון תשלום</Button>}
@@ -276,7 +310,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                   <Th>טלפון ועיר</Th>
                   <Th>סטטוס</Th>
                   <Th>מועד הרשמה</Th>
-                  <Th>מקור</Th>
+                  <Th>מקור הגעה</Th>
                   <Th className="rounded-tl-[var(--radius-panel)]"><span className="sr-only">פעולות</span></Th>
                 </tr>
               </thead>
@@ -289,7 +323,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                       <div className="text-small text-muted">{r.participant?.city ?? ''}</div>
                     </Td>
                     <Td className="py-3"><StatusCell r={r} pos={waitPos.get(r.id)} started={started} /></Td>
-                    <Td className="num py-3 text-right text-small text-ink-soft">{fmtDateTime(r.registered_at)}</Td>
+                    <Td className="py-3 text-right text-small text-ink-soft tabular-nums">{fmtListDate(r.registered_at)}</Td>
                     <Td className="py-3"><SourceCell r={r} /></Td>
                     <Td>
                       <div className="flex items-center justify-end gap-1">
@@ -330,7 +364,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       )}
       <PaymentDialog target={paying} event={e} onClose={() => setPaying(null)} />
       <ConfirmPaymentDialog target={confirming} event={e} onClose={() => setConfirming(null)} />
-      <ManualRegisterDialog
+      <AddRegistrantDialog
         open={adding}
         onClose={() => setAdding(false)}
         e={e}
@@ -344,6 +378,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
 
 function NameCell({ r }: { r: RegRow }) {
   const p = r.participant;
+  // the normal case carries no badge; only what the team should notice does
   return (
     <div className="min-w-0">
       {p && !p.anonymized_at ? (
@@ -351,39 +386,52 @@ function NameCell({ r }: { r: RegRow }) {
       ) : (
         <span className="font-bold text-muted">פרטים נמחקו</span>
       )}
-      <div className="mt-1 flex flex-wrap gap-1">
-        {r.first_time && r.status !== 'cancelled' && <Badge tone="tide" icon="sparkle">פעם ראשונה</Badge>}
-        {r.is_walk_in && <Badge tone="neutral">הגעה בלי הרשמה</Badge>}
-        {r.submitted_name && (
-          <Badge tone="warn" icon="alert" title="השם שהוקלד בהרשמה שונה מהשם בכרטיס. ייתכן שהוקלד טלפון של מישהו אחר: כדאי לברר.">
-            הרשמה בשם: {r.submitted_name}
-          </Badge>
-        )}
-        {p?.photo_opt_out && <Badge tone="neutral" icon="noCamera" title="בקשה לא להופיע בתמונות">בלי צילום</Badge>}
-      </div>
+      {(r.first_time && r.status !== 'cancelled') || r.is_walk_in || r.submitted_name || p?.photo_opt_out ? (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {r.first_time && r.status !== 'cancelled' && <Badge tone="light">פעם ראשונה</Badge>}
+          {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
+          {r.submitted_name && (
+            <Badge tone="warn" icon="alert" title="השם שהוקלד בהרשמה שונה מהשם בכרטיס. ייתכן שהוקלד טלפון של מישהו אחר: כדאי לברר.">
+              הרשמה בשם: {r.submitted_name}
+            </Badge>
+          )}
+          {p?.photo_opt_out && <Badge tone="neutral" icon="noCamera" title="בקשה לא להופיע בתמונות">בלי צילום</Badge>}
+        </div>
+      ) : null}
     </div>
   );
 }
 
 function StatusCell({ r, pos, started }: { r: RegRow; pos?: number; started: boolean }) {
+  const quiet = 'text-small text-muted';
   return (
     <div className="flex flex-col items-start gap-1">
       {r.status === 'registered' && r.attendance === 'attended' ? (
         <Badge tone="good" icon="check">הגעה{r.checkin_method === 'self_qr' ? ' (QR)' : ''}</Badge>
       ) : r.status === 'registered' && r.attendance === 'no_show' ? (
-        <Badge tone="bad" icon="alert">אי־הגעה</Badge>
+        <Badge tone="neutral">אי־הגעה</Badge>
       ) : r.status === 'waitlisted' ? (
-        <Badge tone="warn" icon="alert">בהמתנה{pos ? <span className="num"> #{pos}</span> : null}</Badge>
+        <Badge tone="tide">רשימת המתנה{pos ? <span className="num"> #{pos}</span> : null}</Badge>
       ) : r.status === 'cancelled' ? (
-        <Badge tone="neutral">ביטול{r.cancelled_by === 'staff' ? ' (צוות)' : ''}</Badge>
+        <span className={quiet}>ביטול{r.cancelled_by === 'staff' ? ' (צוות)' : ''}</span>
       ) : r.status === 'pending_payment' ? (
-        <Badge tone="warn" icon="alert" title="התחילו הרשמה ועוד לא שילמו. אין להם מקום, והם לא נספרים ברשומים.">ממתין לתשלום</Badge>
+        <Badge tone="warn" icon="alert" title="התחילו הרשמה ועוד לא שילמו. אין להם מקום, והם לא נספרים ברשומים.">מחכה לתשלום</Badge>
       ) : (
-        <Badge tone="tide">{started ? 'טרם סומנה הגעה' : 'הרשמה פעילה'}</Badge>
+        <span className={quiet}>{started ? 'עוד לא סומנה הגעה' : 'הרשמה פעילה'}</span>
       )}
-      {showsPayment(r.status, r.payment_status) && !(r.payment_status === 'pending' && r.attendance === 'no_show') && <PaymentBadge status={r.payment_status} />}
+      {showsPayment(r.status, r.payment_status) && !(r.payment_status === 'pending' && r.attendance === 'no_show') && (
+        r.payment_status === 'pending' ? <PaymentBadge status="pending" /> : <PaymentNote status={r.payment_status} />
+      )}
     </div>
   );
+}
+
+/** Paid, waived, refunded: worth knowing, not worth a badge. */
+function PaymentNote({ status }: { status: RegRow['payment_status'] }) {
+  if (status === 'paid') return <span className="inline-flex items-center gap-1 text-small text-ink-soft"><Icon name="check" size={13} strokeWidth={2.4} /><span>שולם</span></span>;
+  if (status === 'waived') return <span className="text-small text-muted">פטור מתשלום</span>;
+  if (status === 'refunded') return <span className="text-small text-muted">התשלום הוחזר</span>;
+  return null;
 }
 
 function SourceCell({ r, className = '' }: { r: RegRow; className?: string }) {
@@ -393,86 +441,146 @@ function SourceCell({ r, className = '' }: { r: RegRow; className?: string }) {
   if (r.referrer) parts.push(<span key="r">הפניה: <Link to={`/app/participants/${r.referrer.id}`} className="text-tide hover:underline">{r.referrer.full_name}</Link></span>);
   else if (r.referrer_name) parts.push(<span key="r">הפניה: {r.referrer_name}</span>);
   if (r.utm_source && !r.link) parts.push(<span key="u" dir="ltr" className="num">utm: {r.utm_source}</span>);
-  if (!parts.length) return <span className={cx('text-small text-faint', className)}>{r.created_via === 'staff' ? 'רישום ידני' : '—'}</span>;
+  if (!parts.length) return <span className={cx('text-small text-faint', className)}>{r.created_via === 'staff' ? 'הוספה בידי הצוות' : '—'}</span>;
   return <div className={cx('flex flex-col gap-0.5 text-small text-ink-soft', className)}>{parts}</div>;
 }
 
-// ───────────── manual registration ─────────────
+// ───────────── adding someone who phoned in: search, and if they are not there, a new card in the same dialog ─────────────
 
 type Found = { id: string; full_name: string | null; phone: string | null; city: string | null };
 
-function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
+function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
   open: boolean; onClose: () => void; e: EventWithStats; regs: RegRow[]; free: number | null; onRegistered: (r: RegRow | null) => void;
 }) {
   const toast = useToast();
   const invalidate = useInvalidateEvent();
+  const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [over, setOver] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '', touched: false });
+  const [errors, setErrors] = useState<{ name?: string | null; phone?: string | null; form?: string | null }>({});
   const dq = useDebounced(q, 250);
   const term = cleanSearch(dq);
-  const digits = dq.replace(/\D/g, '');
-  const enabled = open && (term.replace(/\d/g, '').trim().length >= 2 || digits.length >= 3);
+  const letters = term.replace(/[\d+-]/g, ' ').replace(/\s+/g, ' ').trim();
+  // "דנה 4567" searches the name and the phone's end alike
+  const digits = phoneTail(dq.replace(/[^\d+\s-]/g, ' ')) ?? '';
+  const enabled = open && (letters.length >= 2 || digits.length >= 3);
   const existing = useMemo(() => new Map(regs.map((r) => [r.participant_id, r])), [regs]);
 
+  // every opening starts clean
+  useEffect(() => {
+    if (!open) return;
+    setQ(''); setOver(false); setCreating(false); setErrors({}); setForm({ name: '', phone: '', touched: false });
+  }, [open]);
+
   const results = useQuery({
-    queryKey: ['participant-search', term, digits],
+    queryKey: ['participant-search', letters, digits],
     enabled,
     queryFn: async () => {
       const ors: string[] = [];
-      const name = term.replace(/\d/g, '').trim();
-      if (name.length >= 2) ors.push(`full_name.ilike.*${name}*`);
-      if (digits.length >= 3) ors.push(`phone.like.*${digits.replace(/^0/, '')}*`);
+      if (letters.length >= 2) ors.push(`full_name.ilike.*${letters}*`);
+      // a phone matches by its end (the last digits, or the whole number in any format)
+      if (digits.length >= 3) ors.push(`phone.like.*${digits}`);
       return must(
         await supabase.from('participants').select('id, full_name, phone, city').is('anonymized_at', null).or(ors.join(',')).order('full_name').limit(8),
       ) as Found[];
     },
   });
+  const noMatch = enabled && results.isSuccess && results.data.length === 0;
+  const showForm = creating || noMatch;
+  // the new card starts from what was typed in the search (name and/or phone) until the form itself is edited
+  useEffect(() => {
+    if (!showForm || form.touched) return;
+    setForm({ name: letters, phone: digits.length >= 3 ? dq.replace(/[^\d+\-\s]/g, '').trim() : '', touched: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showForm, dq]);
+
+  const finish = async (p: Found, status: RegStatus, regId: string) => {
+    await invalidate(e.id);
+    const send = () => onRegistered({
+      id: regId, participant_id: p.id, status, participant: { id: p.id, full_name: p.full_name, phone: p.phone, city: p.city, consent_updates: false, photo_opt_out: false, anonymized_at: null },
+    } as RegRow);
+    if (status === 'waitlisted') toast.success(`המפגש מלא: ${p.full_name} ברשימת המתנה`);
+    else toast.success(`ההרשמה של ${p.full_name} נשמרה`, p.phone ? { label: 'שליחת אישור', run: send } : undefined);
+    onClose();
+  };
 
   const register = useMutation({
     mutationFn: async (p: Found) => {
       const { data, error } = await supabase.rpc('staff_register', { p_event_id: e.id, p_participant_id: p.id, p_over_capacity: over });
       if (error) throw error;
-      return { p, status: (data as { status: RegStatus; registration_id: string }).status, regId: (data as { registration_id: string }).registration_id };
+      const d = data as { status: RegStatus; registration_id: string };
+      return { p, status: d.status, regId: d.registration_id };
     },
-    onSuccess: async ({ p, status, regId }) => {
-      await invalidate(e.id);
-      const send = () => onRegistered({
-        id: regId, participant_id: p.id, status, participant: { id: p.id, full_name: p.full_name, phone: p.phone, city: p.city, consent_updates: false, photo_opt_out: false, anonymized_at: null },
-      } as RegRow);
-      if (status === 'waitlisted') toast.success(`המפגש מלא: ההרשמה של ${p.full_name} ברשימת ההמתנה`);
-      else toast.success(`ההרשמה של ${p.full_name} נשמרה`, p.phone ? { label: 'שליחת אישור', run: send } : undefined);
-      setQ('');
-      onClose();
-    },
+    onSuccess: ({ p, status, regId }) => finish(p, status, regId),
     onError: (err) => toast.error(errorMessage(err)),
   });
 
+  const create = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.from('participants')
+        .insert({ full_name: form.name.trim(), phone: normalizePhone(form.phone) })
+        .select('id, full_name, phone, city').single();
+      if (error) throw error;
+      const p = data as Found;
+      const r = await supabase.rpc('staff_register', { p_event_id: e.id, p_participant_id: p.id, p_over_capacity: over });
+      if (r.error) return { p, regError: r.error };
+      const d = r.data as { status: RegStatus; registration_id: string };
+      return { p, status: d.status, regId: d.registration_id };
+    },
+    onSuccess: async (res) => {
+      qc.invalidateQueries({ queryKey: ['participants'] });
+      if ('regError' in res) {
+        toast.error(`הכרטיס של ${res.p.full_name} נוצר, אבל הרישום למפגש לא הצליח: ${errorMessage(res.regError)}`);
+        setCreating(false);
+        setQ(res.p.full_name ?? '');
+        return;
+      }
+      await finish(res.p, res.status!, res.regId!);
+    },
+    onError: (err) => {
+      if (errorCode(err) === 'duplicate_phone') {
+        // the card exists: show it in the results, where "רישום" is one click
+        setErrors({ phone: 'כבר יש כרטיס עם הטלפון הזה. הוא מופיע למעלה.' });
+        setQ(form.phone);
+        setCreating(false);
+        setForm((f) => ({ ...f, touched: false }));
+      } else setErrors({ form: errorMessage(err) });
+    },
+  });
+
+  const submitNew = (ev: FormEvent) => {
+    ev.preventDefault();
+    const next = { name: nameError(form.name), phone: phoneError(form.phone) };
+    setErrors(next);
+    if (!next.name && !next.phone) create.mutate();
+  };
+  const setField = (k: 'name' | 'phone', v: string) => { setForm((f) => ({ ...f, [k]: v, touched: true })); setErrors((x) => ({ ...x, [k]: null, form: null })); };
+  const fullForm = `/app/participants/new?${new URLSearchParams({ event: e.id, ...(form.name.trim() ? { name: form.name.trim() } : {}), ...(form.phone.trim() ? { phone: form.phone.trim() } : {}) })}`;
+
   return (
-    <Dialog open={open} onClose={onClose} title="רישום ידני למפגש">
+    <Dialog open={open} onClose={onClose} title="הוספת נרשם">
       <div className="flex flex-col gap-4">
-        <SearchInput value={q} onChange={setQ} placeholder="שם או מספר טלפון" label="חיפוש כרטיס" />
+        <SearchInput value={q} onChange={(v) => { setQ(v); setErrors((x) => ({ ...x, phone: null })); }} placeholder={SEARCH_PLACEHOLDER} label="חיפוש כרטיס" />
+        {!showForm && errors.phone && <p className="-mt-2 text-small font-medium text-ink" role="status">{errors.phone}</p>}
         {free === 0 && (
-          <Checkbox
-            label="לרשום גם מעבר למכסה"
-            hint="בלי סימון, הרישום ייכנס לרשימת ההמתנה"
-            checked={over}
-            onChange={setOver}
-          />
+          <Checkbox label="לרשום גם מעבר למכסה" hint="בלי סימון, ההרשמה תיכנס לרשימת ההמתנה" checked={over} onChange={setOver} />
         )}
         {!enabled ? (
-          <p className="text-small text-muted">מקלידים לפחות 2 אותיות מהשם, או 3 ספרות מהטלפון.</p>
+          <p className="text-small text-muted">מקלידים לפחות 2 אותיות מהשם, או 3 ספרות מהטלפון. אם אין כרטיס, יוצרים אותו כאן.</p>
         ) : results.isLoading ? (
           <div className="flex justify-center py-4 text-muted"><Spinner /></div>
         ) : results.isError ? (
           <ErrorBox error={errorMessage(results.error)} />
         ) : results.data?.length ? (
-          <ul className="flex flex-col divide-y divide-edge">
+          <ul className="flex flex-col divide-y divide-edge" aria-label="כרטיסים שנמצאו">
             {results.data.map((p) => {
               const reg = existing.get(p.id);
               // started a paid registration and did not pay: the team may still register them
               const active = reg && reg.status !== 'cancelled' && reg.status !== 'pending_payment';
               return (
-                <li key={p.id} className="flex items-center gap-3 py-2.5">
+                <li key={p.id} className="flex min-h-14 items-center gap-3 py-2">
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{p.full_name}</div>
                     <div className="text-small text-muted">
@@ -482,7 +590,7 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
                   {active ? (
                     <Badge tone="tide">{REG_STATUS_LABEL[reg.status]}</Badge>
                   ) : (
-                    <Button size="sm" busy={register.isPending && register.variables?.id === p.id} onClick={() => register.mutate(p)}>
+                    <Button size="sm" variant="secondary" busy={register.isPending && register.variables?.id === p.id} onClick={() => register.mutate(p)}>
                       {reg ? 'רישום מחדש' : 'רישום'}
                     </Button>
                   )}
@@ -490,12 +598,30 @@ function ManualRegisterDialog({ open, onClose, e, regs, free, onRegistered }: {
               );
             })}
           </ul>
-        ) : (
-          <p className="text-small text-muted">לא נמצאו לוחמים בשם או במספר הזה.</p>
+        ) : null}
+
+        {enabled && !showForm && results.isSuccess && (
+          <button type="button" className="inline-flex min-h-11 items-center gap-1.5 self-start text-small font-semibold text-tide hover:underline" onClick={() => setCreating(true)}>
+            <Icon name="plus" size={16} />לא ברשימה? כרטיס חדש ורישום
+          </button>
         )}
-        <div className="border-t border-edge pt-3 text-small text-ink-soft">
-          לא במערכת? <Link to="/app/participants/new" className="font-semibold text-tide hover:underline">יצירת כרטיס חדש</Link>, ואז חוזרים לכאן לרישום.
-        </div>
+
+        {showForm && (
+          <form onSubmit={submitNew} noValidate className="flex flex-col gap-3 border-t border-edge pt-4" aria-label="כרטיס חדש ורישום למפגש">
+            <p className="text-small text-ink-soft">
+              {noMatch ? <><b className="text-ink">אין כרטיס כזה.</b> יוצרים כרטיס ורושמים למפגש בבת אחת:</> : 'כרטיס חדש, ורישום למפגש בבת אחת:'}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input label="שם מלא" required value={form.name} onChange={(x) => setField('name', x.target.value)} error={errors.name} maxLength={80} autoComplete="off" />
+              <Input label="טלפון" required ltr type="tel" inputMode="tel" value={form.phone} onChange={(x) => setField('phone', x.target.value)} error={errors.phone} autoComplete="off" hint="למשל 050-1234567" />
+            </div>
+            {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit" icon="userPlus" busy={create.isPending}>יצירת כרטיס ורישום</Button>
+              <Link to={fullForm} className="inline-flex min-h-11 items-center px-2 text-small font-semibold text-tide hover:underline">טופס מלא עם עוד פרטים</Link>
+            </div>
+          </form>
+        )}
       </div>
     </Dialog>
   );

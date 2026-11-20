@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorCode, errorMessage, must } from '@/lib/errors';
 import { fmtMoney, isPriced, parseAmount } from '@/lib/money';
-import { PAYMENT_METHOD_LABEL } from '@/lib/labels';
+import { MONEY_LABEL, PAYMENT_METHOD_LABEL } from '@/lib/labels';
 import type { EventRow, PaymentMethod, PaymentStatus, RegStatus } from '@/lib/types';
 import { Badge, Button, ChoiceGroup, Input, Panel, Select } from '@/ui/kit';
 import { Dialog, useToast } from '@/ui/feedback';
@@ -102,7 +102,15 @@ function PaymentForm({ target: t, event, onClose }: { target: PaymentTarget; eve
     },
     onSuccess: async () => {
       await invalidate(event.id);
-      toast.success(status === 'paid' ? `${t.name ?? ''}: סומן ששולם` : status === 'pending' ? `${t.name ?? ''}: סומן שלא שולם` : 'התשלום עודכן');
+      const who = t.name ? ` של ${t.name}` : '';
+      if (status === 'paid' && t.payment_status === 'pending') {
+        // marked by mistake (the wrong row): one tap puts it back to "לא שולם"
+        toast.undo(`התשלום${who} סומן`, async () => {
+          const { error } = await supabase.rpc('staff_set_payment', { p_registration_id: t.id, p_status: 'pending', p_amount: null, p_method: null, p_ref: null });
+          if (error) toast.error(errorMessage(error));
+          else { await invalidate(event.id); toast.info(`התשלום${who} הוחזר ל"לא שולם"`); }
+        });
+      } else toast.success(status === 'paid' ? `התשלום${who} סומן` : status === 'pending' ? `התשלום${who} סומן כלא שולם` : `התשלום${who} עודכן`);
       onClose();
     },
     onError: (err) => (errorCode(err) === 'invalid_amount' ? setErrors({ amount: errorMessage(err) }) : setErrors({ form: errorMessage(err) })),
@@ -192,8 +200,9 @@ function ConfirmForm({ target: t, event, onClose }: { target: ConfirmTarget; eve
     },
     onSuccess: async (status) => {
       await invalidate(event.id);
-      if (status === 'waitlisted') toast.success(`${t.name ?? ''}: התשלום אושר, אבל המפגש מלא. ההרשמה נכנסה לרשימת ההמתנה, ונפתחה משימה.`);
-      else toast.success(`${t.name ?? ''}: התשלום אושר וההרשמה הושלמה`);
+      const who = t.name ? ` של ${t.name}` : '';
+      if (status === 'waitlisted') toast.success(`התשלום${who} אושר. המפגש מלא, ההרשמה ברשימת המתנה ונפתחה משימה`);
+      else toast.success(`התשלום${who} אושר, ההרשמה הושלמה`);
       onClose();
     },
     onError: (err) => (errorCode(err) === 'invalid_amount' ? setErrors({ amount: errorMessage(err) }) : setErrors({ form: errorMessage(err) })),
@@ -264,38 +273,39 @@ export function FinancePanel({ e, onUnpaid, onStarted, onExpenses }: {
       description={priced ? <>דמי השתתפות <span className="num">{fmtMoney(f.price)}</span>{f.has_payment_link ? ' · עם קישור לתשלום' : ' · בלי קישור לתשלום (משלמים בכניסה)'}</> : 'מפגש בלי דמי השתתפות'}
       actions={
         <>
-          {priced && i.pending_count > 0 && onUnpaid && <Button size="sm" variant="ghost" icon="filter" onClick={onUnpaid}>מי עוד לא שילמו</Button>}
+          {priced && i.pending_count > 0 && onUnpaid && <Button size="sm" variant="ghost" icon="filter" onClick={onUnpaid}>מי לא שילמו</Button>}
           {onExpenses && <Button size="sm" variant="ghost" icon="task" onClick={onExpenses}>הוצאות</Button>}
         </>
       }
     >
-      <section aria-label="כספים" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {priced && (
-          <>
-            <BigStat label="צפי הכנסות" value={fmtMoney(i.expected)} sub="מה שנגבה ועוד מה שנרשמים חייבים" />
-            <BigStat
-              label="נגבה"
-              value={fmtMoney(i.collected)}
-              sub={<><span className="num">{i.paid_count}</span> שילמו{i.waived_count ? <> · <span className="num">{i.waived_count}</span> פטורים</> : null}{i.refunded_count ? <> · <span className="num">{i.refunded_count}</span> הוחזרו</> : null}</>}
-            />
-            <BigStat label="ממתין לתשלום" value={fmtMoney(i.pending_amount)} sub={<><span className="num">{i.pending_count}</span> רשומים עוד לא שילמו</>} />
-          </>
+      {/* one order everywhere: נגבה · ממתין לתשלום · הוצאות · נטו (the forecast as a sub-line) */}
+      <section aria-label="כספים" className={priced ? 'grid grid-cols-2 gap-3 lg:grid-cols-4' : 'grid grid-cols-2 gap-3 sm:grid-cols-3'}>
+        {(priced || i.collected > 0) && (
+          <BigStat
+            label={MONEY_LABEL.collected}
+            value={fmtMoney(i.collected)}
+            sub={priced
+              ? <><span className="num">{i.paid_count}</span> שילמו{i.waived_count ? <> · <span className="num">{i.waived_count}</span> פטורים</> : null}{i.refunded_count ? <> · <span className="num">{i.refunded_count}</span> הוחזרו</> : null} · צפי <span className="num">{fmtMoney(i.expected)}</span></>
+              : undefined}
+          />
         )}
-        {!priced && i.collected > 0 && <BigStat label="נגבה" value={fmtMoney(i.collected)} />}
+        {priced && (
+          <BigStat label={MONEY_LABEL.pending} value={fmtMoney(i.pending_amount)} sub={i.pending_count ? <><span className="num">{i.pending_count}</span> רשומים עוד לא שילמו</> : 'כל הרשומים שילמו'} />
+        )}
         <BigStat
-          label="הוצאות"
+          label={MONEY_LABEL.expenses}
           value={fmtMoney(f.expenses.total)}
           sub={f.expenses.count ? <>שולם <span className="num">{fmtMoney(f.expenses.paid)}</span>{f.expenses.unpaid > 0 ? <> · נותר <span className="num">{fmtMoney(f.expenses.unpaid)}</span></> : null}</> : 'עוד לא נרשמו הוצאות'}
         />
         <BigStat
-          label="נטו"
+          label={MONEY_LABEL.net}
           value={<span className={f.net < 0 ? 'text-bad' : undefined}>{fmtMoney(f.net)}</span>}
           sub={<>נגבה פחות הוצאות ששולמו · צפי <span className="num" dir="ltr">{fmtMoney(f.projected_net)}</span></>}
         />
       </section>
       {!!f.started_unpaid && (
         <p className="mt-3 text-small text-ink-soft">
-          <span className="num font-bold text-ink">{f.started_unpaid}</span> התחילו הרשמה ולא שילמו. הם לא נספרים ברשומים ולא בהכנסות.{' '}
+          <span className="num font-bold text-ink">{f.started_unpaid}</span> התחילו הרשמה ולא שילמו. אין להם מקום, והם לא נספרים ברשומים ולא בהכנסות.{' '}
           {onStarted && <button type="button" className="font-semibold text-tide underline underline-offset-2" onClick={onStarted}>לרשימה</button>}
         </p>
       )}

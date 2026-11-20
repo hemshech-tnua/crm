@@ -3,6 +3,9 @@ const ils = new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS',
 
 export const fmtMoney = (v: number | string | null | undefined): string => (v == null || v === '' || Number.isNaN(Number(v)) ? '—' : ils.format(Number(v)));
 
+/** The same format under another name (imported by the participant card). */
+export const fmtShekel = fmtMoney;
+
 /** "20", "20.5", "₪ 1,200" → a number; empty → null; anything else → NaN (the caller shows an error). */
 export const parseAmount = (v: string): number | null => (v.trim() ? Number(v.replace(/[,₪\s]/g, '')) : null);
 
