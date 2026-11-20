@@ -21,7 +21,7 @@ test('a full phone number in any format finds the card, and the whole row opens 
   await expect(page.getByRole('heading', { level: 1, name: who.n })).toBeVisible();
   // the card: one place per action, merge and erase behind "עוד"
   await expect(page.getByRole('button', { name: 'תיעוד שיחה' })).toHaveCount(1);
-  await page.getByRole('button', { name: 'עוד פעולות לכרטיס' }).click();
+  await page.getByRole('button', { name: 'עוד', exact: true }).click();
   await expect(page.getByRole('menuitem', { name: 'מיזוג עם כרטיס אחר' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'מחיקת פרטים אישיים' })).toHaveCount(0); // coordinators: not offered
   expect(errors.filter((e) => !/status of 4\d\d|Failed to load resource/.test(e)), errors.join('\n')).toEqual([]);
@@ -61,7 +61,7 @@ test('merging from the card names the phone that goes, and keeps the history on 
   const { data: kb } = await coord.from('participants').insert({ full_name: b.n, phone: b.p }).select('id').single();
   await loginAs(page, 'coord');
   await page.goto(`#/app/participants/${ka!.id}`);
-  await page.getByRole('button', { name: 'עוד פעולות לכרטיס' }).click();
+  await page.getByRole('button', { name: 'עוד', exact: true }).click();
   await page.getByRole('menuitem', { name: 'מיזוג עם כרטיס אחר' }).click();
   const dialog = page.getByRole('dialog', { name: 'מיזוג עם כרטיס אחר' });
   await dialog.getByRole('searchbox').fill(local(b.p));

@@ -1,6 +1,7 @@
+import { useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { useRole } from '@/lib/auth';
-import { PageHeader, Segmented, Tabs } from '@/ui/kit';
+import { PageHeader, Segmented, Tabs, useSidewaysStrip } from '@/ui/kit';
 import { GeneralSettings } from './GeneralSettings';
 import { PaymentWebhookPanel } from './PaymentWebhook';
 import { UsersSettings } from './UsersSettings';
@@ -51,6 +52,9 @@ export function SettingsPage() {
   const group = groups.find((g) => g.sections.some((s) => s.value === requested)) ?? groups[0];
   const tab = group.sections.some((s) => s.value === requested) ? requested! : group.sections[0].value;
   const setTab = (t: Tab) => setParams({ tab: t }, { replace: true });
+  // on a phone the sections scroll sideways: fade the edge with more behind it, keep the chosen one in view
+  const strip = useRef<HTMLDivElement>(null);
+  const fade = useSidewaysStrip(strip, '[aria-pressed="true"]', tab);
 
   return (
     <>
@@ -62,7 +66,7 @@ export function SettingsPage() {
         tabs={groups.map((g) => ({ value: g.value, label: g.label }))}
       />
       {group.sections.length > 1 && (
-        <div className="-mx-4 mb-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div ref={strip} style={fade} className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
           <Segmented<Tab> label={group.label} value={tab} onChange={setTab} options={group.sections} />
         </div>
       )}

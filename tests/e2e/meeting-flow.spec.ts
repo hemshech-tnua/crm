@@ -87,7 +87,7 @@ test('a meeting that ended unclosed: ?close=1 asks to close it, and the summary 
   await card.getByRole('button', { name: 'סגירת המפגש' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'סגירת המפגש' }).click();
   await expect(page.getByRole('dialog', { name: 'המפגש נסגר' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'למשימות המעקב של המפגש' })).toHaveAttribute('href', new RegExp(`followups\\?event=${ev.id}`));
+  await expect(page.getByRole('dialog', { name: 'המפגש נסגר' }).getByRole('link', { name: 'למשימות המעקב של המפגש' })).toHaveAttribute('href', new RegExp(`followups\\?event=${ev.id}`));
   expect(errors, errors.join('\n')).toEqual([]);
 });
 

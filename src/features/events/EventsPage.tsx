@@ -18,8 +18,8 @@ type TypeFilter = 'all' | EventType;
 const PAST_PAGE = 30;
 const UP_STATUSES: UpStatus[] = ['all', 'draft', 'nospeaker', 'waitlist', 'cancelled'];
 
-/** A Friday meeting with no speaker yet (cancelled ones need none). */
-const noSpeaker = (e: EventWithStats) => e.type === 'friday' && !e.speaker_id && e.status !== 'cancelled';
+/** A Friday meeting with no speaker yet (cancelled and closed ones need none). */
+const noSpeaker = (e: EventWithStats) => e.type === 'friday' && !e.speaker_id && e.status !== 'cancelled' && e.status !== 'completed';
 
 export function EventsPage() {
   const [params, setParams] = useSearchParams();

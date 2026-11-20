@@ -113,7 +113,7 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
           <Icon name="phone" size={18} />
           חיוג
         </a>
-        <div className="flex items-center justify-center sm:order-last"><MoreMenu items={more} label="עוד פעולות לכרטיס">עוד</MoreMenu></div>
+        <div className="flex items-center justify-center sm:order-last"><MoreMenu items={more} /></div>
         <div className="col-span-3 grid grid-cols-2 gap-2 sm:contents">
           <Button variant="secondary" icon="task" className="min-w-0 px-2 sm:px-4" onClick={() => setOpen('task')}>משימה חדשה</Button>
           <Button variant="secondary" icon="edit" className="min-w-0 px-2 sm:px-4" onClick={() => setOpen('log')}>תיעוד שיחה</Button>

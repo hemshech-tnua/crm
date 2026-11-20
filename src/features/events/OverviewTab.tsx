@@ -361,7 +361,7 @@ export function EventHeaderActions({ e, onTab }: { e: EventWithStats; onTab: Pro
     <>
       {a.primary}
       {a.secondary}
-      <MoreMenu items={a.menu} label="פעולות נוספות למפגש" />
+      <MoreMenu items={a.menu} />
       {a.dialogs}
     </>
   );

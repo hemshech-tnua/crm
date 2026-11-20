@@ -49,7 +49,7 @@ test('a coordinator books a volunteer ahead, the volunteer confirms from the per
   await expect(slot).toContainText('בהמתנה');
 
   // 3. the personal link, from the "waiting for an answer" list, ready for WhatsApp
-  await page.getByRole('button', { name: `שליחת קישור ל${full}` }).click();
+  await page.getByRole('button', { name: new RegExp(`^${full} \\d+: שליחת קישור אישי$`) }).click();
   const text = page.getByLabel('הטקסט (אפשר לערוך לפני השליחה)');
   await expect(text).toHaveValue(/#\/v\/[A-Za-z0-9_-]{20,}/);
   await expect(text).toHaveValue(new RegExp(`קבלת פנים · ${title}`));
