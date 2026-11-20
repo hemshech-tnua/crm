@@ -23,7 +23,7 @@ import { useInvalidateEvent } from './queries';
 import { BigStat, LinkRow, QrImage, freeText, hasEnded, hasStarted, isUnclosed, seats, timeRange } from './shared';
 import { MoreMenu, type MoreMenuItem } from '@/ui/MoreMenu';
 import { FinancePanel, useEventFinance } from './finance';
-import { isOverdue, useEventTasks } from '@/features/prep/shared';
+import { isOverdue, useEventTasks, useTickMany } from '@/features/prep/shared';
 import { slotsFor } from '@/features/volunteers/model';
 import { useShifts } from '@/features/volunteers/queries';
 import { fmtMoney, isPriced } from '@/lib/money';
@@ -133,6 +133,11 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
   const [dupOpen, setDupOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [result, setResult] = useState<CompleteResult | null>(null);
+  const tasks = useEventTasks(e.id);
+  const tick = useTickMany();
+  // tasks of the meeting day (and before) still open: offered in one tap once the meeting is closed
+  const meetingDay = ilParts(e.starts_at).date;
+  const dayOpen = (tasks.data ?? []).filter((t) => t.kind === 'task' && !t.dismissed && !t.done_at && !!t.due_date && t.due_date <= meetingDay);
 
   const now = Date.now();
   const started = hasStarted(e, now);
@@ -327,6 +332,12 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
               ]}
             />
             <p className="text-sm text-muted">המשימות מחכות במסך "מעקב". כדאי לשלוח לכל מי שהגיע הודעת תודה עם קישור למשוב (לשונית "הודעות").</p>
+            {dayOpen.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-soft pt-3">
+                <span className="text-sm">{dayOpen.length === 1 ? 'משימת הכנה אחת עד יום המפגש עדיין פתוחה.' : <><span className="num">{dayOpen.length}</span> משימות הכנה עד יום המפגש עדיין פתוחות.</>}</span>
+                <Button size="sm" variant="secondary" icon="check" busy={tick.isPending} onClick={() => tick.mutate(dayOpen.map((t) => t.id))}>סימון שבוצעו</Button>
+              </div>
+            )}
           </div>
         )}
       </Dialog>
@@ -429,7 +440,7 @@ export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; peop
     const list = tasks.data.filter((t) => t.kind === 'task' && !t.dismissed);
     const late = list.filter((t) => isOverdue(t, todayIl())).length;
     const done = list.filter((t) => t.done_at).length;
-    if (late > 0) items.push({ key: 'tasks', icon: 'task', state: 'warn', label: 'להכנות', go: () => onTab('prep'), text: <><span className="num font-bold">{late}</span> משימות באיחור</> });
+    if (late > 0) items.push({ key: 'tasks', icon: 'task', state: 'warn', label: 'להכנות', go: () => onTab('prep'), text: late === 1 ? 'משימה אחת שעבר התאריך שלה' : <><span className="num font-bold">{late}</span> משימות שעבר התאריך שלהן</> });
     else if (list.length) items.push({ key: 'tasks', icon: 'task', state: done === list.length ? 'done' : 'info', label: 'להכנות', go: () => onTab('prep'), text: <>הכנות <span className="num">{done}/{list.length}</span></> });
   }
   if (e.status === 'completed' && (e.stats?.feedback_count ?? 0) > 0) {
