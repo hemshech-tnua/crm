@@ -21,7 +21,7 @@ const envLabel = (import.meta.env.VITE_ENV_LABEL as string | undefined)?.trim();
 function EnvBanner() {
   if (!envLabel) return null;
   return (
-    <div role="note" className="border-b border-warn/25 bg-warn-wash px-4 py-1.5 text-center text-sm font-semibold text-warn">
+    <div role="note" className="border-b border-warn/25 bg-warn-wash px-4 py-1.5 text-center text-small font-semibold text-warn">
       {envLabel}
     </div>
   );
@@ -42,9 +42,9 @@ const framed = (() => {
 function Framed() {
   return (
     <div className="mx-auto max-w-lg p-8 text-center">
-      <h1 className="font-display text-2xl">האתר נפתח בתוך אתר אחר</h1>
-      <p className="mt-2 text-muted">לביטחונך, המערכת עובדת רק כשהיא פתוחה ישירות.</p>
-      <a href={window.location.href} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block font-semibold underline">פתיחת המערכת בחלון נפרד</a>
+      <h1 className="font-display text-title-sm">האתר נפתח בתוך אתר אחר</h1>
+      <p className="mt-2 text-muted">כדי לשמור על הפרטים שלכם, האתר עובד רק כשהוא פתוח ישירות.</p>
+      <a href={window.location.href} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block font-semibold underline">פתיחת האתר בחלון נפרד</a>
     </div>
   );
 }
@@ -52,8 +52,8 @@ function Framed() {
 function Misconfigured() {
   return (
     <div className="mx-auto max-w-lg p-8 text-center">
-      <h1 className="font-display text-2xl">המערכת עוד לא מחוברת לשרת</h1>
-      <p className="mt-2 text-muted">חסרים VITE_SUPABASE_URL ו-VITE_SUPABASE_ANON_KEY בהגדרות הבנייה. ראו docs/05-operations.md.</p>
+      <h1 className="font-display text-title-sm">המערכת עוד לא מחוברת לשרת</h1>
+      <p className="mt-2 text-muted">חסרים VITE_SUPABASE_URL ו־VITE_SUPABASE_ANON_KEY בהגדרות הבנייה. הפרטים ב־docs/05-operations.md.</p>
     </div>
   );
 }

@@ -19,7 +19,7 @@ test.describe('scenario 1: a new staff user', () => {
     // a new account signs in with a code by email; here the admin also gives a temporary password
     const created = page.getByRole('dialog', { name: 'המשתמש נוצר' });
     await expect(created).toContainText(email);
-    await created.getByRole('button', { name: 'סגירה' }).first().click();
+    await created.getByRole('button', { name: 'סגירת החלון' }).first().click();
     await page.getByRole('button', { name: `פעולות ל${fullName}` }).click();
     await page.getByRole('menuitem', { name: 'סיסמה זמנית' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'איפוס הסיסמה' }).click();
@@ -27,7 +27,7 @@ test.describe('scenario 1: a new staff user', () => {
     await expect(secret).toBeVisible();
     const temp = (await secret.locator('.font-display').innerText()).trim();
     expect(temp).toMatch(/^[A-Za-z0-9]{14}$/);
-    await secret.getByRole('button', { name: 'סגירה' }).first().click();
+    await secret.getByRole('button', { name: 'סגירת החלון' }).first().click();
     const row = page.getByRole('listitem').filter({ hasText: fullName });
     await expect(row).toBeVisible();
     await expect(row.getByText('ממתין לבחירת סיסמה')).toBeVisible();

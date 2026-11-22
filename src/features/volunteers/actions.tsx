@@ -432,7 +432,7 @@ function SendLinkDialog({ volunteer: v, onClose }: { volunteer: Volunteer; onClo
         {link.url && <Button variant="secondary" icon="copy" onClick={() => copy(text, 'ההודעה הועתקה')}>העתקת ההודעה</Button>}
         {link.url && <Button variant="ghost" icon="link" onClick={() => copy(link.url!, 'הקישור הועתק')}>רק הקישור</Button>}
       </div>
-      <p className="mt-3 text-sm text-muted">הקישור חדש ומחליף קישור קודם שנשלח ל{firstName(v.full_name)}. ההודעה נשלחת מהוואטסאפ שלך, רק כשלוחצים "שליחה" שם.</p>
+      <p className="mt-3 text-small text-muted">הקישור חדש ומחליף קישור קודם שנשלח ל{firstName(v.full_name)}. ההודעה נשלחת מהוואטסאפ שלך, רק כשלוחצים "שליחה" שם.</p>
     </Dialog>
   );
 }

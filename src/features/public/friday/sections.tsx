@@ -191,7 +191,7 @@ export function FlyerSection({ src, alt, onShare }: { src: string | null; alt: s
         </p>
         <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
           <Button icon="link" onClick={onShare}>העתקת הקישור</Button>
-          <a href={src} download className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-control-line px-4 text-[0.9375rem] font-semibold text-ink transition-colors hover:border-ink hover:bg-ink/[0.06]">
+          <a href={src} download className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-control-line px-4 text-body-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-ink/[0.06]">
             הורדת הפלייר
           </a>
         </div>

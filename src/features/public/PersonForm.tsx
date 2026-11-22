@@ -223,7 +223,7 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
         />
       </div>
       {src?.is_friend && (invitedBy ? (
-        <p className="-mt-2 text-sm text-muted">רשמנו שהגעתם בהזמנה של {invitedBy}.</p>
+        <p className="-mt-2 text-small text-muted">רשמנו שהגעתם בהזמנה של {invitedBy}.</p>
       ) : (
         <Input
           label="דרך מי הגעתם? שם או טלפון"

@@ -24,16 +24,16 @@ const dotted = (iso: string) => iso.slice(0, 10).split('-').reverse().join('.');
 
 /**
  * A readable Hebrew file name: "כספים 01.11.2026-30.11.2026.csv". Characters a file system refuses are dropped.
- * `range`: the period the file covers; a missing start reads "עד <to>", a missing end "מ-<from>".
+ * `range`: the period the file covers; a missing start reads "עד <to>", a missing end "מ־<from>".
  */
 export function csvFileName(title: string, range?: { from: string | null; to: string | null } | string): string {
   let when = '';
   if (typeof range === 'string') when = range;
   else if (range && (range.from || range.to)) {
-    when = range.from && range.to ? `${dotted(range.from)}-${dotted(range.to)}` : range.from ? `מ-${dotted(range.from)}` : `עד ${dotted(range.to!)}`;
+    when = range.from && range.to ? `${dotted(range.from)}-${dotted(range.to)}` : range.from ? `מ־${dotted(range.from)}` : `עד ${dotted(range.to!)}`;
   }
   const name = [title, when].filter(Boolean).join(' ').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
-  return `${name || 'export'}.csv`;
+  return `${name || 'ייצוא'}.csv`;
 }
 
 export function downloadFile(filename: string, content: string | Blob, type = 'text/csv;charset=utf-8') {

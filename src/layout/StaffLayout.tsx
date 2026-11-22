@@ -9,6 +9,9 @@ import { Stripes, Tri } from '@/ui/Shapes';
 import { cx } from '@/ui/kit';
 import { Dialog } from '@/ui/feedback';
 import { isField } from '@/ui/viewport';
+import { useTabBarHidden } from '@/ui/chrome';
+import { OfflineBar } from '@/ui/OfflineBar';
+import { useSectionTitle } from '@/lib/title';
 
 type Item = { to: string; label: string; icon: IconName; roles: Role[]; mobile?: boolean };
 
@@ -37,8 +40,8 @@ export function StaffLayout() {
   const { pathname } = useLocation();
   // "עוד" reads as the current section when one of its routes is open
   const extraActive = extra.some((i) => pathname.startsWith(i.to));
-  // door mode on a phone needs every pixel for names: no bottom tab bar there, and the app bar is not sticky (the door
-  // header sticks to the top instead) and scrolls out of the way as soon as the search is used
+  // door mode on a phone needs every pixel for names: no bottom tab bar there; the app bar (never sticky on a phone, G1)
+  // scrolls out of the way as soon as the search is used, and the door header sticks to the top instead
   const door = !!useMatch('/app/events/:id/door');
   const bar = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -52,8 +55,12 @@ export function StaffLayout() {
     document.addEventListener('focusin', onFocus);
     return () => document.removeEventListener('focusin', onFocus);
   }, [door]);
-  // the bottom tab bar is shown (phones): toasts sit above it
-  const tabbar = !!role && role !== 'volunteer' && !door;
+  // the bottom tab bar is shown (phones): toasts sit above it. A page with its own bottom bar hides it (useHideTabBar).
+  const hiddenByPage = useTabBarHidden();
+  const tabbar = !!role && role !== 'volunteer' && !door && !hiddenByPage;
+  // the browser tab's title names the section ("מפגשים · המשך תנועה") unless the page sets a more specific one (useTitle)
+  useSectionTitle(items.find((i) => pathname.startsWith(i.to))?.label ?? (door ? 'כניסה' : null));
+  const homeLabel = role === 'volunteer' ? 'רשימת הכניסה' : 'מסך הסקירה';
   useEffect(() => {
     const html = document.documentElement;
     if (tabbar) html.dataset.tabbar = '';
@@ -79,7 +86,7 @@ export function StaffLayout() {
         {/* two whole stripes enter from the rail's bottom edge, cut by a horizontal line, clear of the logo's space
             (book p.15) and of the text */}
         <Stripes width={100} height={48} unit={12} dir="fall" count={2} offset={48} className="pointer-events-none absolute bottom-0 left-0 h-12 w-[100px] text-light" />
-        <Link to="/app" className="relative mb-9 flex items-center px-2" aria-label="המשך תנועה: סקירה">
+        <Link to="/app" className="relative mb-9 flex items-center px-2" aria-label={`המשך תנועה: ${homeLabel}`}>
           <Logo variant="full" height={68} />
         </Link>
         <ul className="relative flex flex-1 flex-col gap-1">
@@ -116,11 +123,12 @@ export function StaffLayout() {
         </div>
       </nav>
 
-      {/* mobile top bar */}
-      <header ref={bar} className={cx('z-30 flex items-center justify-between overflow-hidden bg-ink px-4 text-light md:hidden', door ? 'relative h-14' : 'sticky top-0 h-16')}>
+      {/* mobile top bar: scrolls away with the page (G1: the one sticky element at the bottom is the tab bar; the top is
+          left to the page, or to the offline bar while it shows) */}
+      <header ref={bar} className={cx('relative z-30 flex items-center justify-between overflow-hidden bg-ink px-4 text-light md:hidden', door ? 'h-14' : 'h-16')}>
         {/* two whole stripes across the bar, cut by its top and bottom edges */}
         {role !== 'volunteer' && <Stripes width={116} height={64} unit={12} dir="fall" count={2} offset={64} className="pointer-events-none absolute top-0 left-0 h-full w-[116px] text-light" />}
-        <Link to="/app" className="relative flex items-center" aria-label="המשך תנועה: ראשי">
+        <Link to="/app" className="relative flex items-center" aria-label={`המשך תנועה: ${homeLabel}`}>
           {/* the full logo at the book's minimum size; the "lockup" cut is not a sanctioned variant (book p.26) */}
           <Logo variant="symbol" height={door ? 36 : 40} label="המשך תנועה" />
         </Link>
@@ -131,6 +139,9 @@ export function StaffLayout() {
 
       {/* in door mode the page is always at least a screen tall below the app bar, so the bar can scroll away */}
       <main id="main" className={cx('min-w-0 flex-1 px-4 pt-5 sm:px-6 md:px-10 md:pt-9 md:pb-12', door ? 'min-h-dvh pb-8 md:min-h-0' : 'pb-28')}>
+        {/* no connection: one bar for the whole screen, with one retry (in door mode it stays in the flow: the door
+            header carries its own "not updated" line and is the sticky element there) */}
+        <OfflineBar sticky={!door} />
         <div className="mx-auto max-w-6xl">
           <Outlet />
         </div>
@@ -142,7 +153,7 @@ export function StaffLayout() {
           <ul className="grid" style={{ gridTemplateColumns: `repeat(${mobileItems.length + 1}, minmax(0, 1fr))` }}>
             {mobileItems.map((i) => (
               <li key={i.to}>
-                <NavLink to={i.to} className={({ isActive }) => cx('flex h-16 flex-col items-center justify-center gap-1 text-[0.8rem] leading-none whitespace-nowrap', isActive ? 'font-bold text-ink' : 'font-medium text-muted')}>
+                <NavLink to={i.to} className={({ isActive }) => cx('flex h-16 flex-col items-center justify-center gap-1 text-micro leading-none whitespace-nowrap', isActive ? 'font-bold text-ink' : 'font-medium text-muted')}>
                   {({ isActive }) => (
                     <>
                       <span className={cx('flex h-7 w-11 items-center justify-center rounded-[var(--radius-control)] transition-colors', isActive && 'bg-ink text-light')}><Icon name={i.icon} size={21} /></span>
@@ -154,7 +165,7 @@ export function StaffLayout() {
             ))}
             <li>
               <button type="button" onClick={() => setMore(true)} aria-current={extraActive ? 'page' : undefined}
-                className={cx('flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.8rem] leading-none', extraActive ? 'font-bold text-ink' : 'font-medium text-muted')}>
+                className={cx('flex h-16 w-full flex-col items-center justify-center gap-1 text-micro leading-none', extraActive ? 'font-bold text-ink' : 'font-medium text-muted')}>
                 <span className={cx('flex h-7 w-11 items-center justify-center rounded-[var(--radius-control)] transition-colors', extraActive && 'bg-ink text-light')}><Icon name="more" size={21} /></span>
                 עוד
               </button>

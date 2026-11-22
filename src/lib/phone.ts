@@ -1,3 +1,6 @@
+/** The example in every phone hint and error, in the shape formatPhone() shows: "למשל 050-123-4567". */
+export const PHONE_EXAMPLE = '050-123-4567';
+
 // Mirrors private.normalize_phone() in the database (the server is the source of truth).
 export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null;

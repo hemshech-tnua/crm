@@ -41,7 +41,7 @@ export function PaymentWebhookPanel() {
       <div className="flex flex-col gap-4" data-testid="payment-webhook">
         <div>
           <p className="text-small font-medium text-muted">הכתובת להדבקה ב"יש חשבונית" (Webhook מסוג "מסמך נוצר")</p>
-          <p dir="ltr" className="num mt-1 rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm break-all text-ink">
+          <p dir="ltr" className="num mt-1 rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-small break-all text-ink">
             {base}<span className="font-bold text-tide">{'<המפתח>'}</span>
           </p>
           <p className="mt-2 text-small text-ink-soft">

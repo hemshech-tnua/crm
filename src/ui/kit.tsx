@@ -12,18 +12,20 @@ type Size = 'sm' | 'md' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
   // brand book: a squared navy button with beige type (and the triangle ◀ on a call to action); outlined navy; beige on navy
-  primary: 'bg-tide text-light hover:bg-ink-soft active:bg-tide-deep disabled:border disabled:border-ink/25 disabled:bg-transparent disabled:text-ink/45',
+  // disabled = the same button, dimmed (not outlined: an outlined primary reads as a secondary button). A busy button is
+  // disabled too but keeps full strength, with its spinner. Prefer validate-on-submit to a disabled primary.
+  primary: 'bg-tide text-light enabled:hover:bg-ink-soft enabled:active:bg-tide-deep [a&]:hover:bg-ink-soft [a&]:active:bg-tide-deep disabled:opacity-45 aria-busy:opacity-100',
   secondary: 'bg-transparent text-ink border border-control-line hover:border-ink hover:bg-ink/[0.06] active:bg-ink/10 disabled:text-ink/45 disabled:border-ink/25',
   ghost: 'text-ink hover:bg-ink/[0.06] active:bg-ink/10 disabled:text-faint',
   danger: 'bg-transparent text-bad border border-bad hover:bg-bad-wash disabled:text-faint disabled:border-line',
-  light: 'bg-light text-ink hover:bg-[#f4e9cf] disabled:bg-light/50',
+  light: 'bg-light text-ink hover:bg-light-wash disabled:bg-light/50',
   /** outlined beige, for secondary actions on a navy area (the dashboard band, the door header) */
   onDark: 'border border-light/60 text-light hover:bg-light/10 active:bg-light/15 disabled:text-light/50',
 };
 const SIZE: Record<Size, string> = {
-  sm: 'h-9 pointer-coarse:h-11 px-3 text-sm gap-1.5',
-  md: 'h-11 px-4 text-[0.9375rem] gap-2',
-  lg: 'h-14 px-6 text-lg gap-2.5',
+  sm: 'h-9 pointer-coarse:h-11 px-3 text-small gap-1.5',
+  md: 'h-11 px-4 text-body-sm gap-2',
+  lg: 'h-14 px-6 text-heading gap-2.5',
 };
 
 /** `cta`: a call to action is set in bold (cx does not merge classes, so the weight is chosen here, not overridden). */
@@ -111,8 +113,8 @@ export function Field({ label, hint, error, children, htmlFor, required, classNa
       </label>
       {children}
       {/* with an error the hint stays for screen readers (the field points at both), so "for example …" is not lost */}
-      {hint && <p id={htmlFor ? `${htmlFor}-hint` : undefined} className={error ? 'sr-only' : 'text-sm text-muted'}>{hint}</p>}
-      {error && <p id={htmlFor ? `${htmlFor}-err` : undefined} className="flex items-center gap-1 text-sm font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
+      {hint && <p id={htmlFor ? `${htmlFor}-hint` : undefined} className={error ? 'sr-only' : 'text-small text-muted'}>{hint}</p>}
+      {error && <p id={htmlFor ? `${htmlFor}-err` : undefined} className="flex items-center gap-1 text-small font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
     </div>
   );
 }
@@ -180,9 +182,9 @@ export function Checkbox({ label, hint, checked, onChange, disabled, name }: {
           aria-describedby={hint ? hintId : undefined}
           className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-md border-line accent-tide"
         />
-        <span className="text-[0.95rem]">{label}</span>
+        <span className="text-body-sm">{label}</span>
       </label>
-      {hint && <p id={hintId} className="mt-0.5 ps-9 text-sm leading-snug text-muted">{hint}</p>}
+      {hint && <p id={hintId} className="mt-0.5 ps-9 text-small leading-snug text-muted">{hint}</p>}
     </div>
   );
 }
@@ -217,7 +219,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
           );
         })}
       </div>
-      {error && <p id={errId} className="flex items-center gap-1 text-sm font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
+      {error && <p id={errId} className="flex items-center gap-1 text-small font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
     </fieldset>
   );
 }
@@ -229,7 +231,7 @@ export function Rating({ legend, value, onChange, required, error }: { legend: R
   const words = ['', 'חלש', 'בסדר', 'טוב', 'טוב מאוד', 'מצוין'];
   return (
     <fieldset aria-describedby={error ? errId : undefined}>
-      <legend className="mb-2 text-[0.95rem] font-semibold">
+      <legend className="mb-2 text-body-sm font-semibold">
         {legend}
         {required && <span className="text-bad" aria-hidden="true"> *</span>}
       </legend>
@@ -247,32 +249,35 @@ export function Rating({ legend, value, onChange, required, error }: { legend: R
           );
         })}
       </div>
-      <div className="mt-1 flex justify-between text-xs text-muted"><span>מצוין</span><span>חלש</span></div>
-      {error && <p id={errId} className="mt-1.5 flex items-center gap-1 text-sm font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
+      <div className="mt-1 flex justify-between text-micro text-muted"><span>מצוין</span><span>חלש</span></div>
+      {error && <p id={errId} className="mt-1.5 flex items-center gap-1 text-small font-medium text-bad"><Icon name="alert" size={15} />{error}</p>}
     </fieldset>
   );
 }
 
 // ───────────── display ─────────────
 
-type Tone = 'neutral' | 'tide' | 'light' | 'good' | 'bad' | 'warn' | 'ink';
-// Tones must be told apart at a glance: outline (neutral/tide), filled beige, filled navy, and the three status tones
-// with a ring (warn and bad also carry the alert icon where they are used).
+export type BadgeTone = 'neutral' | 'tide' | 'light' | 'good' | 'bad' | 'warn' | 'ink' | 'first';
+type Tone = BadgeTone;
+// Tags are FILLED, never outlined, so they never look like buttons. Exceptions only (G4): a routine state needs no tag.
+// neutral/tide: a quiet navy tint · light: brand beige (on warm-white cards) · good: tint + weight (+ the check icon from
+// the caller) · bad/warn: their wash (act today; warn and bad also carry the alert icon where they are used) · ink: solid
+// navy · first: "פעם ראשונה", beige with a hairline so it is easy to spot on any ground, yet calm (no warning colour).
 const TONE: Record<Tone, string> = {
-  neutral: 'border border-ink/25 text-ink-soft',
-  tide: 'border border-ink/40 text-ink',
+  neutral: 'bg-ink/[0.07] text-ink-soft',
+  tide: 'bg-ink/[0.11] text-ink',
   light: 'bg-light text-ink',
-  // the book has two colours: "done / OK" is told by a full navy frame, weight and (from the caller) the check icon
-  good: 'border border-ink font-semibold text-ink',
+  good: 'bg-ink/[0.07] font-semibold text-ink',
   bad: 'bg-bad-wash text-bad ring-1 ring-inset ring-bad/30',
   warn: 'bg-warn-wash text-warn ring-1 ring-inset ring-warn/40',
   ink: 'bg-ink text-light',
+  first: 'bg-light font-semibold text-ink ring-1 ring-inset ring-ink/25',
 };
 
 /** A status tag. `size="md"` (28px, 14px type) where a tag must be read at arm's length (the door list). */
 export function Badge({ tone = 'neutral', children, icon, title, size = 'sm', className = '' }: { tone?: Tone; children: ReactNode; icon?: IconName; title?: string; size?: 'sm' | 'md'; className?: string }) {
   return (
-    <span title={title} className={cx('inline-flex items-center gap-1 rounded-[2px] font-medium whitespace-nowrap', size === 'md' ? 'h-7 px-2 text-sm' : 'h-6 px-1.5 text-xs', TONE[tone], className)}>
+    <span title={title} className={cx('inline-flex items-center gap-1 rounded-tag whitespace-nowrap', tone === 'good' || tone === 'first' ? null : 'font-medium', size === 'md' ? 'h-7 px-2 text-small' : 'h-6 px-1.5 text-micro', TONE[tone], className)}>
       {icon && <Icon name={icon} size={size === 'md' ? 15 : 13} strokeWidth={2.2} />}
       {children}
     </span>
@@ -300,25 +305,29 @@ export function Panel({ title, description, actions, children, className = '', p
   );
 }
 
-export function PageHeader({ title, subtitle, actions, back }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; back?: { to: string; label: string } }) {
+/** The page's H1. On a phone a descriptive subtitle (a plain string: "what this screen is") is hidden, to keep the
+ *  phone header short; a subtitle built from data (JSX: a date, a count, status) stays. `subtitleOnPhone` overrides. */
+export function PageHeader({ title, subtitle, actions, back, subtitleOnPhone = typeof subtitle !== 'string' }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; back?: { to: string; label: string }; subtitleOnPhone?: boolean }) {
   return (
     <header className="mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-7">
       <div className="min-w-0">
         {back && (
-          <Link to={back.to} className="mb-1 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-tide hover:underline">
+          <Link to={back.to} className="mb-1 inline-flex min-h-11 items-center gap-1 text-small font-medium text-tide hover:underline">
             <Icon name="back" size={16} />
             {back.label}
           </Link>
         )}
-        <h1 className="font-display text-[1.75rem] leading-tight text-ink sm:text-title">{title}</h1>
-        {subtitle && <div className="mt-1 text-[0.95rem] text-muted">{subtitle}</div>}
+        <h1 className="font-display text-title-sm leading-tight text-ink sm:text-title">{title}</h1>
+        {subtitle && <div className={cx('mt-1 text-body-sm text-muted', !subtitleOnPhone && 'max-sm:hidden')}>{subtitle}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
   );
 }
 
-export function EmptyState({ icon = 'sun', title, children, action }: { icon?: IconName; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
+/** `titleAs`: the heading level of the title ("h1" when the empty state IS the page, e.g. the 404). */
+export function EmptyState({ icon = 'sun', title, children, action, titleAs = 'p' }: { icon?: IconName; title: ReactNode; children?: ReactNode; action?: ReactNode; titleAs?: 'p' | 'h1' | 'h2' | 'h3' }) {
+  const Title = titleAs;
   return (
     <div className="flex flex-col items-center px-4 py-10 text-center">
       {/* a navy tile, the icon above a run of beige stripes cut by the tile's bottom edge */}
@@ -326,16 +335,63 @@ export function EmptyState({ icon = 'sun', title, children, action }: { icon?: I
         <Icon name={icon} size={26} />
         <Stripes width={80} height={26} unit={12} dir="fall" count={3} offset={8} className="absolute inset-x-0 bottom-0 h-[26px] w-20" />
       </div>
-      <p className="text-lg font-bold">{title}</p>
-      {children && <div className="mt-1 max-w-md text-[0.95rem] text-muted">{children}</div>}
+      <Title className={titleAs === 'h1' ? 'font-display text-title-sm sm:text-title' : 'text-heading font-semibold'}>{title}</Title>
+      {children && <div className="mt-1 max-w-md text-body-sm text-muted">{children}</div>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
 
-export function Skeleton({ lines = 3, className = '' }: { lines?: number; className?: string }) {
+export const LOADING_LABEL = 'בטעינה…';
+
+/**
+ * Loading placeholders. Give them the final layout's shape and height, so nothing jumps when the data arrives (CLS):
+ * - `shape="lines"` (default): `lines` text lines (a paragraph, a small panel).
+ * - `shape="rows"`: a list/table in a panel, `count` rows of `height` px (default 56), each a title and a meta line.
+ * - `shape="tiles"`: a grid of `count` tiles of `height` px (default 112), `cols` = the grid's column classes.
+ * - `shape="block"`: one block of `height` px (a chart, a card).
+ * Use the same `count`/`height` as the real rows/tiles at that width.
+ */
+export function Skeleton({ lines = 3, className = '', shape = 'lines', count, height, cols }: {
+  lines?: number; className?: string; shape?: 'lines' | 'rows' | 'tiles' | 'block';
+  /** rows/tiles: how many */
+  count?: number;
+  /** rows: one row's height; tiles: one tile's height; block: the block's height (px) */
+  height?: number;
+  /** tiles: the grid's column classes, as on the real grid (default 'grid-cols-2 sm:grid-cols-4') */
+  cols?: string;
+}) {
+  const a11y = { role: 'status', 'aria-busy': true, 'aria-label': LOADING_LABEL } as const;
+  if (shape === 'rows') {
+    const h = height ?? 56;
+    return (
+      <div className={cx('overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper', className)} {...a11y}>
+        {Array.from({ length: count ?? 5 }).map((_, i) => (
+          <div key={i} className="flex flex-col justify-center gap-2 border-t border-edge px-4 first:border-t-0" style={{ height: h }}>
+            <div className="skeleton h-3.5" style={{ width: `${58 - ((i * 13) % 26)}%` }} />
+            {h >= 48 && <div className="skeleton h-2.5" style={{ width: `${34 - ((i * 7) % 14)}%` }} />}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (shape === 'tiles') {
+    return (
+      <div className={cx('grid gap-3', cols ?? 'grid-cols-2 sm:grid-cols-4', className)} {...a11y}>
+        {Array.from({ length: count ?? 4 }).map((_, i) => (
+          <div key={i} className="flex flex-col justify-between rounded-[var(--radius-panel)] border border-edge bg-paper p-3.5 sm:p-4" style={{ height: height ?? 112 }}>
+            <div className="skeleton h-3 w-2/3" />
+            <div className="skeleton h-7 w-1/3" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (shape === 'block') {
+    return <div className={cx('skeleton w-full rounded-[var(--radius-panel)]', className)} style={{ height: height ?? 200 }} {...a11y} />;
+  }
   return (
-    <div className={cx('flex flex-col gap-3', className)} role="status" aria-busy="true" aria-label="טוען">
+    <div className={cx('flex flex-col gap-3', className)} {...a11y}>
       {Array.from({ length: lines }).map((_, i) => (
         <div key={i} className="skeleton h-5" style={{ width: `${92 - ((i * 17) % 40)}%` }} />
       ))}
@@ -343,12 +399,15 @@ export function Skeleton({ lines = 3, className = '' }: { lines?: number; classN
   );
 }
 
+/** The retry button, everywhere (a page error, the offline bar, the "no connection" page). */
+export const RETRY_LABEL = 'ניסיון נוסף';
+
 export function ErrorBox({ error, onRetry }: { error: ReactNode; onRetry?: () => void }) {
   return (
     <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] border border-bad/30 bg-bad-wash px-4 py-3 text-bad">
       <Icon name="alert" />
       <span className="flex-1 font-medium">{error}</span>
-      {onRetry && <Button size="sm" variant="secondary" onClick={onRetry}>לנסות שוב</Button>}
+      {onRetry && <Button size="sm" variant="secondary" onClick={onRetry}>{RETRY_LABEL}</Button>}
     </div>
   );
 }
@@ -357,7 +416,7 @@ export function Notice({ tone = 'tide', icon = 'shield', children }: { tone?: 't
   // on the beige ground a beige box disappears: notices are warm-white cards with a coloured edge on the start side
   const t = tone === 'tide' ? 'bg-paper text-ink border-ink' : tone === 'light' ? 'bg-paper text-ink border-ink/40' : 'bg-warn-wash text-warn border-warn';
   return (
-    <div className={cx('flex items-start gap-2.5 rounded-[var(--radius-control)] border-s-[3px] px-3.5 py-3 text-sm leading-relaxed', t)}>
+    <div className={cx('flex items-start gap-2.5 rounded-[var(--radius-control)] border-s-[3px] px-3.5 py-3 text-small leading-relaxed', t)}>
       <Icon name={icon} size={18} className="mt-0.5" />
       <div>{children}</div>
     </div>
@@ -463,7 +522,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs:
             )}
           >
             {t.label}
-            {t.count != null && <span className={cx('num rounded-[2px] px-1.5 text-xs font-bold', on ? 'bg-ink text-light' : 'border border-ink/25 text-ink-soft')}>{t.count}</span>}
+            {t.count != null && <span className={cx('num rounded-tag px-1.5 text-micro font-bold', on ? 'bg-ink text-light' : 'border border-ink/25 text-ink-soft')}>{t.count}</span>}
           </button>
         );
       })}
@@ -473,7 +532,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs:
 
 export function KeyValue({ items }: { items: [ReactNode, ReactNode][] }) {
   return (
-    <dl className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-2.5 text-[0.95rem]">
+    <dl className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-2.5 text-body-sm">
       {items.map(([k, v], i) => (
         <div key={i} className="contents">
           <dt className="text-muted">{k}</dt>
@@ -515,7 +574,7 @@ export const SearchInput = forwardRef<HTMLInputElement, {
         placeholder={placeholder}
         inputMode={inputMode}
         {...rest}
-        className={cx(controlBase, size === 'lg' ? 'h-14 pr-10 text-lg' : 'h-12 pr-10', value ? 'pl-12' : null, '[&::-webkit-search-cancel-button]:appearance-none')}
+        className={cx(controlBase, size === 'lg' ? 'h-14 pr-10 text-heading' : 'h-12 pr-10', value ? 'pl-12' : null, '[&::-webkit-search-cancel-button]:appearance-none')}
       />
       {value && (
         <button
@@ -549,7 +608,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, c
             aria-pressed={on}
             onClick={() => onChange(o.value)}
             className={cx(
-              'h-10 pointer-coarse:h-11 shrink-0 rounded-[2px] px-3 text-small font-medium transition-colors',
+              'h-10 pointer-coarse:h-11 shrink-0 rounded-tag px-3 text-small font-medium transition-colors',
               on ? 'bg-ink text-light' : 'text-ink-soft hover:bg-ink/[0.05] hover:text-ink',
             )}
           >

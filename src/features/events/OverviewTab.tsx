@@ -229,7 +229,7 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
             {tasks.length > 0 && <li>ייפתחו משימות מעקב: {tasks.join('; ')}.</li>}
             <li>המפגש יסומן "התקיים" וייכנס לדוחות ולמדדים.</li>
           </ul>
-          <p className="text-sm text-muted">אפשר לתקן נוכחות גם אחרי הסגירה, בלשונית "נרשמים".</p>
+          <p className="text-small text-muted">אפשר לתקן נוכחות גם אחרי הסגירה, בלשונית "נרשמים".</p>
         </div>
       ),
     });
@@ -331,10 +331,10 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
                 ['קבועים שהפסיקו להגיע', <span key="3" className="num">{result.tasks_lapsed}</span>],
               ]}
             />
-            <p className="text-sm text-muted">המשימות מחכות במסך "מעקב". כדאי לשלוח לכל מי שהגיע הודעת תודה עם קישור למשוב (לשונית "הודעות").</p>
+            <p className="text-small text-muted">המשימות מחכות במסך "מעקב". כדאי לשלוח לכל מי שהגיע הודעת תודה עם קישור למשוב (לשונית "הודעות").</p>
             {dayOpen.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line-soft pt-3">
-                <span className="text-sm">{dayOpen.length === 1 ? 'משימת הכנה אחת עד יום המפגש עדיין פתוחה.' : <><span className="num">{dayOpen.length}</span> משימות הכנה עד יום המפגש עדיין פתוחות.</>}</span>
+                <span className="text-small">{dayOpen.length === 1 ? 'משימת הכנה אחת עד יום המפגש עדיין פתוחה.' : <><span className="num">{dayOpen.length}</span> משימות הכנה עד יום המפגש עדיין פתוחות.</>}</span>
                 <Button size="sm" variant="secondary" icon="check" busy={tick.isPending} onClick={() => tick.mutate(dayOpen.map((t) => t.id))}>סימון שבוצעו</Button>
               </div>
             )}
@@ -551,7 +551,7 @@ function DuplicateDialog({ open, onClose, e }: { open: boolean; onClose: () => v
   return (
     <Dialog open={open} onClose={onClose} title="שכפול לשבוע הבא" size="sm">
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <p className="text-[0.95rem] text-ink-soft">נוצרת טיוטה עם אותם פרטים, מקום, מכסה ופעילות. המרצה והנושא מתאפסים (בכל שבוע הרצאה חדשה).</p>
+        <p className="text-body-sm text-ink-soft">נוצרת טיוטה עם אותם פרטים, מקום, מכסה ופעילות. המרצה והנושא מתאפסים (בכל שבוע הרצאה חדשה).</p>
         <div className="grid grid-cols-2 gap-3">
           <Input label="תאריך" type="date" ltr value={date} onChange={(x) => setWhen({ date: x.target.value, time })} error={err} hint={/^\d{4}-\d{2}-\d{2}$/.test(date) && !err ? fmtDayLong(fromIl(date, '12:00')) : undefined} />
           <Input label="שעת התחלה" type="time" ltr value={time} onChange={(x) => setWhen({ date, time: x.target.value })} step={300} />
@@ -603,9 +603,9 @@ function CancelDialog({ open, onClose, e, onTab }: { open: boolean; onClose: () 
             רשומים למפגש <b className="num">{reg}</b> אנשים{wait ? <> ועוד <b className="num">{wait}</b> בהמתנה</> : null}. הם לא יקבלו הודעה אוטומטית. אחרי הביטול כדאי לעדכן אותם בוואטסאפ מלשונית "הודעות".
           </Notice>
         ) : (
-          <p className="text-[0.95rem] text-ink-soft">אין הרשמות למפגש.</p>
+          <p className="text-body-sm text-ink-soft">אין הרשמות למפגש.</p>
         )}
-        <p className="text-[0.95rem] text-ink-soft">ההרשמה תיסגר, ומי שייכנס לקישור יראה שהמפגש בוטל.</p>
+        <p className="text-body-sm text-ink-soft">ההרשמה תיסגר, ומי שייכנס לקישור יראה שהמפגש בוטל.</p>
         <Textarea label="סיבת הביטול" value={reason} onChange={(x) => setReason(x.target.value)} maxLength={300} rows={2} hint="מוצגת לצוות בלבד" />
       </div>
     </Dialog>
@@ -633,14 +633,14 @@ function LinksPanel({ e }: { e: EventWithStats }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <LinkRow label="הקישור הכללי" url={pub} onCopy={() => copy(pub, 'הקישור הועתק')} />
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-small text-muted">
             לכל ערוץ כדאי קישור משלו: כך הדוחות יודעים מאיפה הגיעה כל הרשמה.
           </p>
         </div>
         <QrBlock value={pub} label="QR להרשמה" filename={`registration-qr-${e.public_code}.png`} size={132} />
       </div>
       {links.isError ? (
-        <p className="mt-3 text-sm text-bad">{errorMessage(links.error)}</p>
+        <p className="mt-3 text-small text-bad">{errorMessage(links.error)}</p>
       ) : active.length > 0 && !more ? (
         <div className="mt-3 border-t border-line-soft pt-2">
           <button type="button" aria-expanded={false} onClick={() => setMore(true)} className="-mx-2 inline-flex min-h-11 items-center gap-1.5 px-2 text-small font-semibold text-tide hover:underline">
@@ -681,7 +681,7 @@ function QrBlock({ value, label, filename, size }: { value: string; label: strin
   return (
     <div className="flex shrink-0 flex-col items-center gap-1.5">
       <QrImage value={value} size={size} label={label} className="rounded-[var(--radius-panel)] border border-line-soft" />
-      <button type="button" onClick={download} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] px-2 text-sm font-semibold text-tide hover:bg-tide-wash">
+      <button type="button" onClick={download} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] px-2 text-small font-semibold text-tide hover:bg-tide-wash">
         <Icon name="download" size={16} />
         הורדת QR
       </button>
@@ -739,7 +739,7 @@ function NewLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }
   return (
     <Dialog open={open} onClose={onClose} title="קישור הרשמה לערוץ חדש" size="sm">
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-        <p className="text-[0.95rem] text-ink-soft">הקישור עובד לכל מפגש: מוסיפים לקישור ההרשמה <span dir="ltr" className="num">?ref=קוד</span>, והדוחות סופרים כמה נרשמו והגיעו דרכו.</p>
+        <p className="text-body-sm text-ink-soft">הקישור עובד לכל מפגש: מוסיפים לקישור ההרשמה <span dir="ltr" className="num">?ref=קוד</span>, והדוחות סופרים כמה נרשמו והגיעו דרכו.</p>
         <Input label="תיאור" required value={label} onChange={(x) => setLabel(x.target.value)} error={errors.label} placeholder="קבוצת הוואטסאפ של מודיעין" maxLength={80} />
         <Input label="קוד" required ltr value={code} onChange={(x) => setCode(x.target.value.toLowerCase().replace(/\s+/g, '-'))} error={errors.code} placeholder="wa-modiin" maxLength={40} hint="אותיות באנגלית, ספרות ומקף. מופיע בקישור." />
         <Select label="מקור" value={sourceId} onChange={(x) => setSourceId(x.target.value)} hint="איך שמעו עלינו מי שנרשמים דרך הקישור">
@@ -747,7 +747,7 @@ function NewLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }
           {(sources.data ?? []).filter((s) => s.is_active).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </Select>
         <Input label="קמפיין" value={campaign} onChange={(x) => setCampaign(x.target.value)} maxLength={80} placeholder="לא חובה" />
-        {errors.form && <p className="text-sm font-medium text-bad" role="alert">{errors.form}</p>}
+        {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" busy={create.isPending} icon="link">יצירת קישור</Button>
           <Button variant="ghost" onClick={onClose}>ביטול</Button>
@@ -768,7 +768,7 @@ function EntrancePanel({ e }: { e: EventWithStats }) {
     <Panel title="צ׳ק־אין בכניסה ומשוב">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
-          <p className="text-[0.95rem] text-ink-soft">
+          <p className="text-body-sm text-ink-soft">
             קוד QR להדפסה ולתלייה בכניסה: מי שמגיע סורק אותו ומסמן הגעה, בלי עזרה מהצוות. הסריקה פתוחה {e.status === 'draft' ? 'אחרי פתיחת ההרשמה, ' : ''}סביב שעת המפגש.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -863,7 +863,7 @@ function PrintSignDialog({ open, onClose, e, url }: { open: boolean; onClose: ()
           </>
         }
       >
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-small text-muted">
           מדפיסים ותולים בכניסה, בגובה העיניים. הקוד עובד רק למפגש הזה.
           <br />
           בהגדרות ההדפסה: A4, גרפיקת רקע מסומנת.

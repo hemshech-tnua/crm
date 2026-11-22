@@ -85,7 +85,7 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
           לתשלום <span className="num">{amount}</span>
         </ExternalButton>
         <TriList
-          className="mt-3 text-[0.9375rem] text-ink"
+          className="mt-3 text-body-sm text-ink"
           items={[
             'דף התשלום המאובטח של חברת התשלום ייפתח בחלון\u00a0חדש.',
             prefilled
@@ -121,11 +121,11 @@ function PendingLink({ token }: { token: string }) {
   const url = manageUrl(token);
   return (
     <Block title="לא מסתדר לשלם עכשיו?">
-      <p className="text-[0.9375rem] text-ink-soft">
+      <p className="text-body-sm text-ink-soft">
         שמרו את הקישור האישי. דרכו אפשר לחזור ולשלם, כל עוד יש&nbsp;מקום.
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
-      <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
+      <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-small text-ink-soft">{url}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור האישי הועתק. כדאי לשמור אותו.')}>העתקת הקישור האישי</Button>
         <ButtonLink to={`/m/${token}`} variant="ghost">לעמוד ההרשמה שלי</ButtonLink>

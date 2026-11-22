@@ -11,20 +11,14 @@ import { useOrgInfo } from './api';
 import { formatPhone, whatsappLink } from '@/lib/phone';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { FRIDAY_FACTS } from './friday/facts';
+import { useTitle } from '@/lib/title';
 
 /**
- * The browser tab's title on a public page: "מפגשי שישי | המשך תנועה". Without one (null) the default title of
- * index.html stays; leaving the page puts back the title it found.
+ * The browser tab's title on a public page: "מפגשי שישי · המשך תנועה". Without one (null) the default title of
+ * index.html stays; leaving the page puts back the title it found. (The shared useTitle in '@/lib/title'.)
  */
 export function usePageTitle(title: string | null | undefined) {
-  useEffect(() => {
-    if (!title) return;
-    const before = document.title;
-    document.title = `${title} | המשך תנועה`;
-    return () => {
-      document.title = before;
-    };
-  }, [title]);
+  useTitle(title);
 }
 
 /** The one highlighted moment of a screen: a beige check that draws itself on navy (static when reduced motion is on). */
@@ -139,7 +133,7 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
   };
   return (
     <Block title={title}>
-      <p className="text-[0.9375rem] text-ink-soft">
+      <p className="text-body-sm text-ink-soft">
         {lead ?? (
           <>
             מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
@@ -169,13 +163,13 @@ export function PersonalLink({ url, token, waitlist }: { url: string; token: str
   const copy = useCopy();
   return (
     <Block title={waitlist ? 'הקישור האישי שלך' : 'השתנו התוכניות?'}>
-      <p className="text-[0.9375rem] text-ink-soft">
+      <p className="text-body-sm text-ink-soft">
         {waitlist
           ? 'כדאי לשמור את הקישור. דרכו אפשר לראות את המקום שלך בתור, או לצאת מרשימת ההמתנה.'
           : 'אפשר לבטל בקישור האישי. כך המקום עובר למי שמחכה.'}
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
-      <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-sm text-ink-soft">{url}</p>
+      <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-small text-ink-soft">{url}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="secondary" icon="copy" onClick={() => copy(url, 'הקישור האישי הועתק. כדאי לשמור אותו.')}>העתקת הקישור האישי</Button>
         <ButtonLink to={`/m/${token}`} variant="ghost">לעמוד ההרשמה שלי</ButtonLink>
@@ -215,7 +209,7 @@ export function BeforeYouCome({ event }: { event: PublicEvent }) {
             </div>
           </>
         )}
-        <p className="mt-2 text-[0.9375rem] text-ink-soft">
+        <p className="mt-2 text-body-sm text-ink-soft">
           צריכים טרמפ? <ContactLine inline />
         </p>
       </section>
@@ -223,14 +217,14 @@ export function BeforeYouCome({ event }: { event: PublicEvent }) {
         <section aria-labelledby="after-bring" className="p-4 sm:p-5">
           <SectionTitle id="after-bring">מה להביא</SectionTitle>
           <p className="mt-2 text-ink">בגדים ונעליים נוחים לאימון, ובקבוק&nbsp;מים.</p>
-          <p className="mt-1 text-[0.9375rem] text-ink-soft">את הקפה והנשנושים אנחנו&nbsp;מביאים.</p>
+          <p className="mt-1 text-body-sm text-ink-soft">את הקפה והנשנושים אנחנו&nbsp;מביאים.</p>
         </section>
       )}
       {now && (
         <section aria-labelledby="after-now" className="p-4 sm:p-5" data-fact="reminder-greeter">
           <SectionTitle id="after-now">מה הלאה</SectionTitle>
-          {f.reminder && <p className="mt-2 text-[0.9375rem] text-ink-soft">{f.reminder}</p>}
-          {f.greeter && <p className="mt-1 text-[0.9375rem] font-semibold text-ink">כשמגיעים, חפשו את {f.greeter}.</p>}
+          {f.reminder && <p className="mt-2 text-body-sm text-ink-soft">{f.reminder}</p>}
+          {f.greeter && <p className="mt-1 text-body-sm font-semibold text-ink">כשמגיעים, חפשו את {f.greeter}.</p>}
         </section>
       )}
     </div>
@@ -282,14 +276,14 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
 export function ContactLine({ inline = false }: { inline?: boolean }) {
   const org = useOrgInfo();
   const phone = org.data?.contact_phone;
-  if (!phone) return <>{inline ? 'פנו לצוות העמותה.' : <p className="text-sm text-muted">שאלות? פנו לצוות העמותה.</p>}</>;
+  if (!phone) return <>{inline ? 'פנו לצוות העמותה.' : <p className="text-small text-muted">שאלות? פנו לצוות העמותה.</p>}</>;
   const link = (
     <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="inline-block py-3 leading-5 font-semibold text-tide underline underline-offset-2">
       כתבו לנו בוואטסאפ (<span dir="ltr" className="num whitespace-nowrap">{formatPhone(phone)}</span>)
       <span className="sr-only"> (נפתח בחלון חדש)</span>
     </a>
   );
-  return inline ? link : <p className="text-sm text-muted">שאלות או בקשות? {link}</p>;
+  return inline ? link : <p className="text-small text-muted">שאלות או בקשות? {link}</p>;
 }
 
 /**
@@ -315,22 +309,22 @@ export function PayBlock({ event, payer = null, className = '' }: { event: Publi
           </ExternalButton>
           {/* one payment link serves everyone, so the team matches payments to registrations by name and phone */}
           {payUrl(event.payment_url, payer) !== event.payment_url ? (
-            <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
+            <p className="mt-3 text-body-sm font-semibold text-ink">
               השם והטלפון כבר ממולאים בדף התשלום. נשאר להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.
             </p>
           ) : (
-            <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
+            <p className="mt-3 text-body-sm font-semibold text-ink">
               בדף התשלום כתבו את השם והטלפון שנרשמתם איתם. כך נדע לשייך את התשלום להרשמה&nbsp;שלכם.
             </p>
           )}
-          <p className="mt-2 text-[0.9375rem] text-ink-soft">
+          <p className="mt-2 text-body-sm text-ink-soft">
             דף התשלום המאובטח של חברת התשלום ייפתח בחלון חדש. לא מסתדר עכשיו? אפשר לשלם אחר כך בקישור&nbsp;האישי.
           </p>
         </>
       ) : (
-        <p className="mt-2 text-[0.9375rem] text-ink-soft">משלמים בכניסה למפגש.</p>
+        <p className="mt-2 text-body-sm text-ink-soft">משלמים בכניסה למפגש.</p>
       )}
-      {event.payment_note && <p className="mt-1 text-sm text-muted">{event.payment_note}</p>}
+      {event.payment_note && <p className="mt-1 text-small text-muted">{event.payment_note}</p>}
     </section>
   );
 }

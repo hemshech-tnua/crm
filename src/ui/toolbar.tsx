@@ -82,7 +82,7 @@ export function NoResults({ onClear, title = 'אין תוצאות לחיפוש �
         <Icon name={icon} size={22} />
       </div>
       <p className="text-heading font-bold">{title}</p>
-      {children && <div className="mt-1 max-w-md text-[0.95rem] text-muted">{children}</div>}
+      {children && <div className="mt-1 max-w-md text-body-sm text-muted">{children}</div>}
       {onClear && <Button variant="secondary" className="mt-4" onClick={onClear}>{clearLabel}</Button>}
     </div>
   );

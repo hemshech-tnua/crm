@@ -218,12 +218,12 @@ function PhotoField({ name, path, busy, error, removed, onPick, onRemove }: {
         <div className="flex min-w-0 flex-col items-start gap-2">
           <Button variant="secondary" icon="image" busy={busy} onClick={onPick}>{path ? 'החלפת התמונה' : 'העלאת תמונה'}</Button>
           {path && <Button variant="ghost" className="-ms-3" onClick={onRemove} disabled={busy}>הסרת התמונה</Button>}
-          <p className="text-sm text-muted empty:hidden" role="status">{removed ? 'התמונה תימחק בשמירה.' : ''}</p>
+          <p className="text-small text-muted empty:hidden" role="status">{removed ? 'התמונה תימחק בשמירה.' : ''}</p>
         </div>
       </div>
-      <p id="photo-hint" className="text-sm font-medium text-ink-soft">מעלים רק תמונה שהאדם הסכים שתפורסם באתר.</p>
-      <p className="text-sm text-muted">התמונה נחתכת לדיוקן (4:5) ומוקטנת לפני ההעלאה.</p>
-      {error && <p className="flex items-center gap-1 text-sm font-medium text-bad" role="alert"><Icon name="alert" size={15} />{error}</p>}
+      <p id="photo-hint" className="text-small font-medium text-ink-soft">מעלים רק תמונה שהאדם הסכים שתפורסם באתר.</p>
+      <p className="text-small text-muted">התמונה נחתכת לדיוקן (4:5) ומוקטנת לפני ההעלאה.</p>
+      {error && <p className="flex items-center gap-1 text-small font-medium text-bad" role="alert"><Icon name="alert" size={15} />{error}</p>}
     </div>
   );
 }

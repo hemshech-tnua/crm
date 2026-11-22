@@ -66,7 +66,7 @@ export function UnmatchedPayments({ eventId = null }: { eventId?: string | null 
   const title = n === 1 ? 'תשלום אחד מחכה להתאמה' : `${n} תשלומים מחכים להתאמה`;
   if (!open) {
     return (
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius-control)] border-s-[3px] border-warn bg-warn-wash px-3.5 py-2 text-sm text-warn" data-testid="unmatched-banner">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius-control)] border-s-[3px] border-warn bg-warn-wash px-3.5 py-2 text-small text-warn" data-testid="unmatched-banner">
         <Icon name="alert" size={18} />
         <span className="flex-1 font-medium">
           <span className="font-bold">{title}</span>: שולמו ב"יש חשבונית" ולא נמצאה להם הרשמה באותו טלפון.

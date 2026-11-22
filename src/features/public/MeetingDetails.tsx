@@ -137,7 +137,7 @@ function About({ text, name, id }: { text: string; name: string; id: string }) {
   }, [open, text]);
   return (
     <div className="mt-3">
-      <p ref={ref} id={id} className={cx('text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink-soft', !open && 'line-clamp-4')}>
+      <p ref={ref} id={id} className={cx('text-body-sm leading-relaxed whitespace-pre-line text-ink-soft', !open && 'line-clamp-4')}>
         {text}
       </p>
       {(long || open) && (
@@ -181,7 +181,7 @@ function PersonCard({ person: p, event: e, mode, index }: { person: PublicPerson
       <div className="min-w-0">
         <H className="text-heading font-bold">{keepName(p.name)}</H>
         <p className="mt-1.5"><Badge tone="light">{roleChip(p, e)}</Badge></p>
-        {p.line?.trim() && <p className="mt-2 text-[0.9375rem] leading-snug font-medium text-ink">{keepName(p.line.trim())}</p>}
+        {p.line?.trim() && <p className="mt-2 text-body-sm leading-snug font-medium text-ink">{keepName(p.line.trim())}</p>}
       </div>
       {about && (
         <div className="col-span-2 min-w-0 lg:col-span-1 lg:col-start-2">
@@ -221,7 +221,7 @@ function Lecture({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
             {e.speaker_name && <span className="mt-0.5 block text-body font-medium text-ink-soft">עם {keepName(e.speaker_name)}</span>}
           </p>
         )}
-        {text && <p className={cx('text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink-soft', topic && 'mt-3')}>{keepName(text)}</p>}
+        {text && <p className={cx('text-body-sm leading-relaxed whitespace-pre-line text-ink-soft', topic && 'mt-3')}>{keepName(text)}</p>}
       </div>
     </section>
   );
@@ -235,7 +235,7 @@ function Morning({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
     return (
       <section aria-labelledby={id}>
         <SectionHead mode={mode} id={id}>על המפגש</SectionHead>
-        <p className="mt-3 rounded-[var(--radius-panel)] border border-edge bg-paper p-4 text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink-soft sm:p-5 lg:mt-4">
+        <p className="mt-3 rounded-[var(--radius-panel)] border border-edge bg-paper p-4 text-body-sm leading-relaxed whitespace-pre-line text-ink-soft sm:p-5 lg:mt-4">
           {keepName(e.description.trim())}
         </p>
       </section>
@@ -264,7 +264,7 @@ function Morning({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
         ))}
       </ol>
       {e.description?.trim() && (
-        <p className="mt-3 text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink-soft">{keepName(e.description.trim())}</p>
+        <p className="mt-3 text-body-sm leading-relaxed whitespace-pre-line text-ink-soft">{keepName(e.description.trim())}</p>
       )}
     </section>
   );
@@ -274,7 +274,7 @@ function Fact({ term, children }: { term: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 px-4 py-3 sm:px-5">
       <dt className="text-small font-semibold text-muted">{term}</dt>
-      <dd className="min-w-0 text-[0.9375rem] text-ink">{children}</dd>
+      <dd className="min-w-0 text-body-sm text-ink">{children}</dd>
     </div>
   );
 }

@@ -38,7 +38,7 @@ export function LoginPage() {
       {mode === 'password' ? <PasswordLogin from={from} /> : <CodeLogin key={mode} channel={mode} from={from} />}
       <div className="mt-6 flex flex-col items-start gap-1">
         {(['email', 'sms', 'password'] as const).filter((m) => m !== mode).map((m) => (
-          <button key={m} type="button" onClick={() => setMode(m)} className="min-h-11 text-[0.95rem] font-semibold text-tide underline underline-offset-4">
+          <button key={m} type="button" onClick={() => setMode(m)} className="min-h-11 text-body-sm font-semibold text-tide underline underline-offset-4">
             {MODE_LINK[m]}
           </button>
         ))}
@@ -154,7 +154,7 @@ function CodeLogin({ channel, from }: { channel: 'email' | 'sms'; from: string }
         )}
         {error && <ErrorBox error={error} />}
         <Button type="submit" size="lg" busy={busy} disabled={!phone.trim()}>{sms ? 'שליחת קוד ב-SMS' : 'שליחת קוד למייל'}</Button>
-        <p className="text-sm text-muted">{sms ? 'נשלח קוד חד־פעמי למספר שרשום אצלנו בצוות.' : 'נשלח קוד חד־פעמי לכתובת שרשומה אצלנו בצוות.'} אין צורך בסיסמה.</p>
+        <p className="text-small text-muted">{sms ? 'נשלח קוד חד־פעמי למספר שרשום אצלנו בצוות.' : 'נשלח קוד חד־פעמי לכתובת שרשומה אצלנו בצוות.'} אין צורך בסיסמה.</p>
       </form>
     );
   }
@@ -179,7 +179,7 @@ function CodeLogin({ channel, from }: { channel: 'email' | 'sms'; from: string }
       />
       {error && <ErrorBox error={error} />}
       <Button type="submit" size="lg" busy={busy} disabled={code.replace(/\D/g, '').length < 6}>כניסה</Button>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-small">
         <button type="button" disabled={wait > 0 || busy} onClick={() => send(sentTo)} className="min-h-11 font-semibold text-tide underline underline-offset-4 disabled:text-faint disabled:no-underline">
           {wait > 0 ? <>שליחה מחדש בעוד <span className="num">{wait}</span> שניות</> : 'שליחת קוד חדש'}
         </button>
@@ -236,7 +236,7 @@ function PasswordLogin({ from }: { from: string }) {
         {error && <ErrorBox error={error} />}
         <Button type="submit" size="lg" busy={busy} disabled={!email || !password}>כניסה</Button>
       </form>
-      <p className="mt-6 text-sm text-muted">שכחת סיסמה? מנהלי המערכת יכולים לאפס אותה מתוך ההגדרות.</p>
+      <p className="mt-6 text-small text-muted">שכחת סיסמה? מנהלי המערכת יכולים לאפס אותה מתוך ההגדרות.</p>
     </>
   );
 }

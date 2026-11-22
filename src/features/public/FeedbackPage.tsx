@@ -101,7 +101,7 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
         <p className="mt-1 text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
       </div>
       <EventTicket event={c.event} showStatus={false} />
-      {c.existing && <p className="text-sm text-muted">כבר שלחתם משוב על המפגש הזה. אפשר לעדכן אותו כאן.</p>}
+      {c.existing && <p className="text-small text-muted">כבר שלחתם משוב על המפגש הזה. אפשר לעדכן אותו כאן.</p>}
       <FeedbackForm
         ctx={c}
         token={c.personal ? token : null}

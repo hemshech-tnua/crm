@@ -43,7 +43,7 @@ test('dashboard and reports match the source data', async ({ page }) => {
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText('אלף מדדים')).toBeVisible();
   await expect(dialog.getByText('בית מדדים')).toHaveCount(0);
-  await dialog.getByRole('button', { name: 'סגירה' }).click();
+  await dialog.getByRole('button', { name: 'סגירת החלון' }).click();
 
   // the events report lists both meetings with new/returning split
   await page.goto(`#/app/reports?tab=events&site=${site!.id}&period=all&type=friday`);

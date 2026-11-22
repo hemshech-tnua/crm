@@ -101,7 +101,7 @@ test('24 hours after a meeting the dashboard asks for the thank-you; non-members
   expect(text).toContain('להצטרף לעמותת המשך תנועה');
   expect(text).toContain('#/member');
   expect(text).toContain(`מוזמן, תודה שהיית איתנו`);
-  await dialog.getByRole('button', { name: /סגירה|ביטול/ }).first().click().catch(() => page.keyboard.press('Escape'));
+  await dialog.getByRole('button', { name: 'סגירת החלון' }).first().click().catch(() => page.keyboard.press('Escape'));
 
   await memberRow.getByRole('button', { name: 'שליחה' }).click();
   await expect(page.getByRole('dialog').getByRole('combobox', { name: 'תבנית' })).toHaveValue('thanks');

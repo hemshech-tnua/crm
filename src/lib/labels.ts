@@ -1,4 +1,15 @@
-import type { Attendance, Engagement, EventStatus, EventType, Membership, PaymentMethod, PaymentStatus, RegStatus, Role } from './types';
+import type { Attendance, Engagement, EventStatus, EventType, Membership, PaymentMethod, PaymentStatus, RegStatus, Role, Settings } from './types';
+
+/** The dismiss button of a dialog ("ביטול" means cancelling a registration or a meeting, so it is never the dismiss). */
+export const DISMISS = 'חזרה';
+/** A full-page form's way out without saving. */
+export const DISMISS_UNSAVED = 'חזרה בלי שמירה';
+/** Leaving a form with unsaved input (useUnsavedGuard, Dialog dismissible={false}). */
+export const LEAVE_UNSAVED = {
+  title: 'לצאת בלי לשמור?',
+  body: 'מה שהוקלד כאן עוד לא נשמר, והוא לא יישמר.',
+  confirm: 'יציאה בלי שמירה',
+} as const;
 
 export const ROLE_LABEL: Record<Role, string> = { admin: 'ניהול', coordinator: 'ריכוז', volunteer: 'צוות כניסה' };
 export const ROLE_HINT: Record<Role, string> = {
@@ -7,12 +18,12 @@ export const ROLE_HINT: Record<Role, string> = {
   volunteer: 'רק רשימת הנוכחות של המפגש של היום',
 };
 
-export const EVENT_TYPE_LABEL: Record<EventType, string> = { friday: 'מפגש שישי', bonfire: 'ערב מדורה', other: 'פעילות אחרת' };
+export const EVENT_TYPE_LABEL: Record<EventType, string> = { friday: 'מפגש שישי', bonfire: 'ערב מדורה', other: 'מפגש אחר' };
 export const EVENT_STATUS_LABEL: Record<EventStatus, string> = {
   draft: 'טיוטה', open: 'הרשמה פתוחה', closed: 'הרשמה סגורה', completed: 'התקיים', cancelled: 'בוטל',
 };
 export const REG_STATUS_LABEL: Record<RegStatus, string> = { registered: 'הרשמה פעילה', waitlisted: 'רשימת המתנה', cancelled: 'ביטול', pending_payment: 'מחכה לתשלום' };
-export const ATTENDANCE_LABEL: Record<Attendance, string> = { unknown: 'טרם סומן', attended: 'הגעה', no_show: 'אי־הגעה' };
+export const ATTENDANCE_LABEL: Record<Attendance, string> = { unknown: 'עוד לא סומנה הגעה', attended: 'הגעה', no_show: 'אי־הגעה' };
 
 export const ENGAGEMENT_LABEL: Record<Engagement, string> = {
   registered: 'לפני הגעה ראשונה',
@@ -21,13 +32,21 @@ export const ENGAGEMENT_LABEL: Record<Engagement, string> = {
   regular: 'הגעה קבועה',
   lapsed: 'הגעה שנפסקה',
 };
+/** Short hints without the numbers (the thresholds are editable in the settings; engagementHint() names them). */
 export const ENGAGEMENT_HINT: Record<Engagement, string> = {
   registered: 'יש הרשמה, אבל עוד אין הגעה לאף מפגש',
   first_timer: 'הגעה למפגש אחד',
   returning: 'הגעה ליותר ממפגש אחד',
-  regular: 'הגעה ל-2 מפגשי שישי לפחות ב-30 הימים האחרונים',
-  lapsed: 'הגעה קבועה בעבר, ומאז ההגעה האחרונה התקיימו 3 מפגשי שישי בלי הגעה',
+  regular: 'הגעה למפגשי שישי שוב ושוב בתקופה האחרונה (לפי ההגדרות)',
+  lapsed: 'הגעה קבועה בעבר, ומאז כמה מפגשי שישי בלי הגעה (לפי ההגדרות)',
 };
+/** The hint with the thresholds from the settings ("הגעה ל־2 מפגשי שישי לפחות ב־30 הימים האחרונים"). */
+export function engagementHint(e: Engagement, s?: Pick<Settings, 'regular_min_fridays' | 'regular_window_days' | 'lapsed_after_fridays'> | null): string {
+  if (!s) return ENGAGEMENT_HINT[e];
+  if (e === 'regular') return `הגעה ל־${s.regular_min_fridays} מפגשי שישי לפחות ב־${s.regular_window_days} הימים האחרונים`;
+  if (e === 'lapsed') return `הגעה קבועה בעבר, ומאז ההגעה האחרונה התקיימו ${s.lapsed_after_fridays} מפגשי שישי בלי הגעה`;
+  return ENGAGEMENT_HINT[e];
+}
 
 export const FOLLOWUP_TYPE_LABEL = {
   no_show: 'הרשמה בלי הגעה',
@@ -94,7 +113,8 @@ export const COUNT_LABEL = {
 /** Money: the order and words of the finance tiles everywhere (incoming first, then out, then the result). */
 export const MONEY_LABEL = {
   collected: 'נגבה',
-  pending: 'ממתין לתשלום',
+  /** the amount not yet paid (the registration status stays "מחכה לתשלום", REG_STATUS_LABEL) */
+  pending: 'עוד לא שולם',
   expenses: 'הוצאות',
   net: 'נטו',
   forecast: 'צפי',

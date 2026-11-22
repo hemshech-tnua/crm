@@ -88,7 +88,7 @@ test('#/e/<code> shows who is with us, the lecture and the details, with a worki
   await page.goto(`#/e/${ev.public_code}?ref=ig`);
 
   await expect(page.getByRole('heading', { level: 1, name: 'מפגש פרטים E2E' })).toBeVisible();
-  await expect(page).toHaveTitle('פרטי המפגש: מפגש פרטים E2E | המשך תנועה');
+  await expect(page).toHaveTitle('פרטי המפגש: מפגש פרטים E2E · המשך תנועה');
   await expect(page.getByRole('heading', { level: 2, name: 'מי איתנו בבוקר' })).toBeVisible();
   const cards = page.getByTestId('person-card');
   await expect(cards).toHaveCount(2);

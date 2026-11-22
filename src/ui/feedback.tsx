@@ -1,14 +1,19 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { DISMISS, LEAVE_UNSAVED } from '@/lib/labels';
 import { Button, cx } from './kit';
 import { Icon } from './Icon';
+
+export { DISMISS };
 
 // ───────────── toasts ─────────────
 //
 // One toast at a time, one short line ("[thing] [past verb]", with the name). It stays ~4s (6s with an action such as
 // "החזרה", 7s for an error), pauses while pointed at, focused or while the tab is hidden, and can be swiped sideways
 // (or down) or closed with ×. Position: at the bottom; on a phone above the tab bar (StaffLayout marks it on <html>),
-// moved to the top while a modal dialog is open so it never covers the dialog's own buttons; on a wide screen in the
-// bottom-left corner, clear of centred dialogs and of the start-side primary buttons.
+// moved to the top while a centred modal dialog is open so it never covers the dialog's own buttons; while a phone sheet
+// (a full-height form dialog) is open it stays at the bottom, just above the sheet's footer; on a wide screen in the
+// bottom-left corner, clear of centred dialogs and of the start-side primary buttons. One live region: each toast is
+// itself the status (or alert, for an error), and there is one toast at a time.
 
 type ToastAction = { label: string; run: () => void };
 type Toast = { id: number; tone: 'good' | 'bad' | 'info'; text: string; action?: ToastAction; top: boolean; bar: number };
@@ -44,6 +49,20 @@ function bottomBar(): number {
   return Math.max(0, window.innerHeight - top);
 }
 const DURATION = { plain: 4000, action: 6000, bad: 7000 } as const;
+
+/** Where a new toast goes: over an open centred dialog → the top; over a phone sheet → the bottom, above its footer;
+ *  otherwise the bottom, above the page's own bottom bar. */
+function placement(): { top: boolean; bar: number } {
+  if (typeof document === 'undefined') return { top: false, bar: 0 };
+  const open = Array.from(document.querySelectorAll<HTMLDialogElement>('dialog[open]'));
+  const last = open[open.length - 1];
+  if (!last) return { top: false, bar: bottomBar() };
+  if (last.hasAttribute('data-sheet') && window.matchMedia('(max-width: 639px)').matches) {
+    const foot = last.querySelector('footer');
+    return { top: false, bar: foot ? Math.round(foot.getBoundingClientRect().height) : 0 };
+  }
+  return { top: true, bar: 0 };
+}
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -95,8 +114,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [pause, resume]);
   const push = useCallback((tone: Toast['tone'], text: string, action?: ToastAction) => {
     const id = ++seq.current;
-    const top = typeof document !== 'undefined' && !!document.querySelector('dialog[open]');
-    const bar = top ? 0 : bottomBar();
+    const { top, bar } = placement();
     setLeaving(null);
     setToasts([{ id, tone, text, top, bar, action: action && { ...action, label: actionLabel(action.label) } }]);
     arm(id, tone === 'bad' ? DURATION.bad : action ? DURATION.action : DURATION.plain);
@@ -145,8 +163,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         data-at={top ? 'top' : 'bottom'}
         style={bar ? { bottom: `calc(${bar}px + 0.75rem)` } : undefined}
         className="toast-layer pointer-events-none fixed inset-x-0 z-50 m-0 flex h-auto w-full flex-col items-center gap-2 overflow-visible border-0 bg-transparent p-0 px-4 md:items-end md:px-6"
-        aria-live="polite"
-        aria-atomic="false"
       >
         {toasts.map((t) => (
           <ToastView key={t.id} t={t} leaving={leaving === t.id} onPause={pause} onResume={resume} onDismiss={() => dismiss(t.id)}
@@ -200,6 +216,7 @@ function ToastView({ t, leaving, onPause, onResume, onDismiss, onAction }: {
   return (
     <div
       role={t.tone === 'bad' ? 'alert' : 'status'}
+      aria-atomic="true"
       onPointerEnter={onPause}
       onPointerLeave={() => { if (!off?.live) onResume(); }}
       onPointerDown={down}
@@ -210,9 +227,9 @@ function ToastView({ t, leaving, onPause, onResume, onDismiss, onAction }: {
       onBlur={onResume}
       style={moved}
       className={cx(
-        'pointer-events-auto flex w-full max-w-md touch-pan-y items-center gap-2.5 rounded-[var(--radius-control)] py-1.5 ps-4 pe-1.5 text-[0.9375rem] font-medium shadow-lg transition-[transform,opacity] duration-200 ease-out select-none md:w-auto md:min-w-72',
+        'pointer-events-auto flex w-full max-w-md touch-pan-y items-center gap-2.5 rounded-[var(--radius-control)] py-1.5 ps-4 pe-1.5 text-body-sm font-medium shadow-lg transition-[transform,opacity] duration-200 ease-out select-none md:w-auto md:min-w-72',
         leaving ? 'toast-out' : 'toast-in',
-        t.tone === 'bad' ? 'bg-bad text-white' : 'bg-ink text-light',
+        t.tone === 'bad' ? 'bg-bad text-paper' : 'bg-ink text-light',
       )}
     >
       <Icon name={t.tone === 'bad' ? 'alert' : 'checkCircle'} size={18} />
@@ -220,13 +237,13 @@ function ToastView({ t, leaving, onPause, onResume, onDismiss, onAction }: {
       <span title={t.text} className={cx('min-w-0 flex-1 py-1.5 leading-snug', t.tone !== 'bad' && 'line-clamp-2')}>{t.text}</span>
       {t.action && (
         <button type="button" onClick={onAction}
-          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-[2px] px-2.5 font-bold text-current underline underline-offset-2 hover:bg-light/10">
+          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-tag px-2.5 font-bold text-current underline underline-offset-2 hover:bg-light/10">
           {t.action.label === UNDO_LABEL && <Icon name="undo" size={16} />}
           {t.action.label}
         </button>
       )}
       <button type="button" onClick={onDismiss} aria-label="סגירת ההודעה"
-        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[2px] opacity-75 hover:bg-light/10 hover:opacity-100">
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-tag opacity-75 hover:bg-light/10 hover:opacity-100">
         <Icon name="close" size={16} />
       </button>
     </div>
@@ -241,45 +258,103 @@ export function useToast(): ToastApi {
 
 // ───────────── dialogs ─────────────
 
-export function Dialog({ open, onClose, title, children, footer, size = 'md' }: {
+/** The close (×) button's name in every dialog: it closes the window, not the thing the dialog is about. */
+export const CLOSE_WINDOW_LABEL = 'סגירת החלון';
+
+const ConfirmCtx = createContext<((o: ConfirmOptions) => Promise<boolean>) | null>(null);
+
+const FIELD = 'input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=button]):not([type=submit]), textarea, select';
+
+/**
+ * A modal dialog (native <dialog>: focus trap, Escape, top layer).
+ * - `dismissible` (default true): false while a form in it has unsaved input (`dismissible={!dirty}`). Then a tap outside
+ *   does nothing, and Escape or × first ask "לצאת בלי לשמור?" (the footer's own "חזרה" button is the caller's and closes
+ *   at once).
+ * - `layout`: on a phone (<640px) a dialog with text fields is a full-height sheet (header fixed, body scrolls, footer at
+ *   the bottom); a dialog without fields (a confirm, a list, a menu) stays a centred card. 'auto' (default) decides by
+ *   looking for fields; 'sheet' or 'center' force it. Wide screens always get the centred card.
+ * - Validation: prefer validate-on-submit (the primary stays enabled; on submit, errors appear under the fields and the
+ *   focus goes to the first one) over a disabled primary button.
+ */
+export function Dialog({ open, onClose, title, children, footer, size = 'md', dismissible = true, layout = 'auto' }: {
   open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; size?: 'sm' | 'md' | 'lg';
+  /** false = unsaved input: ignore a tap outside; Escape/× ask before closing */
+  dismissible?: boolean;
+  /** phone layout: 'auto' (sheet when the dialog has text fields), 'sheet', 'center' */
+  layout?: 'auto' | 'sheet' | 'center';
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
+  const titleId = useId();
+  const confirm = useContext(ConfirmCtx);
+  const asking = useRef(false);
+  // The content mounts only once the dialog is open, so an `autoFocus` field (or the confirm's "חזרה") can take the
+  // focus; otherwise it goes to `[data-autofocus]`, else to the first control (the browser's own rule).
+  const [shown, setShown] = useState(false);
+  useLayoutEffect(() => {
     const d = ref.current;
     if (!d) return;
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
+    setShown(open);
   }, [open]);
+  useLayoutEffect(() => {
+    const d = ref.current;
+    if (!d || !shown) return;
+    const active = document.activeElement;
+    if (active && active !== d && d.contains(active)) return; // an autoFocus field took it
+    const target = d.querySelector<HTMLElement>('[data-autofocus]')
+      ?? d.querySelector<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    target?.focus();
+  }, [shown]);
+  // sheet or card: decided after each render (fields may arrive with data); no state, so no extra render
+  useLayoutEffect(() => {
+    const d = ref.current;
+    if (!d || !open) return;
+    const sheet = layout === 'sheet' || (layout === 'auto' && !!d.querySelector(FIELD));
+    if (sheet) d.setAttribute('data-sheet', '');
+    else d.removeAttribute('data-sheet');
+  });
+  const tryClose = async () => {
+    if (dismissible || !confirm) return onClose();
+    if (asking.current) return;
+    asking.current = true;
+    const leave = await confirm({ title: LEAVE_UNSAVED.title, body: LEAVE_UNSAVED.body, confirm: LEAVE_UNSAVED.confirm, danger: true });
+    asking.current = false;
+    if (leave) onClose();
+  };
   return (
     <dialog
       ref={ref}
-      onCancel={(e) => { e.preventDefault(); onClose(); }}
-      onClick={(e) => { if (e.target === ref.current) onClose(); }}
+      onCancel={(e) => { e.preventDefault(); void tryClose(); }}
+      onClick={(e) => { if (e.target === ref.current && dismissible) onClose(); }}
       className={cx(
-        'm-auto w-[calc(100%-1.5rem)] rounded-[var(--radius-panel)] bg-paper p-0 text-ink shadow-2xl backdrop:bg-ink/45',
+        'dialog-in m-auto w-[calc(100%-1.5rem)] rounded-[var(--radius-panel)] bg-paper p-0 text-ink shadow-2xl backdrop:bg-ink/45',
         size === 'sm' ? 'max-w-md' : size === 'md' ? 'max-w-xl' : 'max-w-3xl',
+        // phone sheet: the whole screen, squared to the edges
+        'max-sm:data-sheet:m-0 max-sm:data-sheet:h-dvh max-sm:data-sheet:max-h-dvh max-sm:data-sheet:w-full max-sm:data-sheet:max-w-none max-sm:data-sheet:rounded-none max-sm:data-sheet:shadow-none',
       )}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
     >
-      {open && (
-        <div className="flex max-h-[88vh] flex-col">
-          <header className="flex items-center justify-between gap-3 border-b border-edge py-2.5 ps-5 pe-3">
-            <h2 id="dialog-title" className="text-heading font-bold">{title}</h2>
-            <button type="button" onClick={onClose} aria-label="סגירה" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-muted hover:bg-ink/[0.06] hover:text-ink">
+      {open && shown && (
+        <div className="flex max-h-[88dvh] flex-col in-data-sheet:max-sm:h-full in-data-sheet:max-sm:max-h-none">
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-edge py-2.5 ps-5 pe-3">
+            <h2 id={titleId} className="text-heading font-semibold">{title}</h2>
+            <button type="button" onClick={() => void tryClose()} aria-label={CLOSE_WINDOW_LABEL} title={CLOSE_WINDOW_LABEL} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-muted hover:bg-ink/[0.06] hover:text-ink">
               <Icon name="close" />
             </button>
           </header>
-          <div className="overflow-y-auto px-5 py-4">{children}</div>
-          {footer && <footer className="flex flex-wrap justify-start gap-2 border-t border-edge px-5 py-3.5">{footer}</footer>}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">{children}</div>
+          {footer && <footer className="safe-bottom flex shrink-0 flex-wrap justify-start gap-2 border-t border-edge px-5 py-3.5">{footer}</footer>}
         </div>
       )}
     </dialog>
   );
 }
 
-type ConfirmOptions = { title: string; body?: ReactNode; confirm: string; danger?: boolean; cancel?: string };
-const ConfirmCtx = createContext<((o: ConfirmOptions) => Promise<boolean>) | null>(null);
+/** `cancel`: the dismiss button's words, "חזרה" by default (DISMISS). When the subject IS cancelling (a registration, a
+ *  meeting), say it plainly: "לא, להשאיר את ההרשמה". `danger`: the confirm button is red and the focus starts on the
+ *  dismiss button, so Enter never destroys by accident. */
+export type ConfirmOptions = { title: string; body?: ReactNode; confirm: string; danger?: boolean; cancel?: string };
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<(ConfirmOptions & { resolve: (v: boolean) => void }) | null>(null);
@@ -296,13 +371,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         onClose={() => close(false)}
         title={state?.title ?? ''}
         size="sm"
+        layout="center"
         footer={
           <>
-            <Button variant={state?.danger ? 'danger' : 'primary'} onClick={() => close(true)} autoFocus>
+            <Button variant={state?.danger ? 'danger' : 'primary'} onClick={() => close(true)} autoFocus={!state?.danger}>
               {state?.confirm}
             </Button>
             {/* "חזרה", not "ביטול": in this app "ביטול" means cancelling a registration or a meeting */}
-            <Button variant="ghost" onClick={() => close(false)}>{state?.cancel ?? 'חזרה'}</Button>
+            <Button variant="ghost" onClick={() => close(false)} autoFocus={!!state?.danger}>{state?.cancel ?? DISMISS}</Button>
           </>
         }
       >
@@ -326,7 +402,7 @@ export function useCopy() {
       await navigator.clipboard.writeText(text);
       toast.success(done);
     } catch {
-      window.prompt('העתיקו את הטקסט:', text);
+      window.prompt('אפשר להעתיק מכאן:', text);
     }
   };
 }

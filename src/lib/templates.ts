@@ -21,13 +21,13 @@ export const PLACEHOLDERS: { key: string; label: string }[] = [
   { key: 'תאריך', label: 'יום ותאריך' },
   { key: 'שעה', label: 'שעת התחלה' },
   { key: 'מקום', label: 'מקום' },
-  { key: 'פעילות', label: 'יוגה / פילאטיס' },
+  { key: 'פעילות', label: 'הפעילות (למשל יוגה)' },
   { key: 'מרצה', label: 'שם המרצה' },
   { key: 'נושא', label: 'נושא ההרצאה' },
   { key: 'קישור_הרשמה', label: 'קישור להרשמה למפגש' },
   { key: 'קישור_משוב', label: 'קישור למשוב על המפגש' },
   { key: 'קישור_הצטרפות', label: 'קישור להצטרפות לעמותה' },
-  { key: 'קישור_אישי', label: 'קישור אישי להרשמה: פתיחה אחת, ובכניסה צ׳ק־אין בלחיצה' },
+  { key: 'קישור_אישי', label: 'הקישור האישי של הנרשם: ניהול ההרשמה וצ׳ק־אין בלחיצה' },
 ];
 
 /** True when a template needs the registrant's personal link (made on demand, per message). */

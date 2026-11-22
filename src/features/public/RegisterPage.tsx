@@ -324,7 +324,7 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
           mine ? (
             <ButtonLink to={`/m/${mine}`} variant="secondary" className="mt-4">לעמוד ההרשמה שלי</ButtonLink>
           ) : (
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted">צריך לבטל? אפשר בקישור האישי שקיבלת בהרשמה. אין לך אותו? <ContactLine inline /></p>
+            <p className="mx-auto mt-1 max-w-sm text-small text-muted">צריך לבטל? אפשר בקישור האישי שקיבלת בהרשמה. אין לך אותו? <ContactLine inline /></p>
           )
         )}
       </div>
@@ -334,7 +334,7 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
         !again && <PayBlock event={event} payer={payer} />
       )}
       <EventTicket event={event} highlight showStatus={false}>
-        <p className="mt-4 text-[0.9375rem] font-medium text-pretty text-ink">
+        <p className="mt-4 text-body-sm font-medium text-pretty text-ink">
           כדאי להכניס ליומן עכשיו, כדי ש{event.type === 'friday' ? 'השישי הזה' : 'המפגש'} לא ייבלע&nbsp;בשבוע.
         </p>
         <div className="mt-3">

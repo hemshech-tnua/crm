@@ -5,6 +5,7 @@ import { StaffLayout } from '@/layout/StaffLayout';
 import { RequireStaff, useRole } from '@/lib/auth';
 import { Skeleton } from '@/ui/kit';
 import { NotFound } from './NotFound';
+import { RouteError } from './RouteError';
 
 const page = (loader: () => Promise<Record<string, unknown>>, name: string) =>
   lazy(async () => ({ default: (await loader())[name] as () => ReactNode }));
@@ -59,6 +60,7 @@ function StaffHome() {
 export const router = createHashRouter([
   {
     element: <PublicLayout />,
+    errorElement: <RouteError />,
     children: [
       { path: '/', element: wait(<PublicHome />) },
       { path: '/r/:code', element: wait(<RegisterPage />) },
@@ -81,6 +83,7 @@ export const router = createHashRouter([
   {
     path: '/app',
     element: <RequireStaff><StaffLayout /></RequireStaff>,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <StaffHome /> },
       { path: 'door', element: wait(<DoorHome />) },
@@ -103,5 +106,5 @@ export const router = createHashRouter([
       { path: '*', element: <NotFound /> },
     ],
   },
-  { path: '*', element: <PublicLayout />, children: [{ path: '*', element: <NotFound /> }] },
+  { path: '*', element: <PublicLayout />, errorElement: <RouteError />, children: [{ path: '*', element: <NotFound /> }] },
 ]);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { fmtShortDate } from '@/lib/dates';
 import { num, pct, progress } from '@/lib/metrics';
@@ -15,9 +15,29 @@ import { Icon } from './Icon';
 export type LineStation = { id: string; starts_at: string; attended: number; new_count: number; returning_count: number; title: string };
 export type NextStation = { id: string; starts_at: string; registered: number; capacity: number | null } | null;
 
+/** The line draws in once per browser session; later visits (and re-renders) show it in place. */
+const DRAWN_KEY = 'hemshech-friday-line-drawn';
+let drawnThisSession = false;
+function useDrawOnce(shown: boolean): boolean {
+  const [draw] = useState(() => {
+    if (drawnThisSession) return false;
+    try {
+      if (sessionStorage.getItem(DRAWN_KEY)) return false;
+    } catch { /* storage blocked: draw once per page load */ }
+    return true;
+  });
+  useEffect(() => {
+    if (!shown) return;
+    drawnThisSession = true;
+    try { sessionStorage.setItem(DRAWN_KEY, '1'); } catch { /* ignore */ }
+  }, [shown]);
+  return draw;
+}
+
 export function FridayLine({ stations, next, goal }: { stations: LineStation[]; next: NextStation; goal?: number | null }) {
   const all = [...stations];
   const n = all.length + (next ? 1 : 0);
+  const draw = useDrawOnce(n > 0);
   // on a phone the line is wider than the screen: open it on the newest meetings (the left end, in RTL)
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -39,13 +59,18 @@ export function FridayLine({ stations, next, goal }: { stations: LineStation[]; 
   const nextPt = next ? { x: x(all.length), y: y(next.registered) } : null;
   const path = [...pts, ...(nextPt ? [nextPt] : [])].map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ');
   const len = W * 1.6;
+  // never larger than ~1.3× its drawn size: with one to three meetings the line would otherwise stretch over the whole
+  // panel (90px numbers); a short line sits in the middle at a readable size, a long one scrolls on a phone
+  const maxW = Math.round(W * 1.3);
+  // and never shrunk below ~80% (the dates stay readable on a phone: the strip scrolls instead)
+  const minW = Math.min(Math.max(n * 62, 320, Math.round(W * 0.8)), maxW);
   const diamond = (cx: number, cy: number, r: number) => `${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`;
 
   return (
     <div>
     <div ref={scroller} className="-mx-4 overflow-x-auto px-4 [mask-image:linear-gradient(to_left,transparent,#000_28px)] sm:mx-0 sm:px-0 sm:[mask-image:none]">
-      <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" style={{ minWidth: Math.max(n * 62, 320) }} role="group"
-        aria-label={`נוכחות ב-${stations.length} המפגשים האחרונים${next ? ' והנרשמים למפגש הבא' : ''}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mx-auto block h-auto w-full" style={{ minWidth: minW, maxWidth: maxW }} role="group"
+        aria-label={`נוכחות ב־${stations.length} המפגשים האחרונים${next ? ' והנרשמים למפגש הבא' : ''}`}>
         {goal ? (
           <g>
             <line x1={padX - 20} x2={W - padX + 20} y1={y(goal)} y2={y(goal)} stroke="var(--color-control-line)" strokeWidth="1" />
@@ -63,7 +88,7 @@ export function FridayLine({ stations, next, goal }: { stations: LineStation[]; 
             </g>
           );
         })}
-        <path d={path} fill="none" stroke="var(--color-tide)" strokeWidth="3" strokeLinecap="butt" strokeLinejoin="miter" className="friday-line-path" style={{ ['--len' as string]: len }} />
+        <path d={path} fill="none" stroke="var(--color-tide)" strokeWidth="3" strokeLinecap="butt" strokeLinejoin="miter" className="friday-line-path" data-drawn={draw ? undefined : ''} style={{ ['--len' as string]: len }} />
         {pts.map(({ x: px, y: py, s }) => (
           <Link key={s.id} to={`/app/events/${s.id}?tab=summary`} aria-description={`מפגש ${fmtShortDate(s.starts_at)}: הגיעו ${s.attended}, מתוכם ${s.new_count} חדשים`}>
             <polygon points={diamond(px, py, 6)} fill="var(--color-ink)" />
@@ -109,7 +134,7 @@ export function GoalStat({ label, value, display, goal, goalDisplay, hint, onOpe
         {onOpen && <Icon name="chevron" size={16} className="mt-0.5 text-faint" />}
       </div>
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="num font-display text-[1.75rem] leading-none text-ink sm:text-stat">{display}</span>
+        <span className="num font-display text-title-sm leading-none text-ink sm:text-stat">{display}</span>
       </div>
       {/* the meter stays navy (the book has no third colour); whether the goal is met is told by the label */}
       <div className="mt-3 h-1.5 bg-ink/10" aria-hidden="true">
@@ -117,7 +142,7 @@ export function GoalStat({ label, value, display, goal, goalDisplay, hint, onOpe
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-small">
         <span className="text-muted">יעד <span className="num">{goalDisplay}</span></span>
-        {value == null ? <span className="text-faint">אין עדיין נתונים</span> : met ? <span className="inline-flex items-center gap-1 font-semibold text-ink"><Icon name="check" size={14} />עומד ביעד</span> : <span className="font-medium text-ink-soft">מתחת ליעד</span>}
+        {value == null ? <span className="text-faint">עוד אין נתונים</span> : met ? <span className="inline-flex items-center gap-1 font-semibold text-ink"><Icon name="check" size={14} />עומד ביעד</span> : <span className="font-medium text-ink-soft">מתחת ליעד</span>}
       </div>
       {hint && <p className="mt-1.5 hidden text-micro text-muted sm:block">{hint}</p>}
     </>

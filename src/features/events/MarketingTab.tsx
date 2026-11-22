@@ -178,7 +178,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
                 {LAYOUTS.map((l) => (
                   <Choice key={l.value} on={layout === l.value} onClick={() => setLayout(l.value)}>
                     <span className="font-bold">{l.label}</span>
-                    <span className="text-sm font-normal text-muted">{l.hint}</span>
+                    <span className="text-small font-normal text-muted">{l.hint}</span>
                   </Choice>
                 ))}
               </div>
@@ -223,7 +223,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
                     <span>בחירה מהמכשיר</span>
                   </label>
                 </div>
-                <p className="mt-1.5 text-sm text-muted">תמונת הנוף היא הדמיה שנוצרה לעמותה. לצילום של אנשים בוחרים צילום אמיתי מהמכשיר: הוא נשאר במכשיר ולא עולה לשום מקום.</p>
+                <p className="mt-1.5 text-small text-muted">תמונת הנוף היא הדמיה שנוצרה לעמותה. לצילום של אנשים בוחרים צילום אמיתי מהמכשיר: הוא נשאר במכשיר ולא עולה לשום מקום.</p>
               </fieldset>
             )}
             <fieldset>
@@ -246,7 +246,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
             <h2 className="text-heading font-semibold">תצוגה מקדימה</h2>
             <Segmented label="גודל" options={FORMATS.map((f) => ({ value: f.value, label: f.label }))} value={format} onChange={setFormat} />
           </div>
-          {!fontsReady && <p className="mt-2 text-sm text-muted">טוען גופנים…</p>}
+          {!fontsReady && <p className="mt-2 text-small text-muted">טוען גופנים…</p>}
           <div className="mt-4 flex justify-center rounded-[var(--radius-control)] bg-mist p-3 sm:p-4">
             {FORMATS.map((f) => {
               const { w, h } = POST_SIZE[f.value];
@@ -264,7 +264,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
               );
             })}
           </div>
-          <p className="mt-2 text-center text-sm text-muted"><span className="num" dir="ltr">{POST_SIZE[format].w}×{POST_SIZE[format].h}</span></p>
+          <p className="mt-2 text-center text-small text-muted"><span className="num" dir="ltr">{POST_SIZE[format].w}×{POST_SIZE[format].h}</span></p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             <Button icon="download" onClick={() => download([format])} disabled={!fontsReady}>הורדת {current.noun}</Button>
             <Button icon="download" variant="ghost" onClick={() => download(FORMATS.map((f) => f.value))} disabled={!fontsReady}>הורדת שלושת הגדלים</Button>
@@ -345,7 +345,7 @@ function Channel({ title, text, onCopy, copyLabel, link, extra, downloads }: {
       <div className="mt-3 flex flex-col gap-3">
         {link}
         {extra}
-        <div className="max-h-72 overflow-y-auto rounded-[var(--radius-control)] bg-mist px-3.5 py-3 text-[0.95rem] leading-relaxed break-words whitespace-pre-line select-all">{text}</div>
+        <div className="max-h-72 overflow-y-auto rounded-[var(--radius-control)] bg-mist px-3.5 py-3 text-body-sm leading-relaxed break-words whitespace-pre-line select-all">{text}</div>
         <div className="flex flex-wrap gap-2">
           <Button icon="copy" onClick={onCopy}>{copyLabel}</Button>
           {downloads}
@@ -366,7 +366,7 @@ function LinkPick({ label, value, onChange, links, url, onCopy }: {
         {links.map((l) => <option key={l.id} value={l.id}>{l.label} ({l.code})</option>)}
       </Select>
       <div className="flex min-w-0 items-center gap-2">
-        <span dir="ltr" className="min-w-0 flex-1 truncate text-left text-sm text-muted">{url}</span>
+        <span dir="ltr" className="min-w-0 flex-1 truncate text-left text-small text-muted">{url}</span>
         <Button size="sm" variant="ghost" icon="copy" onClick={onCopy} className="shrink-0">העתקת הקישור</Button>
       </div>
     </div>

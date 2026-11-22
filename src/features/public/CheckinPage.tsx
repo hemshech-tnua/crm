@@ -191,7 +191,7 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
       />
       {error && <ErrorBox error={error} />}
       <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">הגעתי</Button>
-      <p className="text-center text-[0.95rem] text-muted">לא נרשמת מראש? גם בסדר. מקלידים טלפון וממשיכים משם.</p>
+      <p className="text-center text-body-sm text-muted">לא נרשמת מראש? גם בסדר. מקלידים טלפון וממשיכים משם.</p>
     </form>
   );
 }
@@ -474,7 +474,7 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
       {r.membership === 'none' && (
         <ButtonLink to="/member" variant="secondary" className="mt-1">הצטרפות לעמותה</ButtonLink>
       )}
-      <button type="button" onClick={onAnother} className="min-h-11 px-3 text-[0.95rem] font-semibold text-muted underline underline-offset-4">
+      <button type="button" onClick={onAnother} className="min-h-11 px-3 text-body-sm font-semibold text-muted underline underline-offset-4">
         צ׳ק־אין של מישהו נוסף מהטלפון הזה
       </button>
       {r.photo_opt_out && (

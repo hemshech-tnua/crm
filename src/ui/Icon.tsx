@@ -50,6 +50,15 @@ const GLYPHS: Record<string, Glyph> = {
   more: f('M5 10.2L6.8 12 5 13.8 3.2 12zM12 10.2l1.8 1.8-1.8 1.8-1.8-1.8zM19 10.2l1.8 1.8-1.8 1.8-1.8-1.8z'),
   /** the book's "מטרה": a diamond inside a diamond */
   star: f('M12 1.5L22.5 12 12 22.5 1.5 12zM12 5.5L5.5 12l6.5 6.5 6.5-6.5zM12 8.5l3.5 3.5-3.5 3.5L8.5 12z'),
+  // the public ticket's set (were round outline glyphs in features/public/marks.tsx), redrawn in the book's geometry
+  /** a heart of 45° sides: two lobes meeting in a notch, a point below */
+  heart: f('M12 21L3 12V7l4-4h1.5L12 6.5 15.5 3H17l4 4v5z'),
+  /** a payment card: the magnetic band and a number line cut out */
+  card: f('M2 5h20v14H2zM2 8.5h20V11H2zM5 14.5h6v2H5z'),
+  /** share: an arrow rising out of an open tray */
+  share: f('M12 2l5 5h-3.5v7h-3V7H7zM4 11h3v8h10v-8h3v11H4z'),
+  /** coffee: a cup with chamfered foot and a handle, two diamonds of steam, on a saucer */
+  coffee: f('M4 9h12v6l-3 3H7l-3-3zM16 10h4v5h-4v-1.8h2.2v-1.4H16zM8.5 3l1.5 1.5L8.5 6 7 4.5zM12.5 3l1.5 1.5L12.5 6 11 4.5zM3 20h16v2H3z'),
 
   // ── strokes: small utility glyphs ──
   plus: s('M12 5v14M5 12h14'),

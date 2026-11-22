@@ -93,9 +93,27 @@ export function relativeDays(v: string | Date): string {
   if (days === 0) return 'היום';
   if (days === 1) return 'מחר';
   if (days === -1) return 'אתמול';
-  // non-breaking spaces: "בעוד 7 ימים" is read as one unit and never splits across lines
-  if (days > 1) return `בעוד\u00a0${days}\u00a0ימים`;
-  return `לפני\u00a0${-days}\u00a0ימים`;
+  // non-breaking spaces: "בעוד 7 ימים" is read as one unit and never splits across lines; two days is the dual
+  if (days > 1) return `בעוד\u00a0${countUnit(days, 'day')}`;
+  return `לפני\u00a0${countUnit(-days, 'day')}`;
+}
+
+type Unit = 'day' | 'week' | 'month' | 'year';
+const UNIT: Record<Unit, [one: string, two: string, many: string]> = {
+  day: ['יום', 'יומיים', 'ימים'],
+  week: ['שבוע', 'שבועיים', 'שבועות'],
+  month: ['חודש', 'חודשיים', 'חודשים'],
+  year: ['שנה', 'שנתיים', 'שנים'],
+};
+/**
+ * A count of days/weeks/months/years in Hebrew, with the dual: 1 → "יום אחד" ("שנה אחת"), 2 → "יומיים", 5 → "5 ימים"
+ * (a non-breaking space between number and word). For "לפני…"/"בעוד…" lines: `לפני ${countUnit(n, 'week')}`.
+ */
+export function countUnit(n: number, unit: Unit): string {
+  const [one, two, many] = UNIT[unit];
+  if (n === 1) return `${one}\u00a0${unit === 'year' ? 'אחת' : 'אחד'}`;
+  if (n === 2) return two;
+  return `${n}\u00a0${many}`;
 }
 
 export function age(birthYear?: number | null, birthDate?: string | null): number | null {

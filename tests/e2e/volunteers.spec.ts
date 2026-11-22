@@ -55,7 +55,7 @@ test('a coordinator books a volunteer ahead, the volunteer confirms from the per
   await expect(text).toHaveValue(new RegExp(`קבלת פנים · ${title}`));
   await expect(page.getByRole('link', { name: 'פתיחה בוואטסאפ' })).toHaveAttribute('href', /^https:\/\/wa\.me\/972\d+\?text=/);
   const link = (await text.inputValue()).match(/https?:\S+#\/v\/[A-Za-z0-9_-]+/)![0];
-  await page.getByRole('dialog').getByRole('button', { name: 'סגירה' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'סגירת החלון' }).click();
   expect(errors, errors.join('\n')).toEqual([]);
 
   // 4. the volunteer's phone: sees the shift and confirms

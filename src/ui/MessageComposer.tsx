@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useTemplates } from '@/lib/data';
@@ -27,7 +27,7 @@ export function useLogContact() {
       qc.invalidateQueries({ queryKey: ['contact_log', v.participant_id] });
       qc.invalidateQueries({ queryKey: ['messages_sent'] });
     },
-    onError: () => toast.error('ההודעה נפתחה, אבל הרישום שלה בהיסטוריה נכשל.'),
+    onError: () => toast.error('ההודעה נפתחה, אבל לא נשמרה בהיסטוריית הקשר.'),
   });
 }
 
@@ -69,15 +69,29 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
   // the previous one of that registration, so it is not made just for showing a template that does not need it.
   const wantsLink = open && !!registrationId && needsPersonalLink(tpl?.body);
   const [link, setLink] = useState<{ url: string | null; error: string | null; loading: boolean }>({ url: null, error: null, loading: false });
+  // one request per opened message: a new link replaces the registration's previous one, so a second call (React's
+  // StrictMode runs effects twice in development; a quick re-render) would invalidate the link just shown
+  const requested = useRef<string | null>(null);
+  const seq = useRef(0);
   useEffect(() => {
-    if (!wantsLink || link.url || link.loading || link.error) return;
+    if (!open) {
+      requested.current = null;
+      seq.current += 1;
+      setLink((l) => (l.url || l.error || l.loading ? { url: null, error: null, loading: false } : l));
+    }
+  }, [open]);
+  useEffect(() => {
+    if (!wantsLink || !registrationId || requested.current === registrationId) return;
+    requested.current = registrationId;
+    const mine = ++seq.current;
     setLink({ url: null, error: null, loading: true });
     supabase.rpc('staff_personal_link', { p_registration_id: registrationId }).then(({ data, error }) => {
+      if (mine !== seq.current) return; // closed (or another registration asked) meanwhile
       setLink(error || typeof data !== 'string'
         ? { url: null, error: errorMessage(error ?? new Error('link')), loading: false }
         : { url: manageUrl(data), error: null, loading: false });
     });
-  }, [wantsLink, registrationId, link]);
+  }, [wantsLink, registrationId]);
   useEffect(() => {
     if (!open) return;
     const t = list.find((x) => x.key === key);
@@ -101,14 +115,14 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
         )}
         {!allowed ? (
           <Notice tone="warn" icon="alert">
-            אין הסכמה של {recipient.full_name} לקבל עדכונים והזמנות. לפי חוק התקשורת אפשר לשלוח הודעת וואטסאפ כזו רק אחרי הסכמה. אפשר להתקשר.
+            בכרטיס של {recipient.full_name} אין הסכמה לקבל עדכונים והזמנות. לפי חוק התקשורת, הודעה כזו נשלחת רק למי שהסכימו. אפשר להתקשר.
           </Notice>
         ) : (
           <Textarea label="הטקסט (אפשר לערוך לפני השליחה)" value={text} onChange={(e) => setText(e.target.value)} rows={7} />
         )}
         {wantsLink && link.error && <Notice tone="warn" icon="alert">לא הצלחנו ליצור קישור אישי: {link.error}</Notice>}
         {wantsLink && link.url && (
-          <p className="text-sm text-muted">הקישור האישי חדש ומחליף קישור קודם של ההרשמה הזו, אם נשלח. הוא מיועד רק ל{firstName || 'מי שמקבל את ההודעה'}.</p>
+          <p className="text-small text-muted">זה קישור אישי חדש. אם כבר נשלח קישור להרשמה הזו, הוא יוחלף בזה. הקישור מיועד רק ל{firstName || 'מי שמקבל את ההודעה'}.</p>
         )}
         {!phone && <Notice tone="warn" icon="alert">אין מספר טלפון בכרטיס.</Notice>}
       </div>
@@ -136,12 +150,12 @@ export function MessageComposer({ open, onClose, recipient, context, templateKey
           <a href={`tel:${phone}`} className={buttonClass('secondary', 'md')}>
             <Icon name="phone" size={18} />
             <span>חיוג</span>
-            <span className="num text-sm text-muted">{formatPhone(phone)}</span>
+            <span className="num text-small text-muted">{formatPhone(phone)}</span>
           </a>
         )}
         {allowed && text && <Button variant="ghost" icon="copy" onClick={() => copy(text, 'הטקסט הועתק')}>העתקה</Button>}
       </div>
-      <p className="mt-3 text-sm text-muted">ההודעה נשלחת מהוואטסאפ שלך, רק כשלוחצים "שליחה" שם. הפתיחה נרשמת בהיסטוריית הקשר שבכרטיס.</p>
+      <p className="mt-3 text-small text-muted">ההודעה נשלחת מהוואטסאפ שלך, רק כשלוחצים "שליחה" שם. הפתיחה נרשמת בהיסטוריית הקשר שבכרטיס.</p>
     </Dialog>
   );
 }

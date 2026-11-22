@@ -4,7 +4,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate, useLocation } from 'react-router';
 import { functionsUrl, supabase } from './supabase';
 import type { Role, Staff } from './types';
-import { Skeleton } from '@/ui/kit';
+import { Button, RETRY_LABEL, Skeleton } from '@/ui/kit';
+import { Icon } from '@/ui/Icon';
+import { errorCode, errorMessage } from './errors';
 
 const IDLE_LIMIT_MS = 12 * 60 * 60 * 1000; // a shared phone at the door should not stay signed in for days
 const ACTIVITY_KEY = 'hemshech-last-active';
@@ -144,15 +146,43 @@ export async function claimInvite(token: string, email: string): Promise<void> {
   if (error) throw { message: 'invite_invalid' };
 }
 
+/**
+ * The staff account could not be loaded (no connection, or the server failed): an in-app page with one retry, never the
+ * login page's "this account is not active" (that is only for an account that really is missing or blocked).
+ */
+function AccountUnavailable({ error, onRetry, busy }: { error: unknown; onRetry: () => void; busy: boolean }) {
+  const offline = errorCode(error) === 'network' || error == null;
+  return (
+    <main id="main" className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 py-10 text-center">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[var(--radius-panel)] bg-ink text-light">
+        <Icon name="alert" size={26} />
+      </div>
+      <h1 className="font-display text-title-sm">{offline ? 'אין חיבור' : 'לא הצלחנו לטעון את החשבון'}</h1>
+      <p className="mt-2 text-body text-ink-soft">
+        {offline ? 'אין חיבור לשרת כרגע. כדאי לבדוק את החיבור לאינטרנט ולנסות שוב.' : errorMessage(error)}
+      </p>
+      <Button className="mt-5" onClick={onRetry} busy={busy}>{RETRY_LABEL}</Button>
+    </main>
+  );
+}
+
 /** Guards a staff route: signed in, active, password changed, and one of the allowed roles. */
 export function RequireStaff({ roles, children }: { roles?: Role[]; children: ReactNode }) {
   const { session, ready } = useAuth();
   const me = useMe();
   const location = useLocation();
-  if (!ready || (session && me.isLoading)) {
+  // offline on (re)load: React Query pauses the query (pending, not loading) — that is "no connection", not "denied"
+  if (session && me.isPending && me.fetchStatus === 'paused') {
+    return <AccountUnavailable error={null} onRetry={() => void me.refetch()} busy={false} />;
+  }
+  if (!ready || (session && me.isPending)) {
     return <div className="mx-auto max-w-3xl p-8"><Skeleton lines={5} /></div>;
   }
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  // the account could not be loaded (network or server error, nothing cached): retry, don't send to the login page
+  if (me.isError && me.data === undefined) {
+    return <AccountUnavailable error={me.error} onRetry={() => void me.refetch()} busy={me.isFetching} />;
+  }
   if (!me.data || !me.data.is_active) return <Navigate to="/login?denied=1" replace />;
   // two-step sign-in turned on: the database gives this session no role until the code is entered
   if (me.data.mfa_enrolled && me.data.aal !== 'aal2') return <Navigate to="/mfa" replace state={{ from: location.pathname + location.search }} />;

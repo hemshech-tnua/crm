@@ -59,7 +59,7 @@ export function VolunteerPage() {
           {shifts.length ? 'אלה המפגשים שביקשנו בהם את עזרתך. בכל מפגש בוחרים אם מגיעים.' : 'תודה שהצטרפת לצוות המתנדבים של המשך\u00a0תנועה.'}
         </p>
         {waiting > 0 && (
-          <p className="mt-2 text-[0.9375rem] font-semibold text-ink">
+          <p className="mt-2 text-body-sm font-semibold text-ink">
             {waiting === 1 ? 'מפגש אחד מחכה לתשובה שלך.' : <><span className="num">{waiting}</span> מפגשים מחכים לתשובה שלך.</>}
           </p>
         )}
@@ -118,7 +118,7 @@ function ShiftCard({ shift: s, token, highlight }: { shift: VShift; token: strin
         </div>
         <div className="min-w-0 flex-1 px-4 py-4">
           <h2 id={titleId} className="text-heading font-bold">{s.title}</h2>
-          <ul className="mt-2 flex flex-col gap-1.5 text-[0.9375rem] text-ink-soft">
+          <ul className="mt-2 flex flex-col gap-1.5 text-body-sm text-ink-soft">
             <li className="flex items-start gap-2">
               <span className="mt-[3px] text-tide"><Glyph name="clock" /></span>
               <span><span className="num">{fmtTime(s.starts_at)}–{fmtTime(s.ends_at)}</span><span className="text-muted"> · {relativeDays(start)}</span></span>

@@ -78,7 +78,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
       </div>
       <div className="min-w-0 flex-1 px-4 py-4 sm:px-5 sm:py-5">
           <H className="text-heading font-bold">{keepName(event.title)}</H>
-          <ul className="mt-2 flex flex-col gap-1.5 text-[0.9375rem] text-ink-soft">
+          <ul className="mt-2 flex flex-col gap-1.5 text-body-sm text-ink-soft">
             <Row glyph="clock">
               <span className="num">{timeRange(event)}</span>
               <span className="text-muted"> · {relativeDays(start)}</span>
@@ -91,7 +91,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
             {isPriced(event.price) && (
               <Row mark="₪">
                 <span className="font-semibold text-ink">מחיר: <span className="num">{fmtMoney(event.price)}</span></span>
-                {detailed && event.payment_note && <span className="block text-sm text-muted">{event.payment_note}</span>}
+                {detailed && event.payment_note && <span className="block text-small text-muted">{event.payment_note}</span>}
               </Row>
             )}
           </ul>
@@ -104,7 +104,7 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
       </div>
       {more && (
         <div className="basis-full border-t border-edge px-4 py-3 sm:px-5 sm:py-4">
-          <p className="whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink-soft">{keepName(event.description ?? '')}</p>
+          <p className="whitespace-pre-line text-body-sm leading-relaxed text-ink-soft">{keepName(event.description ?? '')}</p>
         </div>
       )}
     </article>

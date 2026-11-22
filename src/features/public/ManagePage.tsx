@@ -189,7 +189,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
 
       {active && upcoming && r.status === 'registered' && (
         <Block title="בכניסה למפגש">
-          <p className="text-[0.9375rem] text-ink-soft">
+          <p className="text-body-sm text-ink-soft">
             בכניסה סורקים את הברקוד ולוחצים ״הגעתי״. לא צריך להקליד כלום: הטלפון הזה כבר זוכר את ההרשמה&nbsp;שלך.
           </p>
         </Block>
@@ -201,7 +201,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
 
       {r.can_cancel && active && (
         <Block title={waitlisted ? 'כבר לא צריך את המקום בתור?' : 'לא מסתדר לך להגיע?'}>
-          <p className="text-[0.9375rem] text-ink-soft">
+          <p className="text-body-sm text-ink-soft">
             {waitlisted ? 'אפשר לצאת מרשימת ההמתנה בכל רגע.' : 'ביטול מראש מפנה את המקום שלך למי שמחכה.'}
           </p>
           {error && <div className="mt-3"><ErrorBox error={error} /></div>}
@@ -227,7 +227,7 @@ function ManageFeedback({ token, given }: { token: string; given: boolean }) {
   if ((sent || given) && !editing) {
     return (
       <Block title="המשוב שלך">
-        <p className="text-[0.9375rem] text-ink-soft">{sent ? 'המשוב התקבל. תודה!' : 'כבר שלחת משוב על המפגש הזה. תודה!'}</p>
+        <p className="text-body-sm text-ink-soft">{sent ? 'המשוב התקבל. תודה!' : 'כבר שלחת משוב על המפגש הזה. תודה!'}</p>
         <Button variant="ghost" className="mt-2 -ms-3" icon="edit" onClick={() => setEditing(true)}>עדכון המשוב</Button>
       </Block>
     );
@@ -235,7 +235,7 @@ function ManageFeedback({ token, given }: { token: string; given: boolean }) {
 
   return (
     <Block title="משוב על המפגש">
-      <p className="mb-4 text-[0.9375rem] text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
+      <p className="mb-4 text-body-sm text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
       <FeedbackForm
         ctx={ctx.data}
         token={token}

@@ -1,43 +1,49 @@
 // Server error codes → Hebrew messages. The server raises short codes; the UI never shows raw database text.
+// These messages appear on staff AND public screens, so they are address-neutral: no "you", no imperative ("אפשר…",
+// "צריך…", "כדאי…").
+import { PHONE_EXAMPLE } from './phone';
+
+/** The message for an error without a known code. */
+export const FALLBACK_ERROR = 'משהו השתבש. אפשר לנסות שוב. אם זה חוזר, כדאי לפנות לצוות העמותה.';
 const MESSAGES: Record<string, string> = {
   invalid_name: 'צריך שם פרטי ושם משפחה, באותיות בלבד.',
-  invalid_phone: 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.',
+  invalid_phone: `צריך מספר טלפון נייד, למשל ${PHONE_EXAMPLE}.`,
   invalid_city: 'צריך לכתוב את שם העיר (לפחות 2 אותיות, בלי ספרות).',
-  invalid_age: 'צריך לכתוב גיל בין 16 ל-99.',
+  invalid_age: 'צריך לכתוב גיל בין 16 ל־99.',
   invalid_source: 'צריך לבחור איך שמעתם עלינו.',
   invalid_topic: 'צריך לכתוב נושא (לפחות 2 אותיות).',
-  invalid_url: 'הקישור צריך להתחיל ב-https://',
-  invalid_kind: 'בחירה לא תקינה.',
-  invalid_rating: 'בחרו ציון בין 1 ל־5.',
-  invalid_date: 'התאריך לא תקין.',
-  invalid_attendance: 'סטטוס נוכחות לא תקין.',
+  invalid_url: 'הקישור צריך להתחיל ב־https://',
+  invalid_kind: 'צריך לבחור אחת מהאפשרויות.',
+  invalid_rating: 'צריך לבחור ציון מ־1 עד 5.',
+  invalid_date: 'צריך לבחור תאריך תקין.',
+  invalid_attendance: 'צריך לבחור סטטוס הגעה.',
   event_not_found: 'לא מצאנו את המפגש. ייתכן שהקישור ישן.',
   event_cancelled: 'המפגש הזה בוטל.',
   registration_closed: 'ההרשמה למפגש הזה נסגרה.',
-  registration_not_open: 'ההרשמה למפגש הזה עוד לא נפתחה. נסו שוב בקרוב.',
+  registration_not_open: 'ההרשמה למפגש הזה עוד לא נפתחה. אפשר לנסות שוב בקרוב.',
   event_full: 'כל המקומות במפגש נתפסו.',
-  rate_limited: 'יותר מדי ניסיונות בזמן קצר. נסו שוב בעוד כמה דקות.',
-  token_invalid: 'הקישור האישי לא תקין או שפג תוקפו. בדקו שהקישור הועתק במלואו.',
+  rate_limited: 'יותר מדי ניסיונות בזמן קצר. אפשר לנסות שוב בעוד כמה דקות.',
+  token_invalid: 'הקישור האישי לא תקין או שפג תוקפו. כדאי לבדוק שהקישור הועתק במלואו.',
   too_late: 'אי אפשר לבטל אחרי שהמפגש התחיל.',
-  checkin_not_found: 'קוד הכניסה לא תקין. סרקו שוב את הברקוד שבכניסה.',
-  feedback_not_open: 'אפשר לתת משוב רק אחרי שהמפגש מתחיל.',
+  checkin_not_found: 'קוד הכניסה לא תקין. אפשר לסרוק שוב את הברקוד או לגשת לצוות בכניסה.',
+  feedback_not_open: 'אפשר לתת משוב מרגע שהמפגש מתחיל.',
   feedback_closed: 'תקופת המשוב למפגש הזה הסתיימה.',
   forbidden: 'אין לך הרשאה לפעולה הזו.',
-  only_admin_approves: 'רק מנהלים יכולים לאשר מרצה.',
-  not_found: 'הרשומה לא נמצאה. ייתכן שנמחקה.',
+  only_admin_approves: 'רק בעלי הרשאת ניהול יכולים לאשר מרצים ומדריכים.',
+  not_found: 'לא מצאנו את מה שחיפשת. ייתכן שזה נמחק.',
   not_started: 'אפשר לסגור מפגש רק אחרי שהתחיל.',
-  event_not_active: 'המפגש לא פעיל (טיוטה או מבוטל).',
-  already_registered: 'כבר נרשמת למפגש הזה.',
-  not_waitlisted: 'הרישום כבר לא ברשימת ההמתנה.',
+  event_not_active: 'המפגש עוד בטיוטה או שבוטל.',
+  already_registered: 'כבר יש הרשמה למפגש הזה מהמספר הזה.',
+  not_waitlisted: 'ההרשמה כבר לא ברשימת ההמתנה.',
   same_participant: 'אי אפשר למזג כרטיס עם עצמו.',
   invalid_email: 'כתובת האימייל לא תקינה.',
   invalid_role: 'תפקיד לא תקין.',
-  pwned_password: 'הסיסמה הזו מופיעה ברשימות של סיסמאות שדלפו ברשת. בחרו סיסמה אחרת.',
+  pwned_password: 'הסיסמה הזו מופיעה ברשימות של סיסמאות שדלפו ברשת. צריך לבחור סיסמה אחרת.',
   mfa_required: 'צריך לאשר את הכניסה בקוד מאפליקציית האימות.',
-  mfa_invalid: 'הקוד לא נכון או שפג תוקפו. נסו את הקוד הנוכחי מהאפליקציה.',
+  mfa_invalid: 'הקוד לא נכון או שפג תוקפו. אפשר להקליד את הקוד הנוכחי מהאפליקציה.',
   email_exists: 'כבר יש משתמש עם האימייל הזה.',
   invite_invalid: 'הקישור לא תקף: כבר השתמשו בו, או שעברו 48 שעות. אפשר לבקש קישור חדש ממנהלי המערכת.',
-  claim_failed: 'לא ניתן לשמור את האימייל הזה. נסו כתובת אחרת, או פנו למנהלי המערכת.',
+  claim_failed: 'אי אפשר לשמור את האימייל הזה. אפשר לנסות כתובת אחרת או לפנות למנהלי המערכת.',
   phone_exists: 'כבר יש משתמש עם מספר הטלפון הזה.',
   login_required: 'צריך טלפון נייד (לכניסה בקוד SMS) או אימייל (לכניסה בסיסמה).',
   no_email: 'למשתמש הזה אין אימייל ואין טלפון.',
@@ -45,16 +51,16 @@ const MESSAGES: Record<string, string> = {
   weak_password: 'הסיסמה צריכה לכלול לפחות 10 תווים, אותיות וספרות.',
   cannot_change_self: 'אי אפשר לשנות את התפקיד או לחסום את המשתמש שלך.',
   last_admin: 'חייב להישאר לפחות חשבון ניהול פעיל אחד.',
-  unauthenticated: 'פג תוקף ההתחברות. צריך להתחבר שוב.',
+  unauthenticated: 'עבר זמן רב מאז הכניסה. צריך להיכנס שוב.',
   duplicate_phone: 'כבר יש כרטיס עם מספר הטלפון הזה.',
   duplicate: 'הרשומה הזו כבר קיימת.',
-  network: 'אין חיבור לשרת. בדקו את החיבור לאינטרנט ונסו שוב.',
+  network: 'אין חיבור לשרת. כדאי לבדוק את החיבור לאינטרנט ולנסות שוב.',
   invalid_payment_status: 'סטטוס תשלום לא תקין.',
   invalid_payment_method: 'אמצעי תשלום לא תקין.',
-  invalid_amount: 'הסכום לא תקין. כותבים מספר חיובי, למשל 20.',
+  invalid_amount: 'צריך סכום חיובי, למשל 20.',
   not_paid: 'אפשר לסמן החזר רק אחרי שסומן תשלום.',
   not_priced: 'במפגש הזה אין דמי השתתפות.',
-  payment_not_pending: 'אין כאן תשלום פתוח לסימון. משנים מעמוד המפגש.',
+  payment_not_pending: 'התשלום הזה כבר לא מחכה לאישור. אפשר לעדכן אותו בעמוד המפגש.',
 };
 
 export type AppError = { message?: string; code?: string; details?: string | null; status?: number } | null | undefined;
@@ -70,7 +76,7 @@ export function errorCode(err: unknown): string {
 }
 
 export function errorMessage(err: unknown): string {
-  return MESSAGES[errorCode(err)] ?? 'משהו השתבש. נסו שוב, ואם זה חוזר, כתבו לצוות העמותה.';
+  return MESSAGES[errorCode(err)] ?? FALLBACK_ERROR;
 }
 
 /** Throws the Supabase error so React Query surfaces it. */

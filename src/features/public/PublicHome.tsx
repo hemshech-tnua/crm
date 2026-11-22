@@ -74,7 +74,7 @@ export function PublicHome() {
                   {cta(next)}
                   <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
                 </ButtonLink>
-                {bookable(next) && !next.is_full && <p className="mt-2 text-[0.9375rem] text-muted">ההרשמה לוקחת פחות מדקה.</p>}
+                {bookable(next) && !next.is_full && <p className="mt-2 text-body-sm text-muted">ההרשמה לוקחת פחות מדקה.</p>}
                 {/* above the button's whole-card link (its ::after overlay) */}
                 <DetailsLink event={next} query={query} className="relative z-[1] mt-3" />
               </EventTicket>

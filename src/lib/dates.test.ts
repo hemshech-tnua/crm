@@ -32,3 +32,21 @@ describe('one count definition per meeting', () => {
     expect(freePlaces(3, 0, null)).toBeNull();
   });
 });
+
+describe('Hebrew counts with the dual', () => {
+  it('one, two (dual), many', async () => {
+    const { countUnit } = await import('./dates');
+    expect(countUnit(1, 'day')).toBe('יום אחד');
+    expect(countUnit(2, 'day')).toBe('יומיים');
+    expect(countUnit(2, 'week')).toBe('שבועיים');
+    expect(countUnit(2, 'month')).toBe('חודשיים');
+    expect(countUnit(2, 'year')).toBe('שנתיים');
+    expect(countUnit(1, 'year')).toBe('שנה אחת');
+    expect(countUnit(5, 'day')).toBe('5 ימים');
+  });
+  it('titles: one separator, site name last, empty parts dropped', async () => {
+    const { formatTitle } = await import('./title');
+    expect(formatTitle(['שישי בבוקר', null, 'מפגשים'])).toBe('שישי בבוקר · מפגשים · המשך תנועה');
+    expect(formatTitle('מפגשי שישי')).toBe('מפגשי שישי · המשך תנועה');
+  });
+});
