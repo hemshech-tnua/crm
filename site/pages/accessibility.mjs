@@ -74,7 +74,7 @@ export function render(ctx) {
   </div>
 </section>
 
-<section class="chapter a11y-body" data-ground="beige-light" aria-label="${t('accessibility.title')}">
+<section class="chapter a11y-body" data-ground="beige-light">
   <div class="wrap a11y-body__grid" data-chapters>
     <nav class="a11y-toc" aria-label="${t('accessibility.tocLabel')}">
       <p class="a11y-toc__title" aria-hidden="true">${t('accessibility.tocLabel')}</p>

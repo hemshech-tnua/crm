@@ -38,7 +38,7 @@ export function render(ctx) {
   </div>
 </section>
 
-<section class="chapter faq-body" data-ground="beige-light" aria-label="${t('faq.hero.title')}">
+<section class="chapter faq-body" data-ground="beige-light">
   <div class="wrap faq-groups">
       ${groups.map(
         (g) => html`
