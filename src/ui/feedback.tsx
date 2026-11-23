@@ -344,7 +344,7 @@ export function Dialog({ open, onClose, title, children, footer, size = 'md', di
             </button>
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">{children}</div>
-          {footer && <footer className="safe-bottom flex shrink-0 flex-wrap justify-start gap-2 border-t border-edge px-5 py-3.5">{footer}</footer>}
+          {footer && <footer className="flex shrink-0 flex-wrap justify-start gap-2 border-t border-edge px-5 pt-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]">{footer}</footer>}
         </div>
       )}
     </dialog>

@@ -17,7 +17,7 @@ const subscribe = (l: () => void) => {
  * `on` may change (show the save bar only once the form is dirty, say). Wide screens are not affected (no tab bar there).
  *
  *   useHideTabBar(true);
- *   … <div className="fixed inset-x-0 bottom-0 z-30 border-t border-edge bg-paper px-4 py-3 safe-bottom md:hidden">…</div>
+ *   … <div className="fixed inset-x-0 bottom-0 z-30 border-t border-edge bg-paper px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">…</div>
  */
 export function useHideTabBar(on = true) {
   useEffect(() => {

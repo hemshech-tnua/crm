@@ -164,6 +164,8 @@
     direction: ltr;
     unicode-bidi: isolate;
   }
+  /* only for elements with no bottom padding of their own (it replaces padding-bottom); padded bars use
+     pb-[max(<their padding>,env(safe-area-inset-bottom))] instead */
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }

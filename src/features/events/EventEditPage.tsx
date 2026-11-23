@@ -608,7 +608,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
         <Button type="submit" size="lg" busy={save.isPending} icon="check">{saveLabel}</Button>
         <Button variant="ghost" size="lg" onClick={leave}>{DISMISS_UNSAVED}</Button>
       </div>
-      <div className="safe-bottom fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-edge bg-paper px-4 py-3 md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-edge bg-paper px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
         <Button type="submit" busy={save.isPending} icon="check" className="flex-1">{saveLabel}</Button>
         <Button variant="ghost" onClick={leave}>{DISMISS_UNSAVED}</Button>
       </div>
