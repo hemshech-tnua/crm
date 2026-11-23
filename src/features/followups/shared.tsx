@@ -229,7 +229,7 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
   const cancelTask = async () => {
     const ok = await confirm({
       title: 'לבטל את המשימה?',
-      body: 'המשימה תעבור ל"הושלמו" עם הסטטוס "בוטלה". שום הודעה לא נשלחת.',
+      body: 'המשימה תעבור ל"סגורות" עם הסטטוס "בוטלה". שום הודעה לא נשלחת.',
       confirm: 'ביטול המשימה',
       cancel: 'לא, להשאיר את המשימה',
       danger: true,

@@ -252,7 +252,7 @@ export function ParticipantsPage() {
         ) : rows.length === 0 ? (
           <div className="rounded-[var(--radius-panel)] border border-edge bg-paper">
             {f.gone && !q && !f.status && !activeExtra ? (
-              <EmptyState icon="checkCircle" title="אין לוחמים שלא הגיעו מעל חודשיים">
+              <EmptyState icon="checkCircle" title="אין לוחמים שלא הגיעו יותר מחודשיים">
                 כל מי שהגיע אי פעם, הגיע גם בחודשיים האחרונים. מי שעוד לא הגיע בכלל נמצא בסינון "לפני הגעה ראשונה".
               </EmptyState>
             ) : anyFilter ? (
@@ -305,7 +305,7 @@ function StatusChips({ value, counts, countsFailed, onChange }: { value: ChipVal
       title: hint(s),
       n: counts?.[s],
     })),
-    { v: 'gone', label: 'לא הגיעו מעל חודשיים', title: `ההגעה האחרונה הייתה לפני יותר מ־${GONE_DAYS} ימים, בכל סטטוס`, n: counts?.gone },
+    { v: 'gone', label: 'לא הגיעו יותר מחודשיים', title: `ההגעה האחרונה הייתה לפני יותר מ־${GONE_DAYS} ימים, בכל סטטוס`, n: counts?.gone },
   ];
   // a count that could not load reads "—" (with "לא נטען" on hover) instead of vanishing
   const failedCount = <span className="num text-micro text-muted" title="לא נטען">—</span>;
@@ -327,7 +327,7 @@ function StatusChips({ value, counts, countsFailed, onChange }: { value: ChipVal
             </div>
           ))}
           <div className="contents">
-            <dt className="font-bold">לא הגיעו מעל חודשיים</dt>
+            <dt className="font-bold">לא הגיעו יותר מחודשיים</dt>
             <dd className="text-ink-soft">כל מי שההגעה האחרונה שלו הייתה לפני יותר מחודשיים, גם אם הגיע רק פעם אחת. למיון לפי מי שלא הגיע הכי הרבה זמן: "מיון: הכי הרבה זמן מאז ההגעה האחרונה".</dd>
           </div>
         </dl>

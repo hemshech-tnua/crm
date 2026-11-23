@@ -40,7 +40,7 @@ export function VolunteerPage() {
     const code = errorCode(q.error);
     return code === 'not_found' || code === 'invalid_input' ? (
       <EmptyState icon="link" title="הקישור לא בתוקף">
-        אפשר לבקש מהצוות קישור חדש: <ContactLine inline />
+        צריך קישור חדש? <ContactLine inline />
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(q.error)} onRetry={code === 'rate_limited' ? undefined : () => q.refetch()} />

@@ -3,23 +3,23 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { errorMessage, must } from '@/lib/errors';
-import { useSettings, useSites, type EventWithStats } from '@/lib/data';
+import { useSettings, type EventWithStats } from '@/lib/data';
 import { derived, num, pct, type Kpis } from '@/lib/metrics';
 import { fmtDate, fmtDayLong, fmtTime, relativeDays, todayIl, ilParts } from '@/lib/dates';
 import { registerUrl } from '@/lib/links';
 import { useMe } from '@/lib/auth';
 import { Button, ButtonLink, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, cx } from '@/ui/kit';
-import { Dialog, useCopy } from '@/ui/feedback';
+import { useCopy } from '@/ui/feedback';
 import { useConnectionTrouble } from '@/ui/OfflineBar';
 import { Icon, type IconName } from '@/ui/Icon';
 import { FridayLine, GoalStat, SplitBars } from '@/ui/charts';
 import { Stripes, Tri } from '@/ui/Shapes';
-import { FilterBar, periodLabel, rpcArgs, useFilters, type Filters } from '@/features/reports/period';
+import { FilterBar, FilterSheetChip, rpcArgs, useFilters } from '@/features/reports/period';
 import { Drilldown, type DrillKind } from '@/features/reports/Drilldown';
 import { securityAlerts, useSecurityOverview } from '@/features/settings/SecuritySettings';
 import { MyWeekPanel } from '@/features/prep/MyWeekPanel';
 import { useEventList } from '@/features/events/queries';
-import { hasStarted, seats } from '@/features/events/shared';
+import { hasStarted, registeredText, seats } from '@/features/events/shared';
 
 type Attention = {
   lapsed: { participant_id: string; full_name: string; last_attended_at: string; friday_count: number; fridays_missed: number; has_open_task: boolean }[];
@@ -37,6 +37,9 @@ type Attention = {
   /** payments from "יש חשבונית" that matched no pending registration */
   unmatched_payments?: number;
 };
+
+/** Goal tiles at 320: a little less side padding, so a two-line label is not cut ("ממוצע לוחמים למפגש"). */
+const TILE_320 = 'max-[359px]:px-2.5';
 
 type SourceRow = { source_id: string | null; label: string; is_friend: boolean; participants: number; returned: number; registered_only: number };
 
@@ -93,7 +96,7 @@ export function DashboardPage() {
       <PageHeader
         title={`${hello}${me.data ? `, ${me.data.full_name.split(' ')[0]}` : ''}`}
         subtitle="מה קורה במפגשים, איך אנחנו מול היעדים, ומה דורש טיפול."
-        actions={<ButtonLink to="/app/events/new" icon="plus">מפגש חדש</ButtonLink>}
+        actions={<ButtonLink to="/app/events/new" variant="secondary" icon="plus">מפגש חדש</ButtonLink>}
       />
       {me.data?.role === 'admin' && <SecurityAlert />}
       {failed.length > 0 && !trouble && (
@@ -122,21 +125,22 @@ export function DashboardPage() {
             <h2 className="text-section font-bold">מול היעדים</h2>
             {/* a phone gets one chip that names the active filters and opens them; wider screens show the bar */}
             <div className="max-sm:hidden"><FilterBar filters={filters} set={set} /></div>
-            <FilterChip filters={filters} set={set} />
+            <FilterSheetChip filters={filters} set={set} title="סינון המספרים" />
           </div>
           {kpis.error && !kpis.data ? <div className="mb-6">{notLoaded}</div> : (
-            <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
+            // at 320 the tiles take a little less gutter and padding, so each label fits in its two lines
+            <div className="mb-3 grid grid-cols-2 gap-3 max-[359px]:gap-2 lg:grid-cols-5">
               {!kpis.data || !d || !g ? Array.from({ length: 5 }).map((_, i) => <div key={i} role="status" aria-label="בטעינה…" className={cx('skeleton h-[9.5rem] rounded-[var(--radius-panel)] sm:h-[11.25rem]', i === 4 && 'col-span-2 lg:col-span-1')} />) : (
                 <>
-                  <GoalStat label="ממוצע לוחמים למפגש" value={d.avgAttendance} display={num(d.avgAttendance, 1)} goal={g.avg_attendance} goalDisplay={num(g.avg_attendance)}
+                  <GoalStat className={TILE_320} label="ממוצע לוחמים למפגש" value={d.avgAttendance} display={num(d.avgAttendance, 1)} goal={g.avg_attendance} goalDisplay={num(g.avg_attendance)}
                     hint={kpis.data.events === 1 ? `${kpis.data.attendances} הגעות במפגש אחד` : `${kpis.data.attendances} הגעות ב־${kpis.data.events} מפגשים`} onOpen={() => setDrill('attendees')} />
-                  <GoalStat label="שיעור הגעה" value={d.showRate} display={pct(d.showRate)} goal={g.show_rate} goalDisplay={pct(g.show_rate)}
+                  <GoalStat className={TILE_320} label="שיעור הגעה" value={d.showRate} display={pct(d.showRate)} goal={g.show_rate} goalDisplay={pct(g.show_rate)}
                     hint={`${kpis.data.preregistered_attended} מתוך ${kpis.data.preregistered} רשומים`} />
-                  <GoalStat label="הגיעו ליותר ממפגש אחד" value={d.returnRate} display={pct(d.returnRate)} goal={g.return_rate} goalDisplay={pct(g.return_rate)}
+                  <GoalStat className={TILE_320} label="הגיעו ליותר ממפגש אחד" value={d.returnRate} display={pct(d.returnRate)} goal={g.return_rate} goalDisplay={pct(g.return_rate)}
                     hint={`${kpis.data.returning_attendees} מתוך ${kpis.data.unique_attendees} לוחמים`} onOpen={() => setDrill('returning')} />
-                  <GoalStat label="חדשים שהגיעו דרך חבר" value={d.friendShare} display={pct(d.friendShare)} goal={g.friend_share} goalDisplay={pct(g.friend_share)}
+                  <GoalStat className={TILE_320} label="חדשים שהגיעו דרך חבר" value={d.friendShare} display={pct(d.friendShare)} goal={g.friend_share} goalDisplay={pct(g.friend_share)}
                     hint={`${kpis.data.friend_new} מתוך ${kpis.data.new_attendees} חדשים`} onOpen={() => setDrill('friend_new')} />
-                  <GoalStat className="col-span-2 lg:col-span-1" label="דירוג ממוצע למפגש" value={d.avgRating} display={num(d.avgRating, 1)} goal={g.avg_rating} goalDisplay={num(g.avg_rating, 1)}
+                  <GoalStat className={`${TILE_320} col-span-2 lg:col-span-1`} label="דירוג ממוצע למפגש" value={d.avgRating} display={num(d.avgRating, 1)} goal={g.avg_rating} goalDisplay={num(g.avg_rating, 1)}
                     hint={kpis.data.feedback_count ? `${kpis.data.feedback_count} משובים` : 'עוד אין משובים'} />
                 </>
               )}
@@ -145,7 +149,7 @@ export function DashboardPage() {
           {/* under the tiles, not above them: it appears with the numbers and must not push them down (CLS) */}
           {kpis.data && (unclosed > 0 || kpis.data.events === 0) && (
             <div className="mb-3">
-              <Notice tone="light" icon="alert">
+              <Notice tone="light" icon="clock">
                 <span className="font-semibold">המספרים מתעדכנים רק אחרי סגירת מפגש</span>
                 {unclosed > 0 ? (
                   <>
@@ -267,7 +271,7 @@ function NextMeeting({ next, nextOpen, last, loading, className, onCopy }: {
             <div className="num font-display text-stat text-light">
               {st.taken}{st.capacity != null ? <span className="text-section text-light/60">/{st.capacity}</span> : null}
             </div>
-            <div className="text-small text-light/75">{st.walkIns ? `${st.registered} רשומים · ${st.walkIns} בלי הרשמה` : 'רשומים'}</div>
+            <div className="text-small text-light/75">{st.walkIns ? `${registeredText(st.registered)} · ${st.walkIns} בלי הרשמה` : 'רשומים'}</div>
           </div>
           {st.waitlisted > 0 && (
             <div>
@@ -292,7 +296,7 @@ function NextMeeting({ next, nextOpen, last, loading, className, onCopy }: {
       </div>
       {next.status === 'draft' && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-light px-5 py-2.5 text-small font-medium text-ink">
-          <Icon name="alert" size={16} />המפגש עדיין טיוטה, וההרשמה אליו לא פתוחה.
+          <Icon name="calendar" size={16} />המפגש עדיין טיוטה, וההרשמה אליו לא פתוחה.
           <Link to={`/app/events/${next.id}`} className="inline-flex min-h-11 items-center font-bold underline">לפתיחת הרשמה</Link>
         </div>
       )}
@@ -301,7 +305,10 @@ function NextMeeting({ next, nextOpen, last, loading, className, onCopy }: {
 }
 
 function AttentionList({ a }: { a: Attention }) {
-  const items: { icon: IconName; tone: 'bad' | 'warn' | 'tide'; text: React.ReactNode; to: string; action: string }[] = [];
+  // tone: bad = urgent (the one red group), warn = needs doing soon, tide = the rest. `today`: about a meeting today,
+  // the only "soon" item whose tile keeps the warning wash (G4: colour for what needs action today)
+  const items: { icon: IconName; tone: 'bad' | 'warn' | 'tide'; today?: boolean; text: React.ReactNode; to: string; action: string }[] = [];
+  const isToday = (iso: string) => ilParts(iso).date === todayIl();
   // each category stays short: at most two concrete lines, then one summary line
   const capped = <T,>(list: T[], one: (e: T) => (typeof items)[number], many: (n: number) => (typeof items)[number]) => {
     if (list.length > 2) items.push(many(list.length));
@@ -317,7 +324,7 @@ function AttentionList({ a }: { a: Attention }) {
   const lapsedNoTask = a.lapsed.filter((l) => !l.has_open_task);
   if (lapsedNoTask.length) items.push({ icon: 'people', tone: 'warn', text: <><span className="num font-bold">{lapsedNoTask.length}</span> קבועים הפסיקו להגיע: {lapsedNoTask.slice(0, 3).map((l) => l.full_name).join(', ')}{lapsedNoTask.length > 3 ? ' ועוד' : ''}</>, to: '/app/followups?tab=open', action: 'לבדיקה' });
   capped(a.waitlist_with_space,
-    (e) => ({ icon: 'userPlus', tone: 'warn', text: <>התפנו מקומות ב{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>) ויש <span className="num">{e.waitlisted}</span> ברשימת ההמתנה</>, to: `/app/events/${e.id}?tab=registrations`, action: 'לקידום' }),
+    (e) => ({ icon: 'userPlus', tone: 'warn', today: isToday(e.starts_at), text: <>התפנו מקומות ב{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>) ויש <span className="num">{e.waitlisted}</span> ברשימת ההמתנה</>, to: `/app/events/${e.id}?tab=registrations`, action: 'לקידום' }),
     (n) => ({ icon: 'userPlus', tone: 'warn', text: <>ב־<span className="num font-bold">{n}</span> מפגשים התפנו מקומות ויש לוחמים ברשימת ההמתנה</>, to: '/app/events?status=waitlist', action: 'למפגשים' }));
   capped(a.fridays_without_speaker,
     (e) => ({ icon: 'mic', tone: 'tide', text: <>אין מרצה מאושר לשישי <span className="num">{fmtDate(e.starts_at)}</span> ({relativeDays(e.starts_at)})</>, to: `/app/events/${e.id}/edit`, action: 'לשיבוץ' }),
@@ -327,9 +334,9 @@ function AttentionList({ a }: { a: Attention }) {
     (n) => ({ icon: 'calendar', tone: 'tide', text: <><span className="num font-bold">{n}</span> מפגשים בשבוע הקרוב עדיין טיוטה, וההרשמה אליהם סגורה</>, to: '/app/events?status=draft', action: 'למפגשים' }));
   const mism = a.name_mismatches ?? [];
   capped(mism,
-    (m) => ({ icon: 'alert', tone: 'warn', text: <>הרשמה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
-    (n) => ({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: `/app/events/${mism[0].event_id}?tab=registrations`, action: 'לבירור הראשונה' }));
-  if (a.unmatched_payments) items.push({ icon: 'alert', tone: 'warn', text: <><span className="num font-bold">{a.unmatched_payments}</span> תשלומים מ"יש חשבונית" לא זוהו ומחכים להתאמה להרשמה</>, to: '/app/reports?tab=finance', action: 'להתאמה' });
+    (m) => ({ icon: 'phone', tone: 'warn', today: isToday(m.starts_at), text: <>הרשמה בשם "{m.typed_name}" עם הטלפון של {m.card_name}. ייתכן שהוקלד מספר שגוי.</>, to: `/app/events/${m.event_id}?tab=registrations`, action: 'לבירור' }),
+    (n) => ({ icon: 'phone', tone: 'warn', text: <><span className="num font-bold">{n}</span> הרשמות בשם שונה מהשם בכרטיס (ייתכן מספר טלפון שגוי)</>, to: `/app/events/${mism[0].event_id}?tab=registrations`, action: 'לבירור הראשונה' }));
+  if (a.unmatched_payments) items.push({ icon: 'card', tone: 'warn', text: <><span className="num font-bold">{a.unmatched_payments}</span> תשלומים מ"יש חשבונית" לא זוהו ומחכים להתאמה להרשמה</>, to: '/app/reports?tab=finance', action: 'להתאמה' });
   if (a.proposals_pending) items.push({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{a.proposals_pending}</span> הצעות להרצאה או הדרכה מחכות לאישור</>, to: '/app/speakers?tab=proposed', action: 'לצפייה' });
   if (a.followups_mine) items.push({ icon: 'task', tone: 'tide', text: <><span className="num font-bold">{a.followups_mine}</span> משימות פתוחות משויכות אליך</>, to: '/app/followups', action: 'למשימות שלי' });
 
@@ -337,11 +344,12 @@ function AttentionList({ a }: { a: Attention }) {
     return <EmptyState icon="checkCircle" title="הכול מטופל">אין מפגשים שמחכים לסגירה, משימות באיחור או קבועים שהפסיקו להגיע.</EmptyState>;
   }
   // G4: the urgent first, then what needs doing soon, then the rest. Red appears once, as the urgent group's
-  // header; the rows themselves carry only a tinted glyph (warning wash for "soon", a quiet tint for the rest)
+  // header, and the alert glyph only there; below it the tiles are quiet, except what is about a meeting today
   const rank = { bad: 0, warn: 1, tide: 2 } as const;
   const sorted = items.map((it, i) => ({ ...it, i })).sort((x, y) => rank[x.tone] - rank[y.tone] || x.i - y.i);
   const urgent = sorted.filter((it) => it.tone === 'bad').length;
-  const toneCls = { bad: 'bg-bad-wash text-bad', warn: 'bg-warn-wash text-warn', tide: 'bg-ink/[0.07] text-ink-soft' };
+  const quiet = 'bg-ink/[0.07] text-ink-soft';
+  const tileCls = (it: (typeof items)[number]) => (it.tone === 'bad' ? 'bg-bad-wash text-bad' : it.tone === 'warn' && it.today ? 'bg-warn-wash text-warn' : quiet);
   return (
     <ul className="flex flex-col divide-y divide-edge">
       {urgent > 0 && (
@@ -352,7 +360,7 @@ function AttentionList({ a }: { a: Attention }) {
       )}
       {sorted.map((it) => (
         <li key={it.i} className={cx('flex items-start gap-3 py-2.5 last:pb-0', urgent === 0 && 'first:pt-0')}>
-          <span className={`mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] ${toneCls[it.tone]}`}><Icon name={it.icon} size={17} /></span>
+          <span className={`mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] ${tileCls(it)}`}><Icon name={it.icon} size={17} /></span>
           <span className="flex-1 py-2 text-body leading-snug">{it.text}</span>
           <Link to={it.to} className="-mx-2 inline-flex min-h-11 shrink-0 items-center px-2 text-small font-semibold text-tide hover:underline">{it.action}</Link>
         </li>
@@ -373,45 +381,6 @@ function SecurityAlert() {
         יש {n === 1 ? 'התראת אבטחה אחת' : <><span className="num">{n}</span> התראות אבטחה</>} לבדיקה: חשבונות שלא שייכים לצוות, או חסימות בכניסת הצוות.{' '}
         <Link to="/app/settings?tab=security" className="font-semibold underline">למסך האבטחה</Link>
       </Notice>
-    </div>
-  );
-}
-
-const PERIOD_WORD: Partial<Record<Filters['period'], string>> = {
-  month: 'החודש', prev_month: 'החודש הקודם', '30d': '30 יום', '90d': '3 חודשים', year: 'השנה', all: 'הכול',
-};
-const TYPE_WORD: Record<string, string> = { friday: 'שישי', bonfire: 'מדורה' };
-
-/**
- * Phones: the filters as one chip that names what is on ("3 חודשים · שישי"), opening the full filter bar in a dialog.
- * The choice applies at once (as on the wide bar); "הצגה" closes the dialog.
- */
-function FilterChip({ filters, set }: { filters: Filters; set: (p: Partial<Record<string, string | null>>) => void }) {
-  const [open, setOpen] = useState(false);
-  const sites = useSites();
-  const site = filters.site ? sites.data?.find((x) => x.id === filters.site)?.name : null;
-  const parts = [
-    PERIOD_WORD[filters.period] ?? periodLabel(filters),
-    filters.type ? TYPE_WORD[filters.type] ?? 'מפגש אחר' : 'כל סוגי המפגשים',
-    site,
-  ].filter(Boolean);
-  return (
-    <div className="sm:hidden">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        aria-label={`סינון: ${parts.join(', ')}`}
-        className="inline-flex h-11 items-center gap-2 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 text-small font-semibold text-ink hover:border-ink"
-      >
-        <Icon name="filter" size={16} />
-        {parts.join(' · ')}
-        <Icon name="chevron" size={14} className="text-muted" />
-      </button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="סינון המספרים" layout="sheet"
-        footer={<Button onClick={() => setOpen(false)}>הצגה</Button>}>
-        <FilterBar filters={filters} set={set} />
-      </Dialog>
     </div>
   );
 }

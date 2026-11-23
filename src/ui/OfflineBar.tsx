@@ -18,7 +18,10 @@ export function useConnectionTrouble(): boolean {
   const qc = useQueryClient();
   const check = () => {
     const all = qc.getQueryCache().findAll({ type: 'active' });
-    return all.some((q) => q.state.fetchStatus === 'paused' || (q.state.status === 'error' && errorCode(q.state.error) === 'network'));
+    // a network failure counts at once, also while React Query is still waiting to retry it (fetchFailureReason)
+    return all.some((q) => q.state.fetchStatus === 'paused'
+      || (q.state.status === 'error' && errorCode(q.state.error) === 'network')
+      || (q.state.fetchFailureCount > 0 && errorCode(q.state.fetchFailureReason) === 'network'));
   };
   const [trouble, setTrouble] = useState(check);
   useEffect(() => {

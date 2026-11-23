@@ -1,6 +1,6 @@
 import { Children, type ReactNode } from 'react';
 import type { PublicEvent } from '@/lib/types';
-import { TZ, fmtDay, relativeDays } from '@/lib/dates';
+import { TZ, fmtDay, fmtDayLong, relativeDays } from '@/lib/dates';
 import { Badge, cx } from '@/ui/kit';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { Icon, type IconName } from '@/ui/Icon';
@@ -25,9 +25,9 @@ export function availability(e: PublicEvent): { tone: Tone; text: ReactNode; pla
   return { tone: 'good', text: 'הרשמה פתוחה', plain: true };
 }
 
-function Row({ icon, mark, children }: { icon?: IconName; mark?: string; children: ReactNode }) {
+function Row({ icon, mark, className, children }: { icon?: IconName; mark?: string; className?: string; children: ReactNode }) {
   return (
-    <li className="flex items-start gap-2">
+    <li className={cx('flex items-start gap-2', className)}>
       <span className="mt-[3px] text-tide">
         {mark ? <span aria-hidden="true" className="flex h-[18px] w-[18px] items-center justify-center font-display text-body leading-none">{mark}</span>
           : <Icon name={icon ?? 'sun'} size={18} />}
@@ -41,7 +41,7 @@ function Row({ icon, mark, children }: { icon?: IconName; mark?: string; childre
  * One event = one ticket: the date stub, then when, where and what. On the registration page (`detailed`) the speaker's
  * bio and the description run under both, across the ticket's full width, rather than in the narrow column beside the stub.
  */
-export function EventTicket({ event, highlight = false, level = 2, detailed = false, agenda = true, showStatus = true, showPrice = true, kind, className, children }: {
+export function EventTicket({ event, highlight = false, level = 2, detailed = false, agenda = true, showStatus = true, showPrice = true, compact = false, kind, className, children }: {
   event: PublicEvent;
   /** navy date block: only for the one event the page is about (the next Friday) */
   highlight?: boolean;
@@ -54,6 +54,11 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
   showStatus?: boolean | 'notable';
   /** false where the same screen already says the amount (a pay block, the pay step): the price once per screen */
   showPrice?: boolean;
+  /**
+   * Under lg, no date column: the day goes into the time row and every row runs the ticket's full width, so the ticket
+   * is a few lines shorter (#/r on a phone, where the form's first field should be high on the screen).
+   */
+  compact?: boolean;
   /** the kind of meeting, over the title, where the page could suggest another kind ("ערב מדורה" on the home page) */
   kind?: string | null;
   className?: string;
@@ -71,11 +76,12 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
     // a grid, so that on a phone the actions (the call to action, the calendar buttons) run under the date block across
     // the ticket's full width: beside a 92px date block on a 320px screen a 200px button does not fit. From sm up they
     // sit in the text column, under the details.
-    <article className={cx('grid grid-cols-[5.75rem_minmax(0,1fr)] overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper sm:grid-cols-[7.5rem_minmax(0,1fr)]', className)}>
+    <article className={cx('grid grid-cols-[5.75rem_minmax(0,1fr)] overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper sm:grid-cols-[7.5rem_minmax(0,1fr)]', compact && 'max-lg:grid-cols-[minmax(0,1fr)]', className)}>
       {/* the date block: navy with beige type for the event the page is about, beige with navy type otherwise */}
       <div
         className={cx(
           'flex flex-col items-center justify-center px-2 py-4 text-center sm:py-5',
+          compact && 'max-lg:hidden',
           actions && 'sm:row-span-2',
           highlight ? 'bg-ink text-light' : 'border-e border-edge bg-sky text-ink',
         )}
@@ -84,17 +90,19 @@ export function EventTicket({ event, highlight = false, level = 2, detailed = fa
         <span className="num mt-1 font-display text-stat-lg">{dayNum.format(start)}</span>
         <span className="mt-1 text-small font-semibold">{monthName.format(start)}</span>
       </div>
-      <div className="min-w-0 px-4 py-4 sm:p-5">
+      <div className={cx('min-w-0 px-4 py-4 sm:p-5', compact && 'max-lg:py-3')}>
         {kind && <p className="text-small font-semibold text-ink-soft">{kind}</p>}
         <H className="text-heading font-semibold">{keepName(event.title)}</H>
         <ul className="mt-2 flex flex-col gap-1.5 text-body-sm text-ink-soft">
           <Row icon="clock">
+            {compact && <span className="lg:hidden">{fmtDayLong(start)} · </span>}
             <span className="num">{timeRange(event)}</span>
-            <span className="text-muted"> · {relativeDays(start)}</span>
+            <span className={cx('text-muted', compact && 'max-lg:hidden')}> · {relativeDays(start)}</span>
           </Row>
           {event.location && <Row icon="pin">{event.location}</Row>}
           {/* Friday mornings end with breakfast together: say so up front */}
-          {event.type === 'friday' && <Row icon="coffee">קפה ונשנושים</Row>}
+          {/* compact: not on a phone, where the visitor just read it on the ticket they tapped (#/friday, the home page) */}
+          {event.type === 'friday' && <Row icon="coffee" className={compact ? 'max-lg:hidden' : undefined}>קפה ונשנושים</Row>}
           {activity && <Row icon="sun">{keepName(activity)}</Row>}
           {lecture && <Row icon="mic">{keepName(lecture)}</Row>}
           {showPrice && isPriced(event.price) && (

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type FormEvent, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -94,7 +94,12 @@ export function DoorPage() {
   // while the search has focus (the phone keyboard is open) the header shrinks to the search row
   const [typing, setTyping] = useState(false);
   const expandTimer = useRef<number>(0);
-  const onSearchFocus = () => { window.clearTimeout(expandTimer.current); setTyping(true); };
+  // only the text field itself: a button that takes the focus (the × in the box, "הגעה בלי הרשמה") must not move
+  const onSearchFocus = (ev: FocusEvent) => {
+    if (!(ev.target instanceof HTMLInputElement)) return;
+    window.clearTimeout(expandTimer.current);
+    setTyping(true);
+  };
   const onSearchBlur = () => { window.clearTimeout(expandTimer.current); expandTimer.current = window.setTimeout(() => setTyping(false), EXPAND_DELAY_MS); };
 
   // rows marked in the last few seconds stay in place, so a wrong tap is fixed right where it happened;
@@ -111,6 +116,14 @@ export function DoorPage() {
   };
   useEffect(() => () => Object.values(timers.current).forEach((t) => window.clearTimeout(t)), []);
   useEffect(() => () => window.clearTimeout(expandTimer.current), []);
+
+  // a tap that was not saved: the row says so in place ("לא נשמר · לסמן שוב") instead of looking marked, until the
+  // next try succeeds. Keyed by registration, the value is what the tap asked for.
+  const [failed, setFailed] = useState<Record<string, 'attended' | 'unknown'>>({});
+  const clearFailed = (rid: string) => setFailed((f) => {
+    if (!(rid in f)) return f;
+    const n = { ...f }; delete n[rid]; return n;
+  });
 
   const [walkin, setWalkin] = useState<{ name: string; phone: string } | null>(null);
   const [showCancelled, setShowCancelled] = useState(false);
@@ -138,9 +151,13 @@ export function DoorPage() {
     },
     onError: (err, v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+      setFailed((f) => ({ ...f, [v.row.registration_id]: v.attendance }));
+      // the row stays where the tap happened, for as long as a fee would keep it there
+      remember(v.row.registration_id, false, STAY_OWES_MS);
       toast.error(`ההגעה של ${v.row.display_name} לא נשמרה. ${errorMessage(err)}`);
     },
     onSuccess: (v) => {
+      clearFailed(v.row.registration_id);
       if (v.quiet) return;
       if (v.attendance === 'attended') {
         const unpaid = owes(v.row) ? ' · לא שולם' : '';
@@ -292,6 +309,13 @@ export function DoorPage() {
     price,
     onToggle: () => toggle(r),
     onPaid: () => payCash(r),
+    failed: failed[r.registration_id],
+    onRetry: () => {
+      const want = failed[r.registration_id];
+      if (!want) return;
+      remember(r.registration_id, pinned(r), STAY_OWES_MS);
+      setAttendance.mutate({ row: r, attendance: want });
+    },
     menu: [
       ...(owes(r) && price != null && r.attendance !== 'attended' ? [{ label: `הגעה ושולם במקום · ${fmtMoney(price)}`, icon: 'check' as const, onClick: () => payCash(r) }] : []),
       ...(price && r.payment_status === 'paid' && r.cash_just_marked ? [{ label: 'הסרת "שולם במקום"', icon: 'undo' as const, onClick: () => doorPay.mutate({ row: r, paid: false }) }] : []),
@@ -309,7 +333,22 @@ export function DoorPage() {
   const updated = list.dataUpdatedAt ? fmtTime(new Date(list.dataUpdatedAt)) : null;
   const owingChip = !forbidden && price != null && (totalOwing > 0 || onlyOwing);
   const firstChip = !forbidden && !!list.data && (totalFirst > 0 || onlyFirst);
-  const chipRow = owingChip || firstChip;
+  // the greeter's chip sits next to the "עוד לא הגיעו" heading, not in the sticky header: the header keeps to what
+  // every tap needs (the count, the search, and money owed, which is never toned down at the door)
+  const firstToggle = firstChip && (
+    <button
+      type="button"
+      aria-pressed={onlyFirst}
+      onClick={() => setOnlyFirst((v) => !v)}
+      className={cx(
+        'inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
+        onlyFirst ? 'border-ink bg-ink text-light' : 'border-control-line bg-paper text-ink hover:border-ink',
+      )}
+    >
+      <Icon name={onlyFirst ? 'check' : 'heart'} size={16} />
+      פעם ראשונה <span className="num">{totalFirst}</span>
+    </button>
+  );
   // a refresh or a tap that failed never wipes the list at the door: the list stays, and one line says since when
   // it is not up to date (the door header is the one sticky element here, so the line lives inside it)
   const trouble = useConnectionTrouble();
@@ -342,10 +381,11 @@ export function DoorPage() {
             {e && <div className="hidden text-small text-muted sm:block">{fmtDayLong(e.starts_at)} · <span className="num">{timeRange(e)}</span></div>}
             {!forbidden && list.data && (
               <p className="flex flex-wrap items-baseline gap-x-1.5 text-small text-ink-soft">
-                <span><b className="num text-ink">{totalNotYet}</b> עוד לא הגיעו</span>
+                <span>{totalNotYet === 1 ? <><b className="text-ink">אחד</b> עוד לא הגיע</> : <><b className="num text-ink">{totalNotYet}</b> עוד לא הגיעו</>}</span>
                 {walkIns > 0 && <span aria-hidden="true">·</span>}
                 {walkIns > 0 && <span><b className="num text-ink">{walkIns}</b> בלי הרשמה</span>}
-                {updated && !chipRow && !stale && <span className="text-muted">· עודכן <span className="num">{updated}</span></span>}
+                {updated && !stale && <span aria-hidden="true" className="text-muted">·</span>}
+                {updated && !stale && <span className="text-muted">עודכן <span className="num">{updated}</span></span>}
               </p>
             )}
           </div>
@@ -361,8 +401,10 @@ export function DoorPage() {
         </div>
 
         {!forbidden && (
-          <div className={cx('mt-2 flex gap-2', typing && 'max-sm:mt-0')} onFocus={onSearchFocus} onBlur={onSearchBlur}>
-            <div ref={searchBox} className="min-w-0 flex-1">
+          <div className={cx('mt-2 flex gap-2', typing && 'max-sm:mt-0')}>
+            {/* only the search field shrinks the header: a tap on "הגעה בלי הרשמה" focuses that button, and if the header
+                collapsed under the finger the tap would land on nothing (two taps were needed) */}
+            <div ref={searchBox} className="min-w-0 flex-1" onFocus={onSearchFocus} onBlur={onSearchBlur}>
               <SearchInput value={search} onChange={setSearch} label="חיפוש לפי שם או טלפון" placeholder="שם או טלפון" size="lg" />
             </div>
             <button
@@ -389,39 +431,21 @@ export function DoorPage() {
           </p>
         )}
 
-        {chipRow && (
+        {owingChip && (
           <div className={cx('mt-2 flex flex-wrap items-center gap-2', compact)}>
-            {owingChip && (
-              <button
-                type="button"
-                aria-pressed={onlyOwing}
-                onClick={() => setOnlyOwing((v) => !v)}
-                className={cx(
-                  'inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
-                  onlyOwing ? 'border-ink bg-ink text-light' : 'border-warn/40 bg-warn-wash text-warn hover:border-warn',
-                )}
-              >
-                {onlyOwing ? <Icon name="check" size={16} /> : <span aria-hidden="true" className="font-display">₪</span>}
-                לא שילמו <span className="num">{totalOwing}</span>
-              </button>
-            )}
-            {firstChip && (
-              <button
-                type="button"
-                aria-pressed={onlyFirst}
-                onClick={() => setOnlyFirst((v) => !v)}
-                className={cx(
-                  'inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
-                  onlyFirst ? 'border-ink bg-ink text-light' : 'border-ink/25 bg-light text-ink hover:border-ink',
-                )}
-              >
-                <Icon name={onlyFirst ? 'check' : 'sparkle'} size={16} />
-                פעם ראשונה <span className="num">{totalFirst}</span>
-              </button>
-            )}
-            <span className="ms-auto text-small text-muted">
-              {onlyOwing ? <>רק מי שעוד לא שילמו · <span className="num">{fmtMoney(price!)}</span></> : !stale && updated && <>עודכן <span className="num">{updated}</span></>}
-            </span>
+            <button
+              type="button"
+              aria-pressed={onlyOwing}
+              onClick={() => setOnlyOwing((v) => !v)}
+              className={cx(
+                'inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
+                onlyOwing ? 'border-ink bg-ink text-light' : 'border-warn/40 bg-warn-wash text-warn hover:border-warn',
+              )}
+            >
+              {onlyOwing ? <Icon name="check" size={16} /> : <span aria-hidden="true" className="font-display">₪</span>}
+              לא שילמו <span className="num">{totalOwing}</span>
+            </button>
+            {onlyOwing && <span className="ms-auto text-small text-muted">רק מי שעוד לא שילמו · <span className="num">{fmtMoney(price!)}</span></span>}
           </div>
         )}
       </div>
@@ -456,6 +480,8 @@ export function DoorPage() {
         ) : (
           <div className="flex flex-col gap-6">
             {!term && strip}
+            {/* no "עוד לא הגיעו" heading to sit next to (all in, or the filter left none): the chip stays reachable */}
+            {firstToggle && notYet.length === 0 && <div>{firstToggle}</div>}
             {filtering && shown.length === 0 && (
               // compact on purpose: with the keyboard open, the way forward ("הגעה בלי הרשמה") must be in view
               <div className="rounded-[var(--radius-panel)] border border-edge bg-paper p-4" role="status">
@@ -468,7 +494,7 @@ export function DoorPage() {
               </div>
             )}
             {notYet.length > 0 && (
-              <Section title="עוד לא הגיעו" count={notYet.length}>
+              <Section title="עוד לא הגיעו" count={notYet.length} action={firstToggle || undefined}>
                 {notYet.map((r) => <Row key={r.registration_id} {...rowProps(r)} />)}
               </Section>
             )}
@@ -526,21 +552,28 @@ export function DoorPage() {
   );
 }
 
-function Section({ title, count, hint, live, children }: { title: string; count: number; hint?: string; live?: boolean; children: ReactNode }) {
+function Section({ title, count, hint, live, action, children }: {
+  title: string; count: number; hint?: string; live?: boolean; action?: ReactNode; children: ReactNode;
+}) {
+  const heading = (
+    <h2 className={cx('flex items-baseline gap-2 px-1 text-heading font-bold', !action && 'mb-2')}>
+      {title}
+      <span className="num text-small font-normal text-muted">({count})</span>
+    </h2>
+  );
   return (
     <section aria-live={live ? 'polite' : undefined}>
-      <h2 className="mb-2 flex items-baseline gap-2 px-1 text-heading font-bold">
-        {title}
-        <span className="num text-small font-normal text-muted">({count})</span>
-      </h2>
+      {action ? <div className="mb-2 flex flex-wrap items-center justify-between gap-2">{heading}{action}</div> : heading}
       {hint && <p className="-mt-1 mb-2 px-1 text-small text-muted">{hint}</p>}
       <ul className="flex flex-col gap-2">{children}</ul>
     </section>
   );
 }
 
-function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPaid, menu }: {
-  r: CheckinRow; friday: boolean; disabled: boolean; owes: boolean; payHere: boolean; price: number | null; recent?: boolean; onToggle: () => void; onPaid: () => void; menu: MenuItem[];
+function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPaid, failed, onRetry, menu }: {
+  r: CheckinRow; friday: boolean; disabled: boolean; owes: boolean; payHere: boolean; price: number | null; recent?: boolean; onToggle: () => void; onPaid: () => void;
+  /** the last tap on this row was not saved: what it asked for */
+  failed?: 'attended' | 'unknown'; onRetry: () => void; menu: MenuItem[];
 }) {
   const on = r.attendance === 'attended';
   const nth = r.prior_fridays + 1;
@@ -549,7 +582,7 @@ function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPa
     <li className={cx(
       'flex min-h-[4.75rem] items-center gap-3 rounded-[var(--radius-panel)] border py-2.5 pr-2.5 pl-1.5',
       gone ? 'border-edge bg-paper/60' : 'bg-paper',
-      recent ? 'border-ink ring-1 ring-ink' : on ? 'border-ink/50' : !gone && 'border-edge',
+      failed ? 'border-warn ring-1 ring-warn' : recent ? 'border-ink ring-1 ring-ink' : on ? 'border-ink/50' : !gone && 'border-edge',
     )}>
       <button
         type="button"
@@ -579,7 +612,7 @@ function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPa
               בלי צילום
             </span>
           )}
-          {r.first_time && <Badge size="md" tone="first" icon="sparkle">פעם ראשונה</Badge>}
+          {r.first_time && <Badge size="md" tone="first" icon="heart">פעם ראשונה</Badge>}
           {friday && !r.first_time && isMilestone(nth) && <Badge size="md" icon="star" title={`מפגש שישי מספר ${nth}. כדאי לברך!`}>מפגש שישי {nth}</Badge>}
           {r.is_member && <Badge size="md" title="חברות בעמותה">חברות בעמותה</Badge>}
           {r.is_walk_in && <Badge size="md">בלי הרשמה</Badge>}
@@ -593,6 +626,17 @@ function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPa
             </span>
           )}
         </div>
+        {failed && (
+          <p role="alert" className="mt-1 flex items-center gap-x-1 text-small font-semibold whitespace-nowrap text-warn">
+            <Icon name="alert" size={16} className="shrink-0" />
+            {failed === 'attended' ? 'לא נשמר' : 'ההסרה לא נשמרה'}
+            <span aria-hidden="true">·</span>
+            <button type="button" onClick={onRetry} disabled={disabled}
+              className="-my-1 inline-flex h-11 items-center rounded-[var(--radius-control)] px-1 underline underline-offset-2 hover:bg-warn/10">
+              {failed === 'attended' ? 'לסמן שוב' : RETRY_LABEL}
+            </button>
+          </p>
+        )}
         {payHere && !disabled && price != null && (
           <button
             type="button"

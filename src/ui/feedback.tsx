@@ -290,13 +290,49 @@ export function Dialog({ open, onClose, title, children, footer, size = 'md', di
   // The content mounts only once the dialog is open, so an `autoFocus` field (or the confirm's "חזרה") can take the
   // focus; otherwise it goes to `[data-autofocus]`, else to the first control (the browser's own rule).
   const [shown, setShown] = useState(false);
+  // The element that opened the dialog gets the focus back when it closes — also after "יציאה בלי שמירה" (the confirm
+  // dialog on top had moved the browser's own memory of it) and when the dialog unmounts while still open.
+  const opener = useRef<HTMLElement | null>(null);
+  const restoreFocus = () => {
+    const el = opener.current;
+    opener.current = null;
+    if (!el) return;
+    // after the commit: a confirm on top may close in the same render, and its own opener (a field in this dialog) is
+    // gone by then. Only when the focus was left nowhere (the body) or in a dialog that is closed now.
+    queueMicrotask(() => {
+      const a = document.activeElement;
+      const lost = !a || a === document.body || !a.isConnected || !!a.closest('dialog:not([open])');
+      if (lost && el.isConnected && !el.closest('dialog:not([open])')) el.focus({ preventScroll: true });
+    });
+  };
   useLayoutEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (open && !d.open) d.showModal();
-    if (!open && d.open) d.close();
+    if (open && !d.open) {
+      opener.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+      d.showModal();
+    }
+    if (!open && d.open) {
+      d.close();
+      restoreFocus();
+    }
     setShown(open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  useLayoutEffect(() => {
+    const d = ref.current;
+    return () => {
+      // unmounted while open (a dialog that mounts only while open). Checked after the commit: React's StrictMode
+      // re-runs effects without removing the element, and then nothing is to be done.
+      const el = opener.current;
+      queueMicrotask(() => {
+        if (!d || d.isConnected || !el) return;
+        opener.current = el;
+        restoreFocus();
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useLayoutEffect(() => {
     const d = ref.current;
     if (!d || !shown) return;

@@ -18,12 +18,12 @@ export type RosterFilters = {
   city: string;
   task: boolean; // has an open follow-up
   consent: '' | 'yes' | 'no';
-  /** last arrival more than GONE_DAYS ago ("לא הגיעו מעל חודשיים") */
+  /** last arrival more than GONE_DAYS ago ("לא הגיעו יותר מחודשיים") */
   gone: boolean;
   sort: RosterSort;
 };
 
-/** "מעל חודשיים" */
+/** "יותר מחודשיים" */
 export const GONE_DAYS = 60;
 const goneCutoff = () => fromIl(addDays(todayIl(), -GONE_DAYS), '00:00');
 
@@ -216,7 +216,7 @@ export async function cityCounts(): Promise<{ city: string; n: number }[]> {
   return [...m.entries()].map(([city, n]) => ({ city, n })).sort((a, b) => b.n - a.n || a.city.localeCompare(b.city, 'he'));
 }
 
-/** How many participants are in each engagement status, plus "לא הגיעו מעל חודשיים" (for the filter chips). */
+/** How many participants are in each engagement status, plus "לא הגיעו יותר מחודשיים" (for the filter chips). */
 export type RosterCounts = Record<Engagement | 'all' | 'gone', number>;
 const STATUSES: Engagement[] = ['registered', 'first_timer', 'returning', 'regular', 'lapsed'];
 

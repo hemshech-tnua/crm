@@ -1,16 +1,19 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorMessage } from '@/lib/errors';
 import { normalizePhone, PHONE_EXAMPLE } from '@/lib/phone';
 import { useSettings, useSites, useStaffList } from '@/lib/data';
 import type { Settings } from '@/lib/types';
-import { Button, Checkbox, ErrorBox, Input, Panel, Select, Skeleton } from '@/ui/kit';
+import { useUnsavedGuard } from '@/lib/unsaved';
+import { Button, Checkbox, ErrorBox, Input, Panel, Select, Skeleton, cx } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
+import { useHideTabBar } from '@/ui/chrome';
 
 type Form = Record<keyof Settings, string | boolean | null>;
 
 const PERCENT_KEYS = ['goal_show_rate', 'goal_return_rate', 'goal_friend_share'] as const;
+const same = (a: Form, b: Form) => (Object.keys(b) as (keyof Settings)[]).every((k) => (a[k] ?? '') === (b[k] ?? ''));
 
 export function GeneralSettings() {
   const settings = useSettings();
@@ -19,7 +22,11 @@ export function GeneralSettings() {
   const qc = useQueryClient();
   const toast = useToast();
   const [f, setF] = useState<Form | null>(null);
+  // the saved values as a form: what "dirty" compares with
+  const [base, setBase] = useState<Form | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // after a save the form takes the stored values (the server may tidy them, e.g. the phone)
+  const resync = useRef(false);
 
   useEffect(() => {
     if (!settings.data) return;
@@ -28,7 +35,12 @@ export function GeneralSettings() {
     for (const [k, v] of Object.entries(s)) {
       out[k] = typeof v === 'boolean' ? v : v == null ? '' : (PERCENT_KEYS as readonly string[]).includes(k) ? String(Math.round(Number(v) * 100)) : String(v);
     }
-    setF(out as Form);
+    // a refresh in the background never overwrites what is being typed: the form follows only while it is unchanged
+    const take = resync.current;
+    resync.current = false;
+    setF((cur) => (!cur || !base || take || same(cur, base) ? (out as Form) : cur));
+    setBase(out as Form);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.data]);
 
   const save = useMutation({
@@ -37,12 +49,18 @@ export function GeneralSettings() {
       if (err) throw err;
     },
     onSuccess: () => {
+      resync.current = true;
       qc.invalidateQueries({ queryKey: ['settings'] });
       qc.invalidateQueries({ queryKey: ['kpis'] });
       toast.success('ההגדרות נשמרו');
     },
     onError: (e) => setError(errorMessage(e)),
   });
+
+  const dirty = !!f && !!base && !same(f, base);
+  useUnsavedGuard(dirty && !save.isPending, { search: true });
+  // a phone shows the save bar at the bottom (in reach of the thumb) once something changed, in place of the tab bar
+  useHideTabBar(dirty);
 
   if (!f) return settings.error ? <ErrorBox error={errorMessage(settings.error)} onRetry={() => void settings.refetch()} /> : <Skeleton shape="tiles" count={4} height={200} cols="grid-cols-1" />;
 
@@ -130,7 +148,19 @@ export function GeneralSettings() {
       </Panel>
 
       {error && <ErrorBox error={error} />}
-      <div><Button type="submit" size="lg" busy={save.isPending}>שמירת ההגדרות</Button></div>
+      {/* wide screens: the save button sticks to the bottom of the window, so it stays next to the field being changed;
+          a phone gets it in a bar fixed at the bottom once something changed (and at the end of the form otherwise).
+          Before any change it stays in place at the end, disabled */}
+      <div className={cx('flex items-center gap-3 max-md:hidden', dirty && 'sticky bottom-0 z-10 -mx-1 border-t border-edge bg-sky px-1 py-3')}>
+        <Button type="submit" size="lg" busy={save.isPending} disabled={!dirty && !save.isPending}>שמירת ההגדרות</Button>
+        <span className="text-small text-muted" aria-live="polite">{dirty ? 'יש שינויים שעוד לא נשמרו.' : 'אין שינויים לשמירה.'}</span>
+      </div>
+      {!dirty && <div className="md:hidden"><Button type="submit" size="lg" disabled>שמירת ההגדרות</Button></div>}
+      {dirty && (
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-edge bg-paper px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+          <Button type="submit" busy={save.isPending} icon="check" className="flex-1">שמירת ההגדרות</Button>
+        </div>
+      )}
     </form>
   );
 }

@@ -8,7 +8,7 @@ export function NotFound() {
   const staff = useLocation().pathname.startsWith('/app');
   const role = useRole();
   useTitle('העמוד לא נמצא');
-  const back = !staff ? 'לעמוד הראשי' : role === 'volunteer' ? 'לרשימת הכניסה' : 'למסך הסקירה';
+  const back = !staff ? 'לעמוד הראשי' : role === 'volunteer' ? 'לרשימת הנוכחות' : 'למסך הסקירה';
   return (
     <EmptyState icon="alert" titleAs="h1" title="העמוד לא נמצא" action={<ButtonLink to={staff ? '/app' : '/'} cta>{back}</ButtonLink>}>
       ייתכן שהקישור ישן או שהוקלד לא נכון.

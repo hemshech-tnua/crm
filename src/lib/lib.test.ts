@@ -4,6 +4,7 @@ import { renderTemplate, unknownPlaceholders } from './templates';
 import { toCsv } from './csv';
 import { derived, pct, progress, type Kpis } from './metrics';
 import { fromIl, ilParts, nextFriday, addDays } from './dates';
+import { errorCode } from './errors';
 
 describe('phone (mirrors private.normalize_phone)', () => {
   it.each([
@@ -82,4 +83,14 @@ describe('dates in Israel time', () => {
     expect(nextFriday('2026-11-07')).toBe('2026-11-13');
     expect(addDays('2026-11-13', 7)).toBe('2026-11-20');
   });
+});
+
+describe('errorCode: a lost or timed-out connection is "network"', () => {
+  it.each([
+    'TypeError: Failed to fetch',
+    'AbortError: signal is aborted without reason',
+    'TimeoutError: signal timed out',
+    'AbortError: The operation was aborted.',
+  ])('%s', (message) => expect(errorCode({ message })).toBe('network'));
+  it('a server code stays itself', () => expect(errorCode({ message: 'event_full' })).toBe('event_full'));
 });

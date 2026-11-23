@@ -44,7 +44,7 @@ const GROUP_HINT: Record<Group, string> = {
   unpaid: 'רשומים שעוד לא שילמו, ומי שהתחיל הרשמה ולא שילם (אין לו מקום עד התשלום). כל אחד מקבל את הנוסח שמתאים לו.',
   attended: 'רשומים שסומנה להם הגעה.',
   no_show: 'רשומים שלא הגיעו. מסומנים בסגירת המפגש.',
-  consented: 'אישרו לקבל עדכונים בוואטסאפ, הגיעו לפעילות כלשהי ב־90 הימים האחרונים, ועדיין לא רשומים למפגש הזה.',
+  consented: 'אישרו לקבל עדכונים בוואטסאפ, הגיעו למפגש כלשהו ב־90 הימים האחרונים, ועדיין לא רשומים למפגש הזה.',
 };
 /** The template each audience starts from (when the meeting has it). */
 const PREFERRED: Partial<Record<Group, string>> = { registered: 'reminder', attended: 'thanks', no_show: 'missed_you' };

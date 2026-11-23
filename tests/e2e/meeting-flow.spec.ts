@@ -59,8 +59,10 @@ test('meeting page: the primary action follows the stage, the rest is under "ע�
   await page.keyboard.press('Escape');
   // the strip: one count definition, and a click opens the tab
   const strip = page.getByRole('list', { name: 'מצב המפגש' });
-  await expect(strip).toContainText('0 רשומים · 0 מתוך 40');
-  await strip.getByRole('button', { name: /רשומים/ }).click();
+  // with a capacity (and no walk-ins) the places taken are the registered: one number, not two
+  await expect(strip).toContainText('0 מתוך 40 מקומות');
+  await expect(strip).not.toContainText('רשומים');
+  await strip.getByRole('button', { name: /מקומות/ }).click();
   await expect(page).toHaveURL(/tab=registrations/);
   expect(errors, errors.join('\n')).toEqual([]);
 });

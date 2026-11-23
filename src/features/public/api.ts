@@ -119,6 +119,14 @@ export const PAYMENT_POLL_FOR_MS = 30 * 60_000;
  * The registration behind a personal token. With `watchPaymentSince` (when the watching started), a pending payment is
  * checked again on its own until it turns into a place (or the 30 minutes pass).
  */
+/** The registration behind a token, as one query (shared by useRegistration and lists of saved registrations). */
+export const registrationQuery = (token: string | null) => ({
+  queryKey: ['pub', 'registration', token] as const,
+  enabled: !!token,
+  retry,
+  queryFn: () => rpc<RegistrationInfo>('public_registration', { p_token: token }),
+});
+
 export const useRegistration = (token: string | null, watchPaymentSince?: number) =>
   useQuery({
     queryKey: ['pub', 'registration', token],

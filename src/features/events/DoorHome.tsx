@@ -124,7 +124,8 @@ function DoorCard({ e, now, manager }: { e: DoorEvent; now: number; manager: boo
             <span className="font-medium text-ink-soft">הגיעו</span>
           </div>
           <p className="mt-1 text-small text-ink-soft">
-            <span className="num font-semibold text-ink">{notYet}</span> עוד לא הגיעו · <span className="num">{registered}</span> רשומים
+            {notYet === 1 ? <><span className="font-semibold text-ink">אחד</span> עוד לא הגיע</> : <><span className="num font-semibold text-ink">{notYet}</span> עוד לא הגיעו</>}
+            {' · '}{registered === 1 ? 'רשום אחד' : <><span className="num">{registered}</span> רשומים</>}
           </p>
         </div>
       )}

@@ -7,6 +7,21 @@ import type { EventRow, EventStats, EventStatus, EventType } from '@/lib/types';
 import { Badge, LOADING_LABEL, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
 
+/**
+ * A dialog that holds its own input: every opening mounts it afresh (a new `key`), so input that was discarded
+ * ("חזרה", Esc, "יציאה בלי שמירה") never comes back the next time. Closing keeps the same instance until it is shut,
+ * so the browser still hands the focus back to the button that opened it.
+ */
+export function useFreshDialog() {
+  const [s, setS] = useState({ open: false, key: 0 });
+  return {
+    open: s.open,
+    key: s.key,
+    show: () => setS((x) => ({ open: true, key: x.key + 1 })),
+    hide: () => setS((x) => ({ ...x, open: false })),
+  };
+}
+
 const TYPE_SHORT: Record<EventType, { label: string; icon: IconName }> = {
   friday: { label: 'שישי', icon: 'sun' },
   bonfire: { label: 'מדורה', icon: 'flame' },
@@ -72,6 +87,9 @@ export function seats(e: Pick<EventRow, 'capacity'> & { stats?: Pick<EventStats,
     full: capacity != null && taken >= capacity,
   };
 }
+
+/** "רשום אחד" / "12 רשומים": one is written out (STYLE: "אחד" in sentences, not "1 רשומים"). */
+export const registeredText = (n: number) => (n === 1 ? 'רשום אחד' : `${n} רשומים`);
 
 /** "24 רשומים · 2 בלי הרשמה · 26 מתוך 28" (parts that are 0 or unknown are left out). */
 export function seatText(e: Parameters<typeof seats>[0], { waitlist = false }: { waitlist?: boolean } = {}) {

@@ -37,7 +37,9 @@ export function StaffLayout() {
   const items = ITEMS.filter((i) => role && i.roles.includes(role));
   const mobileItems = items.filter((i) => i.mobile);
   const extra = items.filter((i) => !i.mobile);
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  // the "עוד" menu belongs to the screen it was opened on: Back (or any navigation) closes it
+  useEffect(() => { setMore(false); }, [pathname, search]);
   // "עוד" reads as the current section when one of its routes is open
   const extraActive = extra.some((i) => pathname.startsWith(i.to));
   // door mode on a phone needs every pixel for names: no bottom tab bar there; the app bar (never sticky on a phone, G1)
@@ -60,7 +62,7 @@ export function StaffLayout() {
   const tabbar = !!role && role !== 'volunteer' && !door && !hiddenByPage;
   // the browser tab's title names the section ("מפגשים · המשך תנועה") unless the page sets a more specific one (useTitle)
   useSectionTitle(items.find((i) => pathname.startsWith(i.to))?.label ?? (door ? 'כניסה' : null));
-  const homeLabel = role === 'volunteer' ? 'רשימת הכניסה' : 'מסך הסקירה';
+  const homeLabel = role === 'volunteer' ? 'רשימת הנוכחות' : 'מסך הסקירה';
   useEffect(() => {
     const html = document.documentElement;
     if (tabbar) html.dataset.tabbar = '';
@@ -139,9 +141,9 @@ export function StaffLayout() {
 
       {/* in door mode the page is always at least a screen tall below the app bar, so the bar can scroll away */}
       <main id="main" className={cx('min-w-0 flex-1 px-4 pt-5 sm:px-6 md:px-10 md:pt-9 md:pb-12', door ? 'min-h-dvh pb-8 md:min-h-0' : 'pb-28')}>
-        {/* no connection: one bar for the whole screen, with one retry (in door mode it stays in the flow: the door
-            header carries its own "not updated" line and is the sticky element there) */}
-        <OfflineBar sticky={!door} />
+        {/* no connection: one bar for the whole screen, with one retry. Not in door mode: the door header carries its
+            own "not updated" line (with a retry) and is the sticky element there; two lines saying the same is noise */}
+        {!door && <OfflineBar />}
         <div className="mx-auto max-w-6xl">
           <Outlet />
         </div>

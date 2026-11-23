@@ -78,7 +78,7 @@ export function PaymentsPanel({ eventId, people = [] }: { eventId: string; peopl
       actions={<Button size="sm" variant="secondary" icon="plus" onClick={() => setEditing('new')}>הוספת תשלום</Button>}
       padded={false}
     >
-      {q.isError ? <div className="p-4"><ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /></div>
+      {q.isError && !q.data ? <div className="p-4"><ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /></div>
         : q.isLoading ? <div className="p-4"><Skeleton lines={3} /></div>
         : !rows.length ? (
           <EmptyState icon="task" title="עוד אין תשלומים" action={<Button icon="plus" onClick={() => setEditing('new')}>הוספת תשלום</Button>}>

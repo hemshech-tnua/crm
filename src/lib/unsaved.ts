@@ -15,13 +15,15 @@ export type UnsavedGuard = {
  * Guards a page with a form against losing typed input. While `dirty` is true:
  * - leaving the page inside the app (a link, the tab bar, Back) asks "לצאת בלי לשמור?" (useConfirm); "חזרה" stays;
  * - closing or reloading the tab gets the browser's own "leave site?" prompt.
- * Search-parameter changes on the same page (tabs, filters) are not blocked. One guard per screen (the router supports
+ * Search-parameter changes on the same page (tabs, filters) are not blocked, unless `{ search: true }` (a form that is
+ * itself one tab of a page, e.g. the general settings: another tab would unmount it). One guard per screen (the router supports
  * one blocker at a time). For a dialog with a form, use <Dialog dismissible={!dirty}> instead.
  *
  *   const guard = useUnsavedGuard(dirty);
  *   const save = useMutation({ …, onSuccess: (id) => { guard.release(); navigate(`/app/events/${id}`); } });
  */
-export function useUnsavedGuard(dirty: boolean): UnsavedGuard {
+export function useUnsavedGuard(dirty: boolean, opts: { /** also ask when only the search part changes (a form that is one tab of a page) */ search?: boolean } = {}): UnsavedGuard {
+  const search = !!opts.search;
   const dirtyRef = useRef(dirty);
   const released = useRef(false);
   useEffect(() => {
@@ -29,8 +31,9 @@ export function useUnsavedGuard(dirty: boolean): UnsavedGuard {
     if (!dirty) released.current = false;
   }, [dirty]);
   const shouldBlock = useCallback<BlockerFunction>(
-    ({ currentLocation, nextLocation }) => dirtyRef.current && !released.current && currentLocation.pathname !== nextLocation.pathname,
-    [],
+    ({ currentLocation, nextLocation }) => dirtyRef.current && !released.current
+      && (currentLocation.pathname !== nextLocation.pathname || (search && currentLocation.search !== nextLocation.search)),
+    [search],
   );
   const blocker = useBlocker(shouldBlock);
   const confirm = useConfirm();

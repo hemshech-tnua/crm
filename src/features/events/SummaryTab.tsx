@@ -57,7 +57,7 @@ export function SummaryTab({ event: e, onTab }: { event: EventWithStats; onTab: 
       <section aria-label="נוכחות" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <BigStat highlight label="הגיעו" value={attended} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : 'כולם נרשמו מראש'} />
         <BigStat label="חדשים (פעם ראשונה)" value={attended ? <span className="num">{s?.new_count ?? 0}</span> : '—'} sub={attended ? `${pct(ratio(s?.new_count ?? 0, attended))} מהמגיעים` : undefined} />
-        <BigStat label="חוזרים" value={attended ? <span className="num">{s?.returning_count ?? 0}</span> : '—'} sub={attended ? 'היו כבר בפעילות קודמת' : undefined} />
+        <BigStat label="חוזרים" value={attended ? <span className="num">{s?.returning_count ?? 0}</span> : '—'} sub={attended ? 'היו כבר במפגש קודם' : undefined} />
         <BigStat
           label="שיעור הגעה"
           value={pct(showRate)}

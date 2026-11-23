@@ -44,6 +44,16 @@ export function savedToken(eventCode: string | null | undefined): string | null 
   return savedRegistrations(eventCode)[0]?.token ?? null;
 }
 
+/**
+ * The one registration this phone made for an event, or null when it made none or several. The page's main button
+ * then leads to "לעמוד ההרשמה שלי"; on a phone shared by several people it stays "להרשמה", and #/r lists each first
+ * name with its own link, so nobody lands on someone else's page by default.
+ */
+export function ownToken(eventCode: string | null | undefined): string | null {
+  const saved = savedRegistrations(eventCode);
+  return saved.length === 1 ? saved[0].token : null;
+}
+
 export function hasToken(eventCode: string | null | undefined, token: string): boolean {
   return savedRegistrations(eventCode).some((r) => r.token === token);
 }

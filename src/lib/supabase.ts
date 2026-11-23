@@ -9,6 +9,9 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 export const configured = Boolean(url && key);
 
 export const supabase = createClient(url ?? 'http://invalid.local', key ?? 'missing', {
+  // Data requests (/rest/v1/ only; db.* never reaches /auth/v1/): no retries of supabase-js's own (React Query retries
+  // once), and a hung request gives up after 15 s, so a lost connection shows the offline bar instead of waiting for ever.
+  db: { retry: false, timeout: 15_000 },
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'hemshech-auth' },
 });
 

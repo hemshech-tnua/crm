@@ -388,14 +388,16 @@ function SendLinkDialog({ volunteer: v, onClose }: { volunteer: Volunteer; onClo
   const copy = useCopy();
   const [link, setLink] = useState<{ url: string | null; error: string | null }>({ url: null, error: null });
   const [text, setText] = useState('');
-  const started = useRef(false);
+  // which attempt was started: a failed link can be asked for again without closing the dialog
+  const [attempt, setAttempt] = useState(0);
+  const started = useRef(-1);
   const mine = useMemo(() => data.shifts.filter((s) => s.volunteer_id === v.id), [data.shifts, v.id]);
   const pending = mine.filter((s) => s.status === 'invited' && isUpcoming(s.event)).length;
 
   // a new link replaces the previous one, so it is made once per opened dialog
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
+    if (started.current === attempt) return;
+    started.current = attempt;
     createVolunteerLink(v.id).then(
       (token) => {
         const url = volunteerUrl(token);
@@ -404,7 +406,7 @@ function SendLinkDialog({ volunteer: v, onClose }: { volunteer: Volunteer; onClo
       },
       (e) => setLink({ url: null, error: errorMessage(e) }),
     );
-  }, [v.id, v.full_name, mine]);
+  }, [v.id, v.full_name, mine, attempt]);
 
   return (
     <Dialog open onClose={onClose} title={`קישור אישי ל${v.full_name}`}>
@@ -414,7 +416,7 @@ function SendLinkDialog({ volunteer: v, onClose }: { volunteer: Volunteer; onClo
           בקישור מופיעים כל המפגשים של {firstName(v.full_name)}, ושם מאשרים הגעה או מעדכנים שלא מסתדר.
         </p>
         {link.error ? (
-          <ErrorBox error={`לא הצלחנו ליצור קישור: ${link.error}`} />
+          <ErrorBox error={`לא הצלחנו ליצור קישור: ${link.error}`} onRetry={() => { setLink({ url: null, error: null }); setAttempt((n) => n + 1); }} />
         ) : !link.url ? (
           <div className="flex items-center gap-2 text-muted" role="status"><Spinner /> מכין קישור אישי…</div>
         ) : (

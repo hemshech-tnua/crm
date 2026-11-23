@@ -8,7 +8,7 @@ import type { EventType, Speaker } from '@/lib/types';
 import { Badge, ButtonLink, Button, EmptyState, ErrorBox, FilterChips, Notice, PageHeader, Panel, SearchInput, Segmented, Skeleton, Table, Tabs, Td, Th, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { NoResults } from '@/ui/toolbar';
-import { StatusBadge, TypeBadge, isUnclosed, seats, timeRange, useDebounced } from './shared';
+import { StatusBadge, TypeBadge, isUnclosed, registeredText, seats, timeRange, useDebounced } from './shared';
 import { useCancelledAheadCount, useEventList, useUnclosedCount } from './queries';
 
 type Show = 'upcoming' | 'past';
@@ -116,7 +116,7 @@ export function EventsPage() {
     <>
       <PageHeader
         title="מפגשים"
-        subtitle="מפגשי שישי, ערבי מדורה ופעילויות נוספות"
+        subtitle="מפגשי שישי, ערבי מדורה ומפגשים אחרים"
         actions={<ButtonLink to="/app/events/new" icon="plus">מפגש חדש</ButtonLink>}
       />
       <Tabs
@@ -206,7 +206,7 @@ function speakerText(e: EventWithStats, speakers: Map<string, Speaker>) {
 function Capacity({ e }: { e: EventWithStats }) {
   const st = seats(e);
   return (
-    <span className={cx('num font-semibold', st.full && 'text-bad')} title={`${st.registered} רשומים${st.walkIns ? ` · ${st.walkIns} בלי הרשמה` : ''}`}>
+    <span className={cx('num font-semibold', st.full && 'text-bad')} title={`${registeredText(st.registered)}${st.walkIns ? ` · ${st.walkIns} בלי הרשמה` : ''}`}>
       {st.taken}
       <span className="font-normal text-muted">/{st.capacity ?? '∞'}</span>
     </span>

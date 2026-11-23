@@ -37,7 +37,7 @@ export function SuppliersView() {
       actions={<Button icon="plus" size="sm" onClick={() => setEditing('new')}>ספק חדש</Button>}
       padded={false}
     >
-      {q.isError ? <div className="p-4"><ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /></div>
+      {q.isError && !q.data ? <div className="p-4"><ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /></div>
         : q.isLoading ? <div className="p-4"><Skeleton shape="rows" count={5} height={64} /></div>
         : !all.length ? (
           <EmptyState icon="people" title="עוד אין ספקים בספר" action={<Button icon="plus" onClick={() => setEditing('new')}>הוספת הספק הראשון</Button>}>

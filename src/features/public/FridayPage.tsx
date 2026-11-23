@@ -8,7 +8,7 @@ import { fmtMoney } from '@/lib/money';
 import { ButtonLink, ErrorBox, Skeleton } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import { usePublicEvents } from './api';
-import { savedToken } from './device';
+import { ownToken } from './device';
 import { trackingQuery } from './tracking';
 import { Hero, Slogan } from './Hero';
 import { CtaBar } from './MeetingDetails';
@@ -16,7 +16,7 @@ import { paysFirst } from './PayStep';
 import { HILLS } from './photos';
 import { usePageTitle } from './shared';
 import { ctaLabel, fridayPlan } from './friday/model';
-import { AskUs, ClosingBand, Faq, FlyerSection, ForWhom, H2, LowThreshold, MoreMeetings, NextTicket, NoMeeting, Program } from './friday/sections';
+import { AskUs, ClosingBand, Faq, FlyerSection, ForWhom, H2, LowThreshold, MainButton, MoreMeetings, NextTicket, NoMeeting, Program } from './friday/sections';
 
 /*
   The flyer slot. When the coordinator's flyer arrives, put the file in src/assets/flyers/ and import it here:
@@ -46,29 +46,39 @@ const KICKER = (
  * button and has not reached the closing band's (so there is never a second "להרשמה" in view, and it never covers the
  * footer). Unmounted while hidden; no animation. The fee is said here only when the button leads to paying, because
  * the ticket that says it is out of view. A phone that already registered goes to its own page instead.
+ * Visibility is computed from where the two elements are, at mount and on every change: an observer alone misses a
+ * jump (an anchor, a restored scroll, a flick at 320px) that takes the button from below the screen to above it
+ * without ever crossing it.
  */
 function StickyCta({ event: e, query }: { event: PublicEvent; query: string }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const cta = document.querySelector('[data-testid="friday-cta"]');
+      const band = document.getElementById('friday-close');
+      if (!cta || !band) return setShow(false);
+      setShow(cta.getBoundingClientRect().bottom < 0 && band.getBoundingClientRect().top > window.innerHeight);
+    };
+    const later = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
     const cta = document.querySelector('[data-testid="friday-cta"]');
     const band = document.getElementById('friday-close');
-    if (!cta || !band || typeof IntersectionObserver === 'undefined') return;
-    let ctaAbove = false;
-    let bandBelow = true;
-    const io = new IntersectionObserver((entries) => {
-      for (const en of entries) {
-        const out = !en.isIntersecting;
-        if (en.target === cta) ctaAbove = out && en.boundingClientRect.top < 0;
-        else bandBelow = out && en.boundingClientRect.top > 0;
-      }
-      setShow(ctaAbove && bandBelow);
-    });
-    io.observe(cta);
-    io.observe(band);
-    return () => io.disconnect();
+    const io = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(update);
+    if (io && cta) io.observe(cta);
+    if (io && band) io.observe(band);
+    window.addEventListener('scroll', later, { passive: true });
+    window.addEventListener('resize', later);
+    return () => {
+      io?.disconnect();
+      window.removeEventListener('scroll', later);
+      window.removeEventListener('resize', later);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [e.code]);
   if (!show) return null;
-  const token = savedToken(e.code);
+  const token = ownToken(e.code);
   return (
     <CtaBar testId="friday-sticky-cta">
       {token ? (
@@ -82,6 +92,16 @@ function StickyCta({ event: e, query }: { event: PublicEvent; query: string }) {
       )}
     </CtaBar>
   );
+}
+
+/**
+ * The line under the poster's button, true for the meeting it leads to: a pay-first meeting is paid at the end of the
+ * form, a full one has a waiting list, and only a free registration "takes less than a minute".
+ */
+function heroNote(e: PublicEvent): string {
+  if (e.is_full) return 'אם יתפנה מקום, נעדכן אתכם לפי סדר ההרשמה.';
+  if (paysFirst(e)) return 'משלמים בסוף ההרשמה, בדף התשלום המאובטח.';
+  return 'ההרשמה לוקחת פחות מדקה. אפשר לבטל בקישור\u00a0האישי.';
 }
 
 /**
@@ -102,6 +122,8 @@ export function FridayPage() {
   // later Fridays and the other kinds of meeting, in date order
   const more = [...plan.later, ...plan.others].sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   usePageTitle('מפגשי שישי');
+  // this phone registered for the next meeting: its buttons lead to the registration's own page
+  const mine = plan.next ? ownToken(plan.next.code) : null;
 
   return (
     <div>
@@ -115,11 +137,8 @@ export function FridayPage() {
         {/* on a wide screen the ticket's button falls under the fold, so the poster carries one too */}
         {plan.next && (
           <div className="mt-6 hidden lg:block">
-            <ButtonLink to={`/r/${plan.next.code}${query}`} variant="light" size="lg" cta>
-              {ctaLabel(plan.next)}
-              <span className="sr-only">: {plan.next.title}, {fmtDayLong(plan.next.starts_at)}</span>
-            </ButtonLink>
-            <p className="mt-2.5 text-small text-light/85">ההרשמה לוקחת פחות מדקה. אפשר לבטל בקישור&nbsp;האישי.</p>
+            <MainButton event={plan.next} query={query} token={mine} variant="light" />
+            {!mine && <p className="mt-2.5 text-small text-light/85">{heroNote(plan.next)}</p>}
           </div>
         )}
       </Hero>
@@ -129,7 +148,7 @@ export function FridayPage() {
           <h2 id="friday-next" className={`${H2} mb-3 lg:mb-4`}>המפגש הקרוב</h2>
           {events.isPending ? (
             <Skeleton lines={6} />
-          ) : events.isError ? (
+          ) : events.isError && !events.data ? (
             <ErrorBox error={errorMessage(events.error)} onRetry={() => events.refetch()} />
           ) : plan.next ? (
             <NextTicket event={plan.next} query={query} />

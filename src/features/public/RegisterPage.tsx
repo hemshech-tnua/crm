@@ -1,13 +1,13 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import type { PublicEvent } from '@/lib/types';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { allEventsUrl, manageUrl, registerUrl } from '@/lib/links';
 import { Button, ButtonLink, EmptyState, ErrorBox, Notice, Skeleton } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { Tri } from '@/ui/Shapes';
-import { registerFor, usePublicEvent, usePublicSources, useRegistration, type PublicSource, type RegisterResult } from './api';
+import { registerFor, registrationQuery, usePublicEvent, usePublicSources, useRegistration, type PublicSource, type RegisterResult } from './api';
 import { forgetToken, saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { DetailsButton, MeetingSheet, useDetailsSheet } from './MeetingDetails';
@@ -106,14 +106,18 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
             </p>
           </div>
         )}
-        <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'פרטי המפגש' : 'הרשמה למפגש'}</h1>
-        <EventTicket event={e} highlight detailed showStatus="notable" />
+        <h1 className="font-display text-title">{closed ? 'פרטי המפגש' : 'הרשמה למפגש'}</h1>
+        {/* phone, over the form: no date column (the visitor just saw the ticket), so the first field is higher */}
+        <EventTicket event={e} highlight detailed showStatus="notable" compact={!closed} />
         <DetailsButton event={e} onOpen={sheet.show} wide="always" className="-mt-3" />
         {!closed && <AfterRegistering event={e} />}
       </div>
       <div className="lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
         {closed ? (
-          <ClosedState event={e} home={home} />
+          <>
+            <SavedHere code={e.code} />
+            <ClosedState event={e} home={home} />
+          </>
         ) : sources.isError ? (
           <ErrorBox error={errorMessage(sources.error)} onRetry={() => sources.refetch()} />
         ) : sources.isPending ? (
@@ -141,36 +145,82 @@ function focusFirstEmpty() {
   target?.scrollIntoView({ block: 'center' });
 }
 
+/** The registration form's first field gets the cursor (after "זו לא ההרשמה שלי"). */
+function focusFirstField() {
+  requestAnimationFrame(() => {
+    const field = document.querySelector<HTMLInputElement>('form[aria-label="טופס הרשמה"] input:not([type=hidden]):not([tabindex="-1"])');
+    field?.focus();
+  });
+}
+
+type SavedRow = { token: string; name: string | null; status: 'registered' | 'waitlisted' | 'pending_payment' };
+
 /**
- * A pay-first registration from this phone that was left at the payment (an in-app browser that reloaded, a closed
- * tab): a notice above the form, never instead of it, so on a shared phone the next person can still register. Only
- * when exactly one registration of this meeting is saved here, it still waits for payment, and it is at most 30 minutes
- * old. First name only; "זו לא ההרשמה שלי" forgets it on this phone.
+ * Registrations of this meeting made from this phone (any status, any age): a notice above the form, never instead of
+ * it, so on a shared phone the next person can still register. It says only the first name and where the registration
+ * stands, never the phone or other details; each has a link to its own page and "זו לא ההרשמה שלי", which forgets it
+ * on this phone. A cancelled registration, or one the server no longer knows, is not offered.
  */
 function SavedHere({ code }: { code: string }) {
-  const [one, setOne] = useState(() => {
-    const saved = savedRegistrations(code);
-    return saved.length === 1 && Date.now() - saved[0].at <= 30 * 60_000 ? saved[0] : null;
+  const [saved, setSaved] = useState(() => savedRegistrations(code));
+  const regs = useQueries({ queries: saved.map((x) => registrationQuery(x.token)) });
+  const rows: SavedRow[] = [];
+  saved.forEach((x, i) => {
+    const st = regs[i]?.data?.status;
+    if (st === 'registered' || st === 'waitlisted' || st === 'pending_payment') {
+      rows.push({ token: x.token, name: x.name ?? regs[i].data?.first_name ?? null, status: st });
+    }
   });
-  const reg = useRegistration(one?.token ?? null);
-  if (!one || reg.data?.status !== 'pending_payment') return null;
-  const name = one.name ?? reg.data.first_name;
-  const notMine = () => { forgetToken(code, one.token); setOne(null); };
+  if (!rows.length) return null;
+  const notMine = (token: string) => {
+    forgetToken(code, token);
+    setSaved((list) => list.filter((x) => x.token !== token));
+    focusFirstField();
+  };
+  const where = (r: SavedRow) => (r.status === 'pending_payment' ? 'התשלום עוד לא\u00a0הושלם.' : r.status === 'waitlisted' ? 'ההרשמה ברשימת\u00a0ההמתנה.' : null);
+  const link = 'inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-4';
+  const quiet = 'inline-flex min-h-11 items-center font-semibold text-ink-soft underline underline-offset-4';
+  const one = rows.length === 1 ? rows[0] : null;
   return (
     <div className="mb-5" data-testid="saved-here">
-      <Notice icon="card">
-        <p className="text-body-sm">
-          נרשמת מהטלפון הזה{name ? <>: <span className="font-semibold">{name}</span></> : null}. התשלום עוד לא&nbsp;הושלם.
-        </p>
-        <p className="mt-1 flex flex-wrap items-center gap-x-5">
-          <Link to={`/m/${one.token}`} className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-4">
-            לעמוד ההרשמה
-            <Tri className="text-tide" />
-          </Link>
-          <button type="button" onClick={notMine} className="inline-flex min-h-11 items-center font-semibold text-ink-soft underline underline-offset-4">
-            זו לא ההרשמה שלי
-          </button>
-        </p>
+      <Notice icon={rows.some((r) => r.status === 'pending_payment') ? 'card' : 'check'}>
+        {one ? (
+          <>
+            <p className="text-body-sm">
+              נרשמת מהטלפון הזה{one.name ? <>: <span className="font-semibold">{one.name}</span></> : null}.{where(one) && <> {where(one)}</>}
+            </p>
+            <p className="mt-1 flex flex-wrap items-center gap-x-5">
+              <Link to={`/m/${one.token}`} className={link}>
+                לעמוד ההרשמה שלי
+                <Tri className="text-tide" />
+              </Link>
+              <button type="button" onClick={() => notMine(one.token)} className={quiet}>זו לא ההרשמה שלי</button>
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-body-sm">מהטלפון הזה נרשמו למפגש&nbsp;הזה:</p>
+            <ul className="mt-1 divide-y divide-edge">
+              {rows.map((r) => (
+                <li key={r.token} className="py-1.5">
+                  <p className="text-body-sm">
+                    <span className="font-semibold">{r.name ?? 'הרשמה בלי שם'}</span>
+                    {where(r) && <span className="text-ink-soft"> · {where(r)}</span>}
+                  </p>
+                  <p className="flex flex-wrap items-center gap-x-5">
+                    <Link to={`/m/${r.token}`} className={link}>
+                      לעמוד ההרשמה<span className="sr-only"> של {r.name ?? 'הרשמה בלי שם'}</span>
+                      <Tri className="text-tide" />
+                    </Link>
+                    <button type="button" onClick={() => notMine(r.token)} className={quiet}>
+                      זו לא ההרשמה שלי<span className="sr-only"> ({r.name ?? 'הרשמה בלי שם'})</span>
+                    </button>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </Notice>
     </div>
   );
@@ -267,7 +317,7 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       });
       if (res.status === 'phone_in_use') {
         setBusy(false);
-        setError(<>מספר הטלפון הזה כבר רשום למפגש בשם אחר. אם הטלפון משותף, אפשר להירשם עם מספר נייד אחר או לכתוב לנו: <ContactLine inline /></>);
+        setError(<>מספר הטלפון הזה כבר רשום למפגש בשם אחר. אם הטלפון משותף, אפשר להירשם עם מספר נייד אחר. <ContactLine inline /></>);
         return;
       }
       saveToken(res.event?.code ?? event.code, res.token, res.first_name);
@@ -418,7 +468,7 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
           mine ? (
             <ButtonLink to={`/m/${mine}`} variant="secondary" className="mt-4">לעמוד ההרשמה שלי</ButtonLink>
           ) : (
-            <p className="mx-auto mt-1 max-w-sm text-small text-muted">צריך לבטל? אפשר בקישור האישי שקיבלת בהרשמה. אין לך אותו? <ContactLine inline /></p>
+            <p className="mx-auto mt-1 max-w-sm text-small text-muted">צריך לבטל? עושים את זה בקישור האישי שקיבלת בהרשמה. אין לך אותו? <ContactLine inline /></p>
           )
         )}
       </div>

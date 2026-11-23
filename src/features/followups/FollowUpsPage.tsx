@@ -96,7 +96,7 @@ export function FollowUpsPage() {
         tabs={[
           { value: 'mine', label: 'שלי', count: open.data ? mine.length : undefined },
           { value: 'open', label: 'פתוחות', count: open.data ? all.length : undefined },
-          { value: 'done', label: 'הושלמו' },
+          { value: 'done', label: 'סגורות' },
         ]}
       />
 
@@ -127,7 +127,7 @@ export function FollowUpsPage() {
       )}
 
       {tab !== 'done' && !eventFilter && (
-        <LapsedSection lapsed={lapsed} loading={attention.isLoading} error={attention.error} onRetry={() => attention.refetch()} />
+        <LapsedSection lapsed={lapsed} loading={attention.isLoading} error={attention.data ? null : attention.error} onRetry={() => attention.refetch()} />
       )}
 
       {creating && <NewTaskDialog onClose={() => setCreating(false)} />}
@@ -135,40 +135,31 @@ export function FollowUpsPage() {
   );
 }
 
-// ───────────── one meeting's follow-ups ─────────────
+// ───────────── taking tasks that have nobody in charge ─────────────
 
-/** The head of the list when it shows one meeting's follow-ups: which meeting, and "לקחת את כולן". */
-function EventScope({ eventId, tasks, loading, onClear }: { eventId: string; tasks: TaskRow[]; loading: boolean; onClear: () => void }) {
+/** "לקחת": the tasks become mine, only those still without anyone in charge (a colleague who took one in the
+ *  meantime keeps it); undo gives back only what this tap took, and only while it is still mine. */
+function useTakeFree() {
   const me = useMe();
   const toast = useToast();
   const invalidate = useInvalidateTasks();
-  const fromTask = tasks.find((t) => t.event)?.event;
-  const ev = useQuery({
-    queryKey: ['events', 'followup-scope', eventId],
-    enabled: !fromTask,
-    queryFn: async () => must(await supabase.from('events').select('id,title,starts_at').eq('id', eventId).maybeSingle()) as { id: string; title: string; starts_at: string } | null,
-  });
-  const event = fromTask ?? ev.data;
-  const free = tasks.filter((t) => !t.assignee_id);
-  // only tasks that are still without anyone in charge: a colleague who took one in the meantime keeps it
   const takeFree = async (ids: string[]): Promise<string[]> => {
     const { data, error } = await supabase.from('follow_ups').update({ assignee_id: me.data!.user_id })
       .in('id', ids).is('assignee_id', null).select('id');
     if (error) throw error;
     return (data ?? []).map((r: { id: string }) => r.id);
   };
-  // undo gives back only what this tap took, and only while it is still mine
   const giveBack = async (ids: string[]) => {
     const { error } = await supabase.from('follow_ups').update({ assignee_id: null })
       .in('id', ids).eq('assignee_id', me.data!.user_id);
     if (error) throw error;
   };
-  const take = useMutation({
+  return useMutation({
     mutationFn: takeFree,
-    onSuccess: (taken) => {
+    onSuccess: (taken, ids) => {
       invalidate();
       if (!taken.length) {
-        toast.info('המשימות כבר נלקחו על ידי אחרים מהצוות');
+        toast.info(ids.length === 1 ? 'המשימה כבר נלקחה על ידי מישהו אחר מהצוות' : 'המשימות כבר נלקחו על ידי אחרים מהצוות');
         return;
       }
       toast.undo(taken.length === 1 ? 'המשימה עברה אליך' : `${taken.length} משימות עברו אליך`, () => {
@@ -177,6 +168,22 @@ function EventScope({ eventId, tasks, loading, onClear }: { eventId: string; tas
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
+}
+
+// ───────────── one meeting's follow-ups ─────────────
+
+/** The head of the list when it shows one meeting's follow-ups: which meeting, and "לקחת את כולן". */
+function EventScope({ eventId, tasks, loading, onClear }: { eventId: string; tasks: TaskRow[]; loading: boolean; onClear: () => void }) {
+  const me = useMe();
+  const fromTask = tasks.find((t) => t.event)?.event;
+  const ev = useQuery({
+    queryKey: ['events', 'followup-scope', eventId],
+    enabled: !fromTask,
+    queryFn: async () => must(await supabase.from('events').select('id,title,starts_at').eq('id', eventId).maybeSingle()) as { id: string; title: string; starts_at: string } | null,
+  });
+  const event = fromTask ?? ev.data;
+  const free = tasks.filter((t) => !t.assignee_id);
+  const take = useTakeFree();
   return (
     <section aria-label="משימות של מפגש אחד" className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--radius-panel)] border border-edge border-s-[3px] border-s-ink bg-paper px-4 py-3 sm:px-5">
       <div className="min-w-0 flex-1">
@@ -215,6 +222,11 @@ function TaskGroups({ tasks, nextEvent, showAssignee, empty }: { tasks: TaskRow[
     return g.filter((x) => x.items.length);
   }, [tasks]);
   const [doing, setDoing] = useState<{ kind: 'done' | 'edit' | 'msg'; task: TaskRow } | null>(null);
+  // one "לקחת" for the whole list (not a mutation per row); a row shows it only while it has nobody in charge
+  const me = useMe();
+  const take = useTakeFree();
+  const onTake = me.data ? (id: string) => take.mutate([id]) : undefined;
+  const taking = take.isPending ? take.variables?.[0] : undefined;
 
   if (!tasks.length) return <Panel>{empty}</Panel>;
   return (
@@ -228,7 +240,7 @@ function TaskGroups({ tasks, nextEvent, showAssignee, empty }: { tasks: TaskRow[
           </h2>
           <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper">
             {g.items.map((t) => (
-              <TaskItem key={t.id} task={t} showAssignee={showAssignee} onAct={(kind) => setDoing({ kind, task: t })} />
+              <TaskItem key={t.id} task={t} showAssignee={showAssignee} onAct={(kind) => setDoing({ kind, task: t })} onTake={onTake} taking={taking === t.id} />
             ))}
           </ul>
         </section>
@@ -249,7 +261,9 @@ function DueText({ date }: { date: string | null }) {
   return <span>יעד: <span className="tabular-nums">{fmtListDate(date, { weekday: false, time: false })}</span></span>;
 }
 
-function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssignee: boolean; onAct: (k: 'done' | 'edit' | 'msg') => void }) {
+function TaskItem({ task: t, showAssignee, onAct, onTake, taking }: {
+  task: TaskRow; showAssignee: boolean; onAct: (k: 'done' | 'edit' | 'msg') => void; onTake?: (id: string) => void; taking: boolean;
+}) {
   const { name } = useAssignees();
   const p = t.participant;
   return (
@@ -272,10 +286,25 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
             </>
           )}
           {showAssignee && (
-            <>
+            // who is in charge and "לקחת" wrap as one piece on a narrow phone
+            <span className="inline-flex flex-wrap items-center gap-x-2">
               <span aria-hidden="true">·</span>
               <span className={t.assignee_id ? undefined : 'text-muted'}>{t.assignee_id ? name.get(t.assignee_id) ?? 'הצוות' : UNASSIGNED_LABEL}</span>
-            </>
+              {!t.assignee_id && onTake && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <button
+                    type="button"
+                    disabled={taking}
+                    aria-label={`לקחת את המשימה${p?.full_name ? ` של ${p.full_name}` : ''}`}
+                    onClick={() => onTake(t.id)}
+                    className="-my-2 inline-flex min-h-11 items-center font-semibold text-tide hover:underline disabled:opacity-60"
+                  >
+                    לקחת
+                  </button>
+                </>
+              )}
+            </span>
           )}
         </p>
       </div>
@@ -313,10 +342,10 @@ function DoneList({ q }: { q: { data?: TaskRow[]; isLoading: boolean; isError: b
   const { name } = useAssignees();
   if (q.isError && !q.data) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   if (!q.data) return <Skeleton shape="rows" count={6} height={92} />;
-  if (!q.data.length) return <Panel><EmptyState icon="task" title="עוד לא הושלמו משימות">משימה שמסמנים "בוצעה" עוברת לכאן, עם מה שעלה בשיחה.</EmptyState></Panel>;
+  if (!q.data.length) return <Panel><EmptyState icon="task" title="עוד אין משימות סגורות">משימה שמסמנים "בוצעה" עוברת לכאן, עם מה שעלה בשיחה.</EmptyState></Panel>;
   return (
     <>
-      <p className="mb-2 text-small text-muted">100 המשימות האחרונות שהושלמו או בוטלו.</p>
+      <p className="mb-2 text-small text-muted">100 המשימות האחרונות שנסגרו: בוצעו או בוטלו.</p>
       <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper">
         {q.data.map((t) => (
           <li key={t.id} className="px-4 py-3 sm:px-5">
@@ -349,7 +378,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
         <p className="border-b border-edge px-4 py-3 text-small text-ink-soft sm:px-5">
           היו קבועים, ומאז ההגעה האחרונה התקיימו {after ? <><span className="num">{after}</span> מפגשי שישי</> : 'כמה מפגשי שישי'} בלי שהגיעו. לפני שפונים אליהם פותחים משימה: זה האישור שמישהו מהצוות ידבר איתם.
         </p>
-        {error && !lapsed.length ? (
+        {error ? (
           <div className="p-4"><ErrorBox error={errorMessage(error)} onRetry={onRetry} /></div>
         ) : loading ? (
           <div className="p-4"><Skeleton shape="rows" count={3} height={64} /></div>

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useEvent, useSettings, useSites, useSpeakers, useEventsWithStats } from '@/lib/data';
@@ -56,12 +56,14 @@ function withHttps(v: string): string {
   return /^[^\s/]+\.[^\s/]+/.test(t) ? `https://${t}` : t;
 }
 
+/** A meeting may run past midnight, but not into the next day: an end before the start and after this is a typo. */
+const LATEST_NEXT_DAY_END = '06:00';
 /**
- * A meeting that ends at or before its start time ends the next day (a bonfire 20:00–01:00). The form keeps one date,
+ * A meeting that ends before its start time, by 06:00, ends the next day (a bonfire 20:00–01:00). The form keeps one date,
  * the start's; the end is placed on the day after.
  */
 function overnight(f: Pick<Form, 'start' | 'end'>): boolean {
-  return /^\d{2}:\d{2}$/.test(f.start) && /^\d{2}:\d{2}$/.test(f.end) && f.end < f.start;
+  return /^\d{2}:\d{2}$/.test(f.start) && /^\d{2}:\d{2}$/.test(f.end) && f.end < f.start && f.end <= LATEST_NEXT_DAY_END;
 }
 function endsAt(f: Pick<Form, 'date' | 'start' | 'end'>): string {
   return fromIl(overnight(f) ? addDays(f.date, 1) : f.date, f.end);
@@ -204,9 +206,10 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   if (errors.date || errors.start || errors.end) return { errors };
 
   const starts = fromIl(f.date, f.start);
-  // ending at or before the start time = the next day (after midnight); the same time is no meeting at all
+  // ending before the start time (by 06:00) = the next day (after midnight); the same time is no meeting at all
   const ends = endsAt(f);
   if (f.end === f.start) errors.end = 'שעת הסיום צריכה להיות אחרי שעת ההתחלה.';
+  else if (f.end < f.start && !overnight(f)) errors.end = `שעת הסיום צריכה להיות אחרי שעת ההתחלה. מפגש שנמשך אחרי חצות יכול להסתיים עד ${LATEST_NEXT_DAY_END}.`;
   let closes: string | null = null;
   if (f.closes_early) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(f.closes_date) || !/^\d{2}:\d{2}$/.test(f.closes_time)) {
@@ -223,9 +226,12 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const fromDup = params.get('from') === 'dup';
+  // a duplicate whose new title did not save: the title arrives typed in (and the form counts as unsaved)
+  const location = useLocation();
+  const dupTitle = fromDup ? (location.state as { dupTitle?: unknown } | null)?.dupTitle : undefined;
   const toast = useToast();
   const invalidate = useInvalidateEvent();
-  const [f, setF] = useState<Form>(initial);
+  const [f, setF] = useState<Form>(() => (typeof dupTitle === 'string' && dupTitle.trim() ? { ...initial, title: dupTitle } : initial));
   const [errors, setErrors] = useState<Errors>({});
   // two quick taps on "שמירה" must not create the meeting twice
   const inFlight = useRef(false);

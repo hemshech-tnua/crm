@@ -13,7 +13,8 @@ export function EventVolunteersTab({ event }: { event: EventWithStats }) {
   const all = useShifts();
   const here = useShifts(event.id);
   const failed = volunteers.error ?? events.error ?? all.error ?? here.error;
-  if (failed) {
+  // a failed background refetch keeps the loaded tab: the error shows only while something has not loaded yet
+  if (failed && !(volunteers.data && events.data && all.data && here.data)) {
     return <ErrorBox error={errorMessage(failed)} onRetry={() => { void volunteers.refetch(); void events.refetch(); void all.refetch(); void here.refetch(); }} />;
   }
   if (!volunteers.data || !events.data || !all.data || !here.data) return <Skeleton shape="block" height={260} />;

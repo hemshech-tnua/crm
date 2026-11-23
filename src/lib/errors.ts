@@ -30,14 +30,14 @@ const MESSAGES: Record<string, string> = {
   feedback_closed: 'תקופת המשוב למפגש הזה הסתיימה.',
   forbidden: 'אין לך הרשאה לפעולה הזו.',
   only_admin_approves: 'רק בעלי הרשאת ניהול יכולים לאשר מרצים ומדריכים.',
-  not_found: 'לא מצאנו את מה שחיפשת. ייתכן שזה נמחק.',
+  not_found: 'לא מצאנו את זה. ייתכן שזה נמחק.',
   not_started: 'אפשר לסגור מפגש רק אחרי שהתחיל.',
   event_not_active: 'המפגש עוד בטיוטה או שבוטל.',
   already_registered: 'כבר יש הרשמה למפגש הזה מהמספר הזה.',
   not_waitlisted: 'ההרשמה כבר לא ברשימת ההמתנה.',
   same_participant: 'אי אפשר למזג כרטיס עם עצמו.',
   invalid_email: 'כתובת האימייל לא תקינה.',
-  invalid_role: 'תפקיד לא תקין.',
+  invalid_role: 'תפקיד לא תקין. צריך לבחור תפקיד מהרשימה.',
   pwned_password: 'הסיסמה הזו מופיעה ברשימות של סיסמאות שדלפו ברשת. צריך לבחור סיסמה אחרת.',
   mfa_required: 'צריך לאשר את הכניסה בקוד מאפליקציית האימות.',
   mfa_invalid: 'הקוד לא נכון או שפג תוקפו. אפשר להקליד את הקוד הנוכחי מהאפליקציה.',
@@ -51,12 +51,12 @@ const MESSAGES: Record<string, string> = {
   weak_password: 'הסיסמה צריכה לכלול לפחות 10 תווים, אותיות וספרות.',
   cannot_change_self: 'אי אפשר לשנות את התפקיד או לחסום את המשתמש שלך.',
   last_admin: 'חייב להישאר לפחות חשבון ניהול פעיל אחד.',
-  unauthenticated: 'עבר זמן רב מאז הכניסה. צריך להיכנס שוב.',
+  unauthenticated: 'עבר הרבה זמן מאז הכניסה. צריך להיכנס שוב.',
   duplicate_phone: 'כבר יש כרטיס עם מספר הטלפון הזה.',
-  duplicate: 'הרשומה הזו כבר קיימת.',
+  duplicate: 'הפריט הזה כבר קיים.',
   network: 'אין חיבור לשרת. כדאי לבדוק את החיבור לאינטרנט ולנסות שוב.',
-  invalid_payment_status: 'סטטוס תשלום לא תקין.',
-  invalid_payment_method: 'אמצעי תשלום לא תקין.',
+  invalid_payment_status: 'סטטוס תשלום לא תקין. צריך לבחור סטטוס מהרשימה.',
+  invalid_payment_method: 'אמצעי תשלום לא תקין. צריך לבחור אמצעי תשלום מהרשימה.',
   invalid_amount: 'צריך סכום חיובי, למשל 20.',
   not_paid: 'אפשר לסמן החזר רק אחרי שסומן תשלום.',
   not_priced: 'במפגש הזה אין דמי השתתפות.',
@@ -72,6 +72,8 @@ export function errorCode(err: unknown): string {
   if (e.code === '42501' && !e.message?.match(/^[a-z_]+$/)) return 'forbidden';
   if (e.message && /^[a-z_]+$/.test(e.message)) return e.message;
   if (e.message && /fetch|network|Failed to fetch|NetworkError/i.test(e.message)) return 'network';
+  // a data request that timed out (db.timeout in supabase.ts) or was cut off: "AbortError: signal is aborted without reason"
+  if (e.message && /AbortError|TimeoutError|signal is aborted/i.test(e.message)) return 'network';
   return 'unknown';
 }
 

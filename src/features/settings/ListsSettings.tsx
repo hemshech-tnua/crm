@@ -19,7 +19,7 @@ export function SourcesSettings() {
   const sources = useSources();
   const [editing, setEditing] = useState<Partial<Source> | null>(null);
   return (
-    <Panel title='אפשרויות ב"איך שמעת עלינו?"' padded={false} actions={<Button icon="plus" onClick={() => setEditing({ is_active: true, is_friend: false, asks_detail: false, sort_order: 80 })}>מקור חדש</Button>}>
+    <Panel title='אפשרויות ב"איך שמעתם עלינו?"' padded={false} actions={<Button icon="plus" onClick={() => setEditing({ is_active: true, is_friend: false, asks_detail: false, sort_order: 80 })}>מקור חדש</Button>}>
       {sources.isLoading ? <div className="p-5"><Skeleton lines={5} /></div> : sources.error && !sources.data ? <div className="p-5"><ErrorBox error={errorMessage(sources.error)} onRetry={() => void sources.refetch()} /></div> : (
         <ul className="divide-y divide-edge">
           {(sources.data ?? []).map((s) => (

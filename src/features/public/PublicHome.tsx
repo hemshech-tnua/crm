@@ -10,7 +10,8 @@ import { activityText, keepName, kindLabel, lectureText, timeRange } from './eve
 import { trackingQuery } from './tracking';
 import { Hero, Slogan } from './Hero';
 import { DetailsLink } from './MeetingDetails';
-import { H2 } from './friday/sections';
+import { H2, OtherPerson } from './friday/sections';
+import { ownToken } from './device';
 import { bookable, ctaLabel, fridayPlan } from './friday/model';
 import { HILLS } from './photos';
 
@@ -41,6 +42,8 @@ export function PublicHome() {
   const { next, fridays, others } = homePlan(events.data ?? []);
   const more = fridays.length + others.length > 0;
   const nextKind = next && next.type !== 'friday' ? kindLabel(next) : null;
+  // this phone registered for the featured meeting (one registration saved here): the button leads to its own page
+  const mine = next ? ownToken(next.code) : null;
 
   return (
     <div>
@@ -72,7 +75,7 @@ export function PublicHome() {
       <div className="mt-5 sm:mt-8 lg:mt-10">
         {events.isPending ? (
           <Skeleton lines={6} />
-        ) : events.isError ? (
+        ) : events.isError && !events.data ? (
           <ErrorBox error={errorMessage(events.error)} onRetry={() => events.refetch()} />
         ) : !next ? (
           <div className="rounded-[var(--radius-panel)] border border-edge bg-paper">
@@ -86,15 +89,18 @@ export function PublicHome() {
               <h2 id="next-meeting" className={`${H2} mb-3 lg:mb-4`}>המפגש הקרוב</h2>
               <EventTicket event={next} highlight level={3} showStatus="notable" kind={nextKind} className="relative">
                 <ButtonLink
-                  to={`/r/${next.code}${query}`}
+                  to={mine ? `/m/${mine}` : `/r/${next.code}${query}`}
                   cta
                   size="lg"
                   className="mt-4 w-full after:absolute after:inset-0 after:content-[''] sm:w-auto sm:min-w-[13.5rem]"
+                  data-testid="home-cta"
                 >
-                  {cta(next)}
+                  {mine ? 'לעמוד ההרשמה שלי' : cta(next)}
                   <span className="sr-only">: {next.title}, {fmtDayLong(next.starts_at)}</span>
                 </ButtonLink>
-                {bookable(next) && !next.is_full && <p className="mt-2 text-body-sm text-muted">ההרשמה לוקחת פחות מדקה.</p>}
+                {/* above the button's whole-card link (its ::after overlay), like the details link */}
+                {mine && <OtherPerson event={next} query={query} className="relative z-[1]" />}
+                {!mine && bookable(next) && !next.is_full && <p className="mt-2 text-body-sm text-muted">ההרשמה לוקחת פחות מדקה.</p>}
                 {/* above the button's whole-card link (its ::after overlay) */}
                 <DetailsLink event={next} query={query} className="relative z-[1] mt-3" />
               </EventTicket>

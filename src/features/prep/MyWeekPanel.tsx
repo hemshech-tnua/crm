@@ -21,7 +21,8 @@ export function MyWeekPanel({ className = '' }: { className?: string }) {
   const ahead = useTasksBetween(today, addDays(today, 6), { openOnly: true });
   const overdue = useOverdueTasks();
   const loading = ahead.isLoading || overdue.isLoading;
-  const error = ahead.error ?? overdue.error;
+  // a failed background refetch keeps what is already on screen: the error shows only while nothing has loaded
+  const error = (ahead.data && overdue.data) ? null : ahead.error ?? overdue.error;
   const mine = (ahead.data ?? []).filter((t) => !t.done_at && isMine(t, myId)).sort(byTime);
   const todays = mine.filter((t) => t.due_date === today);
   // a free day: show what comes next, so the panel always says something useful

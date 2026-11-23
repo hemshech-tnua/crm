@@ -50,7 +50,8 @@ export function WaitMark() {
 }
 
 /** The heading of a result screen: takes focus so screen readers announce the new state, and scrolls to top. */
-export function ResultTitle({ children, className = '', size = 'md' }: { children: ReactNode; className?: string; size?: 'md' | 'xl' }) {
+/** `step`: a smaller heading on a phone, for a step whose next action must stay on the first screen (the pay step). */
+export function ResultTitle({ children, className = '', size = 'md' }: { children: ReactNode; className?: string; size?: 'md' | 'xl' | 'step' }) {
   const ref = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -59,7 +60,7 @@ export function ResultTitle({ children, className = '', size = 'md' }: { childre
   return (
     <h1 ref={ref} tabIndex={-1} className={cx(
         'font-display leading-tight outline-none',
-        size === 'xl' ? 'text-[2.6rem] sm:text-[3rem]' : 'text-title sm:text-[2.5rem]',
+        size === 'xl' ? 'text-[2.6rem] sm:text-[3rem]' : size === 'step' ? 'text-title-sm sm:text-[2.5rem]' : 'text-title sm:text-[2.5rem]',
         className,
       )}>
       {children}
@@ -281,10 +282,11 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
 export function ContactLine({ inline = false }: { inline?: boolean }) {
   const org = useOrgInfo();
   const phone = org.data?.contact_phone;
-  if (!phone) return <>{inline ? 'פנו לצוות העמותה.' : <p className="text-small text-muted">שאלות? פנו לצוות העמותה.</p>}</>;
+  if (!phone) return <>{inline ? 'אפשר לפנות לצוות העמותה.' : <p className="text-small text-muted">שאלות? אפשר לפנות לצוות העמותה.</p>}</>;
+  // "אפשר …": the same words whoever reads them (one person or a group), and they follow any lead-in ("שאלות?", "צריכים טרמפ?")
   const link = (
     <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="inline-block py-3 leading-5 font-semibold text-tide underline underline-offset-2">
-      כתבו לנו בוואטסאפ (<span dir="ltr" className="num whitespace-nowrap">{formatPhone(phone)}</span>)
+      אפשר לכתוב לנו בוואטסאפ (<span dir="ltr" className="num whitespace-nowrap">{formatPhone(phone)}</span>)
       <span className="sr-only"> (נפתח בחלון חדש)</span>
     </a>
   );

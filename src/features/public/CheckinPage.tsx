@@ -58,7 +58,7 @@ function Checkin({ code }: { code: string }) {
 
 function EventLine({ event }: { event: PublicEvent }) {
   return (
-    <p className="mt-1 text-[1.05rem] text-ink-soft">
+    <p className="mt-1 text-body text-ink-soft">
       {event.title} · <span className="num whitespace-nowrap">{timeRange(event)}</span>
       {event.location && <> · {event.location}</>}
     </p>
@@ -177,7 +177,7 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
       {notice && <Notice tone="warn" icon="alert">{notice}</Notice>}
       <Input
         id="checkin-phone"
-        label={<span className="text-lg">מספר הטלפון שלך</span>}
+        label={<span className="text-heading">מספר הטלפון שלך</span>}
         type="tel"
         inputMode="tel"
         autoComplete="tel"
@@ -186,13 +186,13 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
         maxLength={20}
         hint={<PhoneExample />}
         autoFocus={switched}
-        className="num h-16! text-2xl tracking-wide"
+        className="num h-16! text-section tracking-wide"
         value={phone}
         onChange={(e) => { setPhone(e.target.value); setPhoneErr(undefined); }}
         error={phoneErr}
       />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">הגעתי</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-section!">הגעתי</Button>
       <p className="text-center text-body-sm text-muted">לא נרשמת מראש? גם בסדר. מקלידים טלפון וממשיכים משם.</p>
     </form>
   );
@@ -216,7 +216,7 @@ function Walkin({ code, phone, onBack, onResult }: {
         {name == null ? (
           <>
             <h1 className="font-display text-title">עוד רגע בפנים</h1>
-            <p className="mt-1 text-lg text-ink-soft">אין בעיה, נכנסים גם בלי הרשמה. מה השם&nbsp;המלא?</p>
+            <p className="mt-1 text-heading text-ink-soft">אין בעיה, נכנסים גם בלי הרשמה. מה השם&nbsp;המלא?</p>
           </>
         ) : (
           <>
@@ -294,12 +294,12 @@ function NameStep({ code, phone, initialName = '', onResult, onNeedDetails }: {
     <form onSubmit={submit} noValidate className="flex flex-col gap-5" aria-label="השם שלך">
       <Input
         id="walkin-name"
-        label={<span className="text-lg">שם מלא</span>}
+        label={<span className="text-heading">שם מלא</span>}
         autoComplete="name"
         enterKeyHint="go"
         maxLength={80}
         autoFocus
-        className="h-16! text-2xl"
+        className="h-16! text-section"
         value={name}
         onChange={(e) => { setName(e.target.value); setErr(undefined); }}
         error={err}
@@ -307,7 +307,7 @@ function NameStep({ code, phone, initialName = '', onResult, onNeedDetails }: {
       />
       <Honeypot value={website} onChange={setWebsite} />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">המשך</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-section!">המשך</Button>
     </form>
   );
 }
@@ -342,7 +342,7 @@ function WalkinForm({ code, phone, name, sources, onResult }: {
       <PersonFields form={form} sources={sources} big sourceColumns={3} />
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
-      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">נרשמים ונכנסים</Button>
+      <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-section!">נרשמים ונכנסים</Button>
     </form>
   );
 }
@@ -367,7 +367,7 @@ function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: 
   // the spinner on the name that was tapped; the other names wait
   const [picked, setPicked] = useState<string | null>(null);
   const status = useSavedStatuses(saved.filter((o) => o.kind === 'token').map((o) => o.value));
-  const big = 'h-24! w-full rounded-[var(--radius-panel)]! font-display text-[2.2rem]! font-normal!';
+  const big = 'h-24! w-full rounded-[var(--radius-panel)]! font-display text-stat! font-normal!';
   const one = saved.length === 1 ? saved[0] : null;
   // the one saved registration already checked in (e.g. after "צ׳ק־אין של מישהו נוסף"): say so, not "one tap"
   const oneInside = !!one && one.kind === 'token' && status.data?.[one.value] === 'attended';
@@ -375,7 +375,7 @@ function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: 
     <div className="flex flex-col gap-5 pt-1">
       <CheckinTitle event={event} focus={announce} />
       {one ? (
-        <p className="text-lg">
+        <p className="text-heading">
           {oneInside
             ? `הצ׳ק־אין${one.name ? ` של ${one.name}` : ''} כבר נקלט. מישהו נוסף הגיע? ממשיכים עם מספר טלפון.`
             : one.kind === 'device'
@@ -383,7 +383,7 @@ function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: 
             : (one.name ? `נרשמת מהטלפון הזה בשם ${one.name}, אז מספיקה לחיצה אחת.` : 'נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.')}
         </p>
       ) : (
-        <p className="text-lg">{saved.every((o) => o.kind === 'token') ? 'מהטלפון הזה נרשמו כמה אנשים. על מי עושים צ׳ק־אין?' : 'מהטלפון הזה נכנסו או נרשמו כמה אנשים. על מי עושים צ׳ק־אין?'}</p>
+        <p className="text-heading">{saved.every((o) => o.kind === 'token') ? 'מהטלפון הזה נרשמו כמה אנשים. על מי עושים צ׳ק־אין?' : 'מהטלפון הזה נכנסו או נרשמו כמה אנשים. על מי עושים צ׳ק־אין?'}</p>
       )}
       {error && <ErrorBox error={error} />}
       <div className="flex flex-col gap-3">
@@ -392,13 +392,13 @@ function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: 
           return (
             <Button key={o.value} size="lg" busy={busy && picked === o.value} disabled={busy && picked !== o.value} variant={inside ? 'secondary' : 'primary'}
               onClick={() => { setPicked(o.value); onPick(o); }}
-              className={one ? big : 'h-16! w-full text-xl!'}>
+              className={one ? big : 'h-16! w-full text-section!'}>
               {inside ? `${o.name ? `${o.name} ` : ''}כבר בפנים ✓` : one ? 'הגעתי' : (o.name ?? 'הרשמה בלי שם')}
             </Button>
           );
         })}
       </div>
-      <button type="button" onClick={onOther} className="min-h-11 self-center px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
+      <button type="button" onClick={onOther} className="min-h-11 self-center px-3 text-body font-semibold text-tide underline underline-offset-4">
         {one?.name && !oneInside ? `לא ${one.name}? צ׳ק־אין עם מספר טלפון` : 'מישהו אחר? צ׳ק־אין עם מספר טלפון'}
       </button>
     </div>
@@ -432,29 +432,47 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
   const friday = event?.type === 'friday';
   const milestone = friday ? MILESTONES[r.friday_count ?? 0] : undefined;
   const firstTime = r.result === 'checked_in' && r.attended_count === 1;
+  // (a milestone is never a first visit; kept apart so the milestone line still wins)
+  const welcomeFirst = !milestone && firstTime;
   // a first visit is not the moment to ask for membership; from a later one, a quiet link (not a button)
   const later = (r.attended_count ?? 0) >= 2;
   return (
     <div className="flex flex-col items-start gap-4 pt-6 text-right">
       <SuccessMark size="lg" className="mx-0" />
+      {/* a first visit leads with the welcome of a first visit; "טוב לראות אותך" is for someone who was here before */}
       <ResultTitle size="xl" className="mt-2">
         {r.first_name ? (
           <>
-            <span className="block text-title sm:text-[2.25rem]">טוב לראות אותך,</span>{' '}
-            <span className="block text-[3.25rem] leading-none sm:text-[3.75rem]">{r.first_name}!</span>
+            <span className="block text-title">{welcomeFirst ? 'כיף שבאת,' : 'טוב לראות אותך,'}</span>{' '}
+            <span className="block text-stat-lg">{r.first_name}!</span>
           </>
-        ) : (
+        ) : welcomeFirst ? 'כיף שבאת!' : (
           'טוב לראות אותך!'
         )}
       </ResultTitle>
-      <p className="text-xl text-ink-soft">
-        {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה.'}
-      </p>
+      {welcomeFirst ? (
+        <div>
+          <p className="text-section font-semibold">זו הפעם הראשונה שלך איתנו. הצ׳ק־אין נקלט.</p>
+          {/* who meets first-timers: a Friday-morning fact, never said on another kind of meeting */}
+          {friday && FRIDAY_FACTS.greeter && (
+            <p className="mt-1 text-heading text-ink-soft" data-fact="greeter">
+              {FRIDAY_FACTS.greeter} מהצוות מחכה בכניסה ויכיר לך כמה&nbsp;אנשים.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-heading text-ink-soft">
+          {r.result === 'already_checked_in' ? 'כבר עשית צ׳ק־אין. הכול מסודר.' : 'הצ׳ק־אין נקלט. שיהיה מפגש מעולה.'}
+        </p>
+      )}
       {owes && event && (
         <div className="w-full text-start">
-          <Notice tone="warn" icon="alert">
-            <span className="block text-[1.05rem] font-semibold">נשאר לשלם <span className="num whitespace-nowrap">{fmtMoney(event.price)}</span></span>
-            <span className="block text-[1.05rem]">אפשר לשלם במזומן בכניסה{event.payment_url ? ', או כאן בכרטיס אשראי' : ''}.</span>
+          {/* the participant's own screen: the fee said plainly, in a neutral tone (the door screen marks it for the team) */}
+          <Notice icon="card">
+            <span className="block text-body">
+              <span className="font-semibold">דמי השתתפות <span className="num whitespace-nowrap">{fmtMoney(event.price)}</span></span>
+              {' · '}אפשר לשלם במזומן בכניסה{event.payment_url ? ' או כאן בכרטיס' : ''}.
+            </span>
           </Notice>
           {event.payment_url && (
             <ExternalButton href={payUrl(event.payment_url)} variant="secondary" className="mt-2">
@@ -466,21 +484,10 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
       {milestone && (
         <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2.5 font-display text-section text-ink">{milestone}</p>
       )}
-      {!milestone && firstTime && (
-        <div>
-          <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>
-          {/* who meets first-timers: a Friday-morning fact, never said on another kind of meeting */}
-          {friday && FRIDAY_FACTS.greeter && (
-            <p className="mt-1 text-lg text-ink-soft" data-fact="greeter">
-              {FRIDAY_FACTS.greeter} מהצוות מחכה בכניסה ועושה היכרות עם כמה&nbsp;אנשים.
-            </p>
-          )}
-        </div>
-      )}
-      {r.membership === 'member' && <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2 text-[1.05rem] font-semibold text-ink">יש לך חברות בעמותה. תודה על השותפות!</p>}
+      {r.membership === 'member' && <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2 text-body font-semibold text-ink">יש לך חברות בעמותה. תודה על השותפות!</p>}
       {r.can_undo && r.result === 'checked_in' && (
         <div className="mt-1 flex flex-col items-start gap-2">
-          <button type="button" onClick={notMe} disabled={undoing} className="-ms-3 min-h-11 px-3 text-[1.05rem] font-semibold text-tide underline underline-offset-4">
+          <button type="button" onClick={notMe} disabled={undoing} className="-ms-3 min-h-11 px-3 text-body font-semibold text-tide underline underline-offset-4">
             {undoing ? 'מבטלים…' : r.first_name ? `זה לא אני, אני לא ${r.first_name}` : 'זה לא אני'}
           </button>
           {undoError && <ErrorBox error={undoError} />}
@@ -512,7 +519,7 @@ function NotOpen({ info, onRefresh, refreshing }: { info: CheckinInfo; onRefresh
       <h1 className="font-display text-title">הצ׳ק־אין עוד לא נפתח</h1>
       <EventTicket event={info.event} showStatus={false} />
       <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
-        <p className="text-lg">
+        <p className="text-heading">
           הצ׳ק־אין ייפתח {when} בשעה <span className="num font-bold">{fmtTime(info.opens_at)}</span>.
         </p>
         <p className="mt-1 text-muted">העמוד יתעדכן לבד כשייפתח.</p>
@@ -532,12 +539,12 @@ function NoCheckin({ info }: { info: CheckinInfo }) {
       <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
         {cancelled ? (
           <>
-            <p className="text-lg">{e.status === 'cancelled' ? 'המפגש הזה בוטל.' : 'המפגש הזה לא פעיל כרגע.'}</p>
+            <p className="text-heading">{e.status === 'cancelled' ? 'המפגש הזה בוטל.' : 'המפגש הזה לא פעיל כרגע.'}</p>
             <ButtonLink to="/" variant="secondary" className="mt-4">למפגשים הקרובים</ButtonLink>
           </>
         ) : (
           <>
-            <p className="text-lg">המפגש הזה כבר הסתיים.</p>
+            <p className="text-heading">המפגש הזה כבר הסתיים.</p>
             <p className="mt-1 text-muted">היית במפגש? נשמח לשמוע איך היה.</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <ButtonLink to={`/f/${e.code}`}>למשוב על המפגש</ButtonLink>

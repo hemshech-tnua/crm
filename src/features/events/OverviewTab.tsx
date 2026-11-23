@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { supabase } from '@/lib/supabase';
@@ -20,7 +20,7 @@ import { Stripes, Tri } from '@/ui/Shapes';
 import type { EventTab } from './EventPage';
 import { dataUrlToBlob, type EventPeople } from './context';
 import { DEFAULT_TITLE, useInvalidateEvent } from './queries';
-import { BigStat, LinkRow, QrImage, endsNextDay, hasEnded, hasStarted, isUnclosed, seats, timeRange } from './shared';
+import { BigStat, LinkRow, QrImage, endsNextDay, hasEnded, hasStarted, isUnclosed, seats, timeRange, useFreshDialog } from './shared';
 import type { MoreMenuItem } from '@/ui/MoreMenu';
 import { FinancePanel, useEventFinance } from './finance';
 import { isOverdue, useEventTasks, useTickMany } from '@/features/prep/shared';
@@ -36,6 +36,14 @@ export function OverviewTab({ event: e, people, onTab }: Props) {
     <div className="flex flex-col gap-5">
       {e.status === 'draft' && <OpenChecklist e={e} people={people} onTab={onTab} />}
       <Counters e={e} />
+      {/* a closed meeting's work goes on in its follow-ups ("חסרת לנו", first-time calls): one link to them */}
+      {e.status === 'completed' && (
+        <Link to={`/app/followups?event=${e.id}`} className="-my-2 inline-flex min-h-11 items-center gap-2 self-start font-semibold text-tide hover:underline">
+          <Icon name="task" size={18} />
+          משימות המעקב של המפגש
+          <Tri className="ms-0.5" />
+        </Link>
+      )}
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
           <Facts e={e} people={people} />
@@ -125,8 +133,8 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
   const invalidate = useInvalidateEvent();
   const qc = useQueryClient();
   const settings = useSettings();
-  const [dupOpen, setDupOpen] = useState(false);
-  const [cancelOpen, setCancelOpen] = useState(false);
+  const dupDialog = useFreshDialog();
+  const cancelDialog = useFreshDialog();
   const [result, setResult] = useState<CompleteResult | null>(null);
   const tasks = useEventTasks(e.id);
   const tick = useTickMany();
@@ -270,13 +278,13 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
     primary = <ButtonLink key="door" icon="door" cta to={doorTo}>מצב כניסה</ButtonLink>;
   } else if (e.status === 'open') {
     primaryKey = 'copy';
-    primary = <Button key="copy" icon="copy" cta onClick={copyLink}>העתקת קישור ההרשמה</Button>;
+    primary = <Button key="copy" icon="copy" onClick={copyLink}>העתקת קישור ההרשמה</Button>;
   } else if (e.status === 'closed') {
     primaryKey = 'reopen';
     primary = <Button key="reopen" icon="undo" cta busy={setStatus.isPending} onClick={() => setStatus.mutate('open')}>פתיחת הרשמה מחדש</Button>;
   } else if (e.status === 'completed') {
     primaryKey = 'dup';
-    primary = <Button key="dup" icon="copy" cta onClick={() => setDupOpen(true)}>שכפול לשבוע הבא</Button>;
+    primary = <Button key="dup" icon="copy" cta onClick={dupDialog.show}>שכפול לשבוע הבא</Button>;
   }
 
   const secondary: ReactNode[] = [];
@@ -293,14 +301,14 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
   }
   if (e.status === 'open' && !started) menu.push({ label: 'סגירת הרשמה', icon: 'close', disabled: setStatus.isPending, onClick: () => setStatus.mutate('closed') });
   if (e.status === 'closed' && !started && primaryKey !== 'reopen') menu.push({ label: 'פתיחת הרשמה מחדש', icon: 'undo', disabled: setStatus.isPending, onClick: () => setStatus.mutate('open') });
-  if (primaryKey !== 'dup') menu.push({ label: 'שכפול לשבוע הבא', icon: 'copy', onClick: () => setDupOpen(true) });
-  if ((e.status === 'draft' || active) && !ended) menu.push({ label: 'ביטול המפגש', icon: 'close', danger: true, onClick: () => setCancelOpen(true) });
+  if (primaryKey !== 'dup') menu.push({ label: 'שכפול לשבוע הבא', icon: 'copy', onClick: dupDialog.show });
+  if ((e.status === 'draft' || active) && !ended) menu.push({ label: 'ביטול המפגש', icon: 'close', danger: true, onClick: cancelDialog.show });
   if (can.admin(role) && regCount.data === 0) menu.push({ label: 'מחיקת המפגש', danger: true, disabled: remove.isPending, onClick: askDelete });
 
   const dialogs = (
     <>
-      <DuplicateDialog open={dupOpen} onClose={() => setDupOpen(false)} e={e} />
-      <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} e={e} onTab={onTab} />
+      <DuplicateDialog key={`dup-${dupDialog.key}`} open={dupDialog.open} onClose={dupDialog.hide} e={e} />
+      <CancelDialog key={`cancel-${cancelDialog.key}`} open={cancelDialog.open} onClose={cancelDialog.hide} e={e} onTab={onTab} />
       <Dialog
         open={!!result}
         onClose={() => setResult(null)}
@@ -339,7 +347,7 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
     </>
   );
 
-  return { primary, secondary, menu, dialogs, askComplete, askOpen, openDuplicate: () => setDupOpen(true), completing: complete.isPending, opening: setStatus.isPending };
+  return { primary, secondary, menu, dialogs, askComplete, askOpen, openDuplicate: dupDialog.show, completing: complete.isPending, opening: setStatus.isPending };
 }
 
 /**
@@ -398,9 +406,10 @@ export function EventStatusStrip({ e, people, onTab, close }: {
     key: 'seats', icon: 'people', state: 'info', label: 'לנרשמים', go: () => onTab('registrations'),
     text: <>
       {started && live ? <><span className="num font-bold">{e.stats?.attended_count ?? 0}</span> הגיעו · </> : null}
-      <span className="num font-bold">{st.registered}</span> רשומים
+      {/* with a capacity and no walk-ins the places taken are the registered: one number, "26 מתוך 40 מקומות" */}
+      {st.capacity != null && !st.walkIns ? null : st.registered === 1 ? <><span className="font-bold">רשום אחד</span></> : <><span className="num font-bold">{st.registered}</span> רשומים</>}
       {st.walkIns ? <> · <span className="num">{st.walkIns}</span> בלי הרשמה</> : null}
-      {st.capacity != null ? <> · <span className="num">{st.taken}</span> מתוך <span className="num">{st.capacity}</span></> : null}
+      {st.capacity != null ? <>{st.walkIns ? ' · ' : null}<span className={cx('num', !st.walkIns && 'font-bold')}>{st.taken}</span> מתוך <span className="num">{st.capacity}</span> מקומות</> : null}
       {st.waitlisted ? <> · <span className="num">{st.waitlisted}</span> ברשימת ההמתנה</> : null}
       {e.stats?.cancelled_count ? <> · <span className="num">{e.stats.cancelled_count}</span> ביטלו</> : null}
     </>,
@@ -547,18 +556,27 @@ function DuplicateDialog({ open, onClose, e }: { open: boolean; onClose: () => v
       const { data, error } = await supabase.rpc('staff_duplicate_event', { p_event_id: e.id, p_starts_at: fromIl(date, time) });
       if (error) throw error;
       const id = data as string;
-      if (title.trim() !== e.title) {
-        const { error: titleError } = await supabase.from('events').update({ title: title.trim() }).eq('id', id).select('id').single();
-        if (titleError) throw titleError;
+      // the draft exists from here on: nothing below may throw, or a second try would make a second draft.
+      // A title that did not save goes to the edit form instead, typed in, and is saved with the rest.
+      const t = title.trim();
+      let titleSaved = true;
+      if (t !== e.title) {
+        try {
+          const { error: titleError } = await supabase.from('events').update({ title: t }).eq('id', id).select('id').single();
+          titleSaved = !titleError;
+        } catch {
+          titleSaved = false;
+        }
       }
-      return id;
+      return { id, title: t, titleSaved };
     },
     onSettled: () => { inFlight.current = false; },
-    onSuccess: async (id) => {
-      await invalidate(e.id);
+    onSuccess: ({ id, title: t, titleSaved }) => {
+      void invalidate(e.id);
       onClose();
-      toast.success('נוצרה טיוטה. עכשיו בוחרים מרצה ונושא ושומרים.');
-      navigate(`/app/events/${id}/edit?from=dup`);
+      if (titleSaved) toast.success('נוצרה טיוטה. עכשיו בוחרים מרצה ונושא ושומרים.');
+      else toast.error('נוצרה טיוטה, אבל הכותרת עוד לא נשמרה. היא מוקלדת בטופס: בוחרים מרצה ונושא ושומרים.');
+      navigate(`/app/events/${id}/edit?from=dup`, { state: titleSaved ? null : { dupTitle: t } });
       window.scrollTo({ top: 0 });
     },
     onError: (x) => setErr({ form: errorMessage(x) }),
@@ -647,13 +665,13 @@ function CancelDialog({ open, onClose, e, onTab }: { open: boolean; onClose: () 
 function LinksPanel({ e }: { e: EventWithStats }) {
   const copy = useCopy();
   const links = useReferralLinks();
-  const [creating, setCreating] = useState(false);
+  const creating = useFreshDialog();
   const [more, setMore] = useState(false);
   const pub = registerUrl(e.public_code);
   const active = (links.data ?? []).filter((l) => l.is_active);
 
   return (
-    <Panel title="קישורי הרשמה" actions={<Button size="sm" variant="ghost" icon="plus" onClick={() => setCreating(true)}>קישור לערוץ חדש</Button>}>
+    <Panel title="קישורי הרשמה" actions={<Button size="sm" variant="ghost" icon="plus" onClick={creating.show}>קישור לערוץ חדש</Button>}>
       {e.status === 'draft' && (
         <div className="mb-3"><Notice tone="light" icon="alert">המפגש עדיין טיוטה. הקישורים יעבדו אחרי פתיחת ההרשמה.</Notice></div>
       )}
@@ -669,7 +687,7 @@ function LinksPanel({ e }: { e: EventWithStats }) {
         </div>
         <QrBlock value={pub} label="קוד QR להרשמה" download="להרשמה" filename={`registration-qr-${e.public_code}.png`} size={132} />
       </div>
-      {links.isError ? (
+      {links.isError && !links.data ? (
         <p className="mt-3 text-small text-bad">{errorMessage(links.error)}</p>
       ) : active.length > 0 && !more ? (
         <div className="mt-3 border-t border-line-soft pt-2">
@@ -693,7 +711,7 @@ function LinksPanel({ e }: { e: EventWithStats }) {
           })}
         </div>
       ) : null}
-      <NewLinkDialog open={creating} onClose={() => setCreating(false)} />
+      <NewLinkDialog key={creating.key} open={creating.open} onClose={creating.hide} />
     </Panel>
   );
 }
@@ -713,7 +731,7 @@ function QrBlock({ value, label, download: downloadLabel, filename, size }: { va
       <QrImage value={value} size={size} label={label} className="rounded-[var(--radius-panel)] border border-line-soft" />
       <button type="button" onClick={download} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] px-2 text-small font-semibold text-tide hover:bg-tide-wash pointer-coarse:h-11">
         <Icon name="download" size={16} />
-        הורדת QR<span className="sr-only"> {downloadLabel}</span>
+        הורדת קוד ה־QR<span className="sr-only"> {downloadLabel}</span>
       </button>
     </div>
   );
@@ -731,11 +749,6 @@ function NewLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }
   const [campaign, setCampaign] = useState('');
   const [errors, setErrors] = useState<{ code?: string; label?: string; form?: string }>({});
 
-  useEffect(() => {
-    if (open) {
-      setCode(''); setLabel(''); setSourceId(''); setCampaign(''); setErrors({});
-    }
-  }, [open]);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -802,7 +815,7 @@ function EntrancePanel({ e }: { e: EventWithStats }) {
             קוד QR להדפסה ולתלייה בכניסה: מי שמגיע סורק אותו ומסמן הגעה, בלי עזרה מהצוות. הסריקה פתוחה {e.status === 'draft' ? 'אחרי פתיחת ההרשמה, ' : ''}סביב שעת המפגש.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button icon="qr" onClick={() => setPrinting(true)}>שלט כניסה להדפסה</Button>
+            <Button variant="secondary" icon="qr" onClick={() => setPrinting(true)}>שלט כניסה להדפסה</Button>
           </div>
           <div className="mt-2">
             <LinkRow label="קישור הצ׳ק־אין" url={checkin} onCopy={() => copy(checkin, 'הקישור הועתק')} />

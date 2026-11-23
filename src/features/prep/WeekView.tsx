@@ -201,7 +201,7 @@ export function WeekView() {
             </button>
             {overdueOpen && (
               <>
-                <p className="px-4 text-small text-muted sm:px-5">משימות שעבר התאריך שלהן ועוד לא סומנו (עד <span className="num">{OVERDUE_DAYS}</span> ימים אחורה). אם כבר נעשו, מסמנים וזהו.</p>
+                <p className="px-4 text-small text-muted sm:px-5">משימות באיחור שעוד לא סומנו (עד <span className="num">{OVERDUE_DAYS}</span> ימים אחורה). אם כבר נעשו, מסמנים וזהו.</p>
                 <ul className="divide-y divide-edge px-4 sm:px-5" aria-label="מהימים הקודמים">
                   {(allOverdueMeetings ? overdueGroups : overdueGroups.slice(0, CAP)).map((g) => (
                     <MeetingGroup
@@ -263,7 +263,7 @@ export function WeekView() {
         )}
       </div>
 
-      {week.isError ? <ErrorBox error={errorMessage(week.error)} onRetry={() => week.refetch()} /> : week.isLoading ? <Skeleton shape="rows" count={4} height={120} /> : (
+      {week.isError && !week.data ? <ErrorBox error={errorMessage(week.error)} onRetry={() => week.refetch()} /> : week.isLoading ? <Skeleton shape="rows" count={4} height={120} /> : (
         <ol className="flex flex-col gap-3" aria-label="ימי השבוע">
           {isThisWeek && dayItem(today, 'today')}
           {upcoming.map((d) => dayItem(d, 'day'))}

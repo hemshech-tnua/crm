@@ -66,7 +66,7 @@ test('QR @phone: a nickname in brackets still finds the card, and an open fee is
   await page.getByLabel('שם מלא').fill(`${first} (ניקי) ${rest.join(' ')}`);
   await page.getByRole('button', { name: 'המשך' }).click();
   await expect(page.getByRole('heading', { name: new RegExp(first) })).toBeVisible();
-  await expect(page.getByText('נשאר לשלם')).toBeVisible();
+  await expect(page.getByText('דמי השתתפות')).toBeVisible();
   await expect(page.getByText('אפשר לשלם במזומן בכניסה.')).toBeVisible();
   expect(errors, errors.join('\n')).toEqual([]);
 });

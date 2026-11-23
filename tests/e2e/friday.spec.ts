@@ -2,7 +2,7 @@
 // empty state when nothing is open. Copy that depends on a fact the team has not confirmed (FRIDAY_FACTS) stays off the
 // page while the fact is unset. Also: the home hero's button to this page, and what the success screen adds for a Friday.
 import { expect, test, type Page } from '@playwright/test';
-import { makeEvent, phone } from '../api/helpers';
+import { makeEvent, phone, registration, visitor } from '../api/helpers';
 import { FRIDAY_FACTS } from '../../src/features/public/friday/facts';
 import { watchConsole } from './support';
 
@@ -37,6 +37,42 @@ test('shows the next Friday meeting and the CTA leads to /r/<code> with the refe
   const href = await cta.getAttribute('href');
   await cta.click();
   await expect(page).toHaveURL(new RegExp(`${href!.replace(/[?]/g, '\\?')}$`));
+  expect(errors).toEqual([]);
+});
+
+test('a phone that already registered: the buttons lead to its own page, and #/r names it by first name only', async ({ page }) => {
+  await makeEvent({ title: 'שישי חוזר E2E' });
+  const errors = watchConsole(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('#/friday');
+  const code = (await page.getByTestId('friday-cta').getAttribute('href'))!.match(/#\/r\/([a-z0-9]+)/)![1];
+  const tel = phone();
+  const { data, error } = await visitor().rpc('public_register', { p: registration(code, { full_name: 'מאיה חוזרת', phone: tel }) });
+  expect(error).toBeNull();
+  const token = (data as { token: string }).token;
+  // saved on this phone three hours ago (the old notice gave up after 30 minutes)
+  await page.evaluate(([c, t]) => localStorage.setItem('hemshech-reg-tokens', JSON.stringify({ [c]: [{ t, n: 'מאיה', at: Date.now() - 3 * 3600_000 }] })), [code, token]);
+  await page.reload();
+  const cta = page.getByTestId('friday-cta');
+  await expect(cta).toContainText('לעמוד ההרשמה שלי');
+  await expect(cta).toHaveAttribute('href', `#/m/${token}`);
+  await expect(page.getByTestId('friday-closing-cta')).toHaveAttribute('href', `#/m/${token}`);
+  await page.goto('#/');
+  await expect(page.getByTestId('home-cta')).toHaveAttribute('href', `#/m/${token}`);
+  await page.goto('#/friday');
+  // a shared phone: registering someone else is one tap away, and #/r says whose registration is saved here
+  await page.getByTestId('other-person').click();
+  const notice = page.getByTestId('saved-here');
+  await expect(notice).toContainText('מאיה');
+  await expect(notice).not.toContainText('חוזרת');
+  await expect(notice).not.toContainText(tel.slice(-4));
+  await expect(notice.getByRole('link', { name: 'לעמוד ההרשמה שלי' })).toHaveAttribute('href', `#/m/${token}`);
+  await notice.getByRole('button', { name: 'זו לא ההרשמה שלי' }).click();
+  await expect(notice).toHaveCount(0);
+  await expect(page.getByLabel('שם מלא')).toBeFocused();
+  // forgotten on this phone: the buttons are "להרשמה" again
+  await page.goto('#/friday');
+  await expect(page.getByTestId('friday-cta')).toHaveAttribute('href', `#/r/${code}`);
   expect(errors).toEqual([]);
 });
 

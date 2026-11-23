@@ -37,7 +37,7 @@ export const ENGAGEMENT_HINT: Record<Engagement, string> = {
   registered: 'יש הרשמה, אבל עוד אין הגעה לאף מפגש',
   first_timer: 'הגעה למפגש אחד',
   returning: 'הגעה ליותר ממפגש אחד',
-  regular: 'הגעה למפגשי שישי שוב ושוב בתקופה האחרונה (לפי ההגדרות)',
+  regular: 'הגעה קבועה למפגשי שישי בתקופה האחרונה (לפי ההגדרות)',
   lapsed: 'הגעה קבועה בעבר, ומאז כמה מפגשי שישי בלי הגעה (לפי ההגדרות)',
 };
 /** The hint with the thresholds from the settings ("הגעה ל־2 מפגשי שישי לפחות ב־30 הימים האחרונים"). */

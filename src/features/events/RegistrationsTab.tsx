@@ -18,7 +18,7 @@ import { Icon } from '@/ui/Icon';
 import { MessageComposer } from '@/ui/MessageComposer';
 import type { EventPeople } from './context';
 import { cleanSearch, useEventRegistrations, useInvalidateEvent, type RegRow } from './queries';
-import { RowMenu, hasStarted, useDebounced, type MenuItem } from './shared';
+import { RowMenu, hasStarted, useDebounced, useFreshDialog, type MenuItem } from './shared';
 import { ConfirmPaymentDialog, PaymentBadge, PaymentDialog, showsPayment, type ConfirmTarget, type PaymentTarget } from './finance';
 import { UnmatchedPayments } from './UnmatchedPayments';
 import { nameError, phoneError } from '@/features/participants/shared';
@@ -61,7 +61,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   useEffect(() => { if (initialFilter) setFilter(initial(initialFilter)); }, [initialFilter]);
   const [search, setSearch] = useState('');
   const [composer, setComposer] = useState<ComposerState | null>(null);
-  const [adding, setAdding] = useState(false);
+  const adding = useFreshDialog();
   const [paying, setPaying] = useState<PaymentTarget | null>(null);
   const [confirming, setConfirming] = useState<ConfirmTarget | null>(null);
   const started = hasStarted(e);
@@ -219,7 +219,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   // a failed refresh keeps the list on screen (the offline bar says the connection dropped); an error only when nothing loaded
   if (q.isError && !q.data) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
 
-  const addButton = canRegister ? <Button icon="userPlus" onClick={() => setAdding(true)}>הוספת נרשם</Button> : null;
+  const addButton = canRegister ? <Button icon="userPlus" onClick={adding.show}>הוספת נרשם</Button> : null;
   const chips = FILTERS
     // show the exceptions only where they can happen: unpaid with a fee, absent after the meeting starts
     .filter((f) => (f.value !== 'unpaid' || priced || counts.unpaid > 0) && (f.value !== 'no_show' || counts.no_show > 0) && (f.value !== 'attended' || started || counts.attended > 0))
@@ -364,8 +364,9 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       <PaymentDialog target={paying} event={e} onClose={() => setPaying(null)} />
       <ConfirmPaymentDialog target={confirming} event={e} onClose={() => setConfirming(null)} />
       <AddRegistrantDialog
-        open={adding}
-        onClose={() => setAdding(false)}
+        key={adding.key}
+        open={adding.open}
+        onClose={adding.hide}
         e={e}
         regs={rows}
         free={free}
@@ -474,11 +475,7 @@ function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
   const enabled = open && (letters.length >= 2 || digits.length >= 3);
   const existing = useMemo(() => new Map(regs.map((r) => [r.participant_id, r])), [regs]);
 
-  // every opening starts clean
-  useEffect(() => {
-    if (!open) return;
-    setQ(''); setOver(false); setCreating(false); setErrors({}); setForm({ name: '', phone: '', touched: false });
-  }, [open]);
+  // every opening starts clean: the dialog is mounted afresh each time (useFreshDialog)
 
   const results = useQuery({
     queryKey: ['participant-search', letters, digits],

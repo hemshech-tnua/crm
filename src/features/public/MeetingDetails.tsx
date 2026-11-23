@@ -12,7 +12,7 @@ import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Skeleton, buttonClass,
 import { Icon } from '@/ui/Icon';
 import { Stripes } from '@/ui/Shapes';
 import { usePublicEvent } from './api';
-import { savedToken } from './device';
+import { ownToken } from './device';
 import { availability } from './EventTicket';
 import { keepName, timeRange } from './eventText';
 import { bookable, ctaLabel, program } from './friday/model';
@@ -375,7 +375,7 @@ export function CtaBar({ children, inline = false, testId }: { children: ReactNo
 
 /** The call to action: to the registration page (keeping ?ref and utm_*), or to their own page if this phone registered. */
 function PageCta({ event: e, query }: { event: PublicEvent; query: string }) {
-  const token = savedToken(e.code);
+  const token = ownToken(e.code);
   const open = bookable(e);
   return (
     <CtaBar inline testId="details-cta">

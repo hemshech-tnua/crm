@@ -55,6 +55,10 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 900,
       // fonts are never inlined as data: URLs, so the CSP can keep font-src 'self'
       assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
+      // the Supabase client gets a chunk of its own, named for what it is (it used to take the name "errors-…")
+      rolldownOptions: {
+        output: { codeSplitting: { groups: [{ name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ }] } },
+      },
     },
   };
 });

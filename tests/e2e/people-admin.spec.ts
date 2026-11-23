@@ -27,10 +27,10 @@ test('a full phone number in any format finds the card, and the whole row opens 
   expect(errors.filter((e) => !/status of 4\d\d|Failed to load resource/.test(e)), errors.join('\n')).toEqual([]);
 });
 
-test('"לא הגיעו מעל חודשיים" and the longest-gone sort are one tap away', async ({ page }) => {
+test('"לא הגיעו יותר מחודשיים" and the longest-gone sort are one tap away', async ({ page }) => {
   await loginAs(page, 'coord');
   await page.goto('#/app/participants');
-  await page.getByRole('button', { name: /^לא הגיעו מעל חודשיים/ }).click();
+  await page.getByRole('button', { name: /^לא הגיעו יותר מחודשיים/ }).click();
   await expect(page).toHaveURL(/gone=1/);
   await page.getByRole('combobox', { name: 'מיון' }).selectOption('longest');
   await expect(page).toHaveURL(/sort=longest/);

@@ -1,8 +1,11 @@
+import { useId, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { addDays, fmtMonth, todayIl } from '@/lib/dates';
 import { useSites } from '@/lib/data';
 import { ALL_MEETING_TYPES_LABEL } from '@/lib/labels';
-import { Segmented } from '@/ui/kit';
+import { Button, Segmented, cx } from '@/ui/kit';
+import { Dialog } from '@/ui/feedback';
+import { Icon } from '@/ui/Icon';
 
 export type PeriodKey = 'month' | 'prev_month' | '30d' | '90d' | 'year' | 'all' | 'custom';
 export type Filters = { from: string | null; to: string | null; type: string | null; site: string | null; period: PeriodKey };
@@ -64,37 +67,130 @@ export function periodLabel(f: Pick<Filters, 'from' | 'to' | 'period'>): string 
 /** Report RPC arguments from the filters. */
 export const rpcArgs = (f: Filters) => ({ p_from: f.from, p_to: f.to, p_type: f.type, p_site: f.site });
 
-export function FilterBar({ filters, set, showType = true, custom = false }: {
-  filters: Filters; set: (p: Partial<Record<string, string | null>>) => void; showType?: boolean; custom?: boolean;
+const TYPES = [{ value: 'friday', label: 'שישי' }, { value: 'bonfire', label: 'מדורה' }, { value: '', label: ALL_MEETING_TYPES_LABEL }];
+
+/**
+ * The report filters. Default: one row (the periods scroll sideways on a phone). `wrap`: labelled groups ("תקופה",
+ * "סוג המפגש", "מתחם") of chips that wrap onto more lines, so every option and the chosen one are always in view — for
+ * the phone filter sheets (reports, dashboard).
+ */
+export function FilterBar({ filters, set, showType = true, custom = false, wrap = false }: {
+  filters: Filters; set: (p: Partial<Record<string, string | null>>) => void; showType?: boolean; custom?: boolean; wrap?: boolean;
 }) {
   const sites = useSites();
   const periods: { value: PeriodKey; label: string }[] = custom ? [...PRESETS.map((p) => ({ value: p.key, label: p.label })), { value: 'custom', label: 'טווח' }] : PRESETS.map((p) => ({ value: p.key, label: p.label }));
   const date = 'h-11 rounded-[var(--radius-control)] border border-control-line bg-paper px-2 hover:border-ink';
+  const setPeriod = (v: PeriodKey) => v === 'custom'
+    ? set({ period: 'custom', from: filters.from ?? addDays(todayIl(), -30), to: filters.to ?? todayIl() })
+    : set({ period: v, from: null, to: null });
+  // in the sheet the two dates share the width (a 320px phone fits them side by side only that way)
+  const dateCls = cx(date, wrap && 'min-w-0 flex-1');
+  const range = filters.period === 'custom' && (
+    <div className="flex items-center gap-1.5 text-small">
+      <input type="date" aria-label="מתאריך" value={filters.from ?? ''} onChange={(e) => set({ from: e.target.value || null })} className={dateCls} />
+      <span className="text-muted">עד</span>
+      <input type="date" aria-label="עד תאריך" value={filters.to ?? ''} onChange={(e) => set({ to: e.target.value || null })} className={dateCls} />
+    </div>
+  );
+  const manySites = (sites.data?.length ?? 0) > 1;
+  if (wrap) {
+    return (
+      <div className="flex flex-col gap-5">
+        <ChipGroup label="תקופה" options={periods} value={filters.period} onChange={setPeriod}>{range}</ChipGroup>
+        {showType && <ChipGroup label="סוג המפגש" options={TYPES} value={filters.type ?? ''} onChange={(v) => set({ type: v })} />}
+        {manySites && (
+          <ChipGroup label="מתחם" value={filters.site ?? ''} onChange={(v) => set({ site: v || null })}
+            options={[{ value: '', label: 'כל המתחמים' }, ...sites.data!.map((s) => ({ value: s.id, label: s.name }))]} />
+        )}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* seven presets do not fit a phone: the row scrolls sideways inside the page instead of widening it */}
       <div className="-mx-4 max-w-[100vw] overflow-x-auto px-4 [mask-image:linear-gradient(to_right,transparent,#000_24px)] sm:mx-0 sm:max-w-full sm:px-0 sm:[mask-image:none]">
-        <Segmented label="תקופה" options={periods} value={filters.period}
-          onChange={(v) => v === 'custom'
-            ? set({ period: 'custom', from: filters.from ?? addDays(todayIl(), -30), to: filters.to ?? todayIl() })
-            : set({ period: v, from: null, to: null })} />
+        <Segmented label="תקופה" options={periods} value={filters.period} onChange={setPeriod} />
       </div>
-      {filters.period === 'custom' && (
-        <div className="flex items-center gap-1.5 text-small">
-          <input type="date" aria-label="מתאריך" value={filters.from ?? ''} onChange={(e) => set({ from: e.target.value || null })} className={date} />
-          <span className="text-muted">עד</span>
-          <input type="date" aria-label="עד תאריך" value={filters.to ?? ''} onChange={(e) => set({ to: e.target.value || null })} className={date} />
-        </div>
-      )}
-      {showType && (
-        <Segmented label="סוג המפגש" value={filters.type ?? ''} onChange={(v) => set({ type: v })}
-          options={[{ value: 'friday', label: 'שישי' }, { value: 'bonfire', label: 'מדורה' }, { value: '', label: ALL_MEETING_TYPES_LABEL }]} />
-      )}
-      {(sites.data?.length ?? 0) > 1 && (
+      {range}
+      {showType && <Segmented label="סוג המפגש" value={filters.type ?? ''} onChange={(v) => set({ type: v })} options={TYPES} />}
+      {manySites && (
         <select aria-label="מתחם" value={filters.site ?? ''} onChange={(e) => set({ site: e.target.value || null })} className="h-11 rounded-[var(--radius-control)] border border-control-line bg-paper pr-3 pl-8 text-small font-medium hover:border-ink">
           <option value="">כל המתחמים</option>
           {sites.data!.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
+      )}
+    </div>
+  );
+}
+
+/** A labelled group of toggle chips that wraps onto more lines (FilterBar `wrap`). */
+function ChipGroup<T extends string>({ label, options, value, onChange, children }: {
+  label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; children?: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-2">
+      <div id={id} className="text-small font-semibold text-ink">{label}</div>
+      <div role="group" aria-labelledby={id} className="flex flex-wrap gap-2">
+        {options.map((o) => {
+          const on = o.value === value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(o.value)}
+              className={cx(
+                'inline-flex h-11 items-center rounded-[var(--radius-control)] border px-3.5 text-small font-medium transition-colors',
+                on ? 'border-ink bg-ink text-light' : 'border-control-line bg-paper text-ink-soft hover:border-ink hover:text-ink',
+              )}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const PERIOD_WORD: Partial<Record<PeriodKey, string>> = Object.fromEntries(PRESETS.map((p) => [p.key, p.label]));
+const TYPE_WORD: Record<string, string> = { friday: 'שישי', bonfire: 'מדורה' };
+
+/**
+ * Phones: the filters as one chip that names what is on ("3 חודשים · שישי"), opening the wrapping filter bar in a
+ * sheet. A choice applies at once (as on the wide bar); "סגירה" closes the sheet. Hidden from `sm` up (the bar shows).
+ */
+export function FilterSheetChip({ filters, set, showType = true, custom = false, title = 'סינון' }: {
+  filters: Filters; set: (p: Partial<Record<string, string | null>>) => void; showType?: boolean; custom?: boolean; title?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const sites = useSites();
+  const site = filters.site ? sites.data?.find((x) => x.id === filters.site)?.name : null;
+  const parts = [
+    PERIOD_WORD[filters.period] ?? periodLabel(filters),
+    showType ? (filters.type ? TYPE_WORD[filters.type] ?? 'מפגש אחר' : 'כל סוגי המפגשים') : null,
+    site,
+  ].filter(Boolean) as string[];
+  return (
+    <div className="sm:hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-label={`סינון: ${parts.join(', ')}`}
+        className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 py-1.5 text-start text-small font-semibold text-ink hover:border-ink"
+      >
+        <Icon name="filter" size={16} className="shrink-0" />
+        <span className="min-w-0">{parts.join(' · ')}</span>
+        <Icon name="chevron" size={14} className="shrink-0 text-muted" />
+      </button>
+      {open && (
+        <Dialog open onClose={() => setOpen(false)} title={title} layout="sheet"
+          footer={<Button onClick={() => setOpen(false)}>סגירה</Button>}>
+          <FilterBar filters={filters} set={set} showType={showType} custom={custom} wrap />
+        </Dialog>
       )}
     </div>
   );

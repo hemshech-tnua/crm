@@ -121,7 +121,7 @@ export function TemplateView() {
       <Notice icon="task">
         שינוי בתבנית חל על מפגשים חדשים. מפגש שכבר קיים מקבל משימות שנוספו בכפתור "הוספה מהתבנית" בלשונית ההכנות שלו.
       </Notice>
-      {q.isError ? <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /> : q.isLoading ? <Skeleton shape="rows" count={8} height={64} /> : (
+      {q.isError && !q.data ? <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /> : q.isLoading ? <Skeleton shape="rows" count={8} height={64} /> : (
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           {section('task')}
           {section('equipment')}
