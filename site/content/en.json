@@ -1,0 +1,134 @@
+{
+  "site": {
+    "name": "Hemshech Tnua",
+    "description": "Hemshech Tnua is building a nationwide network of local community centres and runs structured activities, giving combat veterans a space to meet, move, find direction and succeed in life.",
+    "titleSeparator": " | "
+  },
+  "skip": "Skip to main content",
+  "nav": {
+    "label": "Main navigation",
+    "footerLabel": "All pages",
+    "menuLabel": "Menu",
+    "menu": "Menu",
+    "close": "Close the menu",
+    "homeLabel": "Hemshech Tnua – home page",
+    "switchTo": "עברית",
+    "home": "Home",
+    "friday": "Friday mornings",
+    "evenings": "Women's evenings & more",
+    "about": "About",
+    "partners": "Partners",
+    "volunteer": "Volunteer",
+    "donate": "Donate",
+    "calendar": "Calendar",
+    "team": "Team & board",
+    "faq": "FAQ",
+    "membership": "Membership",
+    "contact": "Contact",
+    "stories": "Stories",
+    "gallery": "Photos & videos",
+    "news": "News",
+    "transparency": "Transparency & reports",
+    "accessibility": "Accessibility statement"
+  },
+  "cta": {
+    "register": "Sign up for a meeting"
+  },
+  "footer": {
+    "contactTitle": "Contact",
+    "whatsapp": "Message us on WhatsApp",
+    "pagesTitle": "On this site",
+    "systemTitle": "In the registration system",
+    "privacy": "Privacy policy",
+    "propose": "Offer a talk or a session",
+    "member": "Members' area",
+    "rights": "All rights reserved"
+  },
+  "events": {
+    "loading": "Loading the upcoming meetings…",
+    "empty": "No meetings are open for registration right now. New meetings open here and in the registration system.",
+    "error": "We couldn't load the meetings right now.",
+    "retry": "Try again",
+    "fallback": "All meetings in the registration system",
+    "filterLabel": "Meeting type",
+    "all": "All",
+    "register": "Sign up",
+    "details": "Details",
+    "full": "Full",
+    "waitlist": "Waiting list",
+    "spotsLeft": "{n} places left",
+    "price": "₪{price}",
+    "count": "{n} upcoming meetings",
+    "types": {
+      "friday": "Friday meeting",
+      "bonfire": "Bonfire evening",
+      "other": "Meeting"
+    }
+  },
+  "slots": {
+    "prefix": "Owner content",
+    "stats": "impact numbers (e.g. meetings held, participants)",
+    "partners": "partner and company logos",
+    "quotes": "quotes from participants who agreed",
+    "socials": "social media links",
+    "address": "postal address",
+    "email": "email address",
+    "donateUrl": "link to the donation payment page"
+  },
+  "notFound": {
+    "metaTitle": "Page not found",
+    "title": "We couldn't find this page",
+    "lead": "The link may have changed. You can continue from the home page or go straight to signing up for a meeting.",
+    "home": "Home page"
+  },
+  "home": {
+    "meta": {
+      "title": "Hemshech Tnua",
+      "description": "A network of local community centres for discharged combat veterans: a space to meet, move, find direction and succeed in life."
+    },
+    "hero": {
+      "eyebrow": "Infrastructure sample page",
+      "title": "Hemshech Tnua",
+      "lead": "We are building a nationwide network of local community centres and run structured activities, giving combat veterans a space to meet, move, find direction and succeed in life."
+    },
+    "friday": {
+      "title": "Friday meetings",
+      "points": [
+        "No commitment and no talking circle",
+        "Three meetings a month",
+        "Suits every fitness level"
+      ]
+    },
+    "chapters": {
+      "title": "Chapters",
+      "items": [
+        {
+          "title": "Meet",
+          "text": "Three meetings a month, no commitment."
+        },
+        {
+          "title": "Move",
+          "text": "A workout that suits every fitness level."
+        },
+        {
+          "title": "Find direction",
+          "text": "Training, coffee and a talk on Friday mornings."
+        }
+      ]
+    },
+    "events": {
+      "title": "Upcoming meetings"
+    },
+    "owner": {
+      "title": "Places waiting for content from the association"
+    }
+  },
+  "photos": {
+    "training": "Outdoor group training with kettlebells and resistance bands",
+    "running": "Three people running on a dirt trail at sunrise",
+    "talk": "A talk and conversation around a long table",
+    "bonfire": "An evening around a bonfire in the hills",
+    "walk": "A soldier and a civilian walking together on a path",
+    "hills": "Hills and olive trees at sunset"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "Owner content (from the association). Empty = the section is omitted in production and shown as a dashed 'תוכן מהעמותה' box in preview builds (SITE_PREVIEW=1). Bilingual text is { \"he\": \"…\", \"en\": \"…\" }. File paths are relative to site/assets/. See site/README.md for the full schema.",
+  "nameEn": null,
+  "donateUrl": null,
+  "section46": false,
+  "bank": null,
+  "email": null,
+  "address": null,
+  "socials": [],
+  "stats": [],
+  "team": [],
+  "board": [],
+  "partners": [],
+  "quotes": [],
+  "reports": [],
+  "photos": [],
+  "videos": []
+}

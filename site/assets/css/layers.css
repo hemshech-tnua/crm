@@ -1,0 +1,2 @@
+/* Cascade order for the whole site. Later layers win regardless of specificity. Every file wraps itself in its layer. */
+@layer reset, tokens, base, layout, components, motion, utilities;

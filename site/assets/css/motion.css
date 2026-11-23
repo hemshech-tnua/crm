@@ -1,0 +1,50 @@
+/*
+ * Scroll storytelling. Everything is visible at rest: hiding happens only after scroll.js has run (html.js-reveal),
+ * and never under prefers-reduced-motion. transform + opacity only (60fps).
+ */
+@layer motion {
+  @media (prefers-reduced-motion: no-preference) {
+    .js-reveal [data-reveal] {
+      transition: opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+      transition-delay: calc(var(--reveal-i, 0) * var(--reveal-stagger));
+    }
+    .js-reveal [data-reveal]:not(.is-revealed) { opacity: 0; transform: translateY(var(--reveal-distance)); }
+    .js-reveal [data-reveal="fade"]:not(.is-revealed) { transform: none; }
+    .js-reveal [data-reveal="start"]:not(.is-revealed) { transform: translateX(calc(var(--dir, 1) * -2rem)); }
+    .js-reveal [data-reveal="end"]:not(.is-revealed) { transform: translateX(calc(var(--dir, 1) * 2rem)); }
+    .js-reveal [data-reveal="scale"]:not(.is-revealed) { transform: scale(0.96); }
+    [data-reveal-delay="1"] { --reveal-i: 1; }
+    [data-reveal-delay="2"] { --reveal-i: 2; }
+    [data-reveal-delay="3"] { --reveal-i: 3; }
+    [data-reveal-delay="4"] { --reveal-i: 4; }
+    [data-reveal-delay="5"] { --reveal-i: 5; }
+    [data-reveal-delay="6"] { --reveal-i: 6; }
+
+    /* CSS scroll-driven animations (html.sda is set by scroll.js when supported) */
+    .sda [data-parallax] > * { animation: parallax linear both; animation-timeline: view(); animation-range: cover; scale: 1.12; }
+    .sda .parallax-host > .corner-stripes { animation: drift linear both; animation-timeline: view(); animation-range: cover; }
+    .event-card--skeleton span { animation: pulse 1.4s ease-in-out infinite alternate; }
+  }
+  @supports (animation-timeline: scroll()) {
+    .sda .scroll-progress { animation: progress linear both; animation-timeline: scroll(root block); }
+  }
+  @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes parallax { from { transform: translateY(-5%); } to { transform: translateY(5%); } }
+  @keyframes drift { from { transform: translateY(12%); } to { transform: translateY(-12%); } }
+  @keyframes pulse { from { opacity: 0.55; } to { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    [data-reveal] { opacity: 1 !important; transform: none !important; }
+    [data-parallax] > * { animation: none !important; scale: none !important; }
+  }
+}
+@layer motion {
+  @media (prefers-reduced-motion: reduce) {
+    .sda .scroll-progress { animation-duration: auto !important; }
+  }
+  @media print {
+    [data-reveal] { opacity: 1 !important; transform: none !important; }
+    .site-header, .site-menu, .scroll-progress { position: static; }
+  }
+}

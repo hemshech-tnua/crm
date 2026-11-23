@@ -1,0 +1,73 @@
+/*
+ * DESIGN TOKENS — placeholder by Team C (engineering). Team B (design system) replaces this file.
+ * Keep the variable NAMES below (components.css and the page modules use them); change the values freely, add more.
+ * Brand: navy #142837, beige #EBDCB9, Google Sans, squared corners 3–4px. NEVER a white background.
+ */
+@layer tokens {
+  :root {
+    /* brand colours */
+    --navy: #142837;
+    --navy-2: #1c3446;          /* raised surface on navy */
+    --navy-3: #29465b;          /* borders on navy */
+    --beige: #ebdcb9;
+    --beige-2: #f2e7cd;         /* raised surface on beige (still beige, never white) */
+    --beige-3: #dfcb9f;         /* deep beige band */
+
+    /* roles */
+    --surface: var(--beige);
+    --surface-raised: var(--beige-2);
+    --surface-deep: var(--beige-3);
+    --surface-inverse: var(--navy);
+    --ink: var(--navy);
+    --ink-muted: color-mix(in srgb, var(--navy) 80%, var(--beige));
+    --ink-inverse: var(--beige);
+    --line: color-mix(in srgb, var(--navy) 22%, transparent);
+    --line-inverse: color-mix(in srgb, var(--beige) 28%, transparent);
+    --focus: var(--navy);
+    --stripe: color-mix(in srgb, var(--navy) 10%, var(--beige));
+
+    /* type */
+    --font: 'Google Sans', 'Google Sans Fallback', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+    --step--1: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
+    --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+    --step-1: clamp(1.2rem, 1.1rem + 0.5vw, 1.5rem);
+    --step-2: clamp(1.45rem, 1.25rem + 1vw, 2rem);
+    --step-3: clamp(1.75rem, 1.4rem + 1.75vw, 2.75rem);
+    --step-4: clamp(2.2rem, 1.6rem + 3vw, 4rem);
+    --step-5: clamp(2.6rem, 1.7rem + 4.5vw, 5.5rem);
+    --leading-tight: 1.1;
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-bold: 700;
+
+    /* space */
+    --space-3xs: clamp(0.25rem, 0.23rem + 0.1vw, 0.3125rem);
+    --space-2xs: clamp(0.5rem, 0.46rem + 0.2vw, 0.625rem);
+    --space-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.9375rem);
+    --space-s: clamp(1rem, 0.93rem + 0.35vw, 1.25rem);
+    --space-m: clamp(1.5rem, 1.4rem + 0.5vw, 1.875rem);
+    --space-l: clamp(2rem, 1.85rem + 0.75vw, 2.5rem);
+    --space-xl: clamp(3rem, 2.75rem + 1.25vw, 3.75rem);
+    --space-2xl: clamp(4rem, 3.6rem + 2vw, 5rem);
+    --space-3xl: clamp(5rem, 4rem + 5vw, 8rem);
+
+    /* shape + layout */
+    --radius: 4px;
+    --radius-sm: 3px;
+    --container: 76rem;
+    --gutter: 1rem;             /* 16px side gutter on phones */
+    --header-h: 4rem;
+    --tap: 44px;                /* minimum target size */
+
+    /* motion */
+    --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --dur-fast: 160ms;
+    --dur: 280ms;
+    --dur-reveal: 700ms;
+    --reveal-distance: 1.5rem;
+    --reveal-stagger: 90ms;
+  }
+  @media (min-width: 48rem) {
+    :root { --gutter: clamp(1.5rem, 4vw, 3rem); --header-h: 4.5rem; }
+  }
+}
