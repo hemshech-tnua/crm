@@ -38,7 +38,7 @@ function Checkin({ code }: { code: string }) {
     );
   }
   if (info.isPending) return <Skeleton lines={6} className="py-6" />;
-  if (info.isError) {
+  if (info.isError && !info.data) {
     return errorCode(info.error) === 'checkin_not_found' ? (
       <EmptyState icon="qr" titleAs="h1" title="קוד הכניסה לא תקין" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
         סרקו שוב את הברקוד, או גשו לצוות בכניסה ונסמן אתכם&nbsp;שם.

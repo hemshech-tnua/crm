@@ -66,7 +66,8 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   }
 
   if (event.isPending) return <Skeleton lines={8} className="py-6" />;
-  if (event.isError) {
+  // a refetch that fails (a short drop) keeps the page and whatever is typed in the form
+  if (event.isError && !event.data) {
     const code = errorCode(event.error);
     if (code === 'registration_not_open') {
       return (
@@ -158,8 +159,9 @@ type SavedRow = { token: string; name: string | null; status: 'registered' | 'wa
 /**
  * Registrations of this meeting made from this phone (any status, any age): a notice above the form, never instead of
  * it, so on a shared phone the next person can still register. It says only the first name and where the registration
- * stands, never the phone or other details; each has a link to its own page and "זו לא ההרשמה שלי", which forgets it
- * on this phone. A cancelled registration, or one the server no longer knows, is not offered.
+ * stands, never the phone or other details, with a link to its page and "זו לא ההרשמה שלי", which forgets it on this
+ * phone. With several saved (a shared phone) it names nobody and links nowhere: it only offers to forget them all.
+ * A cancelled registration, or one the server no longer knows, is not offered.
  */
 function SavedHere({ code }: { code: string }) {
   const [saved, setSaved] = useState(() => savedRegistrations(code));
@@ -175,6 +177,11 @@ function SavedHere({ code }: { code: string }) {
   const notMine = (token: string) => {
     forgetToken(code, token);
     setSaved((list) => list.filter((x) => x.token !== token));
+    focusFirstField();
+  };
+  const forgetAll = () => {
+    rows.forEach((r) => forgetToken(code, r.token));
+    setSaved([]);
     focusFirstField();
   };
   const where = (r: SavedRow) => (r.status === 'pending_payment' ? 'התשלום עוד לא\u00a0הושלם.' : r.status === 'waitlisted' ? 'ההרשמה ברשימת\u00a0ההמתנה.' : null);
@@ -198,27 +205,13 @@ function SavedHere({ code }: { code: string }) {
             </p>
           </>
         ) : (
+          // several people registered from this phone: no names, statuses or links here, so nobody on a shared phone
+          // can open another person's page (each has their own personal link from the registration)
           <>
-            <p className="text-body-sm">מהטלפון הזה נרשמו למפגש&nbsp;הזה:</p>
-            <ul className="mt-1 divide-y divide-edge">
-              {rows.map((r) => (
-                <li key={r.token} className="py-1.5">
-                  <p className="text-body-sm">
-                    <span className="font-semibold">{r.name ?? 'הרשמה בלי שם'}</span>
-                    {where(r) && <span className="text-ink-soft"> · {where(r)}</span>}
-                  </p>
-                  <p className="flex flex-wrap items-center gap-x-5">
-                    <Link to={`/m/${r.token}`} className={link}>
-                      לעמוד ההרשמה<span className="sr-only"> של {r.name ?? 'הרשמה בלי שם'}</span>
-                      <Tri className="text-tide" />
-                    </Link>
-                    <button type="button" onClick={() => notMine(r.token)} className={quiet}>
-                      זו לא ההרשמה שלי<span className="sr-only"> ({r.name ?? 'הרשמה בלי שם'})</span>
-                    </button>
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <p className="text-body-sm">מהטלפון הזה נרשמו כמה אנשים למפגש הזה. לכל אחד יש קישור אישי מההרשמה.</p>
+            <p className="mt-1">
+              <button type="button" onClick={forgetAll} className={quiet}>לשכוח את ההרשמות בטלפון הזה</button>
+            </p>
           </>
         )}
       </Notice>

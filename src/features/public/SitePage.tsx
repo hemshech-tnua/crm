@@ -14,7 +14,7 @@ export function SitePage() {
   const site = useSiteCheckin(code);
 
   if (site.isPending) return <Skeleton lines={6} className="py-6" />;
-  if (site.isError) {
+  if (site.isError && !site.data) {
     return errorCode(site.error) === 'site_not_found' ? (
       <EmptyState icon="qr" titleAs="h1" title="הקוד הזה לא פעיל" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
         גשו לצוות בכניסה ונסמן שם שהגעתם.

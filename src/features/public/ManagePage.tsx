@@ -24,7 +24,7 @@ export function ManagePage() {
   // the payment arrived while this page was open: say so on the registration
   const [sawPending, setSawPending] = useState(false);
   if (reg.data?.status === 'pending_payment' && !sawPending) setSawPending(true);
-  usePageTitle(reg.isError ? 'הקישור האישי לא תקין' : reg.data?.status === 'pending_payment' ? 'תשלום ההרשמה' : 'ההרשמה שלי');
+  usePageTitle(reg.isError && !reg.data && errorCode(reg.error) === 'token_invalid' ? 'הקישור האישי לא תקין' : reg.data?.status === 'pending_payment' ? 'תשלום ההרשמה' : 'ההרשמה שלי');
 
   // keep the token on this phone so check-in at the door is one tap (no name or phone is stored)
   const code = reg.data?.event.code;
@@ -40,7 +40,7 @@ export function ManagePage() {
   }, [code, status, token, firstName]);
 
   if (reg.isPending) return <Skeleton lines={8} className="py-6" />;
-  if (reg.isError) {
+  if (reg.isError && !reg.data) {
     return errorCode(reg.error) === 'token_invalid' ? (
       <EmptyState icon="link" titleAs="h1" title="הקישור האישי לא תקין" action={<ButtonLink to="/">למפגשים הקרובים</ButtonLink>}>
         ייתכן שהקישור הועתק חלקית, או שנרשמת מחדש ונוצר קישור חדש. אם צריך עזרה: <ContactLine inline />

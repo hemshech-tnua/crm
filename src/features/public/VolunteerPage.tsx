@@ -36,7 +36,7 @@ export function VolunteerPage() {
   usePageTitle('ההתנדבות שלי');
 
   if (q.isPending) return <Skeleton lines={8} className="py-6" />;
-  if (q.isError) {
+  if (q.isError && !q.data) {
     const code = errorCode(q.error);
     return code === 'not_found' || code === 'invalid_input' ? (
       <EmptyState icon="link" title="הקישור לא בתוקף">

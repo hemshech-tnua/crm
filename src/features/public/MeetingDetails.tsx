@@ -406,7 +406,7 @@ export function MeetingPage() {
   const back = location.key !== 'default';
 
   if (event.isPending) return <Skeleton lines={8} className="py-6" />;
-  if (event.isError) {
+  if (event.isError && !event.data) {
     const c = errorCode(event.error);
     if (c === 'registration_not_open') {
       return (

@@ -73,6 +73,24 @@ test('a phone that already registered: the buttons lead to its own page, and #/r
   // forgotten on this phone: the buttons are "להרשמה" again
   await page.goto('#/friday');
   await expect(page.getByTestId('friday-cta')).toHaveAttribute('href', `#/r/${code}`);
+
+  // a shared phone with two registrations: #/r names nobody and links to nobody's page, and the main button stays
+  // "להרשמה"; the phone can forget them all
+  const tel2 = phone();
+  const second = await visitor().rpc('public_register', { p: registration(code, { full_name: 'עידו שני', phone: tel2 }) });
+  expect(second.error).toBeNull();
+  const token2 = (second.data as { token: string }).token;
+  await page.evaluate(([c, t1, t2]) => localStorage.setItem('hemshech-reg-tokens', JSON.stringify({ [c]: [{ t: t1, n: 'מאיה', at: Date.now() - 60_000 }, { t: t2, n: 'עידו', at: Date.now() }] })), [code, token, token2]);
+  await page.reload();
+  await expect(page.getByTestId('friday-cta')).toHaveAttribute('href', `#/r/${code}`);
+  await page.goto(`#/r/${code}`);
+  const shared = page.getByTestId('saved-here');
+  await expect(shared).toContainText('נרשמו כמה אנשים');
+  for (const who of ['מאיה', 'עידו', tel.slice(-4), tel2.slice(-4)]) await expect(shared).not.toContainText(who);
+  await expect(shared.getByRole('link')).toHaveCount(0);
+  await shared.getByRole('button', { name: 'לשכוח את ההרשמות בטלפון הזה' }).click();
+  await expect(shared).toHaveCount(0);
+  expect(await page.evaluate((c) => JSON.parse(localStorage.getItem('hemshech-reg-tokens') ?? '{}')[c] ?? null, code)).toBeNull();
   expect(errors).toEqual([]);
 });
 
