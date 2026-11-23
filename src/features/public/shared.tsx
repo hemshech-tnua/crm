@@ -265,7 +265,7 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
       <p>
         {children ?? (
           <>
-            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים ולחזרה אליכם בנושאים האלה. אין חובה חוקית למסור אותם, אבל בלעדיהם אי
+            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים, וכדי לחזור אליכם לגביהם. אין חובה חוקית למסור אותם, אבל בלעדיהם אי
             אפשר להירשם. רק צוות העמותה רואה אותם, כל אחד לפי תפקידו.{' '}
           </>
         )}
@@ -279,14 +279,15 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
 }
 
 /** How to reach the team (WhatsApp/phone from Settings). Used where a participant may get stuck. */
-export function ContactLine({ inline = false }: { inline?: boolean }) {
+export function ContactLine({ inline = false, legal = false }: { inline?: boolean; legal?: boolean }) {
   const org = useOrgInfo();
   const phone = org.data?.contact_phone;
-  if (!phone) return <>{inline ? 'אפשר לפנות לצוות העמותה.' : <p className="text-small text-muted">שאלות? אפשר לפנות לצוות העמותה.</p>}</>;
+  // `legal`: the privacy policy keeps its approved wording word for word ("פנו" / "כתבו לנו")
+  if (!phone) return <>{inline ? (legal ? 'פנו לצוות העמותה.' : 'אפשר לפנות לצוות העמותה.') : <p className="text-small text-muted">שאלות? אפשר לפנות לצוות העמותה.</p>}</>;
   // "אפשר …": the same words whoever reads them (one person or a group), and they follow any lead-in ("שאלות?", "צריכים טרמפ?")
   const link = (
     <a href={whatsappLink(phone)} target="_blank" rel="noopener noreferrer" className="inline-block py-3 leading-5 font-semibold text-tide underline underline-offset-2">
-      אפשר לכתוב לנו בוואטסאפ (<span dir="ltr" className="num whitespace-nowrap">{formatPhone(phone)}</span>)
+      {legal ? 'כתבו לנו בוואטסאפ' : 'אפשר לכתוב לנו בוואטסאפ'} (<span dir="ltr" className="num whitespace-nowrap">{formatPhone(phone)}</span>)
       <span className="sr-only"> (נפתח בחלון חדש)</span>
     </a>
   );

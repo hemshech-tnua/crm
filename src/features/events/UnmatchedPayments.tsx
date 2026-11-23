@@ -240,7 +240,7 @@ function PaymentRow({ p, eventId, prices }: { p: UnmatchedPayment; eventId: stri
             </Button>
           )}
           <div className="mt-1 flex flex-wrap gap-2">
-            <Button icon="check" busy={attach.isPending} disabled={!chosen} onClick={() => chosen && attach.mutate(chosen)}>התאמה</Button>
+            <Button variant={chosen ? 'primary' : 'secondary'} icon="check" busy={attach.isPending} disabled={!chosen} onClick={() => chosen && attach.mutate(chosen)}>התאמה</Button>
             <Button variant="ghost" busy={dismiss.isPending} onClick={askDismiss}>הסרה מהרשימה</Button>
           </div>
         </fieldset>

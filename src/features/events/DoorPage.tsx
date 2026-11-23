@@ -382,10 +382,9 @@ export function DoorPage() {
             {!forbidden && list.data && (
               <p className="flex flex-wrap items-baseline gap-x-1.5 text-small text-ink-soft">
                 <span>{totalNotYet === 1 ? <><b className="text-ink">אחד</b> עוד לא הגיע</> : <><b className="num text-ink">{totalNotYet}</b> עוד לא הגיעו</>}</span>
-                {walkIns > 0 && <span aria-hidden="true">·</span>}
-                {walkIns > 0 && <span><b className="num text-ink">{walkIns}</b> בלי הרשמה</span>}
-                {updated && !stale && <span aria-hidden="true" className="text-muted">·</span>}
-                {updated && !stale && <span className="text-muted">עודכן <span className="num">{updated}</span></span>}
+                {/* each "·" travels with the item after it, so a wrapped line never ends on a separator */}
+                {walkIns > 0 && <span className="whitespace-nowrap"><span aria-hidden="true">· </span><b className="num text-ink">{walkIns}</b> בלי הרשמה</span>}
+                {updated && !stale && <span className="whitespace-nowrap text-muted"><span aria-hidden="true">· </span>עודכן <span className="num">{updated}</span></span>}
               </p>
             )}
           </div>

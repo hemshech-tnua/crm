@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { errorMessage, must } from '@/lib/errors';
-import { fmtDate, fmtMonth, todayIl } from '@/lib/dates';
+import { fmtDate, fmtListDate, fmtMonth, todayIl } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
 import { toCsv, downloadFile, csvFileName, type Column } from '@/lib/csv';
 import { fmtMoney } from '@/lib/money';
@@ -195,10 +195,10 @@ function EventsReport({ filters }: { filters: Filters }) {
                       {r.status !== 'completed' && <span className="text-small text-muted sm:hidden"> · לא נסגר</span>}
                       <div className="text-small text-muted max-sm:hidden"><span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}{r.status !== 'completed' && <> · לא נסגר</>}</div>
                       <PhoneMeta>
-                        <span className="num">{fmtDate(r.starts_at)}</span>
-                        {' · '}<span className="num">{r.registered_count}</span> נרשמו
-                        {' · '}<span className="num font-semibold text-ink">{r.attended_count}</span> הגיעו
-                        {r.registered_count > 0 && <> · <span className="num">{pct(show)}</span></>}
+                        <span className="num">{fmtListDate(r.starts_at, { weekday: false, time: false })}</span>
+                        {' · '}{r.registered_count === 1 ? 'נרשם אחד' : <><span className="num">{r.registered_count}</span> נרשמו</>}
+                        {' · '}{r.attended_count === 1 ? <span className="font-semibold text-ink">הגיע אחד</span> : <><span className="num font-semibold text-ink">{r.attended_count}</span> הגיעו</>}
+                        {r.registered_count > 0 && <> · <span className="num">{pct(show)}</span> הגעה</>}
                         {r.avg_overall != null && <> · דירוג <span className="num">{num(r.avg_overall, 1)}</span></>}
                       </PhoneMeta>
                     </td>
