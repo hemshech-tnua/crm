@@ -32,7 +32,7 @@ export function render(ctx) {
             ? ownerImg(ctx, org.aboutPhoto, { alt: ctx.l(org.aboutPhotoAlt) ?? '', sizes: '(min-width: 64rem) 50vw, 100vw' })
             : ctx.img('walk', { eager: true, sizes: '(min-width: 64rem) 50vw, 100vw' })}
         </figure>
-        <div class="about-hero__stripes" aria-hidden="true">${ctx.brand.stripes({ width: 240, height: 150, unit: 22, dir: 'rise', count: 3 })}</div>
+        <div class="about-hero__stripes" aria-hidden="true">${ctx.brand.stripes({ width: 240, height: 150, unit: 22, dir: 'cut', anchor: 'bs', count: 3 })}</div>
       </div>
       ${ctx.has(org.aboutPhoto) ? '' : ctx.slot(null, t('about.slots.photo'), () => '', { className: 'about-hero__slot' })}
     </div>

@@ -10,14 +10,12 @@ export const slug = { he: 'friday', en: 'friday' };
 export const ctaBar = { type: 'friday', pay: true, label: 'friday.hero.cta' };
 
 /** A run of three stripes entering a chapter from a corner (DESIGN.md §3.1). */
-const corner = (ctx, pos, { dir = 'fall', tone = 'beige' } = {}) =>
+const corner = (ctx, pos, { dir = 'cut', tone = 'beige' } = {}) =>
   ctx.brand.stripes({ width: 260, height: 140, unit: 20, dir, count: 3, className: `stripes stripes--${tone} corner corner--${pos}` });
 
 export function render(ctx) {
   const { t, org } = ctx;
   const tri = () => ctx.brand.tri();
-  // stripes cut the corner they sit in: "\" for the top-right corner, "/" for the top-left, in either reading direction
-  const cut = (pos) => ((pos[1] === 's') === (ctx.dir === 'rtl') ? 'fall' : 'rise');
   const shareUrl = ctx.abs(ctx.page.url);
   const waShare = `https://wa.me/?text=${encodeURIComponent(`${t('friday.closing.shareMessage')}\n${shareUrl}`)}`;
   const program = ctx.list('friday.program.items');
@@ -56,7 +54,7 @@ export function render(ctx) {
     </div>
     <div class="fr-hero__media">
       <figure class="photo r-45 fr-hero__photo" data-load="wipe">${ctx.img('running', { eager: true, alt: '', sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
-      ${ctx.brand.stripes({ width: 220, height: 150, unit: 20, dir: cut('ts'), count: 3, className: 'stripes fr-hero__stripes', anchor: 'ts' })}
+      ${ctx.brand.stripes({ width: 220, height: 150, unit: 20, dir: 'cut', count: 3, className: 'stripes fr-hero__stripes', anchor: 'ts' })}
     </div>
   </div>
 </section>
@@ -65,7 +63,7 @@ export function render(ctx) {
   <h2 id="fr-promises-title" class="visually-hidden">${t('friday.emphasis.title')}</h2>
   ${emphasis.map(
     (p, i) => html`<div class="fr-promise fr-promise--${i + 1}">
-    ${i === 0 ? ctx.brand.stripes({ width: 300, height: 420, unit: 34, dir: cut('te'), count: 3, className: 'stripes stripes--beige fr-promise__stripes', anchor: 'te' }) : ''}
+    ${i === 0 ? ctx.brand.stripes({ width: 300, height: 420, unit: 34, dir: 'cut', count: 3, className: 'stripes stripes--beige fr-promise__stripes', anchor: 'te' }) : ''}
     <div class="wrap fr-promise__in">
       <div class="fr-promise__text">
         <h3 class="fr-promise__title" data-reveal="up">${p.lines.map((l) => html`<span>${l}</span>`)}</h3>
@@ -127,7 +125,7 @@ export function render(ctx) {
 </section>
 
 <section class="chapter fr-forwhom" data-ground="navy" aria-labelledby="fr-forwhom-title">
-  ${corner(ctx, 'ts', { dir: 'rise' })}
+  ${corner(ctx, 'ts')}
   <div class="wrap">
     <h2 id="fr-forwhom-title" class="t-chapter" data-reveal="up">${t('friday.forWhom.title')}</h2>
     <ul class="tri-list fr-forwhom__list" role="list" data-reveal="group">
@@ -174,7 +172,7 @@ export function render(ctx) {
 </section>
 
 <section class="chapter fr-closing" data-ground="navy" aria-labelledby="fr-closing-title">
-  ${corner(ctx, 'ts', { dir: 'rise' })}
+  ${corner(ctx, 'ts')}
   <div class="wrap fr-closing__grid">
     <div class="fr-closing__ask" data-reveal="group">
       <h2 id="fr-closing-title" class="t-chapter">${t('friday.closing.title')}</h2>

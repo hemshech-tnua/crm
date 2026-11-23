@@ -77,8 +77,7 @@ export function corner(ctx, pos = 'te', { unit = 22, tone } = {}) {
   const logical = pos[1] === 's' || pos[1] === 'e' ? pos : pos[0] + ((pos[1] === 'r') === rtl ? 's' : 'e');
   const physical = /^[tb][lr]$/.test(pos) ? pos : pos[0] + ((pos[1] === 's') === rtl ? 'r' : 'l');
   // fall (\) runs into the top-right / bottom-left corners, rise (/) into the top-left / bottom-right ones
-  const dir = (physical === 'tr' || physical === 'bl') ? 'fall' : 'rise';
-  return html`<div class="${['stripes', 'corner', `corner--${logical}`, tone && `stripes--${tone}`].filter(Boolean).join(' ')}" aria-hidden="true">${ctx.brand.stripes({ width: 260, height: 150, unit, dir, count: 3, anchor: physical })}</div>`;
+  return html`<div class="${['stripes', 'corner', `corner--${logical}`, tone && `stripes--${tone}`].filter(Boolean).join(' ')}" aria-hidden="true">${ctx.brand.stripes({ width: 260, height: 150, unit, dir: 'cut', count: 3, anchor: physical })}</div>`;
 }
 
 /** A bilingual owner value ({he,en}) or plain value. */

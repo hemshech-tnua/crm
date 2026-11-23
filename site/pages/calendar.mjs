@@ -15,7 +15,7 @@ export function render(ctx) {
 
   return html`
 <section class="chapter cal-hero" data-ground="navy" aria-labelledby="cal-title">
-  ${ctx.brand.stripes({ width: 260, height: 140, unit: 20, dir: 'fall', count: 3, className: 'stripes stripes--beige corner corner--te' })}
+  ${ctx.brand.stripes({ width: 260, height: 140, unit: 20, dir: 'cut', count: 3, className: 'stripes stripes--beige corner corner--te' })}
   <div class="wrap cal-hero__grid">
     <div>
       <h1 id="cal-title" class="t-display cal-hero__title" data-load="1">${t('calendar.hero.title')}</h1>
