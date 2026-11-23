@@ -47,11 +47,8 @@ export function waAction(ctx, { label, text, className = 'btn' } = {}) {
   return html`<a${attrs({ class: className, href, 'data-org-phone': 'whatsapp', 'data-org-text': text ?? null })}><span>${label}</span>${ctx.brand.tri()}</a>`;
 }
 
-/** Corner stripes: the chapter divider (DESIGN §3.1), in the shared .stripes/.corner classes. pos: ts | te | bs | be.
- *  tone: a .stripes--* colour (default: tone-on-tone for the ground). Decorative. */
-export function corner(ctx, { pos = 'te', dir = 'fall', tone } = {}) {
-  return html`<div class="${['stripes', 'corner', `corner--${pos}`, tone && `stripes--${tone}`].filter(Boolean).join(' ')}" aria-hidden="true">${ctx.brand.stripes({ width: 260, height: 140, unit: 20, dir, count: 3 })}</div>`;
-}
+/** Corner stripes: the chapter divider (DESIGN §3.1), via the shared ctx.ui.corner(). pos: ts | te | bs | be. */
+export const corner = (ctx, { pos = 'te', dir, tone } = {}) => ctx.ui.corner({ pos, dir, tone });
 
 /**
  * A picture named in org.json: either the name of a responsive photo set in assets/photos (<name>-<w>.webp) or a path

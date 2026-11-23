@@ -59,7 +59,7 @@ export function render(ctx) {
 
   const direction = html`
 <section class="chapter about-direction" data-ground="navy" aria-labelledby="about-direction">
-  <div class="mark about-direction__mark" data-parallax aria-hidden="true">${ctx.brand.logo({ variant: 'symbol' })}</div>
+  ${ctx.ui.mark({ className: 'about-direction__mark' })}
   <div class="wrap about-direction__grid">
     <h2 id="about-direction" class="t-chapter about-direction__title" ${ctx.reveal('up')}>${t('about.direction.title')}</h2>
     <div class="stack about-direction__body" data-reveal-group>
@@ -87,16 +87,15 @@ export function render(ctx) {
         <h2 id="about-today" class="t-chapter">${t('about.today.title')}</h2>
         <p class="t-lead">${t('about.today.lead')}</p>
       </div>
-      <ul class="rows about-rows" role="list" data-reveal-group>
-        ${ctx.list('about.today.items').map((it) => {
-          const href = pageHref(ctx, it.page, 'calendar');
-          return html`<li data-reveal="up">
-          ${href
-            ? html`<a class="row" href="${href}"><span class="row__text"><span class="row__title">${it.title}</span><span class="row__body">${it.body}</span></span><span class="row__go"><span class="about-row__cta">${it.cta}</span>${ctx.brand.tri()}</span></a>`
-            : html`<div class="row"><span class="row__text"><span class="row__title">${it.title}</span><span class="row__body">${it.body}</span></span></div>`}
-        </li>`;
-        })}
-      </ul>
+      ${ctx.ui.rows(
+        ctx.list('about.today.items').map((it) => ({
+          title: it.title,
+          body: it.body,
+          href: pageHref(ctx, it.page, 'calendar') ?? ctx.ctaHref,
+          go: html`<span class="about-row__cta">${it.cta}</span>`,
+        })),
+        { level: 3, className: 'about-rows' },
+      )}
     </div>
     <figure class="photo r-45 about-today__photo" ${ctx.reveal('fade')}>${ctx.img('training', { sizes: '(min-width: 64rem) 35vw, 100vw' })}</figure>
   </div>

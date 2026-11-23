@@ -29,12 +29,12 @@ export function render(ctx) {
     },
     {
       id: 'features',
-      body: html`<ul class="tri-list a11y-list" role="list">${ctx.list('accessibility.features.items').map((x) => html`<li>${ctx.brand.tri()}<span>${x}</span></li>`)}</ul>`,
+      body: ctx.ui.triList(ctx.list('accessibility.features.items'), { className: 'a11y-list' }),
     },
     { id: 'testing', body: html`<p>${t('accessibility.testing.body')}</p>` },
     {
       id: 'limits',
-      body: html`<ul class="tri-list a11y-list" role="list">${ctx.list('accessibility.limits.items').map((x) => html`<li>${ctx.brand.tri()}<span>${x}</span></li>`)}</ul>`,
+      body: ctx.ui.triList(ctx.list('accessibility.limits.items'), { className: 'a11y-list' }),
     },
     ctx.has(a.venues) || ctx.preview
       ? { id: 'venues', body: ctx.slot(a.venues, t('accessibility.slots.venues'), (v) => String(ctx.l(v)).split(/\n+/).map((p) => html`<p>${p}</p>`)) }
@@ -55,7 +55,7 @@ export function render(ctx) {
           </div>`,
         )}
         <h3 class="t-small a11y-tips__title">${t('accessibility.contact.tipsTitle')}</h3>
-        <ul class="tri-list a11y-list a11y-list--plain" role="list">${ctx.list('accessibility.contact.tips').map((x) => html`<li>${ctx.brand.tri()}<span>${x}</span></li>`)}</ul>
+        ${ctx.ui.triList(ctx.list('accessibility.contact.tips'), { className: 'a11y-list' })}
         <div class="cluster a11y-actions">
           ${waAction(ctx, { label: t('accessibility.contact.whatsapp') })}
           ${action(ctx, { href: pageHref(ctx, 'contact'), label: t('accessibility.contact.contactPage'), className: 'link' })}

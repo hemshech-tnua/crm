@@ -24,9 +24,7 @@ export function render(ctx) {
     </div>
     <div class="member-benefits" data-load="3">
       <h2 class="member-benefits__title">${t('membership.benefits.title')}</h2>
-      <ul class="tri-list member-benefits__list" role="list">
-        ${ctx.list('membership.benefits.items').map((b) => html`<li>${ctx.brand.tri()}<span>${b}</span></li>`)}
-      </ul>
+      ${ctx.ui.triList(ctx.list('membership.benefits.items'), { className: 'member-benefits__list' })}
       ${ctx.slot(
         org.membershipFee,
         t('membership.slots.fee'),
@@ -40,13 +38,7 @@ export function render(ctx) {
   <div class="wrap member-how__grid">
     <div class="member-how__text">
       <h2 id="member-how" class="t-chapter" ${ctx.reveal('up')}>${t('membership.how.title')}</h2>
-      <div class="timeline member-steps">
-        <ol class="timeline__list" role="list" data-reveal-group>
-          ${ctx.list('membership.how.steps').map(
-            (s) => html`<li class="timeline__step" data-reveal="up"><h3 class="timeline__title">${s.title}</h3><p class="timeline__body quiet">${s.body}</p></li>`,
-          )}
-        </ol>
-      </div>
+      ${ctx.ui.timeline(ctx.list('membership.how.steps'), { className: 'member-steps' })}
       <div class="member-how__action" ${ctx.reveal('up')}>
         ${join()}
         <p class="t-small quiet">${t('membership.how.privacy')}</p>
