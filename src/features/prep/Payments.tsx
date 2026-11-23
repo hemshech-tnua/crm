@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { todayIl } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
+import { DISMISS } from '@/lib/labels';
 import type { EventPayment } from '@/lib/types';
 import { Badge, Button, Checkbox, EmptyState, ErrorBox, IconButton, Input, Panel, Skeleton, Td, Th, Textarea, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
@@ -147,15 +148,19 @@ function PaymentDialog({ payment, eventId, hints = [], onClose }: { payment: Eve
   const confirm = useConfirm();
   const suppliers = useSuppliers();
   const listId = useId();
-  const [f, setF] = useState({
+  const [initial] = useState(() => ({
     supplier: payment?.supplier ?? '',
     description: payment?.description ?? '',
     amount: payment?.amount != null ? String(Number(payment.amount)) : '',
     invoice_received: payment?.invoice_received ?? false,
     paid_on: payment?.paid_on ?? '',
     notes: payment?.notes ?? '',
-    addToBook: false,
-  });
+    addToBook: false
+  }));
+  const [f, setF] = useState(initial);
+  // a form dialog with typed changes ignores a tap outside, and asks before Escape or × close it
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -210,7 +215,7 @@ function PaymentDialog({ payment, eventId, hints = [], onClose }: { payment: Eve
     const amount = parseAmount(f.amount);
     const next = {
       supplier: f.supplier.trim().length < 2 ? 'צריך לכתוב למי משלמים.' : f.supplier.trim().length > 80 ? 'עד 80 תווים.' : null,
-      amount: amount != null && (Number.isNaN(amount) || amount < 0 || amount > 1_000_000) ? 'סכום לא תקין.' : null,
+      amount: amount != null && (Number.isNaN(amount) || amount < 0 || amount > 1_000_000) ? 'צריך סכום חיובי, למשל 450.' : null,
       description: f.description.length > 160 ? 'עד 160 תווים.' : null,
     };
     setErrors(next);
@@ -226,10 +231,11 @@ function PaymentDialog({ payment, eventId, hints = [], onClose }: { payment: Eve
     <Dialog
       open
       onClose={onClose}
+      dismissible={!dirty}
       title={payment ? 'עריכת תשלום' : 'תשלום חדש'}
       footer={<>
         <Button busy={save.isPending} onClick={submit}>{payment ? 'שמירה' : 'הוספה'}</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
         {payment && <Button variant="danger" className="ms-auto" busy={remove.isPending} onClick={del}>מחיקה</Button>}
       </>}
     >
@@ -263,7 +269,7 @@ function PaymentDialog({ payment, eventId, hints = [], onClose }: { payment: Eve
         )}
         <datalist id={listId}>{active.map((s) => <option key={s.id} value={s.name}>{s.what ?? ''}</option>)}</datalist>
         {isNew && <Checkbox label="להוסיף לספר הספקים" hint="כדי לבחור אותו בפעם הבאה בלי להקליד" checked={f.addToBook} onChange={(v) => set('addToBook', v)} />}
-        <Input label="עבור מה" value={f.description} onChange={(e) => set('description', e.target.value)} error={errors.description} maxLength={160} placeholder="למשל: ארוחת בוקר ל-30" />
+        <Input label="עבור מה" value={f.description} onChange={(e) => set('description', e.target.value)} error={errors.description} maxLength={160} placeholder="למשל: ארוחת בוקר ל־30" />
         <Input label="סכום (₪)" inputMode="decimal" value={f.amount} onChange={(e) => set('amount', e.target.value)} error={errors.amount} ltr className="num" />
         <Checkbox label="חשבונית התקבלה" checked={f.invoice_received} onChange={(v) => set('invoice_received', v)} />
         <div className="flex flex-wrap items-end gap-2">

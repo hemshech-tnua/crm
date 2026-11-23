@@ -42,7 +42,7 @@ export const roleLabel = (type: EventType | null | undefined, role: VolunteerRol
   (type && SLOTS[type].find((s) => s.role === role)?.label) || ROLE_LABEL[role];
 
 export const STATUS_LABEL: Record<ShiftStatus, string> = {
-  invited: 'בהמתנה',
+  invited: 'מחכה לתשובה',
   confirmed: 'הגעה אושרה',
   declined: 'לא מסתדר',
   cancelled: 'בוטל',
@@ -145,7 +145,7 @@ export function linkMessage(name: string, shifts: Shift[], url: string): string 
     open.length ? 'נשמח מאוד לעזרתך במפגשים האלה:' : 'תודה שהצטרפת לצוות המתנדבים שלנו!',
     ...lines,
     '',
-    open.length ? 'בקישור האישי שלך אפשר לאשר הגעה, או לעדכן אם לא מסתדר:' : 'בקישור האישי שלך יופיעו המפגשים שנבקש בהם עזרה:',
+    open.length ? 'בקישור האישי שלך אפשר לאשר הגעה או לעדכן שלא מסתדר:' : 'בקישור האישי שלך יופיעו המפגשים שנבקש בהם עזרה:',
     url,
     '',
     'תודה!',

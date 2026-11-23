@@ -5,7 +5,9 @@ import { supabase } from '@/lib/supabase';
 import { useSources } from '@/lib/data';
 import { fmtDayLong, fmtTime, todayIl } from '@/lib/dates';
 import { errorCode, errorMessage, must } from '@/lib/errors';
-import { normalizePhone } from '@/lib/phone';
+import { PHONE_EXAMPLE, normalizePhone } from '@/lib/phone';
+import { DISMISS_UNSAVED } from '@/lib/labels';
+import { useUnsavedGuard } from '@/lib/unsaved';
 import { Button, ButtonLink, Checkbox, Input, Notice, PageHeader, Panel, Select, Spinner, Textarea } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
@@ -43,6 +45,7 @@ export function ParticipantNewPage() {
       event: fromEvent,
     };
   });
+  const [initialF] = useState(f);
   const [referrer, setReferrer] = useState<PickedParticipant | null>(null);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -117,9 +120,10 @@ export function ParticipantNewPage() {
       }
       const name = f.full_name.trim();
       const toCard = { label: 'לכרטיס', run: () => navigate(`/app/participants/${id}`) };
+      guard.release();
       if (regError) toast.error(`הכרטיס נוצר, אבל ההרשמה למפגש לא הצליחה: ${errorMessage(regError)}`);
       else if (reg?.status === 'waitlisted') toast.success(`הכרטיס של ${name} נוצר. המפגש מלא: ההרשמה ברשימת ההמתנה`, fromEvent ? toCard : undefined);
-      else if (reg) toast.success(`הכרטיס של ${name} נוצר ונרשם למפגש`, fromEvent ? toCard : undefined);
+      else if (reg) toast.success(`הכרטיס של ${name} נוצר, וההרשמה למפגש נשמרה`, fromEvent ? toCard : undefined);
       else toast.success(`הכרטיס של ${name} נוצר`);
       // came from a meeting's registrations: back there, where the work continues
       if (fromEvent && f.event === fromEvent && !regError) navigate(`/app/events/${fromEvent}?tab=registrations`, { replace: true });
@@ -131,7 +135,10 @@ export function ParticipantNewPage() {
         dup.refetch();
       } else setFormError(errorMessage(e));
     },
-  });
+  });  // typed details are not lost by a stray tap on the tab bar or Back: the app asks first
+  const dirty = JSON.stringify(f) !== JSON.stringify(initialF) || !!referrer;
+  const guard = useUnsavedGuard(dirty && !create.isPending);
+
 
   const submit = () => {
     const a = f.age.trim();
@@ -139,7 +146,7 @@ export function ParticipantNewPage() {
       full_name: nameError(f.full_name),
       phone: phoneError(f.phone),
       city: cityError(f.city),
-      age: a && !(/^\d{1,2}$/.test(a) && Number(a) >= 16 && Number(a) <= 99) ? 'גיל בין 16 ל-99.' : null,
+      age: a && !(/^\d{1,2}$/.test(a) && Number(a) >= 16 && Number(a) <= 99) ? 'הגיל צריך להיות בין 16 ל־99. אפשר גם להשאיר ריק.' : null,
       birth_date: birthDateError(f.birth_date),
     };
     setErrors(next);
@@ -159,7 +166,7 @@ export function ParticipantNewPage() {
         <Panel title="פרטים בסיסיים">
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="שם מלא" required value={f.full_name} onChange={(e) => set('full_name', e.target.value)} error={errors.full_name} maxLength={80} autoComplete="off" autoFocus />
-            <Input label="טלפון" required ltr type="tel" inputMode="tel" hint="למשל 050-1234567" value={f.phone} onChange={(e) => set('phone', e.target.value)} error={errors.phone} autoComplete="off" />
+            <Input label="טלפון" required ltr type="tel" inputMode="tel" hint={`למשל ${PHONE_EXAMPLE}`} value={f.phone} onChange={(e) => set('phone', e.target.value)} error={errors.phone} autoComplete="off" />
           </div>
 
           <div aria-live="polite" className="mt-3 flex flex-col gap-3 empty:hidden">
@@ -180,7 +187,7 @@ export function ParticipantNewPage() {
                   {similar.map((s) => (
                     <li key={s.id}>
                       <a href={`#/app/participants/${s.id}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-tide hover:underline">{s.full_name}</a>
-                      <span className="text-ink-soft">{s.city ? ` · ${s.city}` : ''}{s.phone_last4 ? ' · טלפון שמסתיים ב-' : ''}</span>
+                      <span className="text-ink-soft">{s.city ? ` · ${s.city}` : ''}{s.phone_last4 ? ' · טלפון שמסתיים ב־' : ''}</span>
                       {s.phone_last4 && <span className="num">{s.phone_last4}</span>}
                     </li>
                   ))}
@@ -207,7 +214,7 @@ export function ParticipantNewPage() {
             {source?.asks_detail && <Input label="פירוט" value={f.source_detail} onChange={(e) => set('source_detail', e.target.value)} maxLength={120} />}
             {source?.is_friend && (
               <div className="flex flex-col gap-3 rounded-[var(--radius-control)] bg-mist p-3.5">
-                <p className="text-small font-semibold">מי הביא?</p>
+                <p className="text-small font-semibold">מי הזמין?</p>
                 {referrer ? (
                   <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-paper px-3.5 py-2.5">
                     <span className="font-semibold">{referrer.full_name}</span>
@@ -254,7 +261,7 @@ export function ParticipantNewPage() {
         {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" size="lg" icon="userPlus" busy={create.isPending} disabled={!!byPhone}>{chosenEvent ? 'יצירת הכרטיס והרשמה למפגש' : 'יצירת הכרטיס'}</Button>
-          <ButtonLink to={fromEvent ? `/app/events/${fromEvent}?tab=registrations` : '/app/participants'} variant="ghost" size="lg">חזרה בלי שמירה</ButtonLink>
+          <ButtonLink to={fromEvent ? `/app/events/${fromEvent}?tab=registrations` : '/app/participants'} variant="ghost" size="lg">{DISMISS_UNSAVED}</ButtonLink>
         </div>
       </form>
     </div>

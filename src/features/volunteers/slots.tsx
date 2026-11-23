@@ -62,10 +62,10 @@ export function MeetingState({ slots, event }: { slots: Slot[]; event?: Pick<Pla
   const missing = slots.reduce((n, s) => n + s.missing, 0);
   const waiting = slots.reduce((n, s) => n + s.filled - s.confirmed, 0);
   if (missing) {
-    const text = missing === 1 ? 'חסר 1' : <>חסרים <span className="num">{missing}</span></>;
+    const text = missing === 1 ? 'חסר אחד' : <>חסרים <span className="num">{missing}</span></>;
     return event && !isSoon(event) ? <Badge>{text}</Badge> : <Badge tone="warn" icon="alert">{text}</Badge>;
   }
-  if (waiting) return <Badge tone="tide" icon="clock">{waiting === 1 ? 'תשובה 1 חסרה' : <><span className="num">{waiting}</span> מחכים לתשובה</>}</Badge>;
+  if (waiting) return <Badge tone="tide" icon="clock">{waiting === 1 ? 'מחכה לתשובה אחת' : <><span className="num">{waiting}</span> מחכים לתשובה</>}</Badge>;
   return <Badge tone="good" icon="check">הכול סגור</Badge>;
 }
 
@@ -89,14 +89,14 @@ export function gridRoles(shifts: Shift[]): VolunteerRole[] {
 export function PlannerTable({ events, shiftsByEvent, roles }: { events: PlanEvent[]; shiftsByEvent: Map<string, Shift[]>; roles: VolunteerRole[] }) {
   let month = '';
   return (
-    <div className="hidden overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
+    <div className="relative hidden overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
       <table className="w-full border-collapse text-body" aria-label="שיבוץ מתנדבים למפגשים הקרובים">
         <thead>
           <tr>
             <Th className="w-24">תאריך</Th>
             <Th>מפגש</Th>
             {roles.map((r) => <Th key={r} className="min-w-36">{ROLE_LABEL[r]}</Th>)}
-            <Th className="w-32">מצב</Th>
+            <Th className="w-32">סטטוס</Th>
           </tr>
         </thead>
         <tbody>
@@ -157,7 +157,7 @@ export function MeetingCard({ event, shifts, showLink = true, className = '' }: 
         <header className="flex items-stretch border-b border-edge">
           <div className="flex w-16 shrink-0 flex-col items-center justify-center border-e border-edge bg-sky px-1 py-2 text-center text-ink">
             <span className="text-micro font-semibold">{shortDay(event.starts_at)}</span>
-            <span className="num font-display text-[1.75rem] leading-none">{dayNum.format(start)}</span>
+            <span className="num font-display text-title-sm leading-none">{dayNum.format(start)}</span>
             <span className="text-micro font-semibold">{monthShort.format(start)}</span>
           </div>
           <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2 px-3 py-2.5">

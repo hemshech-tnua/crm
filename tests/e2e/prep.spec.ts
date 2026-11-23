@@ -73,7 +73,7 @@ test('a coordinator prepares a Friday meeting: checklist, equipment, payment, th
   await expect(page.getByRole('group', { name: 'של מי המשימות' }).getByRole('button', { name: 'שלי' })).toHaveAttribute('aria-pressed', 'true');
   const today = todayIl();
   if (next!.due_date < today) {
-    await expect(page.getByText('נשאר פתוח מלפני')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^מהימים הקודמים/ })).toBeVisible();
   } else {
     const weeks = Math.round((new Date(weekStartOf(next!.due_date)).getTime() - new Date(weekStartOf(today)).getTime()) / (7 * 864e5));
     for (let i = 0; i < weeks; i++) await page.getByRole('button', { name: 'השבוע הבא' }).click();

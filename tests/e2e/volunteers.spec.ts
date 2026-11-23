@@ -46,7 +46,7 @@ test('a coordinator books a volunteer ahead, the volunteer confirms from the per
   await more.getByRole('button', { name: 'סיום', exact: true }).click();
   await expect(more).toBeHidden();
   const slot = page.getByRole('button', { name: new RegExp(`${full} · קבלת פנים ב${title}`) });
-  await expect(slot).toContainText('בהמתנה');
+  await expect(slot).toContainText('מחכה לתשובה');
 
   // 3. the personal link, from the "waiting for an answer" list, ready for WhatsApp
   await page.getByRole('button', { name: new RegExp(`^${full} \\d+: שליחת קישור אישי$`) }).click();

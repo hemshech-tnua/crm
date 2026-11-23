@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { errorMessage } from '@/lib/errors';
+import { DISMISS } from '@/lib/labels';
 import type { EventType, PrepCategory, PrepKind, PrepTemplate } from '@/lib/types';
-import { Badge, Button, EmptyState, ErrorBox, IconButton, Input, Notice, Panel, Segmented, Select, Skeleton, Textarea, cx } from '@/ui/kit';
+import { Button, EmptyState, ErrorBox, IconButton, Input, Notice, Panel, Segmented, Select, Skeleton, Textarea, cx } from '@/ui/kit';
 import { Dialog, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { CATEGORY_LABEL, PREP_TYPE_LABEL, WEEKDAY_LETTER, WEEKDAY_NAME, fmtHours, hhmm, usePrepTemplates, weekLabel, whenText } from './shared';
@@ -17,8 +18,8 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} title={on ? 'פעיל' : 'כבוי'} onClick={() => onChange(!on)}
       className="inline-flex h-11 shrink-0 items-center gap-2 px-1 text-small focus-visible:outline-3 focus-visible:outline-ink">
-      <span className={cx('relative h-6 w-10 rounded-[3px] border-2 transition-colors', on ? 'border-ink bg-ink' : 'border-control-line bg-paper')}>
-        <span className={cx('absolute top-0.5 h-4 w-4 rounded-[2px] transition-all', on ? 'start-[18px] bg-light' : 'start-0.5 bg-control-line')} />
+      <span className={cx('relative h-6 w-10 rounded-[var(--radius-control)] border-2 transition-colors', on ? 'border-ink bg-ink' : 'border-control-line bg-paper')}>
+        <span className={cx('absolute top-0.5 h-4 w-4 rounded-tag transition-all', on ? 'start-[18px] bg-light' : 'start-0.5 bg-control-line')} />
       </span>
       <span className={cx('hidden w-8 sm:inline', on ? 'font-semibold text-ink' : 'text-muted')}>{on ? 'פעיל' : 'כבוי'}</span>
     </button>
@@ -83,7 +84,7 @@ export function TemplateView() {
         actions={<Button size="sm" variant="secondary" icon="plus" onClick={() => setEditing({ kind })}>{kind === 'task' ? 'משימה חדשה' : 'פריט ציוד חדש'}</Button>}
         padded={false}
       >
-        {!list.length ? <EmptyState icon="task" title="אין כאן עדיין פריטים" /> : (
+        {!list.length ? <EmptyState icon="task" title="אין כאן עוד פריטים" /> : (
           <ol className="divide-y divide-edge" aria-label={kind === 'task' ? 'משימות בתבנית' : 'ציוד בתבנית'}>
             {list.map((t, i) => (
               <li key={t.id} className={cx('flex items-start gap-2 px-3 py-2 sm:items-center sm:px-4', !t.is_active && 'bg-mist/40')}>
@@ -97,8 +98,8 @@ export function TemplateView() {
                     {kind === 'task' && <span className="font-semibold text-ink-soft">{whenText(t)}</span>}
                     {t.fixed_time && <span className="num">{hhmm(t.fixed_time)}</span>}
                     {t.hours ? <span>{fmtHours(t.hours)}</span> : null}
-                    {kind === 'task' && <Badge>{CATEGORY_LABEL[t.category]}</Badge>}
-                    {t.event_type === 'all' && <Badge tone="light">לכל סוגי המפגשים</Badge>}
+                    {kind === 'task' && <span>{CATEGORY_LABEL[t.category]}</span>}
+                    {t.event_type === 'all' && <span>לכל סוגי המפגשים</span>}
                   </p>
                   {t.notes && <p className="mt-0.5 text-small text-ink-soft">{t.notes}</p>}
                 </div>
@@ -120,7 +121,7 @@ export function TemplateView() {
       <Notice icon="task">
         שינוי בתבנית חל על מפגשים חדשים. מפגש שכבר קיים מקבל משימות שנוספו בכפתור "הוספה מהתבנית" בלשונית ההכנות שלו.
       </Notice>
-      {q.isError ? <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /> : q.isLoading ? <Panel><Skeleton lines={8} /></Panel> : (
+      {q.isError ? <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /> : q.isLoading ? <Skeleton shape="rows" count={8} height={64} /> : (
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           {section('task')}
           {section('equipment')}
@@ -142,7 +143,7 @@ function TemplateDialog({ template, defaults, onClose }: {
 }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState({
+  const [initial] = useState(() => ({
     title: template?.title ?? '',
     kind: template?.kind ?? defaults.kind,
     event_type: template?.event_type ?? (defaults.kind === 'equipment' ? 'all' : defaults.event_type),
@@ -155,8 +156,12 @@ function TemplateDialog({ template, defaults, onClose }: {
     hours: template?.hours != null ? String(Number(template.hours)) : '',
     notes: template?.notes ?? '',
     sort_order: String(template?.sort_order ?? defaults.sort_order),
-    is_active: template?.is_active ?? true,
-  });
+    is_active: template?.is_active ?? true
+  }));
+  const [f, setF] = useState(initial);
+  // a form dialog with typed changes ignores a tap outside, and asks before Escape or × close it
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -194,9 +199,9 @@ function TemplateDialog({ template, defaults, onClose }: {
     const h = f.hours.trim() ? Number(f.hours) : null;
     const next = {
       title: f.title.trim().length < 2 ? 'צריך לכתוב מה המשימה.' : f.title.trim().length > 120 ? 'עד 120 תווים.' : null,
-      hours: h != null && (Number.isNaN(h) || h < 0 || h > 24) ? 'מספר שעות בין 0 ל-24 (למשל 0.5).' : null,
-      day_offset: f.mode === 'day' && (!Number.isInteger(dayN) || dayN < -60 || dayN > 30) ? 'מספר ימים בין 60- ל-30.' : null,
-      sort_order: !Number.isInteger(Number(f.sort_order)) ? 'מספר שלם.' : null,
+      hours: h != null && (Number.isNaN(h) || h < 0 || h > 24) ? 'מספר שעות בין 0 ל־24 (למשל 0.5).' : null,
+      day_offset: f.mode === 'day' && (!Number.isInteger(dayN) || dayN < -60 || dayN > 30) ? 'צריך מספר ימים בין ‎-60 (לפני המפגש) ל־30 (אחריו).' : null,
+      sort_order: !Number.isInteger(Number(f.sort_order)) ? 'צריך מספר שלם.' : null,
     };
     setErrors(next);
     setFormError(null);
@@ -208,10 +213,11 @@ function TemplateDialog({ template, defaults, onClose }: {
     <Dialog
       open
       onClose={onClose}
+      dismissible={!dirty}
       title={template ? 'עריכה בתבנית' : f.kind === 'task' ? 'משימה חדשה בתבנית' : 'פריט ציוד חדש בתבנית'}
       footer={<>
         <Button busy={save.isPending} onClick={submit}>שמירה</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </>}
     >
       <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>

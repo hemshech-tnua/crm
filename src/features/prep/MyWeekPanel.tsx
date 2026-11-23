@@ -18,7 +18,7 @@ const byTime = (a: TaskWithEvent, b: TaskWithEvent) =>
 export function MyWeekPanel({ className = '' }: { className?: string }) {
   const today = todayIl();
   const [, , myId] = useWho();
-  const ahead = useTasksBetween(today, addDays(today, 6));
+  const ahead = useTasksBetween(today, addDays(today, 6), { openOnly: true });
   const overdue = useOverdueTasks();
   const loading = ahead.isLoading || overdue.isLoading;
   const error = ahead.error ?? overdue.error;
@@ -37,7 +37,7 @@ export function MyWeekPanel({ className = '' }: { className?: string }) {
       padded={false}
       actions={<Link to="/app/prep" className="-my-2 inline-flex min-h-11 items-center text-small font-semibold text-tide hover:underline">לכל ההכנות</Link>}
     >
-      {error ? <div className="p-4"><ErrorBox error={errorMessage(error)} /></div> : loading ? <div className="p-4"><Skeleton lines={3} /></div> : !list.length && !late ? (
+      {error ? <div className="p-4"><ErrorBox error={errorMessage(error)} /></div> : loading ? <div className="px-4 py-3 sm:px-5"><Skeleton shape="rows" count={3} height={52} /></div> : !list.length && !late ? (
         <p className="px-4 py-3 text-small text-muted sm:px-5">אין לך משימות הכנה השבוע.</p>
       ) : (
         <>
@@ -70,7 +70,7 @@ export function MyWeekPanel({ className = '' }: { className?: string }) {
               {late > 0 && (
                 <Link to="/app/prep" className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-warn hover:underline">
                   <Icon name="alert" size={16} />
-                  <span><span className="num">{late}</span> {late === 1 ? 'משימה נשארה פתוחה' : 'משימות נשארו פתוחות'} מלפני</span>
+                  <span>{late === 1 ? 'משימה אחת נשארה פתוחה' : <><span className="num">{late}</span> משימות נשארו פתוחות</>} מהימים הקודמים</span>
                 </Link>
               )}
             </div>

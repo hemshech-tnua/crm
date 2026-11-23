@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorMessage } from '@/lib/errors';
+import { DISMISS, UNASSIGNED_LABEL } from '@/lib/labels';
 import type { EventTask } from '@/lib/types';
 import { Button, Input, Select, Textarea } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
@@ -14,14 +15,18 @@ export function TaskDialog({ task, eventId, meetingDay, onClose }: { task: Event
   const toast = useToast();
   const confirm = useConfirm();
   const { list: staff } = useAssignees();
-  const [f, setF] = useState({
+  const [initial] = useState(() => ({
     title: task?.title ?? '',
     due_date: task?.due_date ?? '',
     due_time: hhmm(task?.due_time),
     hours: task?.hours != null ? String(Number(task.hours)) : '',
     assignee_id: task?.assignee_id ?? '',
-    notes: task?.notes ?? '',
-  });
+    notes: task?.notes ?? ''
+  }));
+  const [f, setF] = useState(initial);
+  // a form dialog with typed changes ignores a tap outside, and asks before Escape or × close it
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -73,7 +78,7 @@ export function TaskDialog({ task, eventId, meetingDay, onClose }: { task: Event
     const h = f.hours.trim() ? Number(f.hours) : null;
     const next = {
       title: f.title.trim().length < 2 ? 'צריך לכתוב מה המשימה.' : f.title.trim().length > 120 ? 'עד 120 תווים.' : null,
-      hours: h != null && (Number.isNaN(h) || h < 0 || h > 24) ? 'מספר שעות בין 0 ל-24 (למשל 0.5).' : null,
+      hours: h != null && (Number.isNaN(h) || h < 0 || h > 24) ? 'מספר שעות בין 0 ל־24 (למשל 0.5).' : null,
       notes: f.notes.length > 500 ? 'עד 500 תווים.' : null,
     };
     setErrors(next);
@@ -90,10 +95,11 @@ export function TaskDialog({ task, eventId, meetingDay, onClose }: { task: Event
     <Dialog
       open
       onClose={onClose}
+      dismissible={!dirty}
       title={task ? 'עריכת משימה' : 'משימה חדשה למפגש'}
       footer={<>
         <Button busy={save.isPending} onClick={submit}>{task ? 'שמירה' : 'הוספה'}</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
         {task && <Button variant="danger" icon="close" className="ms-auto" busy={remove.isPending} onClick={del}>מחיקה</Button>}
       </>}
     >
@@ -112,7 +118,7 @@ export function TaskDialog({ task, eventId, meetingDay, onClose }: { task: Event
         <div className="grid grid-cols-2 gap-4">
           <Input label="הערכת זמן (שעות)" inputMode="decimal" type="number" min={0} max={24} step={0.25} value={f.hours} onChange={(e) => set('hours', e.target.value)} error={errors.hours} hint="0.25 = רבע שעה" />
           <Select label="באחריות" value={f.assignee_id} onChange={(e) => set('assignee_id', e.target.value)}>
-            <option value="">צוות הריכוז</option>
+            <option value="">{UNASSIGNED_LABEL}</option>
             {staff.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
           </Select>
         </div>

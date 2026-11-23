@@ -3,7 +3,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
-import { fmtDate, fmtListDate, fmtShortDate } from '@/lib/dates';
+import { useSettings } from '@/lib/data';
+import { countUnit, fmtDate, fmtListDate, fmtShortDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
 import { FOLLOWUP_TYPE_LABEL, UNASSIGNED_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
@@ -83,7 +84,7 @@ export function FollowUpsPage() {
           className="mb-4 flex min-h-12 w-full items-center gap-2.5 rounded-[var(--radius-control)] border-s-[3px] border-warn bg-warn-wash px-4 py-3 text-right text-body font-medium text-warn hover:underline"
         >
           <Icon name="alert" size={18} />
-          <span className="flex-1"><span className="num font-bold">{lapsed.length}</span> {lapsed.length === 1 ? 'כרטיס של הגעה קבועה שנפסקה מחכה' : 'כרטיסים של הגעה קבועה שנפסקה מחכים'} להחלטה אם לפנות</span>
+          <span className="flex-1">{lapsed.length === 1 ? 'לוחם אחד שהפסיק להגיע מחכה להחלטה אם לפנות אליו' : <><span className="num font-bold">{lapsed.length}</span> לוחמים שהפסיקו להגיע מחכים להחלטה אם לפנות אליהם</>}</span>
           <Icon name="chevron" size={18} />
         </button>
       )}
@@ -106,10 +107,10 @@ export function FollowUpsPage() {
 
       {tab === 'done' ? (
         <DoneList q={{ ...done, data: eventFilter ? done.data?.filter((t) => t.event_id === eventFilter) : done.data }} />
-      ) : open.isError ? (
+      ) : open.isError && !open.data ? (
         <ErrorBox error={errorMessage(open.error)} onRetry={() => open.refetch()} />
-      ) : open.isLoading ? (
-        <Panel><Skeleton lines={6} /></Panel>
+      ) : !open.data ? (
+        <TaskGroupsSkeleton />
       ) : (
         <TaskGroups
           tasks={tab === 'mine' ? mine : all}
@@ -242,7 +243,7 @@ function TaskGroups({ tasks, nextEvent, showAssignee, empty }: { tasks: TaskRow[
 function DueText({ date }: { date: string | null }) {
   if (!date) return <span>בלי תאריך יעד</span>;
   const d = daysUntil(date);
-  if (d < 0) return <span className="font-semibold text-bad">באיחור של {-d === 1 ? 'יום' : <><span className="num">{-d}</span> ימים</>}</span>;
+  if (d < 0) return <span className="font-semibold text-ink">באיחור של {countUnit(-d, 'day')}</span>;
   if (d === 0) return <span className="font-semibold text-ink">יעד: היום</span>;
   if (d === 1) return <span>יעד: מחר</span>;
   return <span>יעד: <span className="tabular-nums">{fmtListDate(date, { weekday: false, time: false })}</span></span>;
@@ -250,15 +251,14 @@ function DueText({ date }: { date: string | null }) {
 
 function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssignee: boolean; onAct: (k: 'done' | 'edit' | 'msg') => void }) {
   const { name } = useAssignees();
-  const late = t.due_date != null && daysUntil(t.due_date) < 0;
   const p = t.participant;
   return (
-    <li className={cx('flex flex-col gap-3 px-4 py-3.5 sm:px-5 lg:flex-row lg:items-center lg:justify-between', late && 'border-s-4 border-s-bad')}>
+    <li className="flex flex-col gap-3 px-4 py-3.5 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           {p ? <PersonLink id={p.id} name={p.full_name} className="text-heading" /> : <span className="text-muted">פרטים נמחקו</span>}
           {!taskTitle(t.title).startsWith(FOLLOWUP_TYPE_LABEL[t.type]) && (
-            <Badge tone={t.type === 'lapsed' ? 'warn' : t.type === 'no_show' ? 'neutral' : 'tide'} icon={t.type === 'lapsed' ? 'alert' : undefined}>{FOLLOWUP_TYPE_LABEL[t.type]}</Badge>
+            <Badge tone="neutral">{FOLLOWUP_TYPE_LABEL[t.type]}</Badge>
           )}
         </div>
         <p className="mt-0.5 text-body text-ink">{taskTitle(t.title)}</p>
@@ -281,7 +281,7 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
       </div>
       {/* one quiet "done" per row; the only navy button on the page is "משימה חדשה" */}
       <div className="flex shrink-0 items-center gap-1">
-        <Button size="sm" variant="secondary" icon="check" onClick={() => onAct('done')} className="me-1">בוצע</Button>
+        <Button size="sm" variant="secondary" icon="check" onClick={() => onAct('done')} className="me-1">בוצעה</Button>
         {p?.phone && (
           <>
             <IconButton icon="message" label={`וואטסאפ אל ${p.full_name ?? ''}`} onClick={() => onAct('msg')} />
@@ -297,13 +297,23 @@ function TaskItem({ task: t, showAssignee, onAct }: { task: TaskRow; showAssigne
   );
 }
 
+/** The loading shape of the open list: a group heading and its rows, at their real height (no jump when it loads). */
+function TaskGroupsSkeleton() {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="skeleton mb-1 h-5 w-24" />
+      <Skeleton shape="rows" count={5} height={132} />
+    </div>
+  );
+}
+
 // ───────────── finished ─────────────
 
 function DoneList({ q }: { q: { data?: TaskRow[]; isLoading: boolean; isError: boolean; error: unknown; refetch: () => unknown } }) {
   const { name } = useAssignees();
-  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
-  if (q.isLoading || !q.data) return <Panel><Skeleton lines={6} /></Panel>;
-  if (!q.data.length) return <Panel><EmptyState icon="task" title="עוד לא הושלמו משימות">משימה שמסמנים "בוצע" עוברת לכאן, עם מה שעלה בשיחה.</EmptyState></Panel>;
+  if (q.isError && !q.data) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
+  if (!q.data) return <Skeleton shape="rows" count={6} height={92} />;
+  if (!q.data.length) return <Panel><EmptyState icon="task" title="עוד לא הושלמו משימות">משימה שמסמנים "בוצעה" עוברת לכאן, עם מה שעלה בשיחה.</EmptyState></Panel>;
   return (
     <>
       <p className="mb-2 text-small text-muted">100 המשימות האחרונות שהושלמו או בוטלו.</p>
@@ -312,7 +322,7 @@ function DoneList({ q }: { q: { data?: TaskRow[]; isLoading: boolean; isError: b
           <li key={t.id} className="px-4 py-3 sm:px-5">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               {t.participant ? <PersonLink id={t.participant.id} name={t.participant.full_name} /> : <span className="text-muted">פרטים נמחקו</span>}
-              <Badge tone={t.status === 'done' ? 'good' : 'neutral'} icon={t.status === 'done' ? 'check' : undefined}>{t.status === 'done' ? 'בוצע' : 'בוטלה'}</Badge>
+              <Badge tone={t.status === 'done' ? 'good' : 'neutral'} icon={t.status === 'done' ? 'check' : undefined}>{t.status === 'done' ? 'בוצעה' : 'בוטלה'}</Badge>
               <span className="text-small text-muted">{FOLLOWUP_TYPE_LABEL[t.type]}</span>
             </div>
             <p className="mt-0.5 text-body">{taskTitle(t.title)}</p>
@@ -331,16 +341,18 @@ function DoneList({ q }: { q: { data?: TaskRow[]; isLoading: boolean; isError: b
 
 function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; loading: boolean; error: unknown; onRetry: () => void }) {
   const openTask = useOpenLapsedTask();
+  // the number is a setting ("כמה מפגשי שישי בלי הגעה"), so the sentence reads it instead of a fixed 3
+  const after = useSettings().data?.lapsed_after_fridays;
   return (
     <section id="lapsed" className="mt-8 scroll-mt-20">
       <Panel title="קבועים שהפסיקו להגיע" padded={false}>
         <p className="border-b border-edge px-4 py-3 text-small text-ink-soft sm:px-5">
-          היו קבועים, ומאז ההגעה האחרונה התקיימו 3 מפגשי שישי בלי שהגיעו. לפני שפונים אליהם פותחים משימה: זה האישור שמישהו מהצוות ידבר איתם.
+          היו קבועים, ומאז ההגעה האחרונה התקיימו {after ? <><span className="num">{after}</span> מפגשי שישי</> : 'כמה מפגשי שישי'} בלי שהגיעו. לפני שפונים אליהם פותחים משימה: זה האישור שמישהו מהצוות ידבר איתם.
         </p>
-        {error ? (
+        {error && !lapsed.length ? (
           <div className="p-4"><ErrorBox error={errorMessage(error)} onRetry={onRetry} /></div>
         ) : loading ? (
-          <div className="p-4"><Skeleton lines={3} /></div>
+          <div className="p-4"><Skeleton shape="rows" count={3} height={64} /></div>
         ) : !lapsed.length ? (
           <EmptyState icon="checkCircle" title="אין כרגע קבועים שמחכים להחלטה">לכל מי שהפסיק להגיע כבר יש משימה.</EmptyState>
         ) : (
@@ -350,7 +362,7 @@ function LapsedSection({ lapsed, loading, error, onRetry }: { lapsed: Lapsed[]; 
                 <div className="min-w-0">
                   <PersonLink id={l.participant_id} name={l.full_name} />
                   <p className="text-small text-muted">
-                    <span className="num">{l.friday_count}</span> מפגשי שישי · הגעה אחרונה {l.last_attended_at ? <span title={fmtDate(l.last_attended_at)}>{ago(l.last_attended_at)}</span> : '—'} · מאז התקיימו <span className="num">{l.fridays_missed}</span> מפגשים
+                    {l.friday_count === 1 ? 'מפגש שישי אחד' : <><span className="num">{l.friday_count}</span> מפגשי שישי</>} · הגעה אחרונה {l.last_attended_at ? <span title={fmtDate(l.last_attended_at)}>{ago(l.last_attended_at)}</span> : '—'} · מאז התקיימו <span className="num">{l.fridays_missed}</span> מפגשים
                   </p>
                 </div>
                 <Button

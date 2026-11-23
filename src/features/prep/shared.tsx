@@ -11,9 +11,12 @@ import { Icon } from '@/ui/Icon';
 import { cx } from '@/ui/kit';
 
 export const TASK_COLS = 'id,event_id,template_id,kind,category,title,due_date,due_time,due_manual,hours,assignee_id,notes,sort_order,done_at,done_by,dismissed,created_at';
+/** What a task line across meetings needs ("השבוע שלי", the dashboard): no template, category or audit columns. */
+const LIST_COLS = 'id,event_id,title,due_date,due_time,hours,assignee_id,notes,sort_order,done_at';
+export type ListTask = Pick<EventTask, 'id' | 'event_id' | 'title' | 'due_date' | 'due_time' | 'hours' | 'assignee_id' | 'notes' | 'sort_order' | 'done_at'>;
 export type TaskEvent = Pick<EventRow, 'id' | 'title' | 'starts_at' | 'type' | 'status'>;
-export type TaskWithEvent = EventTask & { event: TaskEvent };
-const WITH_EVENT = `${TASK_COLS},event:events!inner(id,title,starts_at,type,status)`;
+export type TaskWithEvent = ListTask & { event: TaskEvent };
+const WITH_EVENT = `${LIST_COLS},event:events!inner(id,title,starts_at,type,status)`;
 
 // ───────────── labels ─────────────
 
@@ -86,16 +89,27 @@ export const useEventTasks = (eventId: string) =>
     queryFn: async () => must(await supabase.from('event_tasks').select(TASK_COLS).eq('event_id', eventId).order('sort_order')) as EventTask[],
   });
 
-/** Tasks due in [from, to] across all meetings that are not cancelled (equipment is packed with its task). */
-export const useTasksBetween = (from: string, to: string) =>
+/**
+ * Tasks due in [from, to] across all meetings that are not cancelled (equipment is packed with its task).
+ * `openOnly` (the dashboard, which shows only what is left to do) skips the ticked ones: a busy week is mostly ticked
+ * tasks, and the dashboard does not need them. Its own key, so the two shapes never share a cache entry.
+ */
+export const useTasksBetween = (from: string, to: string, { openOnly = false }: { openOnly?: boolean } = {}) =>
   useQuery({
-    queryKey: ['event_tasks', 'range', from, to],
-    queryFn: async () => must(await supabase.from('event_tasks').select(WITH_EVENT).eq('kind', 'task').eq('dismissed', false)
-      .gte('due_date', from).lte('due_date', to).neq('event.status', 'cancelled')
-      .order('due_date').order('sort_order').limit(3000)) as unknown as TaskWithEvent[],
+    queryKey: ['event_tasks', openOnly ? 'range-open' : 'range', from, to],
+    queryFn: async () => {
+      let q = supabase.from('event_tasks').select(WITH_EVENT).eq('kind', 'task').eq('dismissed', false)
+        .gte('due_date', from).lte('due_date', to).neq('event.status', 'cancelled');
+      if (openOnly) q = q.is('done_at', null);
+      return must(await q.order('due_date').order('sort_order').limit(3000)) as unknown as TaskWithEvent[];
+    },
   });
 
-/** How far back "left open from before" looks: older loose ends belong to meetings long gone. */
+/**
+ * "מהימים הקודמים": tasks left undone before today, newest first (yesterday's loose end matters more than last
+ * month's, and the newest are the ones kept if the list is ever cut). It looks back OVERDUE_DAYS: older loose ends
+ * belong to meetings long gone. Undone tasks inside that window always come back, however old the week they were in.
+ */
 export const OVERDUE_DAYS = 60;
 export const useOverdueTasks = () => {
   const today = todayIl();
@@ -103,7 +117,7 @@ export const useOverdueTasks = () => {
     queryKey: ['event_tasks', 'overdue', today],
     queryFn: async () => must(await supabase.from('event_tasks').select(WITH_EVENT).eq('kind', 'task').eq('dismissed', false).is('done_at', null)
       .lt('due_date', today).gte('due_date', addDays(today, -OVERDUE_DAYS)).neq('event.status', 'cancelled')
-      .order('due_date').order('sort_order').limit(200)) as unknown as TaskWithEvent[],
+      .order('due_date', { ascending: false }).order('sort_order').limit(200)) as unknown as TaskWithEvent[],
   });
 };
 
@@ -257,7 +271,7 @@ export function TickBox({ checked, onChange, label, size = 'md' }: { checked: bo
 export function Progress({ value, label, className = '' }: { value: number; label: string; className?: string }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
   return (
-    <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className={cx('h-2 w-full overflow-hidden rounded-[2px] bg-ink/10', className)}>
+    <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className={cx('h-2 w-full overflow-hidden rounded-tag bg-ink/10', className)}>
       <div className="h-full bg-ink transition-[width] duration-300" style={{ width: `${pct}%` }} />
     </div>
   );

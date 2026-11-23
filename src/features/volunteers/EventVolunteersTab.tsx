@@ -16,7 +16,7 @@ export function EventVolunteersTab({ event }: { event: EventWithStats }) {
   if (failed) {
     return <ErrorBox error={errorMessage(failed)} onRetry={() => { void volunteers.refetch(); void events.refetch(); void all.refetch(); void here.refetch(); }} />;
   }
-  if (!volunteers.data || !events.data || !all.data || !here.data) return <Panel><Skeleton lines={5} /></Panel>;
+  if (!volunteers.data || !events.data || !all.data || !here.data) return <Skeleton shape="block" height={260} />;
 
   const e: PlanEvent = { id: event.id, title: event.title, type: event.type, starts_at: event.starts_at, ends_at: event.ends_at, location: event.location, status: event.status };
   // this meeting's shifts may be older than the planner's window: keep them in the shared list the dialogs read

@@ -108,7 +108,7 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
     return (
       <Link to={`/app/events/${s.event_id}?tab=volunteers`} className="hover:underline">
         <span className="num">{dayAndDate(s.event.starts_at)}</span> · {roleLabel(s.event.type, s.role)}
-        {s.status === 'invited' && <span className="text-muted"> (בהמתנה)</span>}
+        {s.status === 'invited' && <span className="text-muted"> (מחכה לתשובה)</span>}
       </Link>
     );
   };
@@ -119,14 +119,14 @@ export function PoolTab({ onEdit }: { onEdit: (v: Volunteer | 'new') => void }) 
 
   const list = (rs: Row[]) => (
     <>
-      <div className="hidden overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
+      <div className="relative hidden overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
         <table className="w-full border-collapse text-body" aria-label="רשימת המתנדבים">
           <thead>
             <tr>
               <Th>שם</Th>
               <Th>טלפון</Th>
               <Th>תפקידים מועדפים</Th>
-              <Th numeric><span title="מפגשים קרובים עם שיבוץ (בהמתנה או הגעה אושרה)">שיבוצים</span></Th>
+              <Th numeric><span title="מפגשים קרובים עם שיבוץ (מחכה לתשובה או הגעה אושרה)">שיבוצים</span></Th>
               <Th>המפגש הבא</Th>
               <Th numeric><span title="מפגשים בשנה האחרונה עם אישור הגעה">בשנה האחרונה</span></Th>
               <Th><span className="sr-only">פעולות</span></Th>

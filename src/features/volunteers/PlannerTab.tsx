@@ -17,7 +17,7 @@ function TallyStat({ label, t, highlight }: { label: string; t: Tally; highlight
         <span className="flex flex-wrap gap-x-3">
           <span>משובצים</span>
           <span><span className="num font-semibold text-ink">{t.confirmed}</span> אישרו</span>
-          <span className={t.missing ? 'font-semibold text-warn' : ''}><span className="num">{t.missing}</span> חסרים</span>
+          <span className={t.missing ? 'font-semibold text-ink' : ''}>{t.missing === 1 ? 'חסר אחד' : <><span className="num">{t.missing}</span> חסרים</>}</span>
         </span>
       }
     />
@@ -84,7 +84,7 @@ export function PlannerTab() {
 
       {shown.length === 0 ? (
         <Panel>
-          <EmptyState icon="checkCircle" title={filter === 'missing' ? 'אין חורים. כל המקומות משובצים' : 'אין מי שמחכים לתשובה ממנו'} />
+          <EmptyState icon="checkCircle" title={filter === 'missing' ? 'כל המקומות משובצים' : 'אף אחד לא מחכה לתשובה'} />
         </Panel>
       ) : (
         <>

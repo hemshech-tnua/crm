@@ -25,7 +25,7 @@ export type PresenterStats = {
 };
 type Booking = { id: string; title: string; starts_at: string; status: string; speaker_id: string | null; instructor_id: string | null; lecture_topic: string | null; activity_name: string | null };
 
-const KIND_LABEL: Record<Speaker['kind'], string> = { speaker: 'מרצה', instructor: 'הדרכה' };
+const KIND_LABEL: Record<Speaker['kind'], string> = { speaker: 'מרצה', instructor: 'מדריך' };
 const STATUS: Record<Speaker['status'], { label: string; tone: 'good' | 'warn' | 'neutral' | 'bad' }> = {
   approved: { label: 'מאושר', tone: 'good' },
   proposed: { label: 'מחכה לאישור', tone: 'warn' },
@@ -98,10 +98,10 @@ export function SpeakersPage() {
         </div>
       )}
 
-      {speakers.isError ? (
+      {speakers.isError && !speakers.data ? (
         <ErrorBox error={errorMessage(speakers.error)} onRetry={() => speakers.refetch()} />
-      ) : speakers.isLoading ? (
-        <Panel><Skeleton lines={6} /></Panel>
+      ) : !speakers.data ? (
+        <Skeleton shape="rows" count={5} height={104} />
       ) : tab === 'proposed' ? (
         <div className="flex flex-col gap-4">
           <ProposeLink />
@@ -193,8 +193,8 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
   const ranked = (q.data ?? []).filter((r) => r.kind === kind && r.events > 0)
     .sort((a, b) => (Number(b.avg_attendance) || 0) - (Number(a.avg_attendance) || 0));
   const rows = all ? ranked : ranked.slice(0, TOP);
-  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
-  if (q.isLoading) return <Panel><Skeleton lines={3} /></Panel>;
+  if (q.isError && !q.data) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
+  if (q.isLoading) return <Skeleton shape="block" height={260} />;
   if (!rows.length) return null;
   return (
     <Panel title={kind === 'speaker' ? 'אילו מרצים ונושאים מביאים הכי הרבה לוחמים' : 'אילו מדריכים מביאים הכי הרבה לוחמים'} padded={false}>
@@ -243,7 +243,7 @@ function Ranking({ kind, q }: { kind: Speaker['kind']; q: { data?: PresenterStat
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-edge px-4 py-2 sm:px-5">
         <p className="text-small text-muted">לפי המפגשים שכבר התקיימו. ממוצע הגעה = סימוני "הגעה" למפגש.</p>
         {ranked.length > TOP && (
-          <Button size="sm" variant="ghost" onClick={() => setAll((v) => !v)}>{all ? 'רק 5 הראשונים' : <>כל ה-{ranked.length}</>}</Button>
+          <Button size="sm" variant="ghost" onClick={() => setAll((v) => !v)}>{all ? 'רק 5 הראשונים' : <>כל ה־<span className="num">{ranked.length}</span></>}</Button>
         )}
       </div>
     </Panel>

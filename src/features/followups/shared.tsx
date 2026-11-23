@@ -6,7 +6,7 @@ import { useMe } from '@/lib/auth';
 import { useStaffList } from '@/lib/data';
 import { addDays, todayIl } from '@/lib/dates';
 import { errorCode, errorMessage, must } from '@/lib/errors';
-import { CHANNEL_LABEL, UNASSIGNED_LABEL, taskTitle } from '@/lib/labels';
+import { CHANNEL_LABEL, DISMISS, UNASSIGNED_LABEL, taskTitle } from '@/lib/labels';
 import type { FollowUp } from '@/lib/types';
 import { Button, Checkbox, ChoiceGroup, Input, Select, Textarea } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
@@ -160,11 +160,12 @@ export function CompleteTaskDialog({ task, onClose }: {
     <Dialog
       open
       onClose={onClose}
-      title="סימון כבוצע"
+      dismissible={!outcome.trim()}
+      title="סימון כבוצעה"
       footer={<>
-        <Button icon="check" busy={save.isPending} disabled={retry.isPending} onClick={submit}>בוצע: שמירה</Button>
+        <Button icon="check" busy={save.isPending} disabled={retry.isPending} onClick={submit}>שמירה וסימון כבוצעה</Button>
         <Button variant="secondary" icon="undo" busy={retry.isPending} disabled={save.isPending} onClick={() => retry.mutate()}>אין מענה: לנסות שוב בעוד יומיים</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </>}
     >
       <div className="flex flex-col gap-4">
@@ -211,6 +212,7 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
   const [due, setDue] = useState(task.due_date ?? '');
   const [title, setTitle] = useState(task.title);
   const [err, setErr] = useState<string | null>(null);
+  const dirty = assignee !== (task.assignee_id ?? '') || due !== (task.due_date ?? '') || title !== task.title;
   const save = useMutation({
     mutationFn: async (patch: Partial<FollowUp>) => {
       const { error } = await supabase.from('follow_ups').update(patch).eq('id', task.id);
@@ -229,7 +231,7 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
       title: 'לבטל את המשימה?',
       body: 'המשימה תעבור ל"הושלמו" עם הסטטוס "בוטלה". שום הודעה לא נשלחת.',
       confirm: 'ביטול המשימה',
-      cancel: 'חזרה',
+      cancel: 'לא, להשאיר את המשימה',
       danger: true,
     });
     if (!ok) return;
@@ -241,10 +243,11 @@ export function EditTaskDialog({ task, onClose }: { task: TaskRow; onClose: () =
     <Dialog
       open
       onClose={onClose}
+      dismissible={!dirty}
       title="עריכת משימה"
       footer={<>
         <Button busy={save.isPending} onClick={submit}>שמירה</Button>
-        <Button variant="ghost" onClick={onClose}>סגירה</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
         <Button variant="danger" className="ms-auto" onClick={cancelTask}>ביטול המשימה</Button>
       </>}
     >
@@ -304,10 +307,11 @@ export function NewTaskDialog({ participant, onClose, onCreated }: {
     <Dialog
       open
       onClose={onClose}
+      dismissible={!(notes.trim() || title !== 'שיחת מעקב' || (!participant && person))}
       title="משימה חדשה"
       footer={<>
         <Button icon="plus" busy={save.isPending} onClick={submit}>פתיחת המשימה</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </>}
     >
       <div className="flex flex-col gap-4">

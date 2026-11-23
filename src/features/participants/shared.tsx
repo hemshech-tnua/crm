@@ -4,10 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { must } from '@/lib/errors';
-import { ENGAGEMENT_HINT, ENGAGEMENT_LABEL } from '@/lib/labels';
-import { formatPhone, normalizePhone } from '@/lib/phone';
+import { ENGAGEMENT_LABEL, engagementHint } from '@/lib/labels';
+import { useSettings } from '@/lib/data';
+import { PHONE_EXAMPLE, formatPhone, normalizePhone } from '@/lib/phone';
 import { allEventsUrl, feedbackUrl, memberUrl, registerUrl } from '@/lib/links';
-import { todayIl, ilParts } from '@/lib/dates';
+import { countUnit, todayIl, ilParts } from '@/lib/dates';
 import type { TemplateContext } from '@/lib/templates';
 import type { Engagement } from '@/lib/types';
 import { Badge, SearchInput, Spinner, cx } from '@/ui/kit';
@@ -37,8 +38,9 @@ const ENGAGEMENT_TONE: Record<Engagement, 'neutral' | 'tide' | 'good' | 'warn'> 
 export const ENGAGEMENT_ORDER: Engagement[] = ['regular', 'returning', 'first_timer', 'registered', 'lapsed'];
 
 export function EngagementBadge({ status }: { status: Engagement | null | undefined }) {
+  const settings = useSettings().data;
   if (!status) return null;
-  return <Badge tone={ENGAGEMENT_TONE[status]} icon={status === 'lapsed' ? 'alert' : undefined} title={ENGAGEMENT_HINT[status]}>{ENGAGEMENT_LABEL[status]}</Badge>;
+  return <Badge tone={ENGAGEMENT_TONE[status]} icon={status === 'lapsed' ? 'alert' : undefined} title={engagementHint(status, settings)}>{ENGAGEMENT_LABEL[status]}</Badge>;
 }
 
 /** Value that follows `value` after `ms` of quiet (for search-as-you-type against the server). */
@@ -64,18 +66,18 @@ export function searchOrFilter(term: string): string | null {
   return [`full_name.ilike."*${text}*"`, `city.ilike."*${text}*"`].join(',');
 }
 
-/** "לפני 3 שבועות": coarse, friendly distance from a past moment (Israel calendar days). */
+/** "לפני 3 שבועות", "לפני שבועיים": coarse, friendly distance from a past moment (Israel calendar days), with the dual. */
 export function ago(v: string | null | undefined): string | null {
   if (!v) return null;
   const days = Math.round((new Date(`${todayIl()}T12:00:00Z`).getTime() - new Date(`${ilParts(v).date}T12:00:00Z`).getTime()) / 864e5);
-  if (days < 0) return days === -1 ? 'מחר' : `בעוד ${-days} ימים`;
+  if (days < 0) return days === -1 ? 'מחר' : `בעוד ${countUnit(-days, 'day')}`;
   if (days === 0) return 'היום';
   if (days === 1) return 'אתמול';
-  if (days < 14) return `לפני ${days} ימים`;
-  if (days < 60) return `לפני ${Math.round(days / 7)} שבועות`;
-  if (days < 365) return `לפני ${Math.round(days / 30)} חודשים`;
+  if (days < 14) return `לפני ${countUnit(days, 'day')}`;
+  if (days < 60) return `לפני ${countUnit(Math.round(days / 7), 'week')}`;
+  if (days < 365) return `לפני ${countUnit(Math.round(days / 30), 'month')}`;
   const years = Math.floor(days / 365);
-  return years === 1 ? 'לפני שנה' : `לפני ${years} שנים`;
+  return years === 1 ? 'לפני שנה' : `לפני ${countUnit(years, 'year')}`;
 }
 
 /** Days from today (Israel) to a date string "YYYY-MM-DD"; negative = past. */
@@ -172,9 +174,9 @@ export function ParticipantPicker({ onPick, excludeId, label = 'חיפוש כר�
   return (
     <div className="flex flex-col gap-2">
       <SearchInput value={term} onChange={setTerm} label={label} placeholder={placeholder} />
-      {!typing && <p className="text-small text-muted">כותבים לפחות 2 תווים מהשם או 3 ספרות מהטלפון.</p>}
+      {!typing && <p className="text-small text-muted">מקלידים לפחות 2 אותיות מהשם או 3 ספרות מהטלפון.</p>}
       {typing && res.isFetching && !res.data && <div className="flex items-center gap-2 py-2 text-small text-muted"><Spinner size={16} />מחפשים…</div>}
-      {typing && res.isError && <p className="text-small text-bad">החיפוש נכשל. נסו שוב.</p>}
+      {typing && res.isError && <p className="text-small text-bad">החיפוש לא הצליח. אפשר לנסות שוב.</p>}
       {typing && res.data && res.data.length === 0 && <p className="py-2 text-small text-muted">אין תוצאות לחיפוש הזה.</p>}
       {typing && res.data && res.data.length > 0 && (
         <ul className="flex flex-col divide-y divide-edge rounded-[var(--radius-control)] border border-edge bg-paper">
@@ -244,7 +246,7 @@ export function nameError(v: string): string | null {
 
 export function phoneError(v: string): string | null {
   if (!v.trim()) return 'צריך מספר טלפון.';
-  return normalizePhone(v) ? null : 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.';
+  return normalizePhone(v) ? null : `מספר הטלפון לא נראה תקין. למשל ${PHONE_EXAMPLE}.`;
 }
 
 export function birthDateError(v: string): string | null {

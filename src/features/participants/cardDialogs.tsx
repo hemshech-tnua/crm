@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useSources, useTemplates } from '@/lib/data';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { CHANNEL_LABEL, MEMBERSHIP_LABEL } from '@/lib/labels';
+import { CHANNEL_LABEL, DISMISS, MEMBERSHIP_LABEL } from '@/lib/labels';
 import type { Membership } from '@/lib/types';
 import { formatPhone, normalizePhone } from '@/lib/phone';
 import { fmtDayLong } from '@/lib/dates';
@@ -34,7 +34,7 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
   const toast = useToast();
   const sources = useSources();
   const invalidate = useInvalidateCard();
-  const [f, setF] = useState({
+  const [initial] = useState(() => ({
     full_name: card.full_name ?? '',
     phone: formatPhone(card.phone),
     city: card.city ?? '',
@@ -46,8 +46,12 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
     consent_updates: card.consent_updates,
     photo_opt_out: card.photo_opt_out,
     membership: card.membership,
-    member_since: card.member_since ?? '',
-  });
+    member_since: card.member_since ?? ''
+  }));
+  const [f, setF] = useState(initial);
+  // a form dialog with typed changes ignores a tap outside, and asks before Escape or × close it
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [dupe, setDupe] = useState<{ id: string; full_name: string | null } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -118,11 +122,12 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
     <Dialog
       open
       onClose={onClose}
+      dismissible={!dirty}
       size="lg"
       title="עריכת פרטים"
       footer={<>
         <Button busy={save.isPending} onClick={submit}>שמירה</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </>}
     >
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
@@ -148,7 +153,7 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
           error={errors.birth_date}
           hint={card.birth_year && !card.birth_date ? `כרגע ידועה רק שנת לידה משוערת (${card.birth_year}) מהגיל שנמסר בהרשמה.` : 'לא חובה. משמש לברכת יום הולדת.'}
         />
-        <Select label="מקור ההיכרות הראשון" value={f.first_source_id} onChange={(e) => set('first_source_id', e.target.value)}>
+        <Select label="מקור הגעה" value={f.first_source_id} onChange={(e) => set('first_source_id', e.target.value)}>
           <option value="">לא ידוע</option>
           {(sources.data ?? []).filter((s) => s.is_active || s.id === f.first_source_id).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </Select>
@@ -159,7 +164,7 @@ export function EditParticipantDialog({ card, onClose }: { card: Card; onClose: 
           <Input label="חברות מתאריך" type="date" min="1990-01-01" max="2100-12-31" value={f.member_since} onChange={(e) => set('member_since', e.target.value)} hint="ריק = היום" />
         ) : <div className="hidden sm:block" aria-hidden="true" />}
         {source?.asks_detail && (
-          <Input label="פירוט המקור" value={f.first_source_detail} onChange={(e) => set('first_source_detail', e.target.value)} maxLength={120} className="sm:col-span-2" />
+          <Input label="פירוט מקור ההגעה" value={f.first_source_detail} onChange={(e) => set('first_source_detail', e.target.value)} maxLength={120} className="sm:col-span-2" />
         )}
         <div className="flex flex-col gap-2 sm:col-span-2">
           <Textarea label="הערות לצוות" value={f.notes} onChange={(e) => set('notes', e.target.value)} maxLength={1000} rows={3} />
@@ -210,10 +215,11 @@ export function LogContactDialog({ participantId, name, onClose }: { participant
     <Dialog
       open
       onClose={onClose}
+      dismissible={!summary.trim()}
       title={`תיעוד שיחה עם ${name ?? ''}`}
       footer={<>
         <Button busy={save.isPending} onClick={submit}>שמירה</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </>}
     >
       <div className="flex flex-col gap-4">
@@ -232,7 +238,7 @@ export function LogContactDialog({ participantId, name, onClose }: { participant
   );
 }
 
-// ───────────── who brought them ─────────────
+// ───────────── who invited them ─────────────
 
 export function ReferrerDialog({ card, onClose }: { card: Card; onClose: () => void }) {
   const toast = useToast();
@@ -253,14 +259,14 @@ export function ReferrerDialog({ card, onClose }: { card: Card; onClose: () => v
     onError: (e) => toast.error(errorMessage(e)),
   });
   return (
-    <Dialog open onClose={onClose} title="מי הביא?">
+    <Dialog open onClose={onClose} title="מי הזמין?">
       <div className="flex flex-col gap-4">
         {card.referred_by_name && (
           <Notice icon="people">
-            בהרשמה נכתב: <strong>{card.referred_by_name}</strong>. מחפשים את הכרטיס הזה וקושרים, כדי שההפניה תיספר בדוחות.
+            בהרשמה נכתב: <strong>{card.referred_by_name}</strong>. מחפשים את הכרטיס הזה וקושרים, כדי שההזמנה תיספר בדוחות.
           </Notice>
         )}
-        <ParticipantPicker onPick={(p) => save.mutate(p)} excludeId={card.id} label="חיפוש מי שהביא" />
+        <ParticipantPicker onPick={(p) => save.mutate(p)} excludeId={card.id} label="חיפוש מי שהזמין" />
         {card.referred_by_participant_id && (
           <Button variant="ghost" className="self-start" busy={save.isPending} onClick={() => save.mutate(null)}>הסרת הקישור הנוכחי</Button>
         )}
@@ -378,12 +384,12 @@ export function MergeDialog({ card, onClose }: { card: Card; onClose: () => void
       title="מיזוג עם כרטיס אחר"
       footer={other ? <>
         <Button variant="danger" icon="merge" busy={merge.isPending} onClick={() => merge.mutate()}>מיזוג הכרטיסים</Button>
-        <Button variant="ghost" onClick={onClose}>חזרה</Button>
-      </> : <Button variant="ghost" onClick={onClose}>חזרה</Button>}
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
+      </> : <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>}
     >
       {!other ? (
         <div className="flex flex-col gap-3">
-          <p className="text-body text-ink-soft">כשלאותו אדם יש שני כרטיסים (למשל נרשם פעם עם מספר אחר). מחפשים את הכרטיס השני:</p>
+          <p className="text-body text-ink-soft">מיזוג מתאים כשלאותו אדם יש שני כרטיסים (למשל, אם נרשם פעם עם מספר אחר). מחפשים את הכרטיס השני:</p>
           <ParticipantPicker onPick={setOther} excludeId={card.id} label="חיפוש הכרטיס השני" />
         </div>
       ) : (

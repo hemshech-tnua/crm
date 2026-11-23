@@ -18,7 +18,7 @@ const CAP = 3;
 function More({ open, total, onToggle, what = '' }: { open: boolean; total: number; onToggle: () => void; what?: string }) {
   return (
     <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-11 w-full items-center border-t border-edge px-4 text-small font-semibold text-tide hover:underline sm:px-5">
-      {open ? 'הצגת פחות' : what ? <>הצגת כל {what}{' '}(<span className="num">{total}</span>)</> : <>הצגת כל ה-<span className="num">{total}</span></>}
+      {open ? 'הצגת פחות' : what ? <>הצגת כל {what}{' '}(<span className="num">{total}</span>)</> : <>הצגת כל ה־<span className="num">{total}</span></>}
     </button>
   );
 }
@@ -29,7 +29,8 @@ const byTime = (a: TaskWithEvent, b: TaskWithEvent) =>
 
 export function MeetingLink({ event }: { event: TaskEvent }) {
   return (
-    <Link to={`/app/events/${event.id}?tab=prep`} className="font-semibold text-tide hover:underline">
+    // a 24px-high target at least (WCAG 2.5.8): these links sit in dense lists
+    <Link to={`/app/events/${event.id}?tab=prep`} className="inline-block min-h-6 py-0.5 font-semibold text-tide hover:underline">
       {event.title}{' '}<span className="font-normal">(<DayShort day={ilParts(event.starts_at).date} />)</span>
     </Link>
   );
@@ -122,8 +123,8 @@ export function WeekView() {
   const keep = useMemo(() => (who === 'team' ? () => true : (t: TaskWithEvent) => isMine(t, myId)), [who, myId]);
   const tasks = useMemo(() => (week.data ?? []).filter(keep), [week.data, keep]);
   const overdueList = useMemo(() => (isThisWeek ? (overdue.data ?? []).filter(keep) : []), [isThisWeek, overdue.data, keep]);
-  // the latest first: what was left open yesterday matters more than what was left a month ago
-  const overdueGroups = useMemo(() => byMeeting([...overdueList].reverse()), [overdueList]);
+  // the latest first (the query's order): what was left open yesterday matters more than what was left a month ago
+  const overdueGroups = useMemo(() => byMeeting(overdueList), [overdueList]);
   const byDay = useMemo(() => {
     const m = new Map<string, TaskWithEvent[]>();
     for (const t of tasks) m.set(t.due_date!, [...(m.get(t.due_date!) ?? []), t]);
@@ -192,16 +193,16 @@ export function WeekView() {
             >
               <Icon name="alert" size={18} className="shrink-0" />
               <span className="flex-1">
-                נשאר פתוח מלפני
-                <span className="font-medium"> · <span className="num">{overdueList.length}</span> {overdueList.length === 1 ? 'משימה' : 'משימות'}
-                  {overdueGroups.length > 1 && <> ב-<span className="num">{overdueGroups.length}</span> מפגשים</>}</span>
+                מהימים הקודמים
+                <span className="font-medium"> · {overdueList.length === 1 ? 'משימה אחת' : <><span className="num">{overdueList.length}</span> משימות</>}
+                  {overdueGroups.length > 1 && <> ב־<span className="num">{overdueGroups.length}</span> מפגשים</>}</span>
               </span>
               <Icon name="chevron" size={16} className={cx('shrink-0 transition-transform', overdueOpen && '-rotate-90')} />
             </button>
             {overdueOpen && (
               <>
-                <p className="px-4 text-small text-muted sm:px-5">משימות שעבר התאריך שלהן (עד <span className="num">{OVERDUE_DAYS}</span> יום אחורה). אם כבר נעשו, מסמנים וזהו.</p>
-                <ul className="divide-y divide-edge px-4 sm:px-5" aria-label="נשאר פתוח מלפני">
+                <p className="px-4 text-small text-muted sm:px-5">משימות שעבר התאריך שלהן ועוד לא סומנו (עד <span className="num">{OVERDUE_DAYS}</span> ימים אחורה). אם כבר נעשו, מסמנים וזהו.</p>
+                <ul className="divide-y divide-edge px-4 sm:px-5" aria-label="מהימים הקודמים">
                   {(allOverdueMeetings ? overdueGroups : overdueGroups.slice(0, CAP)).map((g) => (
                     <MeetingGroup
                       key={g.event.id}
@@ -262,7 +263,7 @@ export function WeekView() {
         )}
       </div>
 
-      {week.isError ? <ErrorBox error={errorMessage(week.error)} onRetry={() => week.refetch()} /> : week.isLoading ? <Panel><Skeleton lines={8} /></Panel> : (
+      {week.isError ? <ErrorBox error={errorMessage(week.error)} onRetry={() => week.refetch()} /> : week.isLoading ? <Skeleton shape="rows" count={4} height={120} /> : (
         <ol className="flex flex-col gap-3" aria-label="ימי השבוע">
           {isThisWeek && dayItem(today, 'today')}
           {upcoming.map((d) => dayItem(d, 'day'))}

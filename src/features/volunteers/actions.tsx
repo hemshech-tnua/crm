@@ -166,7 +166,7 @@ function AssignDialog({ event, def: firstDef, replace, onClose }: { event: PlanE
     assign.mutate(
       {
         volunteerId: v.id, role: def.role, eventIds: ids, replace: replace?.id ?? null,
-        done: n > 1 ? `${v.full_name}: שיבוץ ל${label} ב-${n} מפגשים` : `${v.full_name}: שיבוץ ל${label}`,
+        done: n > 1 ? `${v.full_name}: שיבוץ ל${label} ב־${n} מפגשים` : `${v.full_name}: שיבוץ ל${label}`,
       },
       { onSuccess: () => after(`${v.full_name}: ${label}${n > 1 ? ` (${n} מפגשים)` : ''}`) },
     );
@@ -332,7 +332,7 @@ function ShiftDialog({ shift, onClose }: { shift: Shift; onClose: () => void }) 
       title: `לבטל את השיבוץ של ${name}?`,
       body: `${def.label} ב${e.title}, ${fmtDayLong(e.starts_at)}. המקום יסומן "חסר". אם כבר נשלח קישור אישי, המשמרת תיעלם ממנו.`,
       confirm: 'ביטול השיבוץ',
-      cancel: 'חזרה',
+      cancel: 'לא, להשאיר את השיבוץ',
       danger: true,
     });
     if (ok) mark('cancelled');
@@ -364,7 +364,7 @@ function ShiftDialog({ shift, onClose }: { shift: Shift; onClose: () => void }) 
             <Button icon="close" variant={shift.status === 'declined' ? 'primary' : 'secondary'} aria-pressed={shift.status === 'declined'} disabled={set.isPending || shift.status === 'declined'} onClick={() => mark('declined')}>לא מסתדר</Button>
           </div>
           {shift.status !== 'invited' && (
-            <Button variant="ghost" icon="undo" className="self-start" disabled={set.isPending} onClick={() => mark('invited')}>חזרה ל"בהמתנה"</Button>
+            <Button variant="ghost" icon="undo" className="self-start" disabled={set.isPending} onClick={() => mark('invited')}>חזרה ל"מחכה לתשובה"</Button>
           )}
         </div>
 
@@ -410,7 +410,7 @@ function SendLinkDialog({ volunteer: v, onClose }: { volunteer: Volunteer; onClo
     <Dialog open onClose={onClose} title={`קישור אישי ל${v.full_name}`}>
       <div className="flex flex-col gap-4">
         <p className="text-small text-muted">
-          {pending ? <>מחכים לתשובה ב-<span className="num">{pending}</span> {pending === 1 ? 'מפגש' : 'מפגשים'}. </> : null}
+          {pending ? <>{pending === 1 ? 'מחכים לתשובה במפגש אחד' : <>מחכים לתשובה ב־<span className="num">{pending}</span> מפגשים</>}. </> : null}
           בקישור מופיעים כל המפגשים של {firstName(v.full_name)}, ושם מאשרים הגעה או מעדכנים שלא מסתדר.
         </p>
         {link.error ? (

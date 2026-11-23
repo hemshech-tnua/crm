@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { age, fmtDate, fmtListDate, fmtLongDate } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
-import { FOLLOWUP_TYPE_LABEL, MEMBERSHIP_LABEL, taskTitle } from '@/lib/labels';
+import { useTitle } from '@/lib/title';
+import { FOLLOWUP_TYPE_LABEL, MEMBERSHIP_LABEL, UNASSIGNED_LABEL, taskTitle } from '@/lib/labels';
 import { telLink } from '@/lib/phone';
 import { Link } from 'react-router';
 import { fmtMoney } from '@/lib/money';
@@ -30,9 +31,11 @@ export function ParticipantPage() {
   const back = { to: `/app/participants${from}`, label: 'לכל הלוחמים' };
   const card = useCard(id);
   const live = !!card.data && !card.data.anonymized_at;
+  useTitle(card.data && [live ? card.data.full_name : 'פרטים נמחקו', 'לוחמים']);
 
-  if (card.isLoading) return <div><Skeleton lines={2} className="mb-6 max-w-sm" /><Skeleton lines={8} /></div>;
-  if (card.isError) return <><PageHeader title="כרטיס לוחם" back={back} /><ErrorBox error={errorMessage(card.error)} onRetry={() => card.refetch()} /></>;
+  if (card.isLoading) return <div><Skeleton lines={2} className="mb-6 max-w-sm" /><Skeleton shape="tiles" count={6} height={76} cols="grid-cols-3 lg:grid-cols-6" className="mb-5" /><Skeleton shape="block" height={320} /></div>;
+  // a failed refresh keeps the card on screen (the offline bar explains); the error page only when there is nothing
+  if (card.isError && !card.data) return <><PageHeader title="כרטיס לוחם" back={back} /><ErrorBox error={errorMessage(card.error)} onRetry={() => card.refetch()} /></>;
   if (!card.data) {
     return (
       <>
@@ -55,7 +58,7 @@ function Anonymized({ card, back }: { card: Card; back: { to: string; label: str
       <PageHeader title="פרטים נמחקו" back={back} />
       <Panel>
         <EmptyState icon="shield" title="הפרטים האישיים של הכרטיס הזה נמחקו">
-          הפרטים נמחקו ב-<span className="num">{fmtDate(card.anonymized_at!)}</span> לפי בקשה אישית או לפי מדיניות שמירת המידע.
+          הפרטים נמחקו ב־<span className="num">{fmtDate(card.anonymized_at!)}</span> לפי בקשה אישית או לפי מדיניות שמירת המידע.
           נשארו רק נתוני השתתפות בלי זיהוי, כדי שהסטטיסטיקה של המפגשים תישאר נכונה.
         </EmptyState>
       </Panel>
@@ -124,11 +127,11 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
 
       <StatStrip loading={stats.isLoading} items={[
         ['מפגשי שישי', s?.friday_count ?? null, 'הגעות למפגשי שישי'],
-        ['כל הפעילויות', s?.attended_count ?? null, 'כולל ערבי מדורה'],
+        ['כל המפגשים', s?.attended_count ?? null, 'כולל ערבי מדורה'],
         ['הגעה אחרונה', s?.last_attended_at ? ago(s.last_attended_at) : null, s?.last_attended_at ? fmtDate(s.last_attended_at) : undefined],
         ['הגעה ראשונה', s?.first_attended_at ? fmtDate(s.first_attended_at) : null],
         ['הרשמות בלי הגעה', s?.no_show_count ?? null, 'פעמים שהייתה הרשמה ולא הייתה הגעה'],
-        ['חברים שהופנו', s?.friends_brought ?? null],
+        ['חברים שהזמין', s?.friends_brought ?? null],
       ]} />
 
       {openTasks.length > 0 && (
@@ -140,21 +143,21 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
           <Panel title="מקור הגעה">
             <KeyValue items={[
               ['מקור הגעה', card.first_source ? <>{card.first_source.label}{card.first_source_detail && <span className="text-ink-soft">: {card.first_source_detail}</span>}</> : null],
-              ['מי הביא', <Referrer key="r" card={card} onLink={() => setOpen('referrer')} />],
+              ['מי הזמין', <Referrer key="r" card={card} onLink={() => setOpen('referrer')} />],
               ['ערוץ ההרשמה הראשונה', firstReg ? channelText(firstReg) : null],
             ]} />
             <div className="mt-4 border-t border-edge pt-3">
-              <p className="mb-1.5 text-small font-semibold text-muted">חברים שהופנו</p>
+              <p className="mb-1.5 text-small font-semibold text-muted">חברים שהזמין</p>
               {card.friends.length ? (
                 <ul className="flex flex-col gap-1">
                   {card.friends.map((fr) => (
                     <li key={fr.id} className="flex items-center justify-between gap-2">
                       <PersonLink id={fr.id} name={fr.anonymized_at ? null : fr.full_name} />
-                      <span className="text-small text-muted">הצטרפות <span className="num">{fmtDate(fr.created_at)}</span></span>
+                      <span className="text-small text-muted">נוסף <span className="num">{fmtDate(fr.created_at)}</span></span>
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-small text-faint">עוד אין חברים שהופנו</p>}
+              ) : <p className="text-small text-faint">עוד אין חברים שהגיעו בהזמנה שלו</p>}
             </div>
           </Panel>
 
@@ -166,11 +169,11 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
               ['יום הולדת', card.birth_date ? fmtLongDate(card.birth_date) : null],
               ['עיסוק', card.occupation],
               ['עדכונים בוואטסאפ', card.consent_updates
-                ? <span className="font-semibold text-ink">יש הסכמה{card.consent_updates_at && <span className="text-muted"> מ-<span className="num">{fmtDate(card.consent_updates_at)}</span></span>}</span>
+                ? <span className="font-semibold text-ink">יש הסכמה{card.consent_updates_at && <span className="text-muted"> מ־<span className="num">{fmtDate(card.consent_updates_at)}</span></span>}</span>
                 : <span className="text-ink-soft">אין הסכמה (אפשר להתקשר)</span>],
               ['עמותה', <MembershipText key="m" card={card} />],
               ['צילום', card.photo_opt_out ? <span className="text-warn">בקשה לא להופיע בתמונות</span> : 'אין הגבלה'],
-              ['הצטרפות', <span key="j"><span className="num">{fmtDate(card.created_at)}</span> · {CREATED_VIA_LABEL[card.created_via] ?? card.created_via}</span>],
+              ['במערכת מאז', <span key="j"><span className="num">{fmtDate(card.created_at)}</span> · {CREATED_VIA_LABEL[card.created_via] ?? card.created_via}</span>],
             ]} />
             {card.notes && (
               <div className="mt-4 border-t border-edge pt-3">
@@ -182,10 +185,10 @@ function LiveCard({ card, back }: { card: Card; back: { to: string; label: strin
         </div>
 
         <Panel title="היסטוריה">
-          {historyError ? (
+          {historyError && !(regs.data && feedback.data && contacts.data && tasks.data) ? (
             <ErrorBox error={errorMessage(historyError)} onRetry={() => { regs.refetch(); feedback.refetch(); contacts.refetch(); tasks.refetch(); }} />
           ) : regs.isLoading || feedback.isLoading || contacts.isLoading || tasks.isLoading ? (
-            <Skeleton lines={6} />
+            <Skeleton shape="rows" count={5} height={64} />
           ) : (
             <History regs={regs.data ?? []} feedback={feedback.data ?? []} contacts={contacts.data ?? []} tasks={tasks.data ?? []} staffName={staffName} />
           )}
@@ -239,10 +242,10 @@ function Referrer({ card, onLink }: { card: Card; onLink: () => void }) {
 
 function MembershipText({ card }: { card: Card }) {
   if (card.membership === 'member') {
-    return <span className="font-semibold text-ink">{MEMBERSHIP_LABEL.member}{card.member_since && <span className="text-muted"> מ-<span className="num">{fmtDate(card.member_since)}</span></span>}</span>;
+    return <span className="font-semibold text-ink">{MEMBERSHIP_LABEL.member}{card.member_since && <span className="text-muted"> מ־<span className="num">{fmtDate(card.member_since)}</span></span>}</span>;
   }
   if (card.membership === 'requested') {
-    return <span className="text-warn">{MEMBERSHIP_LABEL.requested}{card.membership_requested_at && <span className="text-muted"> ב-<span className="num">{fmtDate(card.membership_requested_at)}</span></span>}</span>;
+    return <span className="text-warn">{MEMBERSHIP_LABEL.requested}{card.membership_requested_at && <span className="text-muted"> ב־<span className="num">{fmtDate(card.membership_requested_at)}</span></span>}</span>;
   }
   return <span className="text-ink-soft">{MEMBERSHIP_LABEL.none}</span>;
 }
@@ -251,7 +254,7 @@ function AgeText({ card }: { card: Card }) {
   const a = age(card.birth_year, card.birth_date);
   if (a == null) return <span className="text-faint">—</span>;
   if (card.birth_date) return <span className="num">{a}</span>;
-  return <span title="שנת לידה משוערת, לפי הגיל שנמסר בהרשמה">כ-<span className="num">{a}</span> <span className="text-small text-muted">(משוער)</span></span>;
+  return <span title="שנת לידה משוערת, לפי הגיל שנמסר בהרשמה">כ־<span className="num">{a}</span> <span className="text-small text-muted">(משוער)</span></span>;
 }
 
 /** "חוב פתוח": registrations that still owe the meeting's fee (the same rule as the registrations tab's "לא שילמו"). */
@@ -266,7 +269,7 @@ function OpenDebt({ regs }: { regs: CardRegistration[] }) {
     <section aria-label="חוב פתוח" className="mb-5 flex flex-col gap-2 rounded-[var(--radius-panel)] border border-edge bg-paper px-4 py-3 sm:flex-row sm:items-center sm:gap-5 sm:px-5">
       <div className="flex items-baseline gap-2.5">
         <span className="whitespace-nowrap text-small font-semibold text-muted">חוב פתוח</span>
-        <span className="num font-display text-[1.75rem] font-bold leading-none text-ink">{fmtMoney(total)}</span>
+        <span className="num font-display text-title-sm font-bold leading-none text-ink">{fmtMoney(total)}</span>
       </div>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-small">
         {owing.map((r) => (
@@ -296,7 +299,7 @@ function StatStrip({ items, loading }: { items: [string, ReactNode, string?][]; 
           )}
         >
           <dt className="text-micro font-medium text-muted sm:text-small">{label}</dt>
-          <dd className={cx('font-bold text-ink', typeof value === 'number' ? 'num font-display text-[1.75rem] leading-none sm:text-stat' : 'text-heading sm:text-section')}>
+          <dd className={cx('font-bold text-ink', typeof value === 'number' ? 'num font-display text-title-sm leading-none sm:text-stat' : 'text-heading sm:text-section')}>
             {loading ? <span className="skeleton inline-block h-7 w-10" /> : value ?? <span className="text-faint">—</span>}
           </dd>
         </div>
@@ -320,13 +323,13 @@ function OpenTasks({ tasks, staffName, nextEvent, name }: {
                 <p className="font-semibold">{taskTitle(t.title)}</p>
                 <p className="flex flex-wrap items-center gap-x-2 text-small text-muted">
                   <span>{FOLLOWUP_TYPE_LABEL[t.type]}</span>
-                  {t.due_date && <><span aria-hidden="true">·</span><span className={cx(d! < 0 && 'font-semibold text-bad')}>{d! < 0 ? `באיחור (יעד ${fmtDate(t.due_date)})` : `יעד ${fmtDate(t.due_date)}`}</span></>}
+                  {t.due_date && <><span aria-hidden="true">·</span><span className={cx(d! < 0 && 'font-semibold text-ink')}>{d! < 0 ? `באיחור (יעד ${fmtDate(t.due_date)})` : `יעד ${fmtDate(t.due_date)}`}</span></>}
                   <span aria-hidden="true">·</span>
-                  {t.assignee_id ? <span>{staffName.get(t.assignee_id) ?? 'הצוות'}</span> : <span className="text-muted">בלי אחראי</span>}
+                  {t.assignee_id ? <span>{staffName.get(t.assignee_id) ?? 'הצוות'}</span> : <span className="text-muted">{UNASSIGNED_LABEL}</span>}
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">
-                <Button size="sm" icon="check" onClick={() => setDoing({ kind: 'done', task: t })}>בוצע</Button>
+                <Button size="sm" icon="check" onClick={() => setDoing({ kind: 'done', task: t })}>בוצעה</Button>
                 <Button size="sm" variant="secondary" icon="message" onClick={() => setDoing({ kind: 'msg', task: t })}>וואטסאפ</Button>
                 <Button size="sm" variant="ghost" icon="edit" onClick={() => setDoing({ kind: 'edit', task: t })} aria-label="עריכת משימה">עריכה</Button>
               </div>
@@ -372,7 +375,7 @@ function useAnonymize(card: Card) {
         <div className="flex flex-col gap-3">
           <div>
             <p className="font-semibold text-ink">מה יימחק:</p>
-            <p>שם, טלפון, עיר, גיל ותאריך לידה, עיסוק, הערות, מי הביא, ההערות שנכתבו במשוב, יומן השיחות ומשימות המעקב.</p>
+            <p>שם, טלפון, עיר, גיל ותאריך לידה, עיסוק, הערות, מי הזמין, ההערות שנכתבו במשוב, יומן השיחות ומשימות המעקב.</p>
           </div>
           <div>
             <p className="font-semibold text-ink">מה יישאר, בלי זיהוי:</p>

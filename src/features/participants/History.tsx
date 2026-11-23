@@ -3,7 +3,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTemplates } from '@/lib/data';
 import { fmtDate, fmtDateTime, fmtDayLong, fmtTime } from '@/lib/dates';
-import { CHANNEL_LABEL, EVENT_TYPE_LABEL, FOLLOWUP_TYPE_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
+import { ATTENDANCE_LABEL, CHANNEL_LABEL, EVENT_TYPE_LABEL, FOLLOWUP_TYPE_LABEL, taskOutcome, taskTitle } from '@/lib/labels';
 import type { ContactLog } from '@/lib/types';
 import { Badge, EmptyState, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
@@ -129,18 +129,18 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
   const ev = r.event!;
   const badges: ReactNode[] = [];
   if (r.status === 'cancelled') badges.push(<Badge key="s">{r.cancelled_by === 'staff' ? 'ביטול על ידי הצוות' : 'ביטול עצמי'}</Badge>);
-  else if (r.status === 'waitlisted') badges.push(<Badge key="s" tone="warn" icon="alert">ברשימת המתנה</Badge>);
+  else if (r.status === 'waitlisted') badges.push(<Badge key="s" tone="warn" icon="alert">ברשימת ההמתנה</Badge>);
   else if (r.status === 'pending_payment') badges.push(<Badge key="s" tone="warn" icon="alert">ההרשמה לא הושלמה: לא שולם</Badge>);
   else if (r.attendance === 'attended') badges.push(<Badge key="s" tone="good" icon="check">הגעה</Badge>);
-  else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="bad" icon="alert">אי־הגעה</Badge>);
-  else badges.push(<Badge key="s" tone={future ? 'light' : 'neutral'}>{future ? 'הרשמה פעילה' : 'טרם סומן'}</Badge>);
+  else if (r.attendance === 'no_show') badges.push(<Badge key="s" tone="neutral">אי־הגעה</Badge>);
+  else badges.push(<Badge key="s" tone={future ? 'light' : 'neutral'}>{future ? 'הרשמה פעילה' : ATTENDANCE_LABEL.unknown}</Badge>);
   if (r.is_walk_in) badges.push(<Badge key="w">הגעה בלי הרשמה</Badge>);
   if (r.status === 'registered' && r.payment_status === 'pending' && r.attendance !== 'no_show' && Number(ev.price ?? 0) > 0 && ev.status !== 'cancelled') {
     badges.push(<Badge key="p" tone="warn" icon="alert">לא שולם</Badge>);
   }
 
   const checkin = r.attendance === 'attended' && r.checked_in_at
-    ? `${r.checkin_method === 'self_qr' ? 'צ׳ק־אין עצמי ב-QR' : 'סימון בכניסה'} ב-${fmtTime(r.checked_in_at)}`
+    ? `${r.checkin_method === 'self_qr' ? 'צ׳ק־אין עצמי ב־QR' : 'סימון בכניסה'} בשעה ${fmtTime(r.checked_in_at)}`
     : null;
   const utm = [r.utm_source, r.utm_medium, r.utm_campaign].filter(Boolean).join(' / ');
 
@@ -155,10 +155,10 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
       <p className="text-small text-ink-soft">{fmtDayLong(ev.starts_at)}</p>
       <ul className="mt-1 flex flex-col gap-0.5 text-small text-muted">
         {checkin && <li>{checkin}</li>}
-        {!r.is_walk_in && <li>הרשמה ב-<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (על ידי הצוות)' : ''}</li>}
+        {!r.is_walk_in && <li>הרשמה ב־<span className="num">{fmtDate(r.registered_at)}</span>{r.created_via === 'staff' ? ' (על ידי הצוות)' : ''}</li>}
         {(r.how_heard || r.how_heard_detail) && <li>איך שמעו עלינו: {[r.how_heard?.label, r.how_heard_detail].filter(Boolean).join(': ')}</li>}
         {(r.referrer || r.referrer_name) && (
-          <li>הפניה: {r.referrer ? <PersonLink id={r.referrer.id} name={r.referrer.full_name} className="font-medium" /> : r.referrer_name}</li>
+          <li>מי הזמין: {r.referrer ? <PersonLink id={r.referrer.id} name={r.referrer.full_name} className="font-medium" /> : r.referrer_name}</li>
         )}
         {r.link && <li>קישור הרשמה: {r.link.label} <span className="num">({r.link.code})</span></li>}
         {utm && <li>UTM: <span className="num">{utm}</span></li>}
@@ -169,7 +169,7 @@ function RegItem({ r, fb, future }: { r: CardRegistration; fb?: CardFeedback; fu
 }
 
 function FeedbackItem({ f, standalone }: { f: CardFeedback; standalone?: boolean }) {
-  const parts: [string, number | null][] = [['כללי', f.overall_rating], ['יוגה/פילאטיס', f.activity_rating], ['הרצאה', f.lecture_rating]];
+  const parts: [string, number | null][] = [['כללי', f.overall_rating], ['פעילות', f.activity_rating], ['הרצאה', f.lecture_rating]];
   return (
     <div className={cx(!standalone && 'mt-2 rounded-[var(--radius-control)] bg-mist px-3 py-2')}>
       {standalone && <p className="font-semibold">משוב{f.event ? ` על ${f.event.title}, ${fmtDate(f.event.starts_at)}` : ''}</p>}

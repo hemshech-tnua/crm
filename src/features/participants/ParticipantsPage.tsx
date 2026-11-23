@@ -3,12 +3,12 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { useRole, can } from '@/lib/auth';
-import { useSources } from '@/lib/data';
+import { useSettings, useSources } from '@/lib/data';
 import { age, fmtDate, todayIl } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import { formatPhone } from '@/lib/phone';
 import { toCsv, downloadFile } from '@/lib/csv';
-import { ENGAGEMENT_HINT, ENGAGEMENT_LABEL } from '@/lib/labels';
+import { ENGAGEMENT_LABEL, engagementHint } from '@/lib/labels';
 import type { Engagement } from '@/lib/types';
 import { Button, ButtonLink, EmptyState, ErrorBox, FilterChips, PageHeader, SearchInput, Select, Skeleton, Spinner, Table, Td, Th, cx } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
@@ -24,7 +24,7 @@ const SORT_LABEL: Record<RosterSort, string> = {
   longest: 'הכי הרבה זמן מאז ההגעה האחרונה',
   fridays: 'מספר מפגשי שישי',
   name: 'שם (א–ת)',
-  joined: 'הצטרפו לאחרונה',
+  joined: 'נוספו לאחרונה',
 };
 
 function fromParams(sp: URLSearchParams): RosterFilters {
@@ -111,7 +111,8 @@ export function ParticipantsPage() {
     queryFn: () => engagementCountsFor({ ...filters, status: '', gone: false }, filters.task ? openIds.data ?? [] : null),
   });
   const counts = scoped ? filtered : overall;
-  const cities = useQuery({ queryKey: ['participants', 'cities'], queryFn: cityCounts, staleTime: 5 * 60_000 });
+  // every card's city comes down to build this list: fetched only once the filters are opened (Needs DB: a cities RPC)
+  const cities = useQuery({ queryKey: ['participants', 'cities'], queryFn: cityCounts, staleTime: 5 * 60_000, enabled: moreFilters || !!f.city });
   const needOpen = filters.task;
   const roster = useQuery({
     queryKey: ['participants', 'roster', filters, limit, needOpen ? openIds.data : null],
@@ -200,7 +201,7 @@ export function ParticipantsPage() {
             >
               <Icon name="filter" size={18} />
               סינון
-              {activeExtra > 0 && <span className="num rounded-[2px] bg-light px-1.5 text-micro font-bold text-ink">{activeExtra}</span>}
+              {activeExtra > 0 && <span className="num rounded-tag bg-light px-1.5 text-micro font-bold text-ink">{activeExtra}</span>}
             </button>
           </div>
         </div>
@@ -208,6 +209,7 @@ export function ParticipantsPage() {
         <StatusChips
           value={f.gone ? 'gone' : f.status}
           counts={counts.data}
+          countsFailed={counts.isError && !counts.data}
           onChange={(v) => setF(v === 'gone' ? { status: '', gone: true } : { status: v, gone: false })}
         />
 
@@ -219,7 +221,7 @@ export function ParticipantsPage() {
               <option value="none">לא ידוע</option>
             </Select>
             <Select label="עיר" value={f.city} onChange={(e) => setF({ city: e.target.value })}>
-              <option value="">כל הערים</option>
+              <option value="">{cities.isLoading ? 'כל הערים (הרשימה בטעינה…)' : 'כל הערים'}</option>
               {(cities.data ?? []).map((c) => <option key={c.city} value={c.city}>{c.city} ({c.n})</option>)}
               {f.city && !cities.data?.some((c) => c.city === f.city) && <option value={f.city}>{f.city}</option>}
             </Select>
@@ -240,10 +242,13 @@ export function ParticipantsPage() {
       </div>
 
       <div className="mt-4">
-        {roster.isError ? (
+        {roster.isError && !roster.data ? (
           <ErrorBox error={errorMessage(roster.error)} onRetry={() => roster.refetch()} />
         ) : roster.isLoading || (!roster.data && roster.isFetching) ? (
-          <div className="rounded-[var(--radius-panel)] border border-edge bg-paper p-5"><Skeleton lines={8} /></div>
+          <>
+            <Skeleton shape="rows" count={8} height={52} className="hidden md:block" />
+            <Skeleton shape="rows" count={8} height={76} className="md:hidden" />
+          </>
         ) : rows.length === 0 ? (
           <div className="rounded-[var(--radius-panel)] border border-edge bg-paper">
             {f.gone && !q && !f.status && !activeExtra ? (
@@ -269,7 +274,7 @@ export function ParticipantsPage() {
               {roster.isFetching && <span className="flex items-center gap-1.5"><Spinner size={14} />מעדכנים…</span>}
             </div>
             <RosterTable rows={rows} sourceLabel={sourceLabel} openSet={openSet} from={location.search} />
-            <RosterCards rows={rows} sourceLabel={sourceLabel} openSet={openSet} from={location.search} />
+            <RosterCards rows={rows} openSet={openSet} from={location.search} />
             {rows.length < total && (
               <div className="mt-4 flex flex-col items-center gap-1.5">
                 <Button variant="secondary" busy={roster.isFetching} onClick={() => setPaging({ key: filterKey, limit: limit + PAGE })}>הצגת עוד</Button>
@@ -285,8 +290,10 @@ export function ParticipantsPage() {
 
 type ChipValue = Engagement | '' | 'gone';
 
-function StatusChips({ value, counts, onChange }: { value: ChipValue; counts?: RosterCounts; onChange: (v: ChipValue) => void }) {
+function StatusChips({ value, counts, countsFailed, onChange }: { value: ChipValue; counts?: RosterCounts; countsFailed?: boolean; onChange: (v: ChipValue) => void }) {
   const [help, setHelp] = useState(false);
+  const settings = useSettings().data;
+  const hint = (s: Engagement) => engagementHint(s, settings);
   const chips: { v: ChipValue; label: ReactNode; title?: string; n?: number }[] = [
     { v: '', label: 'הכול', n: counts?.all },
     ...ENGAGEMENT_ORDER.map((s) => ({
@@ -295,16 +302,18 @@ function StatusChips({ value, counts, onChange }: { value: ChipValue; counts?: R
       label: s === 'lapsed'
         ? <span className="inline-flex items-center gap-1"><Icon name="alert" size={15} className={value === s ? undefined : 'text-warn'} />{ENGAGEMENT_LABEL[s]}</span>
         : ENGAGEMENT_LABEL[s],
-      title: ENGAGEMENT_HINT[s],
+      title: hint(s),
       n: counts?.[s],
     })),
-    { v: 'gone', label: 'לא הגיעו מעל חודשיים', title: `ההגעה האחרונה הייתה לפני יותר מ-${GONE_DAYS} יום, בכל סטטוס`, n: counts?.gone },
+    { v: 'gone', label: 'לא הגיעו מעל חודשיים', title: `ההגעה האחרונה הייתה לפני יותר מ־${GONE_DAYS} ימים, בכל סטטוס`, n: counts?.gone },
   ];
+  // a count that could not load reads "—" (with "לא נטען" on hover) instead of vanishing
+  const failedCount = <span className="num text-micro text-muted" title="לא נטען">—</span>;
   return (
     <div>
       <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
         <FilterChips label="סינון לפי סטטוס" value={value} onChange={onChange}
-          options={chips.map((c) => ({ value: c.v, label: c.label, count: c.n, title: c.title }))} />
+          options={chips.map((c) => ({ value: c.v, label: countsFailed ? <>{c.label}{failedCount}</> : c.label, count: c.n, title: c.title }))} />
         <button type="button" onClick={() => setHelp((h) => !h)} aria-expanded={help} className="inline-flex h-10 shrink-0 items-center gap-1 self-start px-1 text-small font-medium text-tide hover:underline sm:self-auto sm:px-2">
           מה ההבדל?
         </button>
@@ -314,7 +323,7 @@ function StatusChips({ value, counts, onChange }: { value: ChipValue; counts?: R
           {ENGAGEMENT_ORDER.map((s) => (
             <div key={s} className="contents">
               <dt className="font-bold">{ENGAGEMENT_LABEL[s]}</dt>
-              <dd className="mb-1.5 text-ink-soft sm:mb-0">{ENGAGEMENT_HINT[s]}</dd>
+              <dd className="mb-1.5 text-ink-soft sm:mb-0">{hint(s)}</dd>
             </div>
           ))}
           <div className="contents">
@@ -359,7 +368,7 @@ function RosterTable({ rows, sourceLabel, openSet, from }: ListProps) {
             <Th>עיר</Th>
             <Th numeric>גיל</Th>
             <Th numeric><span title="הגעות למפגשי שישי">מפגשי שישי</span></Th>
-            <Th numeric><span title="כל הפעילויות, כולל ערבי מדורה">פעילויות</span></Th>
+            <Th numeric><span title="כל המפגשים, כולל ערבי מדורה">כל המפגשים</span></Th>
             <Th>הגעה אחרונה</Th>
             <Th>מקור הגעה</Th>
             <Th>סטטוס</Th>
@@ -392,7 +401,7 @@ function RosterTable({ rows, sourceLabel, openSet, from }: ListProps) {
   );
 }
 
-function RosterCards({ rows, sourceLabel, openSet, from }: ListProps) {
+function RosterCards({ rows, openSet, from }: Omit<ListProps, 'sourceLabel'>) {
   return (
     <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper md:hidden">
       {rows.map((r) => {
@@ -400,7 +409,7 @@ function RosterCards({ rows, sourceLabel, openSet, from }: ListProps) {
         const fridays = r.stats?.friday_count ?? 0;
         return (
           <li key={r.id}>
-            <Link to={`/app/participants/${r.id}`} state={{ from }} className="flex flex-col gap-1 px-4 py-3 active:bg-mist">
+            <Link to={`/app/participants/${r.id}`} state={{ from }} className="flex flex-col gap-0.5 px-4 py-2.5 active:bg-mist">
               <span className="flex items-center justify-between gap-2">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate font-semibold">{r.full_name}</span>
@@ -416,7 +425,6 @@ function RosterCards({ rows, sourceLabel, openSet, from }: ListProps) {
               <span className="flex flex-wrap items-center gap-x-2 text-small text-ink-soft">
                 <span><span className="num font-semibold">{fridays}</span> {fridays === 1 ? 'מפגש שישי' : 'מפגשי שישי'}</span>
                 {r.stats?.last_attended_at && <><span aria-hidden="true">·</span><span>הגעה אחרונה <LastVisit at={r.stats.last_attended_at} /></span></>}
-                {r.first_source_id && <><span aria-hidden="true">·</span><span className="truncate">{sourceLabel.get(r.first_source_id)}</span></>}
               </span>
             </Link>
           </li>

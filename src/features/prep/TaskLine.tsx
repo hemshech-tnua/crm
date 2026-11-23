@@ -5,7 +5,7 @@ import { TickBox, useToggleTask } from './shared';
 
 /** One task: the big tick, the title, a line of facts (date, hour, hours, meeting…), the notes and an optional hint. */
 export function TaskLine({ task, meta, hint, onEdit, compact, className = '' }: {
-  task: EventTask; meta?: ReactNode; /** e.g. "נראה שבוצע" */ hint?: ReactNode; onEdit?: () => void; /** without the notes (the dashboard) */ compact?: boolean; className?: string;
+  task: Pick<EventTask, 'id' | 'title' | 'done_at' | 'notes'>; meta?: ReactNode; /** e.g. "נראה שבוצע" */ hint?: ReactNode; onEdit?: () => void; /** without the notes (the dashboard) */ compact?: boolean; className?: string;
 }) {
   const toggle = useToggleTask();
   const done = !!task.done_at;

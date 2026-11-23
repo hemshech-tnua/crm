@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorMessage } from '@/lib/errors';
-import { formatPhone, normalizePhone } from '@/lib/phone';
+import { PHONE_EXAMPLE, formatPhone, normalizePhone } from '@/lib/phone';
+import { DISMISS } from '@/lib/labels';
 import type { Volunteer, VolunteerRole } from '@/lib/types';
 import { Button, Input, Textarea, cx } from '@/ui/kit';
 import { Dialog, useToast } from '@/ui/feedback';
@@ -45,12 +46,16 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
 }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState({
+  const [initial] = useState(() => ({
     full_name: volunteer?.full_name ?? '',
     phone: formatPhone(volunteer?.phone),
     roles: volunteer?.roles ?? defaultRoles,
-    notes: volunteer?.notes ?? '',
-  });
+    notes: volunteer?.notes ?? ''
+  }));
+  const [f, setF] = useState(initial);
+  // a form dialog with typed changes ignores a tap outside, and asks before Escape or × close it
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -78,7 +83,7 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
   const submit = () => {
     const next = {
       full_name: nameError(f.full_name),
-      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.' : null,
+      phone: f.phone.trim() && !normalizePhone(f.phone) ? `מספר הטלפון לא נראה תקין. למשל ${PHONE_EXAMPLE}.` : null,
     };
     setErrors(next);
     setFormError(null);
@@ -90,10 +95,11 @@ export function VolunteerDialog({ volunteer, onClose, onSaved, defaultRoles = []
     <Dialog
       open
       onClose={onClose}
+      dismissible={!dirty}
       title={volunteer ? `עריכה: ${volunteer.full_name}` : 'מתנדב חדש'}
       footer={<>
         <Button busy={save.isPending} onClick={submit}>{volunteer ? 'שמירה' : onSaved ? 'הוספה ושיבוץ' : 'הוספה לרשימה'}</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </>}
     >
       <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>

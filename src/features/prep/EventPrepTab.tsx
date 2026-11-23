@@ -83,15 +83,15 @@ export function EventPrepTab({ event }: { event: EventWithStats }) {
     onError: (e) => toast.error(errorMessage(e)),
   });
 
-  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
-  if (q.isLoading) return <Panel><Skeleton lines={8} /></Panel>;
+  if (q.isError && !q.data) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
+  if (q.isLoading) return <Skeleton shape="rows" count={6} height={64} />;
 
   if (!all.length) {
     return (
       <Panel>
         {live ? (
           <EmptyState icon="task" title="למפגש הזה עוד אין רשימת הכנות" action={<Button cta busy={init.isPending} onClick={() => init.mutate()}>יצירת רשימת ההכנות מהתבנית</Button>}>
-            המפגש נוצר לפני שהיו הכנות במערכת. הרשימה נבנית מהתבנית של {event.type === 'friday' ? 'מפגשי שישי' : event.type === 'bonfire' ? 'ערבי מדורה' : 'פעילויות אחרות'}, עם תאריך לכל משימה לפי מועד המפגש.
+            המפגש נוצר לפני שהיו הכנות במערכת. הרשימה נבנית מהתבנית של {event.type === 'friday' ? 'מפגשי שישי' : event.type === 'bonfire' ? 'ערבי מדורה' : 'מפגשים אחרים'}, עם תאריך לכל משימה לפי מועד המפגש.
           </EmptyState>
         ) : (
           <EmptyState icon="task" title="המפגש בוטל">למפגש מבוטל אין רשימת הכנות.</EmptyState>
@@ -213,7 +213,7 @@ export function EventPrepTab({ event }: { event: EventWithStats }) {
           })}
           {missing > 0 && live && event.status !== 'completed' && (
             <p className="flex flex-wrap items-center gap-x-2 border-t border-edge px-4 py-2 text-small text-muted sm:px-5">
-              בתבנית יש עוד <span className="num">{missing}</span> {missing === 1 ? 'פריט שאינו' : 'פריטים שאינם'} ברשימה של המפגש הזה (נוספו לתבנית אחרי שהמפגש נוצר).
+              בתבנית יש עוד <span className="num">{missing}</span> {missing === 1 ? 'פריט שלא נמצא' : 'פריטים שלא נמצאים'} ברשימה של המפגש הזה (נוספו לתבנית אחרי שהמפגש נוצר).
               <button type="button" disabled={init.isPending} onClick={() => init.mutate()} className="inline-flex min-h-11 items-center font-semibold text-tide hover:underline">הוספה מהתבנית</button>
             </p>
           )}

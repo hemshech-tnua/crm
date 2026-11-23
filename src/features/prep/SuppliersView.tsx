@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorMessage } from '@/lib/errors';
-import { formatPhone, normalizePhone, telLink, whatsappLink } from '@/lib/phone';
+import { DISMISS } from '@/lib/labels';
+import { PHONE_EXAMPLE, formatPhone, normalizePhone, telLink, whatsappLink } from '@/lib/phone';
 import type { Supplier } from '@/lib/types';
 import { Badge, Button, EmptyState, ErrorBox, ExternalButton, IconButton, Input, Panel, Skeleton, Table, Td, Th, Textarea, cx } from '@/ui/kit';
 import { Dialog, useToast } from '@/ui/feedback';
@@ -13,7 +14,7 @@ function PhoneLinks({ s }: { s: Supplier }) {
   if (!s.phone) return <span className="text-faint">—</span>;
   return (
     <span className="inline-flex items-center gap-1">
-      <a href={telLink(s.phone)} className="num inline-flex min-h-11 items-center px-1 font-semibold whitespace-nowrap text-tide hover:underline" aria-label={`חיוג אל ${s.name}`}>{formatPhone(s.phone)}</a>
+      <a href={telLink(s.phone)} className="num inline-flex min-h-11 items-center px-1 font-semibold whitespace-nowrap text-tide hover:underline"><span className="sr-only">חיוג אל {s.name}: </span>{formatPhone(s.phone)}</a>
       <ExternalButton href={whatsappLink(s.phone)} size="sm" variant="ghost" icon="message" label={`וואטסאפ אל ${s.name}`} className="px-2.5" />
     </span>
   );
@@ -37,7 +38,7 @@ export function SuppliersView() {
       padded={false}
     >
       {q.isError ? <div className="p-4"><ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /></div>
-        : q.isLoading ? <div className="p-4"><Skeleton lines={5} /></div>
+        : q.isLoading ? <div className="p-4"><Skeleton shape="rows" count={5} height={64} /></div>
         : !all.length ? (
           <EmptyState icon="people" title="עוד אין ספקים בספר" action={<Button icon="plus" onClick={() => setEditing('new')}>הוספת הספק הראשון</Button>}>
             קייטרינג, מקום, ציוד, מאמן או מרצה בתשלום: מוסיפים פעם אחת, ומשם בוחרים בכל מפגש.
@@ -100,14 +101,18 @@ export function SuppliersView() {
 function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState({
+  const [initial] = useState(() => ({
     name: supplier?.name ?? '',
     what: supplier?.what ?? '',
     contact_name: supplier?.contact_name ?? '',
     phone: formatPhone(supplier?.phone),
     cost_note: supplier?.cost_note ?? '',
-    notes: supplier?.notes ?? '',
-  });
+    notes: supplier?.notes ?? ''
+  }));
+  const [f, setF] = useState(initial);
+  // a form dialog with typed changes ignores a tap outside, and asks before Escape or × close it
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -137,7 +142,7 @@ function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onCl
   const submit = () => {
     const next = {
       name: f.name.trim().length < 2 ? 'צריך לכתוב שם.' : f.name.trim().length > 80 ? 'עד 80 תווים.' : null,
-      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.' : null,
+      phone: f.phone.trim() && !normalizePhone(f.phone) ? `מספר הטלפון לא נראה תקין. למשל ${PHONE_EXAMPLE}.` : null,
     };
     setErrors(next);
     setFormError(null);
@@ -149,10 +154,11 @@ function SupplierDialog({ supplier, onClose }: { supplier: Supplier | null; onCl
     <Dialog
       open
       onClose={onClose}
+      dismissible={!dirty}
       title={supplier ? `עריכה: ${supplier.name}` : 'ספק חדש'}
       footer={<>
         <Button busy={save.isPending && !save.variables} onClick={submit}>שמירה</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
         {supplier && (
           <Button variant="secondary" className="ms-auto" busy={save.isPending && !!save.variables} onClick={() => save.mutate({ is_active: !supplier.is_active })}>
             {supplier.is_active ? 'העברה ללא פעילים' : 'החזרה לפעילות'}

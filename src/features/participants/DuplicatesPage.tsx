@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { fmtDate } from '@/lib/dates';
 import { errorMessage, must } from '@/lib/errors';
-import { Button, EmptyState, ErrorBox, PageHeader, Panel, SearchInput, Skeleton, cx } from '@/ui/kit';
+import { Button, EmptyState, ErrorBox, PageHeader, Panel, SearchInput, Skeleton, Spinner, cx } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { rosterDetails, type RosterStats } from './roster';
@@ -74,10 +74,14 @@ export function DuplicatesPage() {
         back={{ to: '/app/participants', label: 'לכל הלוחמים' }}
         subtitle="כרטיסים עם שם דומה מאוד. לרוב זה אותו אדם שנרשם עם מספר טלפון אחר."
       />
-      {pairs.isError ? (
+      {pairs.isError && !pairs.data ? (
         <ErrorBox error={errorMessage(pairs.error)} onRetry={() => pairs.refetch()} />
       ) : pairs.isLoading ? (
-        <Panel><Skeleton lines={6} /></Panel>
+        // the check compares every card with every other: it can take a while, so say so instead of a silent skeleton
+        <div className="flex flex-col gap-3">
+          <p className="flex items-center gap-2 text-body text-ink-soft" role="status"><Spinner size={16} />בודקים את כל הכרטיסים. זה יכול לקחת כמה שניות.</p>
+          <Skeleton shape="rows" count={4} height={150} />
+        </div>
       ) : !live.length ? (
         <Panel><EmptyState icon="checkCircle" title="לא נמצאו כפילויות">אין כרגע כרטיסים עם שמות דומים. כדאי לבדוק שוב מדי פעם.</EmptyState></Panel>
       ) : (
@@ -222,7 +226,7 @@ function SideCard({ side, stats, keep, onKeep, name }: { side: Side; stats?: Ros
         <span className="text-muted">הגעות</span>
         <span className="flex items-center gap-2">
           <span className="num font-semibold">{stats?.attended_count ?? 0}</span>
-          {stats?.last_attended_at && <span className="text-muted">אחרון {ago(stats.last_attended_at)}</span>}
+          {stats?.last_attended_at && <span className="text-muted">הגעה אחרונה {ago(stats.last_attended_at)}</span>}
           <EngagementBadge status={stats?.engagement_status} />
         </span>
       </span>

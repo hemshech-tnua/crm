@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { errorMessage } from '@/lib/errors';
 import type { Volunteer } from '@/lib/types';
-import { Button, ErrorBox, PageHeader, Panel, Skeleton, Tabs } from '@/ui/kit';
+import { Button, ErrorBox, PageHeader, Skeleton, Tabs } from '@/ui/kit';
 import { VolunteerActions } from './actions';
 import { PlannerTab } from './PlannerTab';
 import { PoolTab } from './PoolTab';
@@ -40,10 +40,10 @@ export function VolunteersPage() {
           { value: 'pool', label: 'רשימת מתנדבים', count: volunteers.data?.filter((v) => v.is_active).length },
         ]}
       />
-      {failed ? (
+      {failed && !ready ? (
         <ErrorBox error={errorMessage(failed)} onRetry={() => { void volunteers.refetch(); void events.refetch(); void shifts.refetch(); }} />
       ) : !ready ? (
-        <Panel><Skeleton lines={8} /></Panel>
+        <Skeleton shape="rows" count={6} height={96} />
       ) : (
         <VolunteerActions data={{ volunteers: volunteers.data, events: events.data, shifts: shifts.data }}>
           {tab === 'plan' ? <PlannerTab /> : <PoolTab onEdit={setEditing} />}

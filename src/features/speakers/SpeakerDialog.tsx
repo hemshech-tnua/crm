@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { personPhotoUrl, supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
-import { formatPhone, normalizePhone } from '@/lib/phone';
+import { PHONE_EXAMPLE, formatPhone, normalizePhone } from '@/lib/phone';
+import { DISMISS } from '@/lib/labels';
 import type { Speaker } from '@/lib/types';
 import { Button, Checkbox, ChoiceGroup, Input, Notice, Textarea, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
@@ -21,7 +22,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
   const qc = useQueryClient();
   // a new card gets its id here, so its photo can be named after it before the card is saved
   const [id] = useState(() => speaker?.id ?? crypto.randomUUID());
-  const [f, setF] = useState({
+  const [initial] = useState(() => ({
     kind: speaker?.kind ?? defaultKind,
     full_name: speaker?.full_name ?? '',
     topic: speaker?.topic ?? '',
@@ -33,7 +34,10 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
     social_url: speaker?.social_url ?? '',
     notes: speaker?.notes ?? '',
     approve: true,
-  });
+  }));
+  const [f, setF] = useState(initial);
+  // typed changes: a tap outside is ignored, Escape and × ask first
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -110,8 +114,8 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
     const next = {
       full_name: nameError(f.full_name),
       topic: f.topic.trim().length < 2 ? (f.kind === 'speaker' ? 'צריך לכתוב נושא להרצאה.' : 'צריך לכתוב איזו פעילות.') : null,
-      phone: f.phone.trim() && !normalizePhone(f.phone) ? 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.' : null,
-      social_url: url && !/^https:\/\/[^\s<>"]+$/i.test(url) ? 'הקישור צריך להתחיל ב-https://' : url.length > 300 ? 'הקישור ארוך מדי.' : null,
+      phone: f.phone.trim() && !normalizePhone(f.phone) ? `מספר הטלפון לא נראה תקין. למשל ${PHONE_EXAMPLE}.` : null,
+      social_url: url && !/^https:\/\/[^\s<>"]+$/i.test(url) ? 'הקישור צריך להתחיל ב־https://' : url.length > 300 ? 'הקישור ארוך מדי.' : null,
       role_label: f.role_label.trim().length > 30 ? 'עד 30 תווים.' : null,
       bio_line: f.bio_line.trim().length > 240 ? 'עד 240 תווים.' : null,
       about: f.about.trim().length > 600 ? 'עד 600 תווים.' : null,
@@ -126,10 +130,11 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
     <Dialog
       open
       onClose={cancel}
+      dismissible={!dirty}
       title={speaker ? `עריכה: ${speaker.full_name}` : f.kind === 'instructor' ? 'מדריך חדש' : 'מרצה חדש'}
       footer={<>
         <Button busy={save.isPending} disabled={photoBusy} onClick={submit}>שמירה</Button>
-        <Button variant="ghost" onClick={cancel}>ביטול</Button>
+        <Button variant="ghost" onClick={cancel}>{DISMISS}</Button>
       </>}
     >
       <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
@@ -137,7 +142,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
           legend="תפקיד"
           value={f.kind}
           onChange={(v) => set('kind', v)}
-          options={[{ value: 'speaker', label: 'מרצה' }, { value: 'instructor', label: 'הדרכה (יוגה, פילאטיס)' }]}
+          options={[{ value: 'speaker', label: 'מרצה' }, { value: 'instructor', label: 'מדריך (יוגה, פילאטיס ועוד)' }]}
         />
         <PhotoField
           name={f.full_name.trim() || 'האדם'}
@@ -163,7 +168,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
 
         <fieldset className="flex flex-col gap-4 border-t border-edge pt-4">
           <legend className="sr-only">דף המפגש</legend>
-          <p aria-hidden="true" className="-mb-1 text-small font-semibold text-ink">לדף ״כל הפרטים על המפגש״</p>
+          <p aria-hidden="true" className="-mb-1 text-small font-semibold text-ink">לדף "כל הפרטים על המפגש"</p>
           <Input
             label="תיאור תפקיד בדף המפגש"
             value={f.role_label}
@@ -171,7 +176,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
             error={errors.role_label}
             maxLength={30}
             placeholder={f.kind === 'speaker' ? 'מרצה אורחת' : 'מאמן קרוספיט'}
-            hint={<>אם נשאר ריק: {f.kind === 'speaker' ? '״הרצאת אורח״' : '״אימון״ ושם הפעילות'}. <span className="whitespace-nowrap"><span className="num">{f.role_label.length}</span> מתוך <span className="num">30</span> תווים.</span></>}
+            hint={<>אם נשאר ריק: {f.kind === 'speaker' ? '"הרצאת אורח"' : '"אימון" ושם הפעילות'}. <span className="whitespace-nowrap"><span className="num">{f.role_label.length}</span> מתוך <span className="num">30</span> תווים.</span></>}
           />
           <Textarea
             label="כמה מילים לדף המפגש"
@@ -180,7 +185,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
             error={errors.about}
             maxLength={600}
             rows={5}
-            hint={<>נפתח בלחיצה על ״קראו עוד״. אפשר לחלק לפסקאות. <span className="whitespace-nowrap"><span className="num">{f.about.length}</span> מתוך <span className="num">600</span> תווים.</span></>}
+            hint={<>נפתח בלחיצה על "קראו עוד". אפשר לחלק לפסקאות. <span className="whitespace-nowrap"><span className="num">{f.about.length}</span> מתוך <span className="num">600</span> תווים.</span></>}
           />
         </fieldset>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -191,7 +196,7 @@ export function SpeakerDialog({ speaker, defaultKind, onClose }: { speaker: Spea
         {!speaker && (admin ? (
           <Checkbox label="לאשר מיד" hint="אחרי אישור אפשר לשבץ במפגש ולהציג בעמוד ההרשמה." checked={f.approve} onChange={(v) => set('approve', v)} />
         ) : (
-          <Notice icon="shield">ההצעה תחכה ב"מחכים לאישור" עד לאישור מנהלים.</Notice>
+          <Notice icon="shield">ההצעה תחכה בלשונית "מחכים לאישור" עד שמנהלים יאשרו.</Notice>
         ))}
         {formError && <p className="text-small font-medium text-bad" role="alert">{formError}</p>}
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
