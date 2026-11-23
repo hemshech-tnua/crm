@@ -9,8 +9,9 @@ import { Button, ButtonLink, ExternalButton, Notice, Spinner } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import { PAYMENT_POLL_FOR_MS } from './api';
 import { EventTicket } from './EventTicket';
-import { Glyph } from './marks';
-import { Block, ResultTitle, SectionTitle, TriList, payUrl, type Payer } from './shared';
+import { Icon } from '@/ui/Icon';
+import { Block, BulletList, ResultTitle, SectionTitle, payUrl, type Payer } from './shared';
+import { providerName } from './payUrl';
 
 /** A meeting where registering means paying first: a fee and a payment link. */
 export const paysFirst = (e: Pick<PublicEvent, 'price' | 'payment_url'>) => Number(e.price ?? 0) > 0 && !!e.payment_url;
@@ -30,7 +31,7 @@ export function useWatchExpired(since: number): boolean {
 function PayMark() {
   return (
     <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[var(--radius-control)] border-2 border-ink bg-paper text-ink" aria-hidden="true">
-      <Glyph name="card" size={40} />
+      <Icon name="card" size={40} />
     </div>
   );
 }
@@ -50,6 +51,7 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
   const amount = fmtMoney(e.price);
   const url = payUrl(e.payment_url ?? '', payer);
   const prefilled = url !== e.payment_url;
+  const provider = providerName(e.payment_url);
   const [checking, setChecking] = useState(false);
   const [notYet, setNotYet] = useState(false);
   const name = firstName ? `${firstName}, ` : '';
@@ -75,22 +77,29 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
 
       {e.is_full && (
         <Notice tone="warn" icon="alert">
-          המפגש התמלא בינתיים. תשלום עכשיו יכניס אתכם לרשימת ההמתנה, והצוות יחזור אליכם.
+          המפגש התמלא בינתיים. תשלום עכשיו יכניס את ההרשמה לרשימת ההמתנה, והצוות יחזור&nbsp;אליך.
         </Notice>
       )}
 
+      {/* before leaving for the provider's page: the way back here (an in-app browser may not return to this tab) */}
+      {showLink && token && <PendingLink token={token} />}
+
       <section aria-label="תשלום" className="rounded-[var(--radius-panel)] border-2 border-ink bg-paper p-4 sm:p-5">
-        <SectionTitle>מחיר: <span className="num">{amount}</span></SectionTitle>
+        <SectionTitle>תשלום בכרטיס אשראי</SectionTitle>
         <ExternalButton href={url} variant="primary" size="lg" cta className="mt-3 w-full">
           לתשלום <span className="num">{amount}</span>
         </ExternalButton>
-        <TriList
+        <BulletList
           className="mt-3 text-body-sm text-ink"
           items={[
-            'דף התשלום המאובטח של חברת התשלום ייפתח בחלון\u00a0חדש.',
+            provider
+              ? <>דף התשלום המאובטח של "{provider}" ייפתח בחלון&nbsp;חדש.</>
+              : 'דף התשלום המאובטח ייפתח בחלון\u00a0חדש.',
             prefilled
               ? <span className="font-semibold">השם והטלפון כבר ממולאים שם. נשאר להוסיף אימייל לקבלה ולשלם בכרטיס&nbsp;אשראי.</span>
               : <span className="font-semibold">כותבים שם וטלפון כמו בהרשמה, כדי שנזהה את התשלום, ומשלמים בכרטיס&nbsp;אשראי.</span>,
+            'פרטי האשראי מוזנים בדף המאובטח של חברת התשלום, לא\u00a0אצלנו.',
+            'הקבלה נשלחת אוטומטית.',
           ]}
         />
 
@@ -99,18 +108,17 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
             <Button size="sm" variant="secondary" busy={checking} onClick={check}>כבר שילמתי</Button>
             <span className="flex items-center gap-2 text-small text-ink-soft">
               {!expired && <span className="text-ink"><Spinner size={14} /></span>}
-              {expired ? 'שילמתם? לחצו ״כבר שילמתי״ ונבדוק\u00a0שוב.' : 'אחרי התשלום חוזרים לכאן. ההרשמה תאושר בעמוד הזה\u00a0מעצמה.'}
+              {expired ? 'כבר שילמת? לוחצים "כבר שילמתי" ונבדוק\u00a0שוב.' : 'אחרי התשלום חוזרים לכאן. ההרשמה תאושר בעמוד הזה\u00a0מעצמה.'}
             </span>
           </div>
           {notYet && (
-            <p className="mt-2 text-small text-ink">עוד לא קיבלנו אישור מחברת התשלום. בדרך כלל זה לוקח פחות מדקה, אז נסו שוב עוד&nbsp;רגע.</p>
+            <p className="mt-2 text-small text-ink">עוד לא קיבלנו אישור מחברת התשלום. בדרך כלל זה לוקח פחות מדקה, אז אפשר לנסות שוב עוד&nbsp;רגע.</p>
           )}
         </div>
       </section>
 
-      <EventTicket event={e} showStatus={false} />
-
-      {showLink && token && <PendingLink token={token} />}
+      {/* the amount is on the button above: the ticket says when and where */}
+      <EventTicket event={e} showStatus={false} showPrice={false} />
     </div>
   );
 }
@@ -120,9 +128,9 @@ function PendingLink({ token }: { token: string }) {
   const copy = useCopy();
   const url = manageUrl(token);
   return (
-    <Block title="לא מסתדר לשלם עכשיו?">
+    <Block title="לפני שעוברים לתשלום">
       <p className="text-body-sm text-ink-soft">
-        שמרו את הקישור האישי. דרכו אפשר לחזור ולשלם, כל עוד יש&nbsp;מקום.
+        כדאי לשמור את הקישור האישי. דרכו אפשר לחזור לכאן ולשלם, גם אחר כך, כל עוד יש&nbsp;מקום.
         <span className="mt-1 block font-semibold text-ink">הקישור אישי, לא&nbsp;לשתף.</span>
       </p>
       <p dir="ltr" className="num mt-3 truncate rounded-[var(--radius-control)] bg-mist px-3 py-2.5 text-left text-small text-ink-soft">{url}</p>

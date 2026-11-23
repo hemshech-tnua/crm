@@ -6,7 +6,7 @@ import { errorMessage, must } from '@/lib/errors';
 import { formatPhone } from '@/lib/phone';
 import { fmtDate, fmtListDate } from '@/lib/dates';
 import { fmtMoney } from '@/lib/money';
-import { ENGAGEMENT_LABEL } from '@/lib/labels';
+import { ENGAGEMENT_LABEL, MONEY_LABEL } from '@/lib/labels';
 import type { Engagement, PaymentMethod, PaymentStatus } from '@/lib/types';
 import { Dialog } from '@/ui/feedback';
 import { Badge, Button, EmptyState, ErrorBox, Skeleton } from '@/ui/kit';
@@ -34,8 +34,8 @@ export function Drilldown({ kind, filters, onClose }: { kind: DrillKind | null; 
   });
   return (
     <Dialog open={!!kind} onClose={onClose} title={kind ? `${TITLES[kind]}${q.data ? ` (${q.data.length})` : ''}` : ''} size="lg">
-      {q.isLoading ? <Skeleton lines={6} /> : q.error ? <ErrorBox error={errorMessage(q.error)} /> : !q.data?.length ? (
-        <EmptyState icon="people" title="אין אנשים ברשימה הזו">בתקופה ובסוג הפעילות שנבחרו.</EmptyState>
+      {q.isLoading ? <Skeleton shape="rows" count={6} height={52} /> : q.error && !q.data ? <ErrorBox error={errorMessage(q.error)} onRetry={() => void q.refetch()} /> : !q.data?.length ? (
+        <EmptyState icon="people" title="אין אנשים ברשימה הזו">בתקופה ובסוג המפגש שנבחרו.</EmptyState>
       ) : (
         <ul className="divide-y divide-edge">
           {q.data.map((r) => (
@@ -46,7 +46,7 @@ export function Drilldown({ kind, filters, onClose }: { kind: DrillKind | null; 
                 <span className="text-small text-muted">{r.city ?? ''}</span>
                 <span className="text-small text-muted">{r.source_label ?? 'מקור לא ידוע'}</span>
                 <span className="text-small">מפגשים: <span className="num font-semibold">{r.attended_count}</span></span>
-                <span className="text-small text-muted">אחרון: <span className="num">{fmtDate(r.last_attended_at)}</span></span>
+                <span className="text-small text-muted">הגעה אחרונה: <span className="num">{fmtDate(r.last_attended_at)}</span></span>
                 <Badge tone={r.engagement_status === 'regular' ? 'light' : r.engagement_status === 'lapsed' ? 'warn' : 'neutral'} icon={r.engagement_status === 'lapsed' ? 'alert' : undefined}>{ENGAGEMENT_LABEL[r.engagement_status]}</Badge>
               </Link>
             </li>
@@ -57,7 +57,7 @@ export function Drilldown({ kind, filters, onClose }: { kind: DrillKind | null; 
   );
 }
 
-// ───────────── who has not paid (the finance report's "ממתין לתשלום" tile) ─────────────
+// ───────────── who has not paid (the finance report's "עוד לא שולם" tile) ─────────────
 
 type UnpaidRow = {
   id: string; payment_status: PaymentStatus; paid_amount: number | null; payment_method: PaymentMethod | null; payment_ref: string | null;
@@ -66,7 +66,7 @@ type UnpaidRow = {
 };
 
 /**
- * The registrations behind "ממתין לתשלום", across meetings: registered, fee not paid and not marked absent, in a
+ * The registrations behind "עוד לא שולם", across meetings: registered, fee not paid and not marked absent, in a
  * priced meeting of the period (the rule of private.event_finance). Grouped by meeting, with "סימון תשלום" per person.
  */
 export function UnpaidDrilldown({ open, filters, eventIds, onClose }: {
@@ -108,13 +108,13 @@ export function UnpaidDrilldown({ open, filters, eventIds, onClose }: {
   return (
     <>
       <Dialog open={open && !paying} onClose={onClose} title={q.data ? `לא שילמו (${count})` : 'לא שילמו'} size="lg">
-        {q.isLoading ? <Skeleton lines={6} /> : q.error ? <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /> : !count ? (
-          <EmptyState icon="checkCircle" title="כל הרשומים שילמו">אין תשלום שממתין בתקופה ובסוג הפעילות שנבחרו.</EmptyState>
+        {q.isLoading ? <Skeleton shape="rows" count={6} height={52} /> : q.error && !q.data ? <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} /> : !count ? (
+          <EmptyState icon="checkCircle" title="כל הרשומים שילמו">אין תשלום שמחכה בתקופה ובסוג המפגש שנבחרו.</EmptyState>
         ) : (
           <div className="flex flex-col gap-5">
             <p className="text-small text-muted">
-              ממתין לתשלום: <span className="num font-bold text-ink">{fmtMoney(total)}</span> מ-<span className="num">{count}</span> רשומים
-              ב-<span className="num">{groups.length}</span> {groups.length === 1 ? 'מפגש' : 'מפגשים'}. מי שסומנה לו אי־הגעה לא נספר.
+              {MONEY_LABEL.pending}: <span className="num font-bold text-ink">{fmtMoney(total)}</span> מ־<span className="num">{count}</span> רשומים
+              ב־<span className="num">{groups.length}</span> {groups.length === 1 ? 'מפגש' : 'מפגשים'}. מי שסומנה לו אי־הגעה לא נספר.
             </p>
             {groups.map((g) => (
               <section key={g.event.id} aria-label={g.event.title}>

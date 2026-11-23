@@ -1,17 +1,22 @@
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import type { PublicEvent } from '@/lib/types';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { errorMessage } from '@/lib/errors';
 import { appBase } from '@/lib/links';
+import { fmtMoney } from '@/lib/money';
 import { ButtonLink, ErrorBox, Skeleton } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
-import hills from '@/assets/photos/hills.webp';
 import { usePublicEvents } from './api';
+import { savedToken } from './device';
 import { trackingQuery } from './tracking';
 import { Hero, Slogan } from './Hero';
+import { CtaBar } from './MeetingDetails';
+import { paysFirst } from './PayStep';
+import { HILLS } from './photos';
 import { usePageTitle } from './shared';
 import { ctaLabel, fridayPlan } from './friday/model';
-import { FRIDAY_FACTS } from './friday/facts';
-import { AskUs, ClosingBand, Faq, FlyerSection, ForWhom, Greeter, H2, LowThreshold, MoreMeetings, NextTicket, NoMeeting, Program } from './friday/sections';
+import { AskUs, ClosingBand, Faq, FlyerSection, ForWhom, H2, LowThreshold, MoreMeetings, NextTicket, NoMeeting, Program } from './friday/sections';
 
 /*
   The flyer slot. When the coordinator's flyer arrives, put the file in src/assets/flyers/ and import it here:
@@ -37,6 +42,49 @@ const KICKER = (
 );
 
 /**
+ * The phone's bottom bar on #/friday, the same bar as on #/e: only while the visitor has scrolled past the ticket's
+ * button and has not reached the closing band's (so there is never a second "להרשמה" in view, and it never covers the
+ * footer). Unmounted while hidden; no animation. The fee is said here only when the button leads to paying, because
+ * the ticket that says it is out of view. A phone that already registered goes to its own page instead.
+ */
+function StickyCta({ event: e, query }: { event: PublicEvent; query: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const cta = document.querySelector('[data-testid="friday-cta"]');
+    const band = document.getElementById('friday-close');
+    if (!cta || !band || typeof IntersectionObserver === 'undefined') return;
+    let ctaAbove = false;
+    let bandBelow = true;
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        const out = !en.isIntersecting;
+        if (en.target === cta) ctaAbove = out && en.boundingClientRect.top < 0;
+        else bandBelow = out && en.boundingClientRect.top > 0;
+      }
+      setShow(ctaAbove && bandBelow);
+    });
+    io.observe(cta);
+    io.observe(band);
+    return () => io.disconnect();
+  }, [e.code]);
+  if (!show) return null;
+  const token = savedToken(e.code);
+  return (
+    <CtaBar testId="friday-sticky-cta">
+      {token ? (
+        <ButtonLink to={`/m/${token}`} size="lg" cta className="w-full">לעמוד ההרשמה שלי</ButtonLink>
+      ) : (
+        <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className="w-full">
+          {ctaLabel(e)}
+          {paysFirst(e) && !e.is_full && <> · <span className="num">{fmtMoney(e.price)}</span></>}
+          <span className="sr-only">: {e.title}, {fmtDayLong(e.starts_at)}</span>
+        </ButtonLink>
+      )}
+    </CtaBar>
+  );
+}
+
+/**
  * #/friday — the landing page for the Friday meetings, the one link shared on Instagram and WhatsApp.
  * Phone: the poster hero, then the next meeting with its "להרשמה" on the first screen. Wide screen: two columns
  * where it helps (the ticket beside the program, more meetings beside the questions).
@@ -51,11 +99,13 @@ export function FridayPage() {
   const pageUrl = `${appBase()}#/friday`;
   const copyLink = () => void copy(pageUrl, 'הקישור לדף הועתק');
   const about = plan.next ?? plan.known;
+  // later Fridays and the other kinds of meeting, in date order
+  const more = [...plan.later, ...plan.others].sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   usePageTitle('מפגשי שישי');
 
   return (
     <div>
-      <Hero photo={hills} position="50% 74%" kicker={KICKER} title={<Slogan />}>
+      <Hero photo={HILLS} position="50% 74%" kicker={KICKER} title={<Slogan />}>
         <p>אימון, קפה והרצאה, עם אנשים שהיו&nbsp;שם. באים לבד או עם&nbsp;חברים.</p>
         {plan.next && (
           <p className="mt-4 hidden font-display text-section text-light sm:block">
@@ -94,13 +144,6 @@ export function FridayPage() {
         <ForWhom />
       </div>
 
-      {/* right after "אתם לא מכירים שם אף אחד": who meets you at the entrance */}
-      {FRIDAY_FACTS.greeter && (
-        <div className="mt-10 lg:mt-14">
-          <Greeter />
-        </div>
-      )}
-
       <div className="mt-12 lg:mt-16">
         <LowThreshold />
       </div>
@@ -115,7 +158,7 @@ export function FridayPage() {
       <div className="mt-12 grid grid-cols-[minmax(0,1fr)] gap-12 lg:mt-20 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
         <Faq event={about} />
         <div className="flex flex-col gap-12 lg:sticky lg:top-6 lg:gap-10">
-          {plan.later.length > 0 && <MoreMeetings events={plan.later} query={query} />}
+          {more.length > 0 && <MoreMeetings events={more} query={query} />}
           <AskUs />
         </div>
       </div>
@@ -123,6 +166,8 @@ export function FridayPage() {
       <div className="mt-12 lg:mt-20">
         <ClosingBand next={plan.next} query={query} url={pageUrl} message={SHARE_MESSAGE} onCopy={copyLink} />
       </div>
+
+      {plan.next && <StickyCta event={plan.next} query={query} />}
     </div>
   );
 }

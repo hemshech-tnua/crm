@@ -16,8 +16,8 @@ export function SitePage() {
   if (site.isPending) return <Skeleton lines={6} className="py-6" />;
   if (site.isError) {
     return errorCode(site.error) === 'site_not_found' ? (
-      <EmptyState icon="qr" title="הקוד הזה לא פעיל" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
-        גשו לצוות בכניסה, ונסמן שם שהגעתם.
+      <EmptyState icon="qr" titleAs="h1" title="הקוד הזה לא פעיל" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
+        גשו לצוות בכניסה ונסמן שם שהגעתם.
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(site.error)} onRetry={() => site.refetch()} />
@@ -59,7 +59,7 @@ export function SitePage() {
     );
   }
   return (
-    <EmptyState icon="calendar" title="אין כרגע מפגש מתוכנן כאן" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
+    <EmptyState icon="calendar" titleAs="h1" title="אין כרגע מפגש מתוכנן כאן" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
       כל המפגשים הקרובים מופיעים בעמוד&nbsp;הראשי.
     </EmptyState>
   );

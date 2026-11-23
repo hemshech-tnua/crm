@@ -86,7 +86,7 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
         <section className="rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 text-center">
           <h2 className="text-lg font-bold">{c.state === 'not_yet' ? 'המשוב ייפתח כשהמפגש יתחיל' : 'תקופת המשוב למפגש הזה הסתיימה'}</h2>
           <p className="mt-1 text-muted">
-            {c.state === 'not_yet' ? 'נשמח לשמוע מכם אחרי המפגש.' : 'תודה! נשמח לשמוע מכם אחרי המפגש הבא.'}
+            {c.state === 'not_yet' ? 'נשמח לשמוע מכם אחרי המפגש.' : 'נשמח לשמוע מכם אחרי המפגש הבא.'}
           </p>
           <ButtonLink to="/" variant="secondary" className="mt-4">למפגשים הקרובים</ButtonLink>
         </section>
@@ -101,7 +101,7 @@ function Feedback({ code, token }: { code: string; token: string | null }) {
         <p className="mt-1 text-ink-soft">דקה אחת של משוב עוזרת לנו לבנות את המפגש הבא.</p>
       </div>
       <EventTicket event={c.event} showStatus={false} />
-      {c.existing && <p className="text-small text-muted">כבר שלחתם משוב על המפגש הזה. אפשר לעדכן אותו כאן.</p>}
+      {c.existing && <p className="text-small text-muted">כבר נשלח משוב על המפגש הזה מהקישור הזה. אפשר לעדכן אותו כאן.</p>}
       <FeedbackForm
         ctx={c}
         token={c.personal ? token : null}

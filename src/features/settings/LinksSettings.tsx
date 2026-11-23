@@ -5,7 +5,7 @@ import { errorMessage } from '@/lib/errors';
 import { useReferralLinks, useSources } from '@/lib/data';
 import { allEventsUrl } from '@/lib/links';
 import { Badge, Button, EmptyState, ErrorBox, Input, Notice, Panel, Select, Skeleton } from '@/ui/kit';
-import { Dialog, useCopy, useToast } from '@/ui/feedback';
+import { DISMISS, Dialog, useCopy, useToast } from '@/ui/feedback';
 
 /** Channel/campaign links (?ref=code): the third, separate source dimension. */
 export function LinksSettings() {
@@ -31,14 +31,14 @@ export function LinksSettings() {
         הקישור כאן מוביל לרשימת המפגשים הפתוחים. קישור למפגש מסוים נמצא בעמוד המפגש.
       </Notice>
       <Panel title="קישורים לפי ערוץ" padded={false} actions={<Button icon="plus" onClick={() => setOpen(true)}>קישור חדש</Button>}>
-        {links.isLoading ? <div className="p-5"><Skeleton lines={4} /></div> : links.error ? <div className="p-5"><ErrorBox error={errorMessage(links.error)} /></div> : !links.data?.length ? (
+        {links.isLoading ? <div className="p-5"><Skeleton lines={4} /></div> : links.error && !links.data ? <div className="p-5"><ErrorBox error={errorMessage(links.error)} onRetry={() => void links.refetch()} /></div> : !links.data?.length ? (
           <EmptyState icon="link" title="עוד אין קישורים לפי ערוץ" action={<Button icon="plus" onClick={() => setOpen(true)}>קישור ראשון</Button>}>למשל: "ביו באינסטגרם" או "קבוצת המילואים של מודיעין".</EmptyState>
         ) : (
           <ul className="divide-y divide-edge">
             {links.data.map((l) => (
               <li key={l.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
                 <div className="min-w-48 flex-1">
-                  <div className="font-semibold">{l.label} {!l.is_active && <Badge>מושבת</Badge>}</div>
+                  <div className="font-semibold">{l.label} {!l.is_active && <Badge>לא פעיל</Badge>}</div>
                   <div className="text-small text-muted">{label(l.source_id) ?? 'בלי ערוץ'}{l.campaign ? ` · ${l.campaign}` : ''} · <span className="num">ref={l.code}</span></div>
                 </div>
                 <Button size="sm" variant="secondary" icon="copy" disabled={!l.is_active} onClick={() => copy(allEventsUrl(l.code), 'הקישור הועתק')}>העתקה</Button>
@@ -74,7 +74,7 @@ export function NewLink({ open, onClose, onCreated }: { open: boolean; onClose: 
       setLabel(''); setCode(''); setSource(''); setCampaign('');
       onClose();
     },
-    onError: (e: { code?: string }) => setError(e.code === '23505' ? 'הקוד הזה כבר בשימוש. בחרו קוד אחר.' : errorMessage(e)),
+    onError: (e: { code?: string }) => setError(e.code === '23505' ? 'הקוד הזה כבר בשימוש. אפשר לבחור קוד אחר.' : errorMessage(e)),
   });
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -84,7 +84,7 @@ export function NewLink({ open, onClose, onCreated }: { open: boolean; onClose: 
     save.mutate();
   };
   return (
-    <Dialog open={open} onClose={onClose} title="קישור הרשמה לערוץ" size="sm">
+    <Dialog open={open} onClose={onClose} title="קישור הרשמה לערוץ" size="sm" dismissible={!(labelText || code || source || campaign)}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <Input label="שם (לשימוש פנימי)" value={labelText} onChange={(e) => setLabel(e.target.value)} placeholder="ביו באינסטגרם" />
         <Input label="קוד בקישור" ltr value={code} onChange={(e) => setCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} placeholder="ig-bio" hint="מופיע בקישור: ?ref=ig-bio" />
@@ -94,7 +94,7 @@ export function NewLink({ open, onClose, onCreated }: { open: boolean; onClose: 
         </Select>
         <Input label="קמפיין (לא חובה)" value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="נובמבר 2026" />
         {error && <ErrorBox error={error} />}
-        <div className="flex gap-2"><Button type="submit" busy={save.isPending}>יצירת הקישור</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
+        <div className="flex gap-2"><Button type="submit" busy={save.isPending}>יצירת הקישור</Button><Button variant="ghost" onClick={onClose}>{DISMISS}</Button></div>
       </form>
     </Dialog>
   );

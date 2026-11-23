@@ -7,7 +7,7 @@ import { PLACEHOLDERS, renderTemplate, unknownPlaceholders } from '@/lib/templat
 import { addDays, fromIl, nextFriday, todayIl } from '@/lib/dates';
 import type { Template } from '@/lib/types';
 import { Badge, Button, Checkbox, ErrorBox, Input, Notice, Panel, Skeleton, Textarea } from '@/ui/kit';
-import { Dialog, useToast } from '@/ui/feedback';
+import { DISMISS, Dialog, useToast } from '@/ui/feedback';
 
 const AUDIENCE: Record<Template['audience'], string> = {
   registered: 'למי שרשום למפגש',
@@ -26,8 +26,8 @@ const SAMPLE = {
 export function TemplatesSettings() {
   const templates = useTemplates();
   const [editing, setEditing] = useState<Template | null>(null);
-  if (templates.isLoading) return <Skeleton lines={6} />;
-  if (templates.error) return <ErrorBox error={errorMessage(templates.error)} />;
+  if (templates.isLoading) return <Skeleton shape="tiles" count={4} height={220} cols="md:grid-cols-2" />;
+  if (templates.error && !templates.data) return <ErrorBox error={errorMessage(templates.error)} onRetry={() => void templates.refetch()} />;
   return (
     <>
       <div className="mb-4"><Notice>ההודעות לא נשלחות לבד. בכל מקום במערכת לוחצים "פתיחה בוואטסאפ", הטקסט מוכן, ושולחים מהטלפון. הודעות שמסומנות "דורש הסכמה" נפתחות רק ללוחמים שאישרו קבלת עדכונים (חוק התקשורת, סעיף 30א).</Notice></div>
@@ -78,9 +78,10 @@ function EditTemplate({ t, onClose }: { t: Template | null; onClose: () => void 
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(s + token.length, s + token.length); });
   };
   const unknown = unknownPlaceholders(body);
+  const dirty = !!t && (label !== t.label || body !== t.body || marketing !== t.is_marketing);
   return (
-    <Dialog open={!!t} onClose={() => { setKey(null); onClose(); }} title="עריכת הודעה" size="lg"
-      footer={<><Button busy={save.isPending} disabled={!label.trim() || body.trim().length < 2 || unknown.length > 0} onClick={() => save.mutate()}>שמירה</Button><Button variant="ghost" onClick={() => { setKey(null); onClose(); }}>ביטול</Button></>}>
+    <Dialog open={!!t} onClose={() => { setKey(null); onClose(); }} title="עריכת הודעה" size="lg" dismissible={!dirty}
+      footer={<><Button busy={save.isPending} disabled={!label.trim() || body.trim().length < 2 || unknown.length > 0} onClick={() => save.mutate()}>שמירה</Button><Button variant="ghost" onClick={() => { setKey(null); onClose(); }}>{DISMISS}</Button></>}>
       <div className="grid gap-5 md:grid-cols-2">
         <div className="flex flex-col gap-4">
           <Input label="שם ההודעה" value={label} onChange={(e) => setLabel(e.target.value)} />

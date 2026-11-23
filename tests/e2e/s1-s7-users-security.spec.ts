@@ -1,6 +1,18 @@
 // Scenario 1 (new user: create, sign in, dashboard, permissions) and scenario 7 (security in the browser).
-import { expect, test } from '@playwright/test';
-import { login, loginAs, logout, watchConsole } from './support';
+import { expect, test, type Page } from '@playwright/test';
+import { login, loginAs, watchConsole } from './support';
+
+/**
+ * Signs out where the page is: drop the stored session, then reload. (The shared logout() first moves the live app to
+ * #/login; the app still holds the admin's session in memory, redirects to the dashboard and fires its two events
+ * queries without a token, so the console check saw two 401s now and then. Nothing in the app was wrong.)
+ */
+async function signOutHere(page: Page) {
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await expect(page).toHaveURL(/#\/login/);
+  await expect(page.getByRole('heading', { name: 'כניסת צוות' })).toBeVisible();
+}
 
 test.describe('scenario 1: a new staff user', () => {
   test('admin creates a coordinator, who must choose a password and then sees only what a coordinator may', async ({ page }) => {
@@ -13,7 +25,7 @@ test.describe('scenario 1: a new staff user', () => {
     const fullName = `רכזת בדיקה ${String(stamp).slice(-4).replace(/\d/g, (d) => 'אבגדהוזחטי'[Number(d)])}`;
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('שם מלא').fill(fullName);
-    await dialog.getByLabel('אימייל (לכניסה בקוד למייל)').fill(email);
+    await dialog.getByLabel('אימייל (לכניסה בקוד לאימייל)').fill(email);
     await dialog.getByRole('radio', { name: /^ריכוז/ }).check();
     await dialog.getByRole('button', { name: 'יצירת המשתמש' }).click();
     // a new account signs in with a code by email; here the admin also gives a temporary password
@@ -30,10 +42,10 @@ test.describe('scenario 1: a new staff user', () => {
     await secret.getByRole('button', { name: 'סגירת החלון' }).first().click();
     const row = page.getByRole('listitem').filter({ hasText: fullName });
     await expect(row).toBeVisible();
-    await expect(row.getByText('ממתין לבחירת סיסמה')).toBeVisible();
+    await expect(row.getByText('מחכה לבחירת סיסמה')).toBeVisible();
 
     // the new user signs in with the temporary password and must replace it
-    await logout(page);
+    await signOutHere(page);
     await login(page, email, temp);
     await expect(page).toHaveURL(/#\/password/);
     await expect(page.getByText('נכנסת עם סיסמה זמנית')).toBeVisible();
@@ -44,7 +56,7 @@ test.describe('scenario 1: a new staff user', () => {
     await page.getByLabel('שוב, לאימות').fill('Boker-Tov-Modiin-7');
     await page.getByRole('button', { name: 'שמירת הסיסמה' }).click();
     await expect(page).toHaveURL(/#\/app\/dashboard/);
-    await expect(page.getByRole('heading', { name: 'היעדים לשנה' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'מול היעדים' })).toBeVisible();
 
     // coordinator: no users/privacy/audit tabs, settings shows only links + account
     await page.goto('#/app/settings?tab=users');

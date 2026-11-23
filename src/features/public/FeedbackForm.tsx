@@ -76,16 +76,16 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6" aria-label="משוב על המפגש">
       <div id={`${ids}-overall`}>
-        <Rating legend="הציון שלכם למפגש" required value={overall} error={errors.overall} onChange={(n) => { setOverall(n); setErrors((x) => ({ ...x, overall: undefined })); }} />
+        <Rating legend="ציון כללי למפגש" required value={overall} error={errors.overall} onChange={(n) => { setOverall(n); setErrors((x) => ({ ...x, overall: undefined })); }} />
       </div>
       {ctx.has_activity && (
-        <Rating legend={`מה דעתכם על ${theActivity(e)}?`} value={activity} onChange={setActivity} />
+        <Rating legend={`${theActivity(e)}: איך היה?`} value={activity} onChange={setActivity} />
       )}
       {ctx.has_lecture && (
-        <Rating legend={e.speaker_name ? `מה דעתכם על ההרצאה של ${e.speaker_name}?` : 'מה דעתכם על ההרצאה?'} value={lecture} onChange={setLecture} />
+        <Rating legend={e.speaker_name ? `איך הייתה ההרצאה של ${e.speaker_name}?` : 'איך הייתה ההרצאה?'} value={lecture} onChange={setLecture} />
       )}
       <Textarea
-        label="רוצים להוסיף משהו?"
+        label="משהו נוסף?"
         hint={
           <span className="flex justify-between gap-3">
             <span>לא חובה. מה היה טוב, מה לשפר, רעיון לנושא הבא.</span>
@@ -100,8 +100,8 @@ export function FeedbackForm({ ctx, token, onDone, submitLabel = 'שליחת ה�
       {!personal && (
         <Input
           id={`${ids}-phone`}
-          label="הטלפון שלכם"
-          hint={<PhoneExample prefix="לא חובה. כך נדע שהמשוב מכם. " />}
+          label="טלפון נייד"
+          hint={<PhoneExample prefix="לא חובה. כך נדע ממי המשוב. " />}
           type="tel"
           inputMode="tel"
           autoComplete="tel"

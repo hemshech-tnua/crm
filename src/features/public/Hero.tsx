@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Stripes } from '@/ui/Shapes';
 import { cx } from '@/ui/kit';
+import type { Photo } from './photos';
 
 /**
  * The brand book's poster grid on a page: an image zone (a photograph, beige stripes entering from the corner opposite
@@ -22,7 +23,7 @@ const TITLE = {
 } as const;
 
 export function Hero({ photo, kicker, title, children, position = 'center', className, titleSize = 'slogan' }: {
-  photo: string; kicker?: ReactNode; title: ReactNode; children?: ReactNode; position?: string; className?: string;
+  photo: Photo; kicker?: ReactNode; title: ReactNode; children?: ReactNode; position?: string; className?: string;
   titleSize?: keyof typeof TITLE;
 }) {
   return (
@@ -38,7 +39,8 @@ export function Hero({ photo, kicker, title, children, position = 'center', clas
         {children && <div className="mt-1.5 text-body text-light/90 sm:mt-3 lg:mt-5 lg:max-w-md lg:text-[1.0625rem]">{children}</div>}
       </div>
       <div className="relative order-first aspect-[3/1] overflow-hidden sm:aspect-[16/7] lg:order-none lg:aspect-auto">
-        <img src={photo} alt="" decoding="async" fetchPriority="high" className="h-full w-full object-cover lg:absolute lg:inset-0" style={{ objectPosition: position }} />
+        {/* phone: the full width; tablet: the 36rem column; wide screen: a column of ~450px, but cropped to a ~400px tall zone (cover), so ~720px of the photo is drawn */}
+        <img src={photo.src} srcSet={photo.srcSet} sizes="(min-width: 1024px) 720px, (min-width: 640px) 576px, 100vw" alt="" decoding="async" fetchPriority="high" className="h-full w-full object-cover lg:absolute lg:inset-0" style={{ objectPosition: position }} />
         <Stripes width={200} height={90} unit={20} dir="fall" count={3} offset={0} className="absolute bottom-0 left-0 hidden h-[34%] w-[34%] text-light sm:block lg:h-[26%] lg:w-[30%]" />
       </div>
     </section>

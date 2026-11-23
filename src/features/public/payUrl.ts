@@ -22,3 +22,18 @@ export function payUrl(url: string, payer?: Payer | null): string {
     return url;
   }
 }
+
+/**
+ * The payment provider's name, only for hosts we know (an explicit list, never guessed from the address). Anything else
+ * is "חברת התשלום".
+ */
+const PROVIDERS: Record<string, string> = { 'yeshlee.co.il': 'יש חשבונית' };
+export function providerName(url: string | null | undefined): string | null {
+  try {
+    const host = new URL(url ?? '').hostname.toLowerCase();
+    const known = Object.keys(PROVIDERS).find((h) => host === h || host.endsWith(`.${h}`));
+    return known ? PROVIDERS[known] : null;
+  } catch {
+    return null;
+  }
+}

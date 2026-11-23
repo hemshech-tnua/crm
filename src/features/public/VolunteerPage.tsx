@@ -7,9 +7,7 @@ import { TZ, fmtDay, fmtTime, relativeDays } from '@/lib/dates';
 import type { PublicVolunteer } from '@/lib/types';
 import { Badge, EmptyState, ErrorBox, Skeleton, Spinner, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
-import { Tri } from '@/ui/Shapes';
 import { roleLabel } from '@/features/volunteers/model';
-import { Glyph } from './marks';
 import { ContactLine, usePageTitle } from './shared';
 
 type VShift = PublicVolunteer['shifts'][number];
@@ -120,17 +118,17 @@ function ShiftCard({ shift: s, token, highlight }: { shift: VShift; token: strin
           <h2 id={titleId} className="text-heading font-bold">{s.title}</h2>
           <ul className="mt-2 flex flex-col gap-1.5 text-body-sm text-ink-soft">
             <li className="flex items-start gap-2">
-              <span className="mt-[3px] text-tide"><Glyph name="clock" /></span>
+              <span className="mt-[3px] text-tide"><Icon name="clock" size={18} /></span>
               <span><span className="num">{fmtTime(s.starts_at)}–{fmtTime(s.ends_at)}</span><span className="text-muted"> · {relativeDays(start)}</span></span>
             </li>
             {s.location && (
               <li className="flex items-start gap-2">
-                <span className="mt-[3px] text-tide"><Glyph name="pin" /></span>
+                <span className="mt-[3px] text-tide"><Icon name="pin" size={18} /></span>
                 <span>{s.location}</span>
               </li>
             )}
             <li className="flex items-start gap-2 font-semibold text-ink">
-              <Tri className="mt-[0.45em] shrink-0" />
+              <span className="mt-[3px] text-tide"><Icon name="people" size={18} /></span>
               <span>התפקיד: {roleLabel(s.type, s.role)}</span>
             </li>
           </ul>

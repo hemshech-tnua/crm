@@ -8,7 +8,7 @@ import { fmtDayLong } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { personPhotoUrl } from '@/lib/supabase';
-import { Badge, ButtonLink, EmptyState, ErrorBox, Skeleton, buttonClass, cx } from '@/ui/kit';
+import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Skeleton, buttonClass, cx } from '@/ui/kit';
 import { Icon } from '@/ui/Icon';
 import { Stripes } from '@/ui/Shapes';
 import { usePublicEvent } from './api';
@@ -41,13 +41,13 @@ export function hasDetails(e: PublicEvent, where: 'register' | 'other' = 'other'
 const TRIGGER = buttonClass('secondary', 'md', 'min-w-44 gap-2 border-2 border-ink text-ink hover:border-ink hover:bg-ink hover:text-light active:bg-ink-soft', true);
 
 /**
- * How wide the trigger is: false = its own width; 'always' = the full width (under the ticket on #/r); 'phone' = full
- * width on a phone and, from sm up, the same width as the «להרשמה» button above it (CTA_WIDTH), so they line up.
+ * How wide the trigger is: false = its own width; 'always' = the full width of its column, like the call to action
+ * above it (inside a ticket, under the ticket on #/r). A fixed minimum width is never used: inside a ticket's text
+ * column it overflowed the card (#/friday on a wide screen, every ticket at 320px).
  */
-type Wide = false | 'always' | 'phone';
-export const CTA_WIDTH = 'sm:w-auto sm:min-w-[23rem]';
-const WRAP: Record<string, string> = { false: 'w-fit', always: 'w-full', phone: 'w-full sm:w-fit' };
-const FIT: Record<string, string> = { false: '', always: 'w-full', phone: `w-full ${CTA_WIDTH}` };
+type Wide = false | 'always';
+const WRAP: Record<string, string> = { false: 'w-fit max-w-full', always: 'w-full' };
+const FIT: Record<string, string> = { false: 'max-w-full', always: 'w-full' };
 
 /** «כל הפרטים על המפגש» as a link to the page (#/e/<code>), keeping ?ref and utm_*. */
 export function DetailsLink({ event, query = '', wide = false, className }: { event: PublicEvent; query?: string; wide?: Wide; className?: string }) {
@@ -88,11 +88,12 @@ function SectionHead({ mode, id, children }: { mode: Mode; id: string; children:
 function Header({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
   const Title = mode === 'page' ? 'h1' : 'p';
   return (
-    <header className="relative overflow-hidden rounded-[var(--radius-panel)] bg-ink px-5 pt-5 pb-6 text-light sm:px-7 sm:pt-6 sm:pb-7">
+    // in the sheet the title is the first line, so it starts under the corner stripes (a long title ran under them)
+    <header className={cx('relative overflow-hidden rounded-[var(--radius-panel)] bg-ink px-5 pb-6 text-light sm:px-7 sm:pb-7', mode === 'sheet' ? 'pt-14' : 'pt-5 sm:pt-6')}>
       <Stripes width={150} height={44} unit={14} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-11 w-[150px] text-light" />
       <div className="relative">
         {mode === 'page' && <p className="text-small font-semibold text-light/85">כל הפרטים על המפגש</p>}
-        <Title className={cx('font-display text-[1.75rem] leading-tight text-balance sm:text-title', mode === 'page' && 'mt-1.5')}>
+        <Title className={cx('font-display text-title-sm leading-tight text-balance sm:text-title', mode === 'page' && 'mt-1.5')}>
           {keepName(e.title)}
         </Title>
         <p className="mt-2 text-body text-light/90">
@@ -295,7 +296,7 @@ function Facts({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
           <Fact term="איפה">
             {e.location}
             <a href={wazeUrl(e.location)} target="_blank" rel="noopener noreferrer" className="-my-1 flex min-h-11 w-fit items-center font-semibold text-tide underline underline-offset-4">
-              ניווט ב-Waze<span className="sr-only"> (נפתח בחלון חדש)</span>
+              ניווט ב־Waze<span className="sr-only"> (נפתח בחלון חדש)</span>
             </a>
           </Fact>
         )}
@@ -311,7 +312,8 @@ function Facts({ event: e, mode }: { event: PublicEvent; mode: Mode }) {
             <span className="block text-small text-muted">את הקפה והנשנושים אנחנו&nbsp;מביאים.</span>
           </Fact>
         )}
-        <Fact term="הרשמה"><Badge tone={status.tone}>{status.text}</Badge></Fact>
+        {/* a tag only when it says something beyond "open" (few places, waitlist, closed) */}
+        <Fact term="הרשמה">{status.plain ? status.text : <Badge tone={status.tone}>{status.text}</Badge>}</Fact>
       </dl>
     </section>
   );
@@ -353,28 +355,41 @@ export function MeetingDetails({ event: e, mode, cta }: { event: PublicEvent; mo
 
 // ───────────── the page: #/e/<code> ─────────────
 
+/**
+ * The phone's bottom bar with one call to action (the one fixed element at the bottom of a public screen). On #/e it
+ * turns into the side column's button on a wide screen (`inline`); on #/friday it is for phones only.
+ */
+export function CtaBar({ children, inline = false, testId }: { children: ReactNode; inline?: boolean; testId?: string }) {
+  return (
+    <div
+      data-testid={testId}
+      className={cx(
+        'fixed inset-x-0 bottom-0 z-20 border-t border-edge bg-paper/95 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm',
+        inline ? 'lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none' : 'lg:hidden',
+      )}
+    >
+      <div className="mx-auto max-w-xl lg:max-w-none">{children}</div>
+    </div>
+  );
+}
+
 /** The call to action: to the registration page (keeping ?ref and utm_*), or to their own page if this phone registered. */
 function PageCta({ event: e, query }: { event: PublicEvent; query: string }) {
   const token = savedToken(e.code);
   const open = bookable(e);
   return (
-    <div
-      data-testid="details-cta"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-edge bg-paper/95 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
-    >
-      <div className="mx-auto max-w-xl lg:max-w-none">
-        {token ? (
-          <ButtonLink to={`/m/${token}`} size="lg" cta className="w-full">לעמוד ההרשמה שלי</ButtonLink>
-        ) : open ? (
-          <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className="w-full">
-            {ctaLabel(e)}
-            <span className="sr-only">: {e.title}, {fmtDayLong(e.starts_at)}</span>
-          </ButtonLink>
-        ) : (
-          <ButtonLink to={`/${query}`} variant="secondary" size="lg" className="w-full">למפגשים הקרובים</ButtonLink>
-        )}
-      </div>
-    </div>
+    <CtaBar inline testId="details-cta">
+      {token ? (
+        <ButtonLink to={`/m/${token}`} size="lg" cta className="w-full">לעמוד ההרשמה שלי</ButtonLink>
+      ) : open ? (
+        <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className="w-full">
+          {ctaLabel(e)}
+          <span className="sr-only">: {e.title}, {fmtDayLong(e.starts_at)}</span>
+        </ButtonLink>
+      ) : (
+        <ButtonLink to={`/${query}`} variant="secondary" size="lg" className="w-full">למפגשים הקרובים</ButtonLink>
+      )}
+    </CtaBar>
   );
 }
 
@@ -395,13 +410,13 @@ export function MeetingPage() {
     const c = errorCode(event.error);
     if (c === 'registration_not_open') {
       return (
-        <EmptyState icon="calendar" title="ההרשמה עוד לא נפתחה" action={<ButtonLink to={home}>למפגשים הפתוחים עכשיו</ButtonLink>}>
+        <EmptyState icon="calendar" titleAs="h1" title="ההרשמה עוד לא נפתחה" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
           המפגש הזה עוד בהכנה. נסו שוב בקרוב, או עקבו אחרינו באינסטגרם ובקבוצות&nbsp;הוואטסאפ.
         </EmptyState>
       );
     }
     return c === 'event_not_found' ? (
-      <EmptyState icon="calendar" title="לא מצאנו את המפגש" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
+      <EmptyState icon="calendar" titleAs="h1" title="לא מצאנו את המפגש" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
         ייתכן שהקישור ישן או שהוקלד לא נכון.
       </EmptyState>
     ) : (
@@ -434,10 +449,15 @@ export function MeetingPage() {
  * close button and the phone's back button close it (the parent owns `open`, kept in the URL as ?d=1), and focus
  * returns to what opened it. The page under it does not scroll while it is open.
  */
-export function MeetingSheet({ event: e, open, onClose }: { event: PublicEvent; open: boolean; onClose: () => void }) {
+export function MeetingSheet({ event: e, open, onClose, onBackToForm }: {
+  event: PublicEvent; open: boolean; onClose: () => void;
+  /** over the registration form: the sheet ends with «חזרה להרשמה», which closes it and calls this instead of refocusing the trigger */
+  onBackToForm?: () => void;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const opener = useRef<HTMLElement | null>(null);
+  const toForm = useRef(false);
 
   useEffect(() => {
     const d = ref.current;
@@ -466,6 +486,11 @@ export function MeetingSheet({ event: e, open, onClose }: { event: PublicEvent; 
   const restore = () => {
     const el = opener.current;
     opener.current = null;
+    if (toForm.current && onBackToForm) {
+      toForm.current = false;
+      onBackToForm();
+      return;
+    }
     if (el?.isConnected) el.focus();
   };
 
@@ -496,6 +521,11 @@ export function MeetingSheet({ event: e, open, onClose }: { event: PublicEvent; 
           </div>
           <div className="px-5 pt-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pt-6 lg:pb-8">
             <MeetingDetails event={e} mode="sheet" />
+            {onBackToForm && (
+              <Button variant="secondary" size="lg" cta className="mt-8 w-full" onClick={() => { toForm.current = true; onClose(); }}>
+                חזרה להרשמה
+              </Button>
+            )}
           </div>
         </>
       )}

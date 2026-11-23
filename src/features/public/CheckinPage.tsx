@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import type { PublicEvent } from '@/lib/types';
 import { fmtDayLong, fmtTime, relativeDays } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { isPriced, fmtMoney } from '@/lib/money';
 import { Button, ButtonLink, EmptyState, ErrorBox, ExternalButton, Input, Notice, Skeleton } from '@/ui/kit';
+import { Tri } from '@/ui/Shapes';
+import { FRIDAY_FACTS } from './friday/facts';
 import { checkIn, checkInKnown, undoCheckin, usePublicSources, useCheckinInfo, useRegistration, useSavedStatuses, walkIn, type CheckinInfo, type CheckinResult, type PublicSource } from './api';
 import { forgetPerson, forgetToken, knownPeople, rememberPerson, saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
@@ -38,8 +40,8 @@ function Checkin({ code }: { code: string }) {
   if (info.isPending) return <Skeleton lines={6} className="py-6" />;
   if (info.isError) {
     return errorCode(info.error) === 'checkin_not_found' ? (
-      <EmptyState icon="qr" title="קוד הכניסה לא תקין" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
-        סרקו שוב את הברקוד שבכניסה, או גשו לצוות בכניסה ונסמן אתכם שם.
+      <EmptyState icon="qr" titleAs="h1" title="קוד הכניסה לא תקין" action={<ButtonLink to="/" variant="secondary">למפגשים הקרובים</ButtonLink>}>
+        סרקו שוב את הברקוד, או גשו לצוות בכניסה ונסמן אתכם&nbsp;שם.
       </EmptyState>
     ) : (
       <ErrorBox error={errorMessage(info.error)} onRetry={() => info.refetch()} />
@@ -120,7 +122,7 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
         return;
       case 'device_invalid':
         forgetPerson(last?.device);
-        setNotice('הטלפון כבר לא זוכר אותך (עבר הרבה זמן מאז הביקור האחרון). אפשר להיכנס עם מספר הטלפון.');
+        setNotice('הטלפון כבר לא זוכר אותך (עבר הרבה זמן מאז הפעם הקודמת). אפשר להיכנס עם מספר הטלפון.');
         go('phone');
         return;
       default:
@@ -209,21 +211,21 @@ function Walkin({ code, phone, onBack, onResult }: {
   const [typed, setTyped] = useState('');
   return (
     <div className="flex flex-col gap-5 pt-1">
+      {/* never a rejection: not registered is fine, the door is open */}
       <div>
-        <h1 className="font-display text-title">{name == null ? 'עוד רגע בפנים' : 'פעם ראשונה אצלנו?'}</h1>
-        <p className="mt-1 text-lg text-ink-soft">
-          {name == null
-            ? 'המספר הזה לא רשום למפגש הזה. מה השם המלא שלך?'
-            : 'עוד כמה פרטים, ונכנסים.'}
-        </p>
-        {name != null && (
-          <p className="mt-2 text-[1.05rem] text-ink-soft">
-            לא מצאנו את השם הזה עם המספר הזה. כבר נרשמת או היית אצלנו?{' '}
-            <button type="button" onClick={() => { setTyped(name); setName(null); }} className="min-h-11 font-semibold text-tide underline underline-offset-4">
-              לנסות שוב עם השם מההרשמה
+        {name == null ? (
+          <>
+            <h1 className="font-display text-title">עוד רגע בפנים</h1>
+            <p className="mt-1 text-lg text-ink-soft">אין בעיה, נכנסים גם בלי הרשמה. מה השם&nbsp;המלא?</p>
+          </>
+        ) : (
+          <>
+            <h1 className="font-display text-title-sm sm:text-title">עוד כמה פרטים קצרים, ונכנסים.</h1>
+            {/* the name did not match a card: a quiet way back, not a paragraph about what went wrong */}
+            <button type="button" onClick={() => { setTyped(name); setName(null); }} className="-ms-1 mt-1 inline-flex min-h-11 items-center px-1 text-start text-body-sm font-semibold text-tide underline underline-offset-4">
+              כבר נרשמת? לנסות שוב עם השם מההרשמה
             </button>
-            {' '}או לגשת לצוות בכניסה.
-          </p>
+          </>
         )}
       </div>
       {name == null ? (
@@ -337,7 +339,7 @@ function WalkinForm({ code, phone, name, sources, onResult }: {
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5" aria-label="הרשמה במקום">
-      <PersonFields form={form} sources={sources} big />
+      <PersonFields form={form} sources={sources} big sourceColumns={3} />
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
       <Button type="submit" size="lg" cta busy={busy} className="h-16! w-full text-xl!">נרשמים ונכנסים</Button>
@@ -377,7 +379,7 @@ function SavedOnPhone({ event, announce, saved, busy, error, onPick, onOther }: 
           {oneInside
             ? `הצ׳ק־אין${one.name ? ` של ${one.name}` : ''} כבר נקלט. מישהו נוסף הגיע? ממשיכים עם מספר טלפון.`
             : one.kind === 'device'
-            ? (one.name ? `${one.name}, הטלפון זוכר אותך מהביקור הקודם, אז מספיקה לחיצה אחת.` : 'הטלפון זוכר אותך מהביקור הקודם, אז מספיקה לחיצה אחת.')
+            ? (one.name ? `${one.name}, הטלפון זוכר אותך מהפעם הקודמת, אז מספיקה לחיצה אחת.` : 'הטלפון זוכר אותך מהפעם הקודמת, אז מספיקה לחיצה אחת.')
             : (one.name ? `נרשמת מהטלפון הזה בשם ${one.name}, אז מספיקה לחיצה אחת.` : 'נרשמת מהטלפון הזה, אז מספיקה לחיצה אחת.')}
         </p>
       ) : (
@@ -427,8 +429,11 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
   // a priced meeting: say honestly when the fee is still open (the registration knows; the check-in answer does not)
   const reg = useRegistration(event && isPriced(event.price) && r.token ? r.token : null);
   const owes = !!event && isPriced(event.price) && reg.data?.status === 'registered' && reg.data.payment_status === 'pending';
-  const milestone = event?.type === 'friday' ? MILESTONES[r.friday_count ?? 0] : undefined;
+  const friday = event?.type === 'friday';
+  const milestone = friday ? MILESTONES[r.friday_count ?? 0] : undefined;
   const firstTime = r.result === 'checked_in' && r.attended_count === 1;
+  // a first visit is not the moment to ask for membership; from a later one, a quiet link (not a button)
+  const later = (r.attended_count ?? 0) >= 2;
   return (
     <div className="flex flex-col items-start gap-4 pt-6 text-right">
       <SuccessMark size="lg" className="mx-0" />
@@ -461,7 +466,17 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
       {milestone && (
         <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2.5 font-display text-section text-ink">{milestone}</p>
       )}
-      {!milestone && firstTime && <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>}
+      {!milestone && firstTime && (
+        <div>
+          <p className="text-lg font-semibold">פעם ראשונה איתנו? כיף שבאת!</p>
+          {/* who meets first-timers: a Friday-morning fact, never said on another kind of meeting */}
+          {friday && FRIDAY_FACTS.greeter && (
+            <p className="mt-1 text-lg text-ink-soft" data-fact="greeter">
+              {FRIDAY_FACTS.greeter} מהצוות מחכה בכניסה ועושה היכרות עם כמה&nbsp;אנשים.
+            </p>
+          )}
+        </div>
+      )}
       {r.membership === 'member' && <p className="rounded-[var(--radius-control)] border border-edge bg-paper px-5 py-2 text-[1.05rem] font-semibold text-ink">יש לך חברות בעמותה. תודה על השותפות!</p>}
       {r.can_undo && r.result === 'checked_in' && (
         <div className="mt-1 flex flex-col items-start gap-2">
@@ -471,8 +486,11 @@ function Welcome({ result: r, fallback, onUndone, onAnother }: { result: Checkin
           {undoError && <ErrorBox error={undoError} />}
         </div>
       )}
-      {r.membership === 'none' && (
-        <ButtonLink to="/member" variant="secondary" className="mt-1">הצטרפות לעמותה</ButtonLink>
+      {r.membership === 'none' && later && (
+        <Link to="/member" className="-ms-1 inline-flex min-h-11 items-center gap-1.5 px-1 text-body-sm font-semibold text-tide underline underline-offset-4">
+          רוצה להצטרף לעמותה?
+          <Tri className="text-tide" />
+        </Link>
       )}
       <button type="button" onClick={onAnother} className="min-h-11 px-3 text-body-sm font-semibold text-muted underline underline-offset-4">
         צ׳ק־אין של מישהו נוסף מהטלפון הזה

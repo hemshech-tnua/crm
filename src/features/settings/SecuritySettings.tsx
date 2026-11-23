@@ -51,13 +51,13 @@ const ACTION_LABEL: Record<string, string> = {
   export: 'ייצוא נתונים',
   go_live: 'מעבר למערכת אמיתית',
   insert: 'נוסף איש צוות',
-  update: 'שינוי ברשומת צוות',
+  update: 'שינוי בפרטי איש צוות',
   delete: 'נמחק איש צוות',
 };
 
 export function SecuritySettings() {
   const q = useSecurityOverview();
-  if (q.isLoading) return <Panel><Skeleton lines={8} /></Panel>;
+  if (q.isLoading) return <Skeleton shape="tiles" count={3} height={200} cols="grid-cols-1" />;
   if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   const s = q.data!;
   const noMfa = s.staff.filter((m) => m.is_active && !m.mfa);

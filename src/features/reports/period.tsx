@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router';
 import { addDays, fmtMonth, todayIl } from '@/lib/dates';
 import { useSites } from '@/lib/data';
+import { ALL_MEETING_TYPES_LABEL } from '@/lib/labels';
 import { Segmented } from '@/ui/kit';
 
 export type PeriodKey = 'month' | 'prev_month' | '30d' | '90d' | 'year' | 'all' | 'custom';
@@ -57,7 +58,7 @@ export function periodLabel(f: Pick<Filters, 'from' | 'to' | 'period'>): string 
   if ((f.period === 'month' || f.period === 'prev_month') && f.from) return fmtMonth(`${f.from}T12:00:00Z`);
   const short = (d: string) => `${Number(d.slice(8, 10))}.${Number(d.slice(5, 7))}`;
   if (f.from && f.to) return `${short(f.from)}–${short(f.to)}.${f.to.slice(2, 4)}`;
-  return f.from ? `מ-${short(f.from)}.${f.from.slice(2, 4)}` : `עד ${short(f.to!)}.${f.to!.slice(2, 4)}`;
+  return f.from ? `מ־${short(f.from)}.${f.from.slice(2, 4)}` : `עד ${short(f.to!)}.${f.to!.slice(2, 4)}`;
 }
 
 /** Report RPC arguments from the filters. */
@@ -86,8 +87,8 @@ export function FilterBar({ filters, set, showType = true, custom = false }: {
         </div>
       )}
       {showType && (
-        <Segmented label="סוג פעילות" value={filters.type ?? ''} onChange={(v) => set({ type: v })}
-          options={[{ value: 'friday', label: 'שישי' }, { value: 'bonfire', label: 'מדורה' }, { value: '', label: 'כל הפעילויות' }]} />
+        <Segmented label="סוג המפגש" value={filters.type ?? ''} onChange={(v) => set({ type: v })}
+          options={[{ value: 'friday', label: 'שישי' }, { value: 'bonfire', label: 'מדורה' }, { value: '', label: ALL_MEETING_TYPES_LABEL }]} />
       )}
       {(sites.data?.length ?? 0) > 1 && (
         <select aria-label="מתחם" value={filters.site ?? ''} onChange={(e) => set({ site: e.target.value || null })} className="h-11 rounded-[var(--radius-control)] border border-control-line bg-paper pr-3 pl-8 text-small font-medium hover:border-ink">

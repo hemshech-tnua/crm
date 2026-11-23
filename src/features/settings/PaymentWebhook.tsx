@@ -61,7 +61,7 @@ export function PaymentWebhookPanel() {
                 <span>הודעה אחרונה: <span className="tabular-nums">{fmtListDate(s.last_received_at)}</span>{s.last_outcome && <> · {OUTCOME[s.last_outcome]}</>}</span>
               </p>
               <p className="text-small text-ink-soft">
-                ב-30 הימים האחרונים: <span className="num">{s.received_30d}</span> מסמכים, מהם <span className="num">{s.matched_30d}</span> הותאמו להרשמות.
+                ב־30 הימים האחרונים: <span className="num">{s.received_30d}</span> מסמכים, מהם <span className="num">{s.matched_30d}</span> הותאמו להרשמות.
               </p>
               {s.unmatched_open > 0 && (
                 <p className="text-small">

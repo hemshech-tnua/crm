@@ -51,9 +51,10 @@ test('copy that depends on a fact shows exactly when the fact is confirmed', asy
   const shown = async (on: unknown, text: string) =>
     expect(page.getByText(text, { exact: false }).first()).toHaveCount(on ? 1 : 0);
   await shown(FRIDAY_FACTS.greeter, 'מחכה בכניסה');
-  await expect(page.getByRole('heading', { name: 'מי מקבל אתכם' })).toHaveCount(FRIDAY_FACTS.greeter ? 1 : 0);
+  // the greeter is part of "זה בשבילכם אם…" and the line under the button, not a section of its own
+  await expect(page.getByRole('heading', { name: 'מי מקבל אתכם' })).toHaveCount(0);
   await shown(FRIDAY_FACTS.allLevels, 'לכל רמות הכושר');
-  await shown(FRIDAY_FACTS.allLevels, 'נדרשת רמת כושר');
+  await shown(FRIDAY_FACTS.allLevels, 'צריך להיות בכושר?');
   await shown(FRIDAY_FACTS.partialOk, 'אפשר להגיע רק לחלק מהבוקר?');
   await shown(FRIDAY_FACTS.showers, 'יש מקום להחליף בגדים');
   await shown(FRIDAY_FACTS.frequency, FRIDAY_FACTS.frequency ?? 'מפגשים בחודש');
@@ -109,8 +110,8 @@ test('after registering for a Friday meeting: how to get there and what to bring
   await register(page, ev.public_code);
 
   await expect(page.getByText(/שמרנו לך מקום\. ?נתראה ביום /)).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'איך מגיעים?' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /ניווט ב-Waze/ })).toHaveAttribute('href', `https://waze.com/ul?q=${encodeURIComponent(place)}&navigate=yes`);
+  await expect(page.getByRole('heading', { level: 2, name: 'איך מגיעים' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /ניווט ב־Waze/ })).toHaveAttribute('href', `https://waze.com/ul?q=${encodeURIComponent(place)}&navigate=yes`);
   await expect(page.getByRole('link', { name: /תחבורה ציבורית/ })).toHaveAttribute('href', /google\.com\/maps\/dir\/\?api=1&destination=.+&travelmode=transit$/);
   await expect(page.getByText('צריכים טרמפ?')).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'מה להביא' })).toBeVisible();
@@ -125,6 +126,6 @@ test('after registering for a Friday meeting: how to get there and what to bring
 test('after registering for a meeting that is not a Friday morning: no Friday packing list', async ({ page }) => {
   const ev = await makeEvent({ title: 'מדורה הגעה E2E', type: 'bonfire', location: 'חוף הכרמל' });
   await register(page, ev.public_code);
-  await expect(page.getByRole('heading', { level: 2, name: 'איך מגיעים?' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'איך מגיעים' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'מה להביא' })).toHaveCount(0);
 });

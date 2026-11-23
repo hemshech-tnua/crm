@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorMessage } from '@/lib/errors';
-import { normalizePhone } from '@/lib/phone';
+import { normalizePhone, PHONE_EXAMPLE } from '@/lib/phone';
 import { useSettings, useSites, useStaffList } from '@/lib/data';
 import type { Settings } from '@/lib/types';
 import { Button, Checkbox, ErrorBox, Input, Panel, Select, Skeleton } from '@/ui/kit';
@@ -44,7 +44,7 @@ export function GeneralSettings() {
     onError: (e) => setError(errorMessage(e)),
   });
 
-  if (!f) return settings.error ? <ErrorBox error={errorMessage(settings.error)} /> : <Skeleton lines={8} />;
+  if (!f) return settings.error ? <ErrorBox error={errorMessage(settings.error)} onRetry={() => void settings.refetch()} /> : <Skeleton shape="tiles" count={4} height={200} cols="grid-cols-1" />;
 
   const str = (k: keyof Settings) => (f[k] as string) ?? '';
   const bind = (k: keyof Settings) => ({ value: str(k), onChange: (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value }) });
@@ -76,9 +76,9 @@ export function GeneralSettings() {
       contact_phone: str('contact_phone').trim() || null,
     };
     const pcts = [patch.goal_show_rate, patch.goal_return_rate, patch.goal_friend_share];
-    if (pcts.some((p) => p == null || Number.isNaN(p) || p < 0 || p > 1)) return setError('יעדי האחוזים צריכים להיות בין 0 ל-100.');
-    if (!(patch.goal_avg_rating! >= 1 && patch.goal_avg_rating! <= 5)) return setError('יעד הדירוג צריך להיות בין 1 ל-5.');
-    if (patch.contact_phone && !normalizePhone(patch.contact_phone)) return setError('מספר הטלפון של הצוות לא תקין.');
+    if (pcts.some((p) => p == null || Number.isNaN(p) || p < 0 || p > 1)) return setError('יעדי האחוזים צריכים להיות בין 0 ל־100.');
+    if (!(patch.goal_avg_rating! >= 1 && patch.goal_avg_rating! <= 5)) return setError('יעד הדירוג צריך להיות בין 1 ל־5.');
+    if (patch.contact_phone && !normalizePhone(patch.contact_phone)) return setError(`מספר הטלפון של הצוות לא תקין. למשל ${PHONE_EXAMPLE}.`);
     save.mutate(patch);
   };
 
@@ -97,7 +97,7 @@ export function GeneralSettings() {
       <Panel title="מתי לוחם נחשב קבוע, ומתי הפסיק להגיע">
         <div className="grid gap-4 sm:grid-cols-3">
           <Input label="מפגשי שישי לפחות" type="number" min={1} max={10} {...bind('regular_min_fridays')} />
-          <Input label="בתוך כמה ימים" type="number" min={7} max={120} {...bind('regular_window_days')} hint="ברירת מחדל: 2 מפגשי שישי ב-30 יום" />
+          <Input label="בתוך כמה ימים" type="number" min={7} max={120} {...bind('regular_window_days')} hint="ברירת מחדל: 2 מפגשי שישי ב־30 יום" />
           <Input label="התראה אחרי כמה מפגשי שישי בלי הגעה" type="number" min={1} max={12} {...bind('lapsed_after_fridays')} />
         </div>
       </Panel>
@@ -106,7 +106,7 @@ export function GeneralSettings() {
         <div className="flex flex-col gap-4">
           <Checkbox checked={!!f.auto_task_no_show} onChange={(v) => setF({ ...f, auto_task_no_show: v })} label='מי שנרשם ולא הגיע: "חסרת לנו" ושיחה' />
           <Checkbox checked={!!f.auto_task_first_time} onChange={(v) => setF({ ...f, auto_task_first_time: v })} label="מי שהגיע בפעם הראשונה: שיחת היכרות ותודה" />
-          <Checkbox checked={!!f.auto_task_lapsed} onChange={(v) => setF({ ...f, auto_task_lapsed: v })} label="קבוע שהפסיק להגיע: לשאול מה שלומו" hint="המשימה רק מזכירה. שום הודעה לא נשלחת בלי שמישהו בצוות לוחץ שליחה." />
+          <Checkbox checked={!!f.auto_task_lapsed} onChange={(v) => setF({ ...f, auto_task_lapsed: v })} label="קבוע שהפסיק להגיע: לשאול מה נשמע" hint="המשימה רק מזכירה. שום הודעה לא נשלחת בלי שמישהו בצוות לוחץ שליחה." />
           <Select label="מי אחראי על המשימות" value={str('default_task_assignee')} onChange={(e) => setF({ ...f, default_task_assignee: e.target.value })} className="max-w-sm">
             <option value="">בלי אחראי (כל הצוות רואה)</option>
             {(staff.data ?? []).filter((s) => s.is_active && s.role !== 'volunteer').map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
@@ -117,11 +117,11 @@ export function GeneralSettings() {
       <Panel title="מפגשים והרשמה">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Input label="שם העמותה" {...bind('org_name')} />
-          <Input label="טלפון/וואטסאפ של הצוות (מוצג ללוחמים)" type="tel" ltr {...bind('contact_phone')} hint="לפניות, ביטול בלי הקישור ובקשות פרטיות" />
+          <Input label="טלפון הצוות לשיחות ולוואטסאפ (מוצג ללוחמים)" type="tel" ltr {...bind('contact_phone')} hint="לפניות, ביטול בלי הקישור ובקשות פרטיות" />
           <Select label="מתחם ברירת מחדל" {...bind('default_site_id')}>
             {(sites.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
-          <Input label="מכסת מקומות ברירת מחדל" type="number" min={1} {...bind('default_capacity')} />
+          <Input label="מספר מקומות (ברירת מחדל)" type="number" min={1} {...bind('default_capacity')} />
           <Input label="צ׳ק־אין נפתח (דקות לפני תחילת המפגש)" type="number" min={0} max={720} {...bind('checkin_opens_minutes')} />
           <Input label="צ׳ק־אין נסגר (דקות אחרי הסיום)" type="number" min={0} max={1440} {...bind('checkin_closes_minutes')} />
           <Input label="אפשר לתת משוב עד (ימים אחרי המפגש)" type="number" min={1} max={60} {...bind('feedback_days')} />

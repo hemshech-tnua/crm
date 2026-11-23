@@ -4,7 +4,7 @@ import { normalizePhone } from '@/lib/phone';
 import { Button, ButtonLink, ChoiceGroup, ErrorBox, Input, Textarea } from '@/ui/kit';
 import { propose } from './api';
 import { PhoneExample, cleanText, nameError, phoneError } from './PersonForm';
-import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList, usePageTitle } from './shared';
+import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, BulletList, usePageTitle } from './shared';
 
 type Kind = 'speaker' | 'instructor';
 type Values = { kind: Kind | ''; full_name: string; phone: string; topic: string; bio_line: string; social_url: string; message: string; website: string };
@@ -108,7 +108,7 @@ export function ProposePage() {
           בכל מפגש שישי יש פעילות תנועה והרצאת אורח.
           <span className="mt-2 block">יש לכם משהו לתת ללוחמים וללוחמות באזרחות? נשמח&nbsp;להכיר.</span>
         </p>
-        <TriList
+        <BulletList
           className="mt-4 text-ink-soft"
           items={['ממלאים כאן כמה פרטים על ההצעה', 'צוות העמותה עובר על כל הצעה', 'חוזרים אליכם בטלפון']}
         />
@@ -131,7 +131,7 @@ export function ProposePage() {
         <Input id={`${ids}-full_name`} label="שם מלא" required autoComplete="name" maxLength={80} value={v.full_name} onChange={(e) => set('full_name', e.target.value)} error={errors.full_name} />
         <Input
           id={`${ids}-phone`}
-          label="טלפון"
+          label="טלפון נייד"
           required
           type="tel"
           inputMode="tel"
@@ -155,7 +155,7 @@ export function ProposePage() {
         />
         <Input
           label="משפט אחד עליכם"
-          hint="לא חובה. כך נציג אתכם למשתתפים."
+          hint="לא חובה. כך נציג אתכם בעמוד המפגש."
           maxLength={240}
           value={v.bio_line}
           onChange={(e) => set('bio_line', e.target.value)}

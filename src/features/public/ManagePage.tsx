@@ -24,7 +24,7 @@ export function ManagePage() {
   // the payment arrived while this page was open: say so on the registration
   const [sawPending, setSawPending] = useState(false);
   if (reg.data?.status === 'pending_payment' && !sawPending) setSawPending(true);
-  usePageTitle(reg.data?.status === 'pending_payment' ? 'תשלום ההרשמה' : 'ההרשמה שלי');
+  usePageTitle(reg.isError ? 'הקישור האישי לא תקין' : reg.data?.status === 'pending_payment' ? 'תשלום ההרשמה' : 'ההרשמה שלי');
 
   // keep the token on this phone so check-in at the door is one tap (no name or phone is stored)
   const code = reg.data?.event.code;
@@ -42,7 +42,7 @@ export function ManagePage() {
   if (reg.isPending) return <Skeleton lines={8} className="py-6" />;
   if (reg.isError) {
     return errorCode(reg.error) === 'token_invalid' ? (
-      <EmptyState icon="link" title="הקישור האישי לא תקין" action={<ButtonLink to="/">למפגשים הקרובים</ButtonLink>}>
+      <EmptyState icon="link" titleAs="h1" title="הקישור האישי לא תקין" action={<ButtonLink to="/">למפגשים הקרובים</ButtonLink>}>
         ייתכן שהקישור הועתק חלקית, או שנרשמת מחדש ונוצר קישור חדש. אם צריך עזרה: <ContactLine inline />
       </EmptyState>
     ) : (
@@ -84,7 +84,7 @@ function statusLine(r: RegistrationInfo): { badge: ReactNode; text: string } {
   if (r.status === 'waitlisted' && r.payment_status === 'paid') {
     return {
       badge: <Badge tone="warn">ברשימת ההמתנה{r.waitlist_position != null && <> · מקום <span className="num">{r.waitlist_position}</span></>}</Badge>,
-      text: 'התשלום התקבל, אבל בינתיים כל המקומות נתפסו. הצוות יחזור אליך בהקדם, כדי למצוא מקום או להחזיר את התשלום.',
+      text: 'התשלום התקבל, אבל בינתיים כל המקומות נתפסו. הצוות יחזור אליך בהקדם כדי למצוא מקום או להחזיר את התשלום.',
     };
   }
   if (r.status === 'waitlisted') {
@@ -135,7 +135,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
         </div>
       ),
       confirm: waitlisted ? 'כן, לצאת מהרשימה' : 'כן, לבטל את ההרשמה',
-      cancel: 'השארת ההרשמה',
+      cancel: waitlisted ? 'לא, להישאר ברשימה' : 'לא, להשאיר את ההרשמה',
       danger: true,
     });
     if (!ok) return;
@@ -190,7 +190,7 @@ function Manage({ info: r, token, justPaid = false }: { info: RegistrationInfo; 
       {active && upcoming && r.status === 'registered' && (
         <Block title="בכניסה למפגש">
           <p className="text-body-sm text-ink-soft">
-            בכניסה סורקים את הברקוד ולוחצים ״הגעתי״. לא צריך להקליד כלום: הטלפון הזה כבר זוכר את ההרשמה&nbsp;שלך.
+            בכניסה סורקים את הברקוד ולוחצים "הגעתי". לא צריך להקליד כלום: הטלפון הזה כבר זוכר את ההרשמה&nbsp;שלך.
           </p>
         </Block>
       )}

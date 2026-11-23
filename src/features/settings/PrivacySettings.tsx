@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { errorMessage, must } from '@/lib/errors';
 import { fmtDate, fmtListDate } from '@/lib/dates';
 import { useSettings, useStaffList } from '@/lib/data';
-import { ROLE_LABEL } from '@/lib/labels';
+import { EVENT_STATUS_LABEL, PAYMENT_STATUS_LABEL, REG_STATUS_LABEL, ROLE_LABEL } from '@/lib/labels';
+import { STATUS_LABEL as SHIFT_STATUS_LABEL } from '@/features/volunteers/model';
 import type { Role } from '@/lib/types';
 import { Badge, Button, EmptyState, ErrorBox, KeyValue, Notice, Panel, Select, Skeleton } from '@/ui/kit';
 import { useConfirm, useToast } from '@/ui/feedback';
@@ -40,17 +41,17 @@ export function PrivacySettings() {
       <Panel title="מה נשמר ואיך">
         <KeyValue items={[
           ['נאסף בהרשמה', 'שם, טלפון, עיר, גיל (נשמר כשנת לידה משוערת), איך שמעו עלינו, ומי הביא. הסכמה לעדכונים ובקשה לא להצטלם הן רשות.'],
-          ['לא נאסף בכלל', 'מידע רפואי או נפשי, יחידה צבאית או מידע מסווג, הערות על אופי ואישיות (שאלה 27 בשאלון).'],
-          ['מי רואה', 'מנהלים ורכזים: הכול. צוות כניסה: רק שם ו-4 ספרות אחרונות של הטלפון, ורק ביום המפגש. ההגבלה נאכפת בשרת.'],
+          ['לא נאסף בכלל', 'מידע רפואי או נפשי, יחידה צבאית או מידע מסווג, הערות על אופי ואישיות.'],
+          ['מי רואה', 'מנהלים ורכזים: הכול. צוות כניסה: רק שם ו־4 ספרות אחרונות של הטלפון, ורק ביום המפגש. ההגבלה נאכפת בשרת.'],
           ['הסכמות', `כל שינוי בהסכמה נרשם עם המקור ונוסח הטקסט (גרסה ${settings.data?.consent_text_version ?? '—'}).`],
           ['תקופת שמירה', `לוחם שלא הייתה לו פעילות ${settings.data?.retention_months ?? 36} חודשים מוצג כאן כמועמד למחיקת פרטים. שום דבר לא נמחק אוטומטית.`],
           ['בקשת מחיקה', 'מי שמבקש למחוק את הפרטים: בכרטיס הלוחם, "מחיקת פרטים אישיים".'],
         ]} />
-        <div className="mt-4"><Notice tone="warn" icon="alert">מסמכי הפרטיות (מדיניות הפרטיות בעמוד ההרשמה ונוהל אבטחת המידע) מנוסחים לבדיקה משפטית ואינם הצהרת עמידה בתקנות. ראו docs/04-security-privacy.md.</Notice></div>
+        <div className="mt-4"><Notice tone="warn" icon="alert">מסמכי הפרטיות (מדיניות הפרטיות בעמוד ההרשמה ונוהל אבטחת המידע) מנוסחים לבדיקה משפטית ואינם הצהרת עמידה בתקנות. המסמך המלא נמצא בתיעוד המערכת.</Notice></div>
       </Panel>
 
       <Panel title="מועמדים למחיקת פרטים לפי תקופת השמירה" padded={false}>
-        {candidates.isLoading ? <div className="p-5"><Skeleton lines={3} /></div> : candidates.error ? <div className="p-5"><ErrorBox error={errorMessage(candidates.error)} /></div> : !candidates.data?.length ? (
+        {candidates.isLoading ? <div className="p-5"><Skeleton lines={3} /></div> : candidates.error && !candidates.data ? <div className="p-5"><ErrorBox error={errorMessage(candidates.error)} onRetry={() => void candidates.refetch()} /></div> : !candidates.data?.length ? (
           <EmptyState icon="shield" title="אין מועמדים">אין לוחמים שעבר זמן השמירה מאז הפעילות האחרונה שלהם.</EmptyState>
         ) : (
           <ul className="divide-y divide-edge">
@@ -67,7 +68,7 @@ export function PrivacySettings() {
 
       <Panel title="גיבוי ושחזור">
         <p className="leading-relaxed text-ink-soft">
-          הנתונים נשמרים ב-Supabase. בתוכנית Pro מתבצע גיבוי יומי אוטומטי שנשמר 7 ימים. בנוסף יש סקריפט לגיבוי מוצפן ידני ושחזור, והוראות מלאות ב-docs/05-operations.md.
+          הנתונים נשמרים ב־Supabase. בתוכנית Pro מתבצע גיבוי יומי אוטומטי שנשמר 7 ימים. בנוסף יש סקריפט לגיבוי מוצפן ידני ושחזור. ההוראות המלאות נמצאות בתיעוד המערכת.
         </p>
       </Panel>
     </div>
@@ -148,15 +149,15 @@ const FIELD: Record<string, string> = {
 
 /** A few values worth reading in words (the rest stay in "פרטים טכניים"). */
 const VALUE: Record<string, Record<string, string>> = {
-  attendance: { attended: 'סומנה הגעה', no_show: 'סומן שלא הגיעו', unknown: 'הסימון הוסר' },
-  payment_status: { pending: 'לא שולם', paid: 'שולם', waived: 'פטור', refunded: 'הוחזר', none: 'בלי תשלום' },
+  attendance: { attended: 'סומנה הגעה', no_show: 'סומנה אי־הגעה', unknown: 'הסימון הוסר' },
+  payment_status: PAYMENT_STATUS_LABEL,
   role: { admin: ROLE_LABEL.admin, coordinator: ROLE_LABEL.coordinator, volunteer: ROLE_LABEL.volunteer },
 };
 const STATUS_VALUE: Record<string, Record<string, string>> = {
-  registrations: { registered: 'רשומים', waitlisted: 'רשימת המתנה', cancelled: 'ביטול', pending_payment: 'מחכה לתשלום' },
-  events: { draft: 'טיוטה', open: 'פתוח להרשמה', closed: 'ההרשמה נסגרה', completed: 'נסגר', cancelled: 'בוטל' },
+  registrations: REG_STATUS_LABEL,
+  events: EVENT_STATUS_LABEL,
   speakers: { approved: 'מאושר', proposed: 'מחכה לאישור', declined: 'נדחה', archived: 'בארכיון' },
-  volunteer_shifts: { invited: 'הזמנה נשלחה', confirmed: 'אישור', declined: 'סירוב', cancelled: 'ביטול' },
+  volunteer_shifts: SHIFT_STATUS_LABEL,
   unmatched_payments: { open: 'מחכה להתאמה', attached: 'הותאם להרשמה', ignored: 'לא קשור' },
 };
 
@@ -226,7 +227,7 @@ export function AuditLog() {
       </Select>
     }>
       <p className="px-4 pt-3 text-small text-muted sm:px-5">מי עשה מה ומתי. היומן שומר אילו שדות השתנו, אבל לא את הערכים האישיים עצמם.</p>
-      {q.isLoading ? <div className="p-5"><Skeleton lines={8} /></div> : q.error ? <div className="p-5"><ErrorBox error={errorMessage(q.error)} /></div> : !q.data?.length ? (
+      {q.isLoading ? <div className="p-5"><Skeleton lines={8} /></div> : q.error && !q.data ? <div className="p-5"><ErrorBox error={errorMessage(q.error)} onRetry={() => void q.refetch()} /></div> : !q.data?.length ? (
         <EmptyState icon="search" title="אין פעולות מהסוג הזה" />
       ) : (
         <>

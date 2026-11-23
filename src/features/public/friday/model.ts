@@ -15,18 +15,22 @@ export type FridayPlan = {
   next: PublicEvent | null;
   /** The Friday meetings after it (up to three), for "עוד מפגשים". */
   later: PublicEvent[];
+  /** Upcoming meetings of other kinds (up to three), listed with their kind under "עוד מפגשים". */
+  others: PublicEvent[];
   /** With nothing bookable: the earliest Friday meeting we know of (full, or registration not open yet). */
   known: PublicEvent | null;
 };
 
 export function fridayPlan(events: PublicEvent[] | undefined, now = Date.now()): FridayPlan {
-  const fridays = (events ?? [])
-    .filter((e) => e.type === 'friday' && e.status !== 'cancelled' && startMs(e) > now)
+  const upcoming = (events ?? [])
+    .filter((e) => e.status !== 'cancelled' && startMs(e) > now)
     .sort((a, b) => startMs(a) - startMs(b));
+  const fridays = upcoming.filter((e) => e.type === 'friday');
+  const others = upcoming.filter((e) => e.type !== 'friday').slice(0, 3);
   const next = fridays.find(bookable) ?? null;
-  if (!next) return { next: null, later: [], known: fridays[0] ?? null };
+  if (!next) return { next: null, later: [], others, known: fridays[0] ?? null };
   const later = fridays.filter((e) => e !== next && startMs(e) >= startMs(next)).slice(0, 3);
-  return { next, later, known: null };
+  return { next, later, others, known: null };
 }
 
 /** The participation fee, read defensively: the field is new and may be missing, null, or a numeric string. */
@@ -77,15 +81,15 @@ export function program(e: PublicEvent | null, facts = FRIDAY_FACTS): ProgramIte
 }
 
 /**
- * The short "no strings" points of the navy strip, each a few words that fit one line on a phone; the fitness one and
- * the rhythm only once the team confirms them.
+ * The short "no strings" points of the navy strip, each a few words that fit one line on a phone; the rhythm only once
+ * the team confirms it. "בלי מעגל שיחה" answers the worry that this is therapy (the question in the FAQ says it at
+ * length). Fitness levels are said in the program and the FAQ, so not a third time here.
  */
 export function lowThreshold(facts = FRIDAY_FACTS): string[] {
   return [
     'בלי דרגות, בלי מסדרים',
+    'בלי מעגל שיחה',
     'בלי התחייבות',
-    ...(facts.allLevels ? ['לכל רמות הכושר'] : []),
-    'ביטול בקישור האישי',
     ...(facts.frequency ? [facts.frequency] : []),
   ];
 }

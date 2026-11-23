@@ -10,7 +10,7 @@ async function fillRegistration(page: Page, p: { name: string; phone: string; ci
   await page.getByLabel('עיר מגורים').fill(p.city);
   await page.getByLabel('גיל').fill(p.age);
   await page.getByRole('radio', { name: p.source }).check();
-  if (p.referrer) await page.getByLabel('דרך מי הגעתם? שם או טלפון').fill(p.referrer);
+  if (p.referrer) await page.getByLabel('מי הזמין אתכם?').fill(p.referrer);
   await page.getByRole('button', { name: 'להרשמה', exact: true }).click();
 }
 

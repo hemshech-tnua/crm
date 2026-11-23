@@ -2,7 +2,7 @@
 // Client checks mirror private.parse_person() for quick feedback; the server re-checks everything.
 import { useId, useMemo, useState } from 'react';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { normalizePhone } from '@/lib/phone';
+import { PHONE_EXAMPLE, normalizePhone } from '@/lib/phone';
 import { Checkbox, ChoiceGroup, Input } from '@/ui/kit';
 import type { PersonPayload, PublicSource } from './api';
 import { Honeypot, PrivacyNote } from './shared';
@@ -135,19 +135,21 @@ export function usePersonForm(initial: Partial<PersonValues> = {}) {
 
 export type PersonForm = ReturnType<typeof usePersonForm>;
 
-/** "for example 050-1234567": a hint under the phone field, not a placeholder that looks already filled in. */
+/** "for example 050-123-4567": a hint under the phone field, not a placeholder that looks already filled in. */
 export function PhoneExample({ prefix = '' }: { prefix?: string }) {
-  return <>{prefix}למשל <span dir="ltr" className="num">050-1234567</span></>;
+  return <>{prefix}למשל <span dir="ltr" className="num">{PHONE_EXAMPLE}</span></>;
 }
 
 /** Name, phone, city, age and "how did you hear about us" (+ who brought you / details). */
-export function PersonFields({ form, sources, invitedBy, big = false }: {
+export function PersonFields({ form, sources, invitedBy, big = false, sourceColumns = 2 }: {
   form: PersonForm;
   sources: PublicSource[];
   /** the first name of whoever sent a personal invite link: then we do not ask who brought you */
   invitedBy?: string | null;
   /** larger fields for the door (sunlight, one hand) */
   big?: boolean;
+  /** 3: the source question in two columns already on a phone (three from sm), so the door's form is shorter */
+  sourceColumns?: 2 | 3;
 }) {
   const { values: v, set, errors, ids } = form;
   const src = sources.find((s) => s.key === v.source);
@@ -215,7 +217,7 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
         <ChoiceGroup
           legend="איך שמעתם עלינו?"
           required
-          columns={2}
+          columns={sourceColumns}
           options={sources.map((s) => ({ value: s.key, label: s.label }))}
           value={v.source}
           onChange={(k) => set('source', k)}
@@ -226,8 +228,8 @@ export function PersonFields({ form, sources, invitedBy, big = false }: {
         <p className="-mt-2 text-small text-muted">רשמנו שהגעתם בהזמנה של {invitedBy}.</p>
       ) : (
         <Input
-          label="דרך מי הגעתם? שם או טלפון"
-          hint="לא חובה. כך נדע להגיד תודה."
+          label="מי הזמין אתכם?"
+          hint="שם או טלפון. לא חובה, כך נדע להגיד תודה."
           maxLength={80}
           autoComplete="off"
           value={v.referrer}
@@ -257,7 +259,7 @@ export function ConsentFields({ form }: { form: PersonForm }) {
         <legend className="sr-only">העדפות (לא חובה)</legend>
         <Checkbox
           label="אשמח לקבל עדכונים והזמנות למפגשים בוואטסאפ"
-          hint="לא חובה. אפשר להפסיק בכל רגע בתשובה ״הסר״."
+          hint='לא חובה. אפשר להפסיק בכל רגע בתשובה "הסר".'
           checked={v.consent_updates}
           onChange={(c) => set('consent_updates', c)}
         />

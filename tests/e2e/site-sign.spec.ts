@@ -37,12 +37,12 @@ test('staff sign in with a code sent by SMS, without a password', async ({ page 
   await page.goto('#/login');
   await page.getByRole('button', { name: 'כניסה עם קוד בטלפון (SMS)' }).click();
   await page.getByLabel('מספר הטלפון הנייד שלך').fill('050-000-0903');
-  await page.getByRole('button', { name: 'שליחת קוד ב-SMS' }).click();
+  await page.getByRole('button', { name: 'שליחת קוד ב־SMS' }).click();
   await expect(page.getByText(/רשום בצוות, נשלח אליו עכשיו קוד/)).toBeVisible();
-  await page.getByLabel('הקוד מה-SMS').fill('000000');
+  await page.getByLabel('הקוד מה־SMS').fill('000000');
   await page.getByRole('button', { name: 'כניסה', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('הקוד לא נכון');
-  await page.getByLabel('הקוד מה-SMS').fill('246810');
+  await page.getByLabel('הקוד מה־SMS').fill('246810');
   await page.getByRole('button', { name: 'כניסה', exact: true }).click();
   await expect(page).toHaveURL(/#\/app\/door/);
   // the wrong code is answered with 403, which the browser logs; nothing else may fail
@@ -63,12 +63,12 @@ test('staff sign in with a code sent by email', async ({ page }) => {
   expect(res.status).toBe(200);
 
   await page.goto('#/login');
-  await page.getByRole('button', { name: 'כניסה עם קוד במייל' }).click();
+  await page.getByRole('button', { name: 'כניסה עם קוד באימייל' }).click();
   await page.getByLabel('כתובת האימייל שלך').fill(email);
-  await page.getByRole('button', { name: 'שליחת קוד למייל' }).click();
+  await page.getByRole('button', { name: 'שליחת קוד לאימייל' }).click();
   await expect(page.getByText(/רשומה בצוות, נשלח אליה עכשיו קוד/)).toBeVisible();
   const code = await mailedCode(email);
-  await page.getByLabel('הקוד מהמייל').fill(code!);
+  await page.getByLabel('הקוד מהאימייל').fill(code!);
   await page.getByRole('button', { name: 'כניסה', exact: true }).click();
   await expect(page).toHaveURL(/#\/app\/dashboard/);
   expect(errors, errors.join('\n')).toEqual([]);

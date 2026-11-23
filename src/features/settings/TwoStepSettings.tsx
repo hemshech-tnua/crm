@@ -4,7 +4,7 @@ import { useMe } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { Badge, Button, ErrorBox, Input, Notice, Panel } from '@/ui/kit';
-import { useConfirm, useToast } from '@/ui/feedback';
+import { DISMISS, useConfirm, useToast } from '@/ui/feedback';
 
 /**
  * Two-step sign-in (TOTP). Once on, every sign-in also asks for a 6-digit code from an authenticator app, and the
@@ -45,7 +45,7 @@ export function TwoStepSettings() {
     e.preventDefault();
     if (!enroll || busy) return;
     const digits = code.replace(/\D/g, '');
-    if (digits.length !== 6) return setError('הקוד הוא 6 ספרות.');
+    if (digits.length !== 6) return setError('הקוד צריך להיות בן 6 ספרות.');
     setError(null);
     setBusy(true);
     try {
@@ -107,7 +107,7 @@ export function TwoStepSettings() {
           {error && <ErrorBox error={error} />}
           <div className="flex flex-wrap gap-2">
             <Button type="submit" busy={busy}>הפעלה</Button>
-            <Button variant="ghost" onClick={() => setEnroll(null)}>ביטול</Button>
+            <Button variant="ghost" onClick={() => setEnroll(null)}>{DISMISS}</Button>
           </div>
         </form>
       ) : (

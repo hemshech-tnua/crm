@@ -9,7 +9,7 @@ import { downloadFile } from '@/lib/csv';
 import { siteCheckinUrl } from '@/lib/links';
 import type { Site, Source } from '@/lib/types';
 import { Badge, Button, Checkbox, ErrorBox, Input, Notice, Panel, Skeleton } from '@/ui/kit';
-import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
+import { DISMISS, Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
 import { QrImage } from '@/features/events/shared';
 import { dataUrlToBlob } from '@/features/events/context';
 
@@ -19,8 +19,8 @@ export function SourcesSettings() {
   const sources = useSources();
   const [editing, setEditing] = useState<Partial<Source> | null>(null);
   return (
-    <Panel title="אפשרויות ב'איך שמעת עלינו?'" padded={false} actions={<Button icon="plus" onClick={() => setEditing({ is_active: true, is_friend: false, asks_detail: false, sort_order: 80 })}>מקור חדש</Button>}>
-      {sources.isLoading ? <div className="p-5"><Skeleton lines={5} /></div> : sources.error ? <div className="p-5"><ErrorBox error={errorMessage(sources.error)} /></div> : (
+    <Panel title='אפשרויות ב"איך שמעת עלינו?"' padded={false} actions={<Button icon="plus" onClick={() => setEditing({ is_active: true, is_friend: false, asks_detail: false, sort_order: 80 })}>מקור חדש</Button>}>
+      {sources.isLoading ? <div className="p-5"><Skeleton lines={5} /></div> : sources.error && !sources.data ? <div className="p-5"><ErrorBox error={errorMessage(sources.error)} onRetry={() => void sources.refetch()} /></div> : (
         <ul className="divide-y divide-edge">
           {(sources.data ?? []).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
@@ -40,17 +40,23 @@ export function SourcesSettings() {
 }
 
 function SourceDialog({ value, onClose }: { value: Partial<Source> | null; onClose: () => void }) {
+  const [dirty, setDirty] = useState(false);
+  const close = () => { setDirty(false); onClose(); };
   return (
-    <Dialog open={!!value} onClose={onClose} title={value?.id ? 'עריכת מקור' : 'מקור חדש'} size="sm">
-      {value && <SourceForm key={value.id ?? 'new'} initial={value} onDone={onClose} />}
+    <Dialog open={!!value} onClose={close} title={value?.id ? 'עריכת מקור' : 'מקור חדש'} size="sm" dismissible={!dirty}>
+      {value && <SourceForm key={value.id ?? 'new'} initial={value} onDone={close} onDirty={setDirty} />}
     </Dialog>
   );
 }
 
-function SourceForm({ initial, onDone }: { initial: Partial<Source>; onDone: () => void }) {
+function SourceForm({ initial, onDone, onDirty }: { initial: Partial<Source>; onDone: () => void; onDirty: (dirty: boolean) => void }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState<Partial<Source>>({ ...initial });
+  const [f, setFState] = useState<Partial<Source>>({ ...initial });
+  const setF = (next: Partial<Source>) => {
+    setFState(next);
+    onDirty((['label', 'sort_order', 'is_friend', 'asks_detail', 'is_active'] as const).some((k) => next[k] !== initial[k]));
+  };
   const [error, setError] = useState<string | null>(null);
   const save = useMutation({
     mutationFn: async () => {
@@ -72,7 +78,7 @@ function SourceForm({ initial, onDone }: { initial: Partial<Source>; onDone: () 
       <Checkbox checked={!!f.asks_detail} onChange={(v) => setF({ ...f, asks_detail: v })} label="לבקש פירוט בטקסט חופשי" />
       <Checkbox checked={!!f.is_active} onChange={(v) => setF({ ...f, is_active: v })} label="מופיע בטופס ההרשמה" />
       {error && <ErrorBox error={error} />}
-      <div className="flex gap-2"><Button type="submit" busy={save.isPending}>שמירה</Button><Button variant="ghost" onClick={onDone}>ביטול</Button></div>
+      <div className="flex gap-2"><Button type="submit" busy={save.isPending}>שמירה</Button><Button variant="ghost" onClick={onDone}>{DISMISS}</Button></div>
     </form>
   );
 }
@@ -95,9 +101,13 @@ export function SitesSettings() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sites'] }); toast.success('המתחם נשמר'); setF(null); },
     onError: (e) => setError(errorMessage(e)),
   });
+  const orig = f?.id ? sites.data?.find((x) => x.id === f.id) : null;
+  const siteDirty = !!f && (orig
+    ? (f.name ?? '') !== (orig.name ?? '') || (f.address ?? '') !== (orig.address ?? '') || (f.is_active ?? true) !== orig.is_active
+    : !!(f.name || f.address));
   return (
     <Panel title="מתחמים" padded={false} actions={<Button icon="plus" onClick={() => setF({ is_active: true })}>מתחם חדש</Button>}>
-      {sites.isLoading ? <div className="p-5"><Skeleton lines={3} /></div> : (
+      {sites.isLoading ? <div className="p-5"><Skeleton lines={3} /></div> : sites.error && !sites.data ? <div className="p-5"><ErrorBox error={errorMessage(sites.error)} onRetry={() => void sites.refetch()} /></div> : (
         <ul className="divide-y divide-edge">
           {(sites.data ?? []).map((s) => (
             <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
@@ -109,16 +119,16 @@ export function SitesSettings() {
           ))}
         </ul>
       )}
-      <p className="px-5 pb-4 text-small text-muted">לכל מתחם מפגשים משלו, וברקוד קבוע אחד לשלט בכניסה. בדוחות ובדשבורד אפשר לסנן לפי מתחם (שאלה 43 בשאלון).</p>
+      <p className="px-5 pb-4 text-small text-muted">לכל מתחם מפגשים משלו, וברקוד קבוע אחד לשלט בכניסה. בדוחות ובמסך הסקירה אפשר לסנן לפי מתחם.</p>
       {sign && <SiteSignDialog site={(sites.data ?? []).find((x) => x.id === sign.id) ?? sign} onClose={() => setSign(null)} />}
-      <Dialog open={!!f} onClose={() => { setF(null); setError(null); }} title={f?.id ? 'עריכת מתחם' : 'מתחם חדש'} size="sm">
+      <Dialog open={!!f} onClose={() => { setF(null); setError(null); }} title={f?.id ? 'עריכת מתחם' : 'מתחם חדש'} size="sm" dismissible={!siteDirty}>
         {f && (
           <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (!f.name || f.name.trim().length < 2) return setError('צריך שם למתחם.'); save.mutate(); }}>
             <Input label="שם" value={f.name ?? ''} onChange={(e) => setF({ ...f, name: e.target.value })} />
             <Input label="כתובת" value={f.address ?? ''} onChange={(e) => setF({ ...f, address: e.target.value })} />
             <Checkbox checked={f.is_active ?? true} onChange={(v) => setF({ ...f, is_active: v })} label="פעיל" />
             {error && <ErrorBox error={error} />}
-            <div className="flex gap-2"><Button type="submit" busy={save.isPending}>שמירה</Button><Button variant="ghost" onClick={() => setF(null)}>ביטול</Button></div>
+            <div className="flex gap-2"><Button type="submit" busy={save.isPending}>שמירה</Button><Button variant="ghost" onClick={() => { setF(null); setError(null); }}>{DISMISS}</Button></div>
           </form>
         )}
       </Dialog>
@@ -143,14 +153,14 @@ function SiteSignDialog({ site, onClose }: { site: Site; onClose: () => void }) 
     try {
       downloadFile(`${file}.svg`, new Blob([await QRCode.toString(url, { ...opts, type: 'svg' })], { type: 'image/svg+xml' }));
     } catch {
-      toast.error('לא הצלחנו ליצור את הקובץ. נסו שוב.');
+      toast.error('לא הצלחנו ליצור את הקובץ. אפשר לנסות שוב.');
     }
   };
   const png = async () => {
     try {
       downloadFile(`${file}.png`, dataUrlToBlob(await QRCode.toDataURL(url, { ...opts, width: 2048 })));
     } catch {
-      toast.error('לא הצלחנו ליצור את הקובץ. נסו שוב.');
+      toast.error('לא הצלחנו ליצור את הקובץ. אפשר לנסות שוב.');
     }
   };
   const rotate = useMutation({

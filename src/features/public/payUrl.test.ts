@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { payUrl } from './payUrl';
+import { payUrl, providerName } from './payUrl';
 
 const YESH = 'https://yeshlee.co.il/payment/1609c794-b2b5-4955-af2c-3c266a2f175f';
 
@@ -22,5 +22,16 @@ describe('payUrl: the payment link opens with the registrant’s details', () =>
   });
   it('does not accept a look-alike host', () => {
     expect(payUrl('https://yeshlee.co.il.evil.example/p', { name: 'א', phone: '+972501234567' })).toBe('https://yeshlee.co.il.evil.example/p');
+  });
+});
+
+describe('providerName', () => {
+  it('names only the providers on the explicit list', () => {
+    expect(providerName('https://yeshlee.co.il/pay/abc')).toBe('יש חשבונית');
+    expect(providerName('https://www.yeshlee.co.il/pay/abc')).toBe('יש חשבונית');
+    expect(providerName('https://pay.example.org/x')).toBeNull();
+    expect(providerName('https://yeshlee.co.il.evil.example/x')).toBeNull();
+    expect(providerName('not a url')).toBeNull();
+    expect(providerName(null)).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
-// The sections of the Friday landing page (#/friday). Brand book: navy and beige only, 45° stripes from a corner,
-// the triangle ◀ as bullet and call to action, squared corners, plural and warm copy.
+// The sections of the Friday landing page (#/friday). Brand book: navy and beige only, 45° stripes from a corner (on
+// the poster and the closing band only), the triangle ◀ on what leads somewhere (calls to action, link rows, the
+// program's steps), never as a plain bullet; squared corners, plural and warm copy.
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { PublicEvent } from '@/lib/types';
@@ -8,11 +9,11 @@ import { Badge, Button, ButtonLink, ExternalButton, cx } from '@/ui/kit';
 import { Stripes, Tri } from '@/ui/Shapes';
 import { EventTicket, availability } from '../EventTicket';
 import { ContactLine, transitUrl, wazeUrl } from '../shared';
-import { activityText, keepName, lectureText, timeRange } from '../eventText';
+import { activityText, keepName, kindLabel, lectureText, timeRange } from '../eventText';
 import { fmtMoney, isPriced } from '@/lib/money';
 import { ctaLabel, lowThreshold, paymentNoteOf, priceOf, program } from './model';
 import { FRIDAY_FACTS } from './facts';
-import { CTA_WIDTH, DetailsLink } from '../MeetingDetails';
+import { DetailsLink } from '../MeetingDetails';
 
 /** Section headings: the book's Bold, one step under the hero. */
 export const H2 = 'font-display text-section lg:text-[1.625rem] lg:leading-tight';
@@ -34,15 +35,20 @@ export function NextTicket({ event: e, query }: { event: PublicEvent; query: str
   const note = paymentNoteOf(e);
   return (
     <EventTicket event={e} highlight level={3} showStatus="notable" agenda={false}>
-      <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className={`mt-4 w-full ${CTA_WIDTH}`} data-testid="friday-cta">
+      <ButtonLink to={`/r/${e.code}${query}`} size="lg" cta className="mt-4 w-full" data-testid="friday-cta">
         {ctaLabel(e)}
         <span className="sr-only">: {e.title}, {fmtDayLong(e.starts_at)}</span>
       </ButtonLink>
       <p className="mt-2 text-small text-muted">
-        {e.is_full ? 'אם יתפנה מקום, נעדכן אתכם לפי סדר ההרשמה.' : 'ההרשמה לוקחת פחות מדקה.'}
+        {/* the fear of arriving alone, answered right under the button (the next Friday is always a Friday morning) */}
+        {e.is_full
+          ? 'אם יתפנה מקום, נעדכן אתכם לפי סדר ההרשמה.'
+          : FRIDAY_FACTS.greeter
+            ? <span data-fact="greeter">מגיעים לבד? {FRIDAY_FACTS.greeter} מחכה&nbsp;בכניסה.</span>
+            : 'ההרשמה לוקחת פחות מדקה.'}
         {isPriced(price) && note && <> {endSentence(note)}</>}
       </p>
-      <DetailsLink event={e} query={query} wide="phone" className="mt-3" />
+      <DetailsLink event={e} query={query} wide="always" className="mt-3" />
     </EventTicket>
   );
 }
@@ -53,7 +59,7 @@ export function NoMeeting({ known }: { known: PublicEvent | null }) {
     <div className="relative overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper px-5 py-6 sm:px-6" data-testid="friday-empty">
       {known ? (
         <>
-          <p className="text-small font-semibold text-muted">המפגש הבא</p>
+          <p className="text-small font-semibold text-muted">המפגש הקרוב</p>
           <p className="mt-0.5 font-display text-section">{fmtDayLong(known.starts_at)}</p>
           <p className="mt-1 text-ink-soft">
             <span className="num">{timeRange(known)}</span>
@@ -84,10 +90,8 @@ export function NoMeeting({ known }: { known: PublicEvent | null }) {
 export function Program({ event, className }: { event: PublicEvent | null; className?: string }) {
   const items = program(event);
   return (
-    <section aria-labelledby="friday-program" className={cx(className, 'relative -mx-5 overflow-hidden bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]')}>
-      {/* stripes enter from the top-left corner, cut by the panel's top and left edges, clear of the heading */}
-      <Stripes width={180} height={56} unit={16} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-14 w-[180px] text-light" />
-      <div className="relative px-5 pt-6 pb-4 sm:px-7 sm:pt-7 sm:pb-5">
+    <section aria-labelledby="friday-program" className={cx(className, '-mx-5 bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]')}>
+      <div className="px-5 pt-6 pb-4 sm:px-7 sm:pt-7 sm:pb-5">
         <h2 id="friday-program" className={H2}>ככה נראה הבוקר</h2>
         <ol className="mt-5">
           {items.map((it) => (
@@ -123,16 +127,24 @@ const FOR_WHOM = [
   'אתם לא מכירים שם אף אחד. גם זה\u00a0בסדר.',
 ];
 
-/** "זה בשבילכם אם…": the visitor recognises themselves, the last line answers the fear of arriving alone. */
+/**
+ * "זה בשבילכם אם…": the visitor recognises themselves; the last line answers the fear of arriving alone, and under it,
+ * once the team names them (FRIDAY_FACTS.greeter), who meets first-timers at the entrance.
+ */
 export function ForWhom() {
+  const last = FOR_WHOM.length - 1;
   return (
     <section aria-labelledby="friday-who" className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-10">
       <h2 id="friday-who" className={cx(H2, 'lg:self-start lg:pt-4')}>זה בשבילכם אם…</h2>
       <ul className="mt-4 grid gap-x-10 lg:mt-0 lg:grid-cols-2">
-        {FOR_WHOM.map((line) => (
-          <li key={line} className="flex items-baseline gap-3 border-t border-ink py-3.5 text-heading font-semibold text-pretty text-ink lg:py-4 lg:text-section">
-            <Tri className="text-ink" size="0.62em" />
-            <span className="min-w-0">{line}</span>
+        {FOR_WHOM.map((line, i) => (
+          <li key={line} className="border-t border-ink py-3.5 text-pretty lg:py-4">
+            <span className="block text-heading font-semibold text-ink lg:text-section">{line}</span>
+            {i === last && FRIDAY_FACTS.greeter && (
+              <span className="mt-1 block text-body text-ink-soft" data-fact="greeter">
+                {FRIDAY_FACTS.greeter} מהצוות מחכה בכניסה ועושה לכם היכרות עם כמה&nbsp;אנשים.
+              </span>
+            )}
           </li>
         ))}
       </ul>
@@ -142,37 +154,21 @@ export function ForWhom() {
 
 // ───────────── the low threshold ─────────────
 
-/** One navy band of short "no strings" points, the triangle before each. No heading on screen: it is a list of facts. */
+/**
+ * One navy band of short "no strings" points. No heading on screen: it is a list of facts. No bullets either (the
+ * triangle marks what leads somewhere): on a phone hairlines between the lines, on a wide screen thin rules between
+ * the points.
+ */
 export function LowThreshold() {
   return (
-    <section aria-label="בלי אותיות קטנות" className="relative -mx-5 overflow-hidden bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]">
-      <Stripes width={150} height={44} unit={14} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-11 w-[150px] text-light" />
-      <ul className="relative flex flex-col gap-3 px-5 pt-14 pb-6 sm:flex-row sm:flex-wrap sm:gap-x-9 sm:gap-y-3 sm:py-7 sm:ps-7 sm:pe-44 lg:py-8 lg:ps-10 lg:pe-48">
+    <section aria-label="בלי אותיות קטנות" className="-mx-5 bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]">
+      <ul className="flex flex-col divide-y divide-light/20 px-5 py-3 sm:flex-row sm:flex-wrap sm:gap-y-3 sm:divide-y-0 sm:px-7 sm:py-7 lg:px-10 lg:py-8">
         {lowThreshold().map((item) => (
-          <li key={item} className="flex items-baseline gap-2.5 font-display text-section whitespace-nowrap lg:text-[1.5rem]">
-            <Tri className="text-light" size="0.6em" />
+          <li key={item} className="py-3 font-display text-section whitespace-nowrap sm:border-light/30 sm:py-0 sm:not-first:ms-6 sm:not-first:border-s sm:not-first:ps-6 lg:text-[1.5rem]">
             {item}
           </li>
         ))}
       </ul>
-    </section>
-  );
-}
-
-// ───────────── who meets you ─────────────
-
-/**
- * Only once the team names the person at the entrance (FRIDAY_FACTS.greeter). Right after "זה בשבילכם אם…", whose last
- * line is the fear of arriving alone; the page says it here once (and in the matching question).
- */
-export function Greeter() {
-  if (!FRIDAY_FACTS.greeter) return null;
-  return (
-    <section aria-labelledby="friday-greeter" data-fact="greeter">
-      <h2 id="friday-greeter" className={H2}>מי מקבל אתכם</h2>
-      <p className="mt-3 max-w-2xl text-heading text-ink lg:text-section">
-        {FRIDAY_FACTS.greeter} מהצוות מחכה לכם בכניסה ומכיר לכם כמה&nbsp;אנשים.
-      </p>
     </section>
   );
 }
@@ -209,7 +205,10 @@ export function FlyerSection({ src, alt, onShare }: { src: string | null; alt: s
 
 // ───────────── more meetings ─────────────
 
-/** The Friday meetings after the next one, as compact rows (date, time, what). The whole row is the link. */
+/**
+ * The Friday meetings after the next one, and meetings of other kinds (their kind said on the row), as compact rows
+ * (date, time, what), by date. The whole row is the link.
+ */
 export function MoreMeetings({ events, query }: { events: PublicEvent[]; query: string }) {
   return (
     <section aria-labelledby="friday-more">
@@ -224,7 +223,9 @@ export function MoreMeetings({ events, query }: { events: PublicEvent[]; query: 
 function MeetingRow({ event: e, to }: { event: PublicEvent; to: string }) {
   const start = new Date(e.starts_at);
   const status = availability(e);
-  const what = lectureText(e) ?? activityText(e);
+  // another kind of meeting: its kind and its own title say what it is; a Friday says its lecture or activity
+  const kind = e.type === 'friday' ? null : kindLabel(e);
+  const what = e.type === 'friday' ? (lectureText(e) ?? activityText(e)) : keepName(e.title);
   return (
     <li className="relative flex min-h-[4.5rem] items-center gap-4 px-4 py-3 transition-colors hover:bg-mist/70 has-[a:focus-visible]:outline-3 has-[a:focus-visible]:-outline-offset-3 has-[a:focus-visible]:outline-ink">
       <div className="flex w-12 shrink-0 flex-col items-center text-center" aria-hidden="true">
@@ -233,6 +234,7 @@ function MeetingRow({ event: e, to }: { event: PublicEvent; to: string }) {
         <span className="text-micro font-medium text-ink-soft">{monthShort.format(start)}</span>
       </div>
       <div className="min-w-0 flex-1">
+        {kind && <p className="text-small font-semibold text-ink-soft">{kind}</p>}
         <h3 className="font-semibold leading-snug">
           <Link to={to} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
             {fmtDayLong(start)}
@@ -293,18 +295,18 @@ export function Faq({ event }: { event: PublicEvent | null }) {
       <div className="mt-3 divide-y divide-edge overflow-hidden rounded-[var(--radius-panel)] border border-edge bg-paper lg:mt-4">
         <QuestionGroup id="faq-about" title="על המפגש">
           <Question q="למי מיועדים המפגשים?">
-            ללוחמים וללוחמות אחרי השירות, לא משנה כמה זמן עבר מהשחרור. לא צריך להכיר מראש את העמותה או את&nbsp;המשתתפים.
+            ללוחמים וללוחמות אחרי השירות, לא משנה כמה זמן עבר מהשחרור. לא צריך להכיר מראש את העמותה או אף אחד&nbsp;מהבאים.
           </Question>
           <Question q={'אפשר להגיע לבד, בלי להכיר אף\u00a0אחד?'}>
             <p>כן. אחרי האימון יושבים יחד לקפה ולנשנושים, ורק אז מתחילה ההרצאה. יש זמן&nbsp;להכיר.</p>
-            {f.greeter && <p className="mt-1.5">{f.greeter} מהצוות מחכה בכניסה ומכיר למי שבא בפעם הראשונה כמה&nbsp;אנשים.</p>}
+            {f.greeter && <p className="mt-1.5">{f.greeter} מהצוות מחכה בכניסה ועושה היכרות עם כמה אנשים למי שבא בפעם&nbsp;הראשונה.</p>}
           </Question>
           <Question q="צריך לשתף משהו אישי או לדבר על השירות?">
             לא. זה לא מעגל שיחה: מתאמנים, יושבים לקפה ושומעים הרצאה. כל אחד ואחת משתפים רק את מה
             שהם&nbsp;רוצים.
           </Question>
           {f.allLevels && (
-            <Question q="נדרשת רמת כושר מסוימת?">
+            <Question q="צריך להיות בכושר?">
               לא. האימון מתאים לכל רמות&nbsp;הכושר.
             </Question>
           )}
@@ -320,7 +322,7 @@ export function Faq({ event }: { event: PublicEvent | null }) {
               {f.parking && <p className="mt-1">{f.parking}</p>}
               <p className="mt-1 flex flex-wrap gap-x-5">
                 <a href={wazeUrl(place)} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                  ניווט ב-Waze<span className="sr-only"> (נפתח בחלון חדש)</span>
+                  ניווט ב־Waze<span className="sr-only"> (נפתח בחלון חדש)</span>
                 </a>
                 <a href={transitUrl(place)} target="_blank" rel="noopener noreferrer" className={linkClass}>
                   תחבורה ציבורית<span className="sr-only"> (נפתח בחלון חדש)</span>
@@ -403,7 +405,7 @@ export function ClosingBand({ next, query, url, message, onCopy }: {
 }) {
   return (
     <section aria-labelledby="friday-close" className="relative -mx-5 overflow-hidden bg-ink text-light sm:mx-0 sm:rounded-[var(--radius-panel)]">
-      {/* the same stripe weight as the program panel: a short run from the top-left corner, cut by the band's edges */}
+      {/* a short run of stripes from the top-left corner, cut by the band's edges (the page's second and last stripe group) */}
       <Stripes width={220} height={64} unit={18} dir="fall" count={3} offset={0} className="absolute top-0 left-0 h-16 w-[220px] text-light" />
       <div className="relative px-5 pt-20 pb-7 sm:px-7 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end lg:gap-14 lg:px-10 lg:pt-24 lg:pb-10">
         <div>
@@ -416,10 +418,7 @@ export function ClosingBand({ next, query, url, message, onCopy }: {
           )}
         </div>
         <div className="mt-8 border-t border-light/25 pt-5 lg:mt-0 lg:border-t-0 lg:border-s lg:ps-10 lg:pt-0">
-          <p className="max-w-sm text-light/90">
-            יש מישהו מהצוות הישן שחסר&nbsp;לכם?
-            <span className="block">שלחו לו את&nbsp;הקישור.</span>
-          </p>
+          <p className="max-w-sm text-light/90">שלחו את הקישור למישהו מהצוות הישן שחסר&nbsp;לכם.</p>
           <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
             <Button variant="onDark" icon="copy" onClick={onCopy}>העתקת הקישור</Button>
             <ExternalButton href={`https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`} variant="onDark" icon="message">

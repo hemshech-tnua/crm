@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { ContactLine, TriList, usePageTitle } from './shared';
+import { ContactLine, BulletList, usePageTitle } from './shared';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -11,7 +11,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-const List = TriList;
+const List = BulletList;
 
 /** Participant-facing privacy notice. A draft for legal review: it must not claim compliance nobody checked. */
 export function PrivacyPage() {
@@ -100,8 +100,8 @@ export function PrivacyPage() {
           ]}
         />
         <p>
-          מספר הטלפון לא נשמר במכשיר. מהקוד השני השרת שומר רק גיבוב חד־כיווני, ושוכח אותו אחרי 180 יום בלי שימוש. ״זה לא
-          אני״ במסך הצ׳ק־אין מוחק אותו מיד, וכך גם ניקוי נתוני האתר בדפדפן.
+          מספר הטלפון לא נשמר במכשיר. מהקוד השני השרת שומר רק גיבוב חד־כיווני, ושוכח אותו אחרי 180 יום בלי שימוש. "זה לא
+          אני" במסך הצ׳ק־אין מוחק אותו מיד, וכך גם ניקוי נתוני האתר בדפדפן.
         </p>
         <p>
           אנחנו לא אוספים מהטלפון שום מידע אחר: לא מיקום, לא אנשי קשר ולא פרטי מכשיר.
@@ -124,7 +124,7 @@ export function PrivacyPage() {
         <List
           items={[
             'ההסכמה לקבל עדכונים והזמנות היא לא חובה, ולא מסומנת מראש.',
-            'אפשר לבטל אותה בכל רגע: עונים ״הסר״ להודעה שלנו, או מבקשים מהצוות.',
+            'אפשר לבטל אותה בכל רגע: עונים "הסר" להודעה שלנו, או מבקשים מהצוות.',
             'גם בלי ההסכמה הזו נשלחות הודעות על מפגש שנרשמת אליו (אישור ותזכורת), והודעת תודה אחרי מפגש שהגעת אליו.',
             'הזמנה להצטרף לעמותה נשלחת רק אם הסכמת לכך.',
             'כל הודעה נשלחת ידנית, על ידי מישהו מהצוות, אף פעם לא אוטומטית.',
@@ -134,7 +134,7 @@ export function PrivacyPage() {
 
       <Section title="צילום במפגשים">
         <p>
-          במפגשים מצלמים לפעמים לעמודים של העמותה. אם סימנת בהרשמה ״לא לפרסם תמונות שלי מהמפגשים״, הצוות רואה את זה ברשימת
+          במפגשים מצלמים לפעמים לעמודים של העמותה. אם סימנת בהרשמה "לא לפרסם תמונות שלי מהמפגשים", הצוות רואה את זה ברשימת
           הנוכחות.
         </p>
         <p>אפשר גם לבקש מהצוות להסיר תמונה שפורסמה.</p>

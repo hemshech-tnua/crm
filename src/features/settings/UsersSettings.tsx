@@ -4,7 +4,7 @@ import { staffAdmin, useMe } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
 import { useStaffList } from '@/lib/data';
 import { ROLE_HINT, ROLE_LABEL } from '@/lib/labels';
-import { formatPhone, normalizePhone, whatsappLink } from '@/lib/phone';
+import { formatPhone, normalizePhone, PHONE_EXAMPLE, whatsappLink } from '@/lib/phone';
 import { firstEntryUrl } from '@/lib/links';
 import { RowMenu } from '@/features/events/shared';
 import type { Role, Staff } from '@/lib/types';
@@ -13,7 +13,7 @@ import { Badge, Button, ChoiceGroup, ErrorBox, FilterChips, Input, Notice, Panel
 import { useSecurityOverview } from './SecuritySettings';
 import { NoResults } from '@/ui/toolbar';
 import { matchesSearch } from '@/ui/search';
-import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
+import { DISMISS, Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
 
 const ROLES: Role[] = ['admin', 'coordinator', 'volunteer'];
 type Show = '' | Role | 'blocked';
@@ -116,7 +116,7 @@ export function UsersSettings() {
   return (
     <div className="flex flex-col gap-5">
       <Panel title="אנשי הצוות" padded={false} actions={<Button icon="userPlus" onClick={() => setCreating(true)}>משתמש חדש</Button>}>
-        {staff.isLoading ? <div className="p-5"><Skeleton lines={4} /></div> : staff.error ? <div className="p-5"><ErrorBox error={errorMessage(staff.error)} /></div> : (
+        {staff.isLoading ? <div className="p-5"><Skeleton lines={4} /></div> : staff.error && !staff.data ? <div className="p-5"><ErrorBox error={errorMessage(staff.error)} onRetry={() => void staff.refetch()} /></div> : (
           <>
           <div className="flex flex-col gap-2 border-b border-edge px-4 py-3 sm:px-5">
             <SearchInput value={term} onChange={setTerm} label="חיפוש אנשי צוות" placeholder="חיפוש לפי שם, טלפון או אימייל" />
@@ -149,7 +149,7 @@ export function UsersSettings() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {!s.is_active && <Badge tone="bad" icon="alert">חסום</Badge>}
-                    {s.is_active && s.must_change_password && <Badge tone="warn" icon="alert">ממתין לבחירת סיסמה</Badge>}
+                    {s.is_active && s.must_change_password && <Badge tone="warn" icon="alert">מחכה לבחירת סיסמה</Badge>}
                     <div className="flex items-center gap-1">
                       <Select aria-label={`תפקיד של ${s.full_name}`} value={s.role} disabled={self || busy === s.user_id} className="h-10 w-36"
                         onChange={(e) => void changeRole(s, e.target.value as Role)}>
@@ -166,7 +166,7 @@ export function UsersSettings() {
                             const ok = await confirm({
                               title: `לאפס את האימות הדו־שלבי של ${s.full_name}?`,
                               body: 'מתאים כשהטלפון עם אפליקציית האימות אבד או הוחלף. הכניסה תחזור להיות בסיסמה בלבד, עד להפעלה מחדש מ"החשבון שלי" של ' + s.full_name.split(' ')[0] + '. אם לא הוגדר אימות, לא ישתנה כלום.',
-                              confirm: 'איפוס',
+                              confirm: 'איפוס האימות',
                             });
                             if (ok) await run(s.user_id, { action: 'reset_mfa', user_id: s.user_id }, 'האימות הדו־שלבי אופס');
                           } }] : []),
@@ -210,7 +210,7 @@ export function UsersSettings() {
           staff={emailFor}
           onClose={() => setEmailFor(null)}
           onSave={async (email) => {
-            const ok = await run(emailFor.user_id, { action: 'update', user_id: emailFor.user_id, email }, email ? 'האימייל נשמר: הכניסה בקוד למייל' : 'האימייל הוסר');
+            const ok = await run(emailFor.user_id, { action: 'update', user_id: emailFor.user_id, email }, email ? 'האימייל נשמר: הכניסה בקוד לאימייל' : 'האימייל הוסר');
             if (ok) setEmailFor(null);
           }}
         />
@@ -220,7 +220,7 @@ export function UsersSettings() {
           staff={phoneFor}
           onClose={() => setPhoneFor(null)}
           onSave={async (phone) => {
-            const ok = await run(phoneFor.user_id, { action: 'update', user_id: phoneFor.user_id, phone }, phone ? 'הטלפון נשמר: אפשר להיכנס גם בקוד SMS' : 'הטלפון הוסר');
+            const ok = await run(phoneFor.user_id, { action: 'update', user_id: phoneFor.user_id, phone }, phone ? 'הטלפון נשמר: אפשר להיכנס גם בקוד ב־SMS' : 'הטלפון הוסר');
             if (ok) setPhoneFor(null);
           }}
         />
@@ -243,9 +243,9 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
     setError(null);
     if (name.trim().length < 2) return setError('צריך שם מלא.');
     const p = phone.trim() ? normalizePhone(phone) : null;
-    if (phone.trim() && !(p && /^\+9725\d{8}$/.test(p))) return setError('צריך מספר טלפון נייד, למשל 050-1234567.');
+    if (phone.trim() && !(p && /^\+9725\d{8}$/.test(p))) return setError(`צריך מספר טלפון נייד, למשל ${PHONE_EXAMPLE}.`);
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return setError('כתובת האימייל לא תקינה.');
-    if (!p && !email.trim()) return setError('צריך אימייל (לכניסה בקוד למייל) או טלפון נייד.');
+    if (!p && !email.trim()) return setError('צריך אימייל (לכניסה בקוד לאימייל) או טלפון נייד.');
     if (!role) return setError('צריך לבחור תפקיד.');
     setBusy(true);
     try {
@@ -259,15 +259,15 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
     }
   };
   return (
-    <Dialog open={open} onClose={onClose} title="משתמש חדש">
+    <Dialog open={open} onClose={onClose} title="משתמש חדש" dismissible={!(name || phone || email || role)}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <Input label="שם מלא" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input label="אימייל (לכניסה בקוד למייל)" type="email" ltr value={email} onChange={(e) => setEmail(e.target.value)} hint="נכנסים עם קוד חד־פעמי שנשלח למייל, בלי סיסמה." />
-        <Input label="טלפון נייד (לא חובה)" type="tel" inputMode="tel" ltr className="num" value={phone} onChange={(e) => setPhone(e.target.value)} hint="למשל 050-1234567. לכניסה בקוד SMS, כשיחובר שירות SMS." />
+        <Input label="אימייל (לכניסה בקוד לאימייל)" type="email" ltr value={email} onChange={(e) => setEmail(e.target.value)} hint="נכנסים עם קוד חד־פעמי שנשלח לאימייל, בלי סיסמה." />
+        <Input label="טלפון נייד (לא חובה)" type="tel" inputMode="tel" ltr className="num" value={phone} onChange={(e) => setPhone(e.target.value)} hint={`למשל ${PHONE_EXAMPLE}. לכניסה בקוד ב־SMS, כשיחובר שירות SMS.`} />
         <ChoiceGroup<Role> legend="תפקיד" required columns={1} value={role} onChange={setRole}
           options={ROLES.map((r) => ({ value: r, label: <span>{ROLE_LABEL[r]} <span className="block text-small font-normal text-muted">{ROLE_HINT[r]}</span></span> }))} />
         {error && <ErrorBox error={error} />}
-        <div className="flex gap-2"><Button type="submit" busy={busy}>יצירת המשתמש</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
+        <div className="flex gap-2"><Button type="submit" busy={busy}>יצירת המשתמש</Button><Button variant="ghost" onClick={onClose}>{DISMISS}</Button></div>
       </form>
     </Dialog>
   );
@@ -277,14 +277,14 @@ function CreateUser({ open, onClose, onCreated }: { open: boolean; onClose: () =
 function CodeReadyDialog({ ready, onClose }: { ready: { name: string; email: string | null; phone: string | null } | null; onClose: () => void }) {
   const copy = useCopy();
   const link = `${window.location.origin}${window.location.pathname}#/login`;
-  const how = ready?.email ? 'מקלידים את כתובת האימייל שלך ומקבלים קוד למייל.' : 'מקלידים את מספר הטלפון שלך ומקבלים קוד ב-SMS.';
+  const how = ready?.email ? 'מקלידים את כתובת האימייל שלך ומקבלים קוד לאימייל.' : 'מקלידים את מספר הטלפון שלך ומקבלים קוד ב־SMS.';
   return (
     <Dialog open={!!ready} onClose={onClose} title="המשתמש נוצר" size="sm">
       {ready && (
         <div className="flex flex-col gap-4">
           <p>
             הכניסה של <span className="font-semibold">{ready.name}</span> היא עם קוד חד־פעמי{' '}
-            {ready.email ? <>למייל <span className="num font-semibold" dir="ltr">{ready.email}</span></> : <>ב-SMS לטלפון <span className="num font-semibold" dir="ltr">{formatPhone(ready.phone)}</span></>}. אין סיסמה.
+            {ready.email ? <>לאימייל <span className="num font-semibold" dir="ltr">{ready.email}</span></> : <>ב־SMS לטלפון <span className="num font-semibold" dir="ltr">{formatPhone(ready.phone)}</span></>}. אין סיסמה.
           </p>
           <div className="flex gap-2">
             <Button icon="copy" onClick={() => copy(`כניסה למערכת המשך תנועה\n${link}\n${how}`, 'ההוראות הועתקו')}>העתקת הוראות הכניסה</Button>
@@ -304,7 +304,7 @@ function InviteDialog({ invite, onClose }: { invite: { staff: Staff; url: string
     <Dialog open={!!invite} onClose={onClose} title="קישור כניסה ראשונה" size="sm">
       {invite && (
         <div className="flex flex-col gap-4">
-          <p>שלחו ל<span className="font-semibold">{invite.staff.full_name}</span> את הקישור באופן אישי. הוא עובד פעם אחת ותקף 48 שעות. הקישור מוצג עכשיו בלבד.</p>
+          <p>את הקישור שולחים ל<span className="font-semibold">{invite.staff.full_name}</span> באופן אישי. הוא עובד פעם אחת ותקף 48 שעות. הקישור מוצג עכשיו בלבד.</p>
           <code dir="ltr" className="num block break-all rounded-[var(--radius-control)] bg-mist p-3 text-small">{invite.url}</code>
           <div className="flex flex-wrap gap-2">
             {invite.staff.phone && (
@@ -333,12 +333,12 @@ function EmailDialog({ staff, onClose, onSave }: { staff: Staff; onClose: () => 
     setBusy(false);
   };
   return (
-    <Dialog open onClose={onClose} title={`אימייל לכניסה: ${staff.full_name}`} size="sm">
+    <Dialog open onClose={onClose} title={`אימייל לכניסה: ${staff.full_name}`} size="sm" dismissible={email === (staff.email ?? '')}>
       <form onSubmit={save} className="flex flex-col gap-4" noValidate>
         <Input label="אימייל" type="email" ltr value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} />
         <p className="text-small text-muted">הקוד לכניסה נשלח לכתובת הזו.</p>
         {error && <ErrorBox error={error} />}
-        <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
+        <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>{DISMISS}</Button></div>
       </form>
     </Dialog>
   );
@@ -351,19 +351,19 @@ function PhoneDialog({ staff, onClose, onSave }: { staff: Staff; onClose: () => 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     const p = phone.trim() ? normalizePhone(phone) : null;
-    if (phone.trim() && !(p && /^\+9725\d{8}$/.test(p))) return setError('צריך מספר טלפון נייד, למשל 050-1234567.');
+    if (phone.trim() && !(p && /^\+9725\d{8}$/.test(p))) return setError(`צריך מספר טלפון נייד, למשל ${PHONE_EXAMPLE}.`);
     if (!p && !staff.email) return setError('בלי טלפון ובלי אימייל לא יהיה איך להיכנס.');
     setBusy(true);
     await onSave(p);
     setBusy(false);
   };
   return (
-    <Dialog open onClose={onClose} title={`טלפון לכניסה: ${staff.full_name}`} size="sm">
+    <Dialog open onClose={onClose} title={`טלפון לכניסה: ${staff.full_name}`} size="sm" dismissible={phone === formatPhone(staff.phone)}>
       <form onSubmit={save} className="flex flex-col gap-4" noValidate>
-        <Input label="טלפון נייד" type="tel" inputMode="tel" ltr className="num" hint="למשל 050-1234567" value={phone} onChange={(e) => { setPhone(e.target.value); setError(null); }} />
-        <p className="text-small text-muted">הקוד לכניסה נשלח ב-SMS למספר הזה. {staff.email ? 'אפשר להשאיר ריק כדי לחזור לכניסה עם סיסמה.' : ''}</p>
+        <Input label="טלפון נייד" type="tel" inputMode="tel" ltr className="num" hint={`למשל ${PHONE_EXAMPLE}`} value={phone} onChange={(e) => { setPhone(e.target.value); setError(null); }} />
+        <p className="text-small text-muted">הקוד לכניסה נשלח ב־SMS למספר הזה. {staff.email ? 'אפשר להשאיר ריק כדי לחזור לכניסה עם סיסמה.' : ''}</p>
         {error && <ErrorBox error={error} />}
-        <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>ביטול</Button></div>
+        <div className="flex gap-2"><Button type="submit" busy={busy}>שמירה</Button><Button variant="ghost" onClick={onClose}>{DISMISS}</Button></div>
       </form>
     </Dialog>
   );
@@ -375,7 +375,7 @@ function SecretDialog({ secret, onClose }: { secret: { name: string; email: stri
     <Dialog open={!!secret} onClose={onClose} title="סיסמה זמנית" size="sm">
       {secret && (
         <div className="flex flex-col gap-4">
-          <p>מסרו ל<span className="font-semibold">{secret.name}</span> את פרטי הכניסה באופן אישי (שיחה או הודעה פרטית). הסיסמה מוצגת עכשיו בלבד ולא נשמרת במערכת.</p>
+          <p>את פרטי הכניסה מוסרים ל<span className="font-semibold">{secret.name}</span> באופן אישי (שיחה או הודעה פרטית). הסיסמה מוצגת עכשיו בלבד ולא נשמרת במערכת.</p>
           <div className="rounded-[var(--radius-control)] bg-mist p-4">
             <div className="text-small text-muted">שם משתמש (טלפון או אימייל)</div>
             <div className="num font-semibold" dir="ltr" style={{ textAlign: 'right' }}>{secret.email}</div>

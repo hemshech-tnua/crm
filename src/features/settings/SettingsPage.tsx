@@ -58,7 +58,7 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="הגדרות" subtitle={admin ? 'יעדים, צוות והרשאות, הודעות והרשמה, תשלומים ופרטיות.' : 'קישורי ההרשמה לפי ערוץ, והחשבון שלך.'} />
+      <PageHeader title="הגדרות" subtitle={admin ? 'יעדים, צוות והרשאות, הודעות והרשמה, תשלומים ופרטיות.' : 'קישורי ההרשמה לפי ערוץ והחשבון שלך.'} />
       <Tabs<string>
         label="הגדרות"
         value={group.value}

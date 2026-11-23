@@ -7,7 +7,8 @@ import { fmtDate, fmtMonth, todayIl } from '@/lib/dates';
 import { num, pct, ratio } from '@/lib/metrics';
 import { toCsv, downloadFile, csvFileName, type Column } from '@/lib/csv';
 import { fmtMoney } from '@/lib/money';
-import { EVENT_TYPE_LABEL, MONEY_LABEL } from '@/lib/labels';
+import { EVENT_TYPE_LABEL, MONEY_LABEL, engagementHint } from '@/lib/labels';
+import { useSettings } from '@/lib/data';
 import type { EventType } from '@/lib/types';
 import { Badge, Button, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, Tabs, cx } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
@@ -28,7 +29,7 @@ export function ReportsPage() {
 
   return (
     <>
-      <PageHeader title="דוחות" subtitle="כל מספר כאן מחושב מהנוכחות שסומנה בפועל, לפי ההגדרות שבלשונית 'איך מחשבים'." />
+      <PageHeader title="דוחות" subtitle='כל מספר כאן מחושב מהנוכחות שסומנה בפועל, לפי ההגדרות שבלשונית "איך מחשבים".' />
       <Tabs<Tab>
         label="סוגי דוחות"
         value={tab}
@@ -73,16 +74,29 @@ function useExport() {
 
 const sum = <T,>(rows: T[], f: (r: T) => number | null | undefined) => rows.reduce((s, r) => s + Number(f(r) ?? 0), 0);
 
-function State({ q, empty, children }: { q: { isLoading: boolean; error: unknown; refetch: () => void }; empty: boolean; children: ReactNode }) {
-  if (q.isLoading) return <Skeleton lines={6} />;
-  if (q.error) return <ErrorBox error={errorMessage(q.error)} onRetry={q.refetch} />;
-  if (empty) return <EmptyState icon="chart" title="אין נתונים לתקופה הזו">נסו תקופה ארוכה יותר, או סוג פעילות אחר.</EmptyState>;
+/** Loading (a skeleton in the shape of what comes), error with a retry, empty, or the report. */
+function State({ q, empty, skeleton, children }: { q: { isLoading: boolean; error: unknown; data?: unknown; refetch: () => void }; empty: boolean; skeleton?: ReactNode; children: ReactNode }) {
+  if (q.isLoading) return <>{skeleton ?? <Skeleton lines={6} />}</>;
+  // with data on screen a failed refresh keeps it (the offline bar explains); the box only when there is nothing to show
+  if (q.error && q.data === undefined) return <ErrorBox error={errorMessage(q.error)} onRetry={q.refetch} />;
+  if (empty) return <EmptyState icon="chart" title="אין נתונים לתקופה הזו">אפשר לבחור תקופה ארוכה יותר או סוג מפגש אחר.</EmptyState>;
   return <>{children}</>;
 }
 
 // the kit's Th/Td look (ui/kit.tsx), as class strings: these tables are built from column lists
 const th = 'h-10 bg-mist/70 px-3 text-right text-micro font-medium text-muted whitespace-nowrap first:ps-4 last:pe-4';
 const td = 'h-12 px-3 py-2 whitespace-nowrap first:ps-4 last:pe-4';
+
+// Per-meeting tables on a phone: every meeting is a card — the title on top, then its numbers in a 3-column grid, each
+// under its column name (data-label). Same table element and order, so desktop, export and tests are unchanged.
+const stack = {
+  table: 'max-sm:block',
+  head: 'max-sm:hidden',
+  body: 'max-sm:block',
+  row: 'max-sm:grid max-sm:grid-cols-3 max-sm:gap-x-3 max-sm:gap-y-2.5 max-sm:px-4 max-sm:py-3',
+  wide: 'max-sm:col-span-3 max-sm:h-auto max-sm:p-0 max-sm:first:ps-0 max-sm:last:pe-0 max-sm:whitespace-normal',
+  cell: 'max-sm:h-auto max-sm:p-0 max-sm:first:ps-0 max-sm:last:pe-0 max-sm:before:block max-sm:before:text-micro max-sm:before:font-medium max-sm:before:text-muted max-sm:before:content-[attr(data-label)]',
+};
 
 // ───────────── per event ─────────────
 
@@ -123,7 +137,7 @@ function EventsReport({ filters }: { filters: Filters }) {
   const footer = ['סה״כ', '', `${rows.length} מפגשים`, '', '', sum(rows, (r) => r.registered_count), sum(rows, (r) => r.attended_count), sum(rows, (r) => r.walk_in_count),
     sum(rows, (r) => r.new_count), sum(rows, (r) => r.returning_count), '', sum(rows, (r) => r.cancelled_count), '', '', '', sum(rows, (r) => r.feedback_count)];
   return (
-    <State q={q} empty={!rows.length}>
+    <State q={q} empty={!rows.length} skeleton={<Skeleton shape="rows" count={8} height={64} />}>
       {unclosed > 0 && (
         <div className="mb-4">
           <Notice tone="light" icon="alert">
@@ -134,32 +148,34 @@ function EventsReport({ filters }: { filters: Filters }) {
       )}
       <Panel padded={false} title={`${rows.length} מפגשים שהתקיימו`} actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('events', 'מפגשים', rows, cols, { filters, footer })}>ייצוא לאקסל</Button>}>
         <div className="overflow-x-auto">
-          <table className="w-full text-body">
-            <thead className="border-b border-edge">
+          <table className={cx('w-full text-body', stack.table)}>
+            <thead className={cx('border-b border-edge', stack.head)}>
               <tr>
                 <th className={th}>מפגש</th><th className={th}>מרצה ונושא</th><th className={th}>נרשמו</th><th className={th}>הגיעו</th>
                 <th className={th}>חדשים</th><th className={th}>חוזרים</th><th className={th}>שיעור הגעה</th><th className={th}>דירוג</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-edge">
+            <tbody className={cx('divide-y divide-edge', stack.body)}>
               {rows.map((r) => {
                 const show = ratio(r.attended_registered_count, r.registered_count);
+                const presenter = r.speaker_name || r.lecture_topic;
                 return (
-                  <tr key={r.id} className="hover:bg-mist/60">
-                    <td className={td}>
+                  <tr key={r.id} className={cx('hover:bg-mist/60', stack.row)}>
+                    <td className={cx(td, stack.wide)}>
                       <Link to={`/app/events/${r.id}?tab=summary`} className="font-semibold text-ink hover:text-tide hover:underline">{r.title}</Link>
                       <div className="text-small text-muted"><span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}{r.status !== 'completed' && <> · לא נסגר</>}</div>
                     </td>
-                    <td className={`${td} max-w-60 truncate`} title={[r.speaker_name, r.lecture_topic].filter(Boolean).join(': ')}>
+                    {/* on a phone a meeting without a speaker shows no empty "—" line */}
+                    <td className={cx(td, 'max-w-60 truncate', stack.wide, 'max-sm:max-w-none max-sm:text-small', !presenter && 'max-sm:hidden')} title={[r.speaker_name, r.lecture_topic].filter(Boolean).join(': ')}>
                       {r.speaker_name ?? <span className="text-faint">—</span>}
                       {r.lecture_topic && <div className="truncate text-small text-muted">{r.lecture_topic}</div>}
                     </td>
-                    <td className={`${td} num`}>{r.registered_count}</td>
-                    <td className={`${td} num font-bold`}>{r.attended_count}</td>
-                    <td className={`${td} num`}>{r.new_count}</td>
-                    <td className={`${td} num`}>{r.returning_count}</td>
-                    <td className={`${td} num`}>{pct(show)}</td>
-                    <td className={`${td} num`}>{num(r.avg_overall, 1)}{r.feedback_count ? <span className="text-micro text-muted"> ({r.feedback_count})</span> : null}</td>
+                    <td data-label="נרשמו" className={cx(td, 'num', stack.cell)}>{r.registered_count}</td>
+                    <td data-label="הגיעו" className={cx(td, 'num font-bold', stack.cell)}>{r.attended_count}</td>
+                    <td data-label="חדשים" className={cx(td, 'num', stack.cell)}>{r.new_count}</td>
+                    <td data-label="חוזרים" className={cx(td, 'num', stack.cell)}>{r.returning_count}</td>
+                    <td data-label="שיעור הגעה" className={cx(td, 'num', stack.cell)}>{pct(show)}</td>
+                    <td data-label="דירוג" className={cx(td, 'num', stack.cell)}>{num(r.avg_overall, 1)}{r.feedback_count ? <span className="text-micro text-muted"> ({r.feedback_count})</span> : null}</td>
                   </tr>
                 );
               })}
@@ -213,9 +229,9 @@ function FinanceReport({ filters }: { filters: Filters }) {
   const pending = t ? t.expected - t.collected : 0;
   return (
     <div className="flex flex-col gap-5">
-      <State q={q} empty={!rows.length}>
+      <State q={q} empty={!rows.length} skeleton={<Skeleton shape="tiles" count={4} height={118} cols="grid-cols-2 lg:grid-cols-4" />}>
         {t && (
-          // one order everywhere: נגבה · ממתין לתשלום · הוצאות · נטו (the forecast as a sub-line)
+          // one order everywhere: נגבה · עוד לא שולם · הוצאות · נטו (the forecast as a sub-line)
           <section aria-label={`סיכום כספי: ${label}`} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Tile label={MONEY_LABEL.collected} value={money(t.collected)} sub={<><span className="num">{t.paid_count}</span> תשלומים · {when}</>} />
             <Tile
@@ -237,17 +253,17 @@ function FinanceReport({ filters }: { filters: Filters }) {
         <Panel padded={false} title={`כספים לפי מפגש: ${rows.length} מפגשים`} description={<>{when} · מפגשים עם דמי השתתפות, הוצאות או תשלום</>}
           actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('finance', 'כספים', rows, cols, { filters, footer })}>ייצוא לאקסל</Button>}>
           <div className="overflow-x-auto">
-            <table className="w-full text-body" aria-label="כספים לפי מפגש">
-              <thead className="border-b border-edge">
+            <table className={cx('w-full text-body', stack.table)} aria-label="כספים לפי מפגש">
+              <thead className={cx('border-b border-edge', stack.head)}>
                 <tr>
                   <th className={th}>מפגש</th><th className={th}>רשומים</th><th className={th}>שילמו</th>
-                  <th className={th}>נגבה</th><th className={th}>ממתין לתשלום</th><th className={th}>הוצאות</th><th className={th}>נטו</th>
+                  <th className={th}>{MONEY_LABEL.collected}</th><th className={th}>{MONEY_LABEL.pending}</th><th className={th}>{MONEY_LABEL.expenses}</th><th className={th}>{MONEY_LABEL.net}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-edge">
+              <tbody className={cx('divide-y divide-edge', stack.body)}>
                 {rows.map((r) => (
-                  <tr key={r.event_id} className="hover:bg-mist/60">
-                    <td className={td}>
+                  <tr key={r.event_id} className={cx('hover:bg-mist/60', stack.row)}>
+                    <td className={cx(td, stack.wide)}>
                       <Link to={`/app/events/${r.event_id}`} className="font-semibold text-ink hover:text-tide hover:underline">{r.title}</Link>
                       <div className="text-small text-muted">
                         <span className="num">{fmtDate(r.starts_at)}</span> · {EVENT_TYPE_LABEL[r.type]}
@@ -255,30 +271,30 @@ function FinanceReport({ filters }: { filters: Filters }) {
                         {r.status === 'cancelled' && <> · <Badge tone="neutral">בוטל</Badge></>}
                       </div>
                     </td>
-                    <td className={`${td} num`}>{r.registered}</td>
-                    <td className={`${td} num`}>
+                    <td data-label="רשומים" className={cx(td, 'num', stack.cell)}>{r.registered}</td>
+                    <td data-label="שילמו" className={cx(td, 'num', stack.cell)}>
                       {r.paid_count}
                       {r.pending_count > 0 && (
                         <Link to={`/app/events/${r.event_id}?tab=registrations&filter=unpaid`} className="text-micro text-ink-soft hover:text-tide hover:underline"> (<span className="num">{r.pending_count}</span> לא שילמו)</Link>
                       )}
                     </td>
-                    <td className={`${td} num font-bold`}>{fmtMoney(r.collected)}</td>
-                    <td className={`${td} num`}>{r.expected - r.collected > 0 ? fmtMoney(r.expected - r.collected) : <span className="text-faint">—</span>}</td>
-                    <td className={`${td} num`}>{fmtMoney(r.expenses)}</td>
-                    <td className={`${td} num font-bold`}>{money(r.net)}</td>
+                    <td data-label={MONEY_LABEL.collected} className={cx(td, 'num font-bold', stack.cell)}>{fmtMoney(r.collected)}</td>
+                    <td data-label={MONEY_LABEL.pending} className={cx(td, 'num', stack.cell)}>{r.expected - r.collected > 0 ? fmtMoney(r.expected - r.collected) : <span className="text-faint">—</span>}</td>
+                    <td data-label={MONEY_LABEL.expenses} className={cx(td, 'num', stack.cell)}>{fmtMoney(r.expenses)}</td>
+                    <td data-label={MONEY_LABEL.net} className={cx(td, 'num font-bold', stack.cell)}>{money(r.net)}</td>
                   </tr>
                 ))}
               </tbody>
               {t && (
-                <tfoot className="border-t-2 border-ink">
-                  <tr className="font-bold">
-                    <td className={td}>סה״כ</td>
-                    <td className={`${td} num`}>{t.registered}</td>
-                    <td className={`${td} num`}>{t.paid_count}</td>
-                    <td className={`${td} num`}>{fmtMoney(t.collected)}</td>
-                    <td className={`${td} num`}>{fmtMoney(pending)}</td>
-                    <td className={`${td} num`}>{fmtMoney(t.expenses)}</td>
-                    <td className={`${td} num`}>{money(t.net)}</td>
+                <tfoot className={cx('border-t-2 border-ink', stack.body)}>
+                  <tr className={cx('font-bold', stack.row)}>
+                    <td className={cx(td, stack.wide)}>סה״כ</td>
+                    <td data-label="רשומים" className={cx(td, 'num', stack.cell)}>{t.registered}</td>
+                    <td data-label="שילמו" className={cx(td, 'num', stack.cell)}>{t.paid_count}</td>
+                    <td data-label={MONEY_LABEL.collected} className={cx(td, 'num', stack.cell)}>{fmtMoney(t.collected)}</td>
+                    <td data-label={MONEY_LABEL.pending} className={cx(td, 'num', stack.cell)}>{fmtMoney(pending)}</td>
+                    <td data-label={MONEY_LABEL.expenses} className={cx(td, 'num', stack.cell)}>{fmtMoney(t.expenses)}</td>
+                    <td data-label={MONEY_LABEL.net} className={cx(td, 'num', stack.cell)}>{money(t.net)}</td>
                   </tr>
                 </tfoot>
               )}
@@ -296,7 +312,8 @@ function Tile({ label, value, sub, onClick, action }: { label: string; value: Re
   const body = (
     <>
       <div className="text-small font-medium text-muted">{label}</div>
-      <div className="num mt-1 text-right font-display text-stat text-ink">{value}</div>
+      {/* a 320px phone fits "59,500₪" in a half-width tile only one step smaller */}
+      <div className="num mt-1 text-right font-display text-title-sm text-ink max-[359px]:text-section sm:text-stat">{value}</div>
       <div className="mt-1 text-small text-muted">{sub}</div>
       {onClick && action && <div className="mt-1.5 inline-flex self-start items-center gap-1 text-small font-semibold text-tide underline-offset-2 group-hover:underline">{action}<Icon name="chevron" size={14} /></div>}
     </>
@@ -329,7 +346,7 @@ function MonthlyReport({ filters }: { filters: Filters }) {
     { header: 'דירוג', value: (r) => r.avg_rating },
   ];
   return (
-    <State q={q} empty={!rows.length}>
+    <State q={q} empty={!rows.length} skeleton={<Skeleton shape="block" height={300} />}>
       <Panel title="הגעות לפי חודש" className="mb-5">
         <Columns data={rows.map((r) => ({ key: r.month, label: fmtMonth(r.month), total: r.attendances, highlight: r.new_attendees, title: `${r.attendances} הגעות, ${r.new_attendees} חדשים` }))} />
         <div className="mt-2 flex gap-5 text-small text-muted">
@@ -377,14 +394,16 @@ function SourcesReport({ filters }: { filters: Filters }) {
     <div className="flex flex-col gap-5">
       <Panel title="מקור ההיכרות: מי הגיע לראשונה בתקופה, וכמה חזרו" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('sources', 'מקורות', sources, srcCols, { filters })}>ייצוא לאקסל</Button>}>
         <State q={s} empty={!sources.length}>
-          <div className="grid gap-6 lg:grid-cols-2">
+          {/* min-w-0: the grid's items may shrink to the phone's width (the table scrolls inside, the page does not) */}
+          <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
             <SplitBars totalLabel="הגיעו פעם אחת" partLabel="חזרו" rows={sources.filter((x) => x.participants > 0).map((x) => ({ key: x.source_id ?? 'none', label: x.label, total: x.participants, part: x.returned, note: x.registered_only ? `${x.registered_only} נרשמו ועוד לא הגיעו` : undefined }))} />
-            <table className="w-full self-start text-body">
+            <div className="self-start overflow-x-auto">
+            <table className="w-full text-body">
               <thead className="border-b border-edge"><tr><th className={th}>מקור</th><th className={th}>חדשים</th><th className={th}>חזרו</th><th className={th}>ממוצע מפגשים</th></tr></thead>
               <tbody className="divide-y divide-edge">
                 {sources.map((x) => (
                   <tr key={x.source_id ?? 'none'}>
-                    <td className={td}>{x.label}</td>
+                    <td className={cx(td, 'max-sm:whitespace-normal')}>{x.label}</td>
                     <td className={`${td} num`}>{x.participants}</td>
                     <td className={`${td} num`}>{x.returned} <span className="text-muted">({pct(ratio(x.returned, x.participants))})</span></td>
                     <td className={`${td} num`}>{num(x.avg_attended, 1)}</td>
@@ -392,6 +411,7 @@ function SourcesReport({ filters }: { filters: Filters }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </State>
       </Panel>
@@ -400,7 +420,7 @@ function SourcesReport({ filters }: { filters: Filters }) {
         <State q={l} empty={!(l.data ?? []).length}>
           <div className="overflow-x-auto">
             <table className="w-full text-body">
-              <thead className="border-b border-edge"><tr><th className={th}>קישור</th><th className={th}>ערוץ</th><th className={th}>הרשמות</th><th className={th}>הגיעו</th><th className={th}>אנשים חדשים</th></tr></thead>
+              <thead className="border-b border-edge"><tr><th className={th}>קישור</th><th className={th}>ערוץ</th><th className={th}>הרשמות</th><th className={th}>הגיעו</th><th className={th}>חדשים</th></tr></thead>
               <tbody className="divide-y divide-edge">
                 {(l.data ?? []).map((x) => (
                   <tr key={x.id}>
@@ -463,7 +483,7 @@ function PresentersReport({ filters }: { filters: Filters }) {
   const rows = q.data ?? [];
   const cols: Column<PresenterRow>[] = [
     { header: 'שם', value: (x) => x.full_name },
-    { header: 'תפקיד', value: (x) => (x.kind === 'speaker' ? 'מרצה' : 'הדרכה') },
+    { header: 'תפקיד', value: (x) => (x.kind === 'speaker' ? 'מרצה' : 'מדריך') },
     { header: 'נושאים', value: (x) => x.topics ?? x.topic },
     { header: 'מפגשים', value: (x) => x.events },
     { header: 'ממוצע לוחמים', value: (x) => x.avg_attendance },
@@ -502,7 +522,7 @@ function PresentersReport({ filters }: { filters: Filters }) {
         <Panel padded={false} title="מרצים אורחים: מי ואיזה נושא מביאים הכי הרבה לוחמים" actions={<Button size="sm" variant="secondary" icon="download" onClick={() => exp('presenters', 'מרצים ומדריכים', rows, cols, { filters })}>ייצוא לאקסל</Button>}>
           {table('speaker')}
         </Panel>
-        <Panel padded={false} title="מדריכים (יוגה ופילאטיס)">
+        <Panel padded={false} title="מדריכים">
           {table('instructor')}
         </Panel>
       </div>
@@ -544,25 +564,31 @@ function RetentionReport({ filters }: { filters: Filters }) {
 }
 
 function Definitions() {
+  // the goals and the regular/lapsed thresholds are editable in the settings: name the current ones, never a fixed number
+  const st = useSettings().data;
+  const goal = (v: string | null) => (v ? ` (יעד ${v})` : '');
+  const target = (v: number | undefined) => (v == null ? null : pct(v));
   const defs: [string, string][] = [
-    ['נרשם', 'הרשמה בסטטוס "רשום" שנעשתה לפני המפגש. ממתינים, מבטלים ומי שהגיע בלי הרשמה לא נספרים כנרשמים.'],
-    ['הגיע', 'מי שסומן "הגיע" בצ׳ק־אין העצמי או ברשימת הנוכחות, כולל מי שהגיע בלי הרשמה. הרשמה לבדה היא לא הגעה.'],
-    ['שיעור הגעה (יעד 80%)', 'מבין מי שנרשם מראש ולא ביטל: כמה הגיעו בפועל.'],
-    ['חדש', 'לוחם שזו הייתה הפעם הראשונה שלו בפעילות כלשהי של העמותה.'],
-    ['חוזר', 'לוחם שהגיע בעבר לפעילות אחרת.'],
-    ['ממוצע לוחמים (יעד 20)', 'סך ההגעות חלקי מספר המפגשים שהתקיימו בתקופה.'],
-    ['הגיעו ליותר ממפגש אחד (יעד 20%)', 'מבין הלוחמים שהגיעו בתקופה: כמה הגיעו בסך הכול לשני מפגשים או יותר מאותו סוג (עד סוף התקופה).'],
-    ['הגיעו דרך חבר (יעד 25%)', 'מבין החדשים בתקופה: כמה סימנו שחבר הביא אותם, או נרשמו דרך קישור הזמנה אישי.'],
-    ['דירוג ממוצע (יעד 4)', 'ממוצע "הדירוג הכללי" במשובים על מפגשי התקופה.'],
+    ['נרשם', 'הרשמה פעילה שנעשתה לפני המפגש. מי שברשימת ההמתנה, מי שביטל ומי שהגיע בלי הרשמה לא נספרים כנרשמים.'],
+    ['הגיע', 'מי שסומנה לו "הגעה" בצ׳ק־אין העצמי או ברשימת הנוכחות, כולל מי שהגיע בלי הרשמה. הרשמה לבדה היא לא הגעה.'],
+    [`שיעור הגעה${goal(target(st?.goal_show_rate))}`, 'מבין מי שנרשם מראש ולא ביטל: כמה הגיעו בפועל.'],
+    ['חדש', 'לוחם שזו הייתה הפעם הראשונה שלו במפגש כלשהו של העמותה.'],
+    ['חוזר', 'לוחם שהגיע בעבר למפגש אחר.'],
+    [`ממוצע לוחמים${goal(st ? num(st.goal_avg_attendance, 0) : null)}`, 'סך ההגעות חלקי מספר המפגשים שהתקיימו בתקופה.'],
+    [`הגיעו ליותר ממפגש אחד${goal(target(st?.goal_return_rate))}`, 'מבין הלוחמים שהגיעו בתקופה: כמה הגיעו בסך הכול לשני מפגשים או יותר מאותו סוג (עד סוף התקופה).'],
+    [`הגיעו דרך חבר${goal(target(st?.goal_friend_share))}`, 'מבין החדשים בתקופה: כמה סימנו שחבר הביא אותם, או נרשמו דרך קישור הזמנה אישי.'],
+    [`דירוג ממוצע${goal(st ? num(st.goal_avg_rating, 1) : null)}`, 'ממוצע "הדירוג הכללי" במשובים על מפגשי התקופה.'],
     ['שיעור חזרה של מקור', 'מבין מי שהגיע לראשונה דרך המקור בתקופה: כמה הגיעו לפחות פעם נוספת, בכל זמן.'],
-    ['הגעה קבועה', 'הגעה ל-2 מפגשי שישי לפחות ב-30 הימים האחרונים (ניתן לשינוי בהגדרות).'],
-    ['הגעה שנפסקה', 'מי שהיה קבוע בעבר, ומאז ביקורו האחרון התקיימו 3 מפגשי שישי במתחם שלו בלי שהגיע (ניתן לשינוי).'],
-    ['שלושה סוגי מקור', 'מקור ההיכרות נשמר בכרטיס הלוחם בהרשמה הראשונה ולא משתנה. "מי הפנה" וקישור הערוץ/הקמפיין נשמרים בכל הרשמה בנפרד.'],
+    ['הגעה קבועה', `${engagementHint('regular', st)}. אפשר לשנות בהגדרות.`],
+    ['הגעה שנפסקה', st
+      ? `מי שהגיע באופן קבוע בעבר, ומאז ההגעה האחרונה שלו התקיימו ${st.lapsed_after_fridays} מפגשי שישי במתחם שלו בלי שהגיע. אפשר לשנות בהגדרות.`
+      : 'מי שהגיע באופן קבוע בעבר, ומאז ההגעה האחרונה שלו התקיימו כמה מפגשי שישי במתחם שלו בלי שהגיע (לפי ההגדרות).'],
+    ['שלושה סוגי מקור', 'מקור ההיכרות נשמר בכרטיס הלוחם בהרשמה הראשונה ולא משתנה. "מי הזמין" וקישור הערוץ או הקמפיין נשמרים בכל הרשמה בנפרד.'],
     ['כשאין נתונים', 'מוצג "—" ולא 0%.'],
     ['כספים: נגבה', 'סכום התשלומים שסומנו "שולם" (בקישור לתשלום, בכניסה או ידנית), גם של מי שביטל אחרי ששילם, עד שסומן החזר.'],
-    ['כספים: צפי', 'מה שנגבה ועוד דמי ההשתתפות של רשומים שעוד לא שילמו. ממתינים ברשימת ההמתנה, מי שלא הגיע ולא שילם ופטורים לא נספרים.'],
+    ['כספים: צפי', 'מה שנגבה ועוד דמי ההשתתפות של רשומים שעוד לא שילמו. מי שברשימת ההמתנה, מי שלא הגיע ולא שילם ופטורים לא נספרים.'],
     ['כספים: נטו', 'נגבה פחות ההוצאות ששולמו לספקים ולמרצים (לשונית ההכנות של המפגש). מפגשים מכל סטטוס חוץ מטיוטה, כשיש בהם מחיר, הוצאה או תשלום.'],
-    ['מפגש שלא נסגר', 'היעדים והדוחות סופרים רק מפגשים שנסגרו ("סגירת המפגש"), כי רק אז הנוכחות סופית. מפגש שהסתיים ולא נסגר מופיע ברשימות עם סימון, ובסקירה יש תזכורת לסגור אותו.'],
+    ['מפגש שלא נסגר', 'היעדים והדוחות סופרים רק מפגשים שנסגרו ("סגירת המפגש"), כי רק אז הנוכחות סופית. מפגש שהסתיים ולא נסגר מופיע ברשימות עם סימון, ובמסך הסקירה יש תזכורת לסגור אותו.'],
   ];
   return (
     <Panel>

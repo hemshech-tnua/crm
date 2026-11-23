@@ -5,7 +5,8 @@ const KEY = 'hemshech-reg-tokens';
 const KEEP_DAYS = 120;
 const MAX_PER_EVENT = 6;
 
-export type SavedRegistration = { token: string; name: string | null };
+/** `at`: when it was saved on this phone (ms), refreshed each time the personal page is opened. */
+export type SavedRegistration = { token: string; name: string | null; at: number };
 type Entry = { t: string; at: number; n?: string | null };
 
 function readAll(): Record<string, Entry[]> {
@@ -36,7 +37,7 @@ function writeAll(all: Record<string, Entry[]>) {
 /** Registrations made from this phone for an event, most recent first. */
 export function savedRegistrations(eventCode: string | null | undefined): SavedRegistration[] {
   if (!eventCode) return [];
-  return (readAll()[eventCode] ?? []).slice().sort((a, b) => b.at - a.at).map((e) => ({ token: e.t, name: e.n ?? null }));
+  return (readAll()[eventCode] ?? []).slice().sort((a, b) => b.at - a.at).map((e) => ({ token: e.t, name: e.n ?? null, at: e.at }));
 }
 
 export function savedToken(eventCode: string | null | undefined): string | null {

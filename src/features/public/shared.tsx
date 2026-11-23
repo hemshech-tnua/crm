@@ -4,9 +4,7 @@ import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { Button, ButtonLink, ExternalButton, cx } from '@/ui/kit';
 import { useCopy } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
-import { Tri } from '@/ui/Shapes';
 import { downloadIcs, googleCalendarUrl } from './calendar';
-import { Glyph } from './marks';
 import { useOrgInfo } from './api';
 import { formatPhone, whatsappLink } from '@/lib/phone';
 import { fmtMoney, isPriced } from '@/lib/money';
@@ -46,7 +44,7 @@ export function SuccessMark({ size = 'md', className = 'mx-auto' }: { size?: 'md
 export function WaitMark() {
   return (
     <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[var(--radius-control)] border border-edge bg-paper text-ink" aria-hidden="true">
-      <Glyph name="clock" size={40} />
+      <Icon name="clock" size={40} />
     </div>
   );
 }
@@ -69,13 +67,16 @@ export function ResultTitle({ children, className = '', size = 'md' }: { childre
   );
 }
 
-/** A list with the brand's triangle bullet ◀ (book p.41): at cap height, in the text colour, pointing the reading way. */
-export function TriList({ items, className = '' }: { items: ReactNode[]; className?: string }) {
+/**
+ * A plain list with a small square bullet in the text colour (squared, like every corner of the brand). The triangle ◀
+ * is kept for what leads somewhere (buttons, link rows), so it is not used as a bullet.
+ */
+export function BulletList({ items, className = '' }: { items: ReactNode[]; className?: string }) {
   return (
     <ul className={cx('flex flex-col gap-1.5', className)}>
       {items.map((it, i) => (
         <li key={i} className="flex items-baseline gap-2.5">
-          <Tri className="shrink-0 text-ink" />
+          <span aria-hidden="true" className="inline-block size-[0.35em] shrink-0 translate-y-[-0.2em] bg-current" />
           <span className="min-w-0">{it}</span>
         </li>
       ))}
@@ -97,10 +98,11 @@ export function Block({ title, children, className = '' }: { title: ReactNode; c
   );
 }
 
-export function CalendarButtons({ event }: { event: PublicEvent }) {
+/** `primary`: the one next step of the success screen (the invite under it is secondary). */
+export function CalendarButtons({ event, primary = false }: { event: PublicEvent; primary?: boolean }) {
   return (
     <div className="grid gap-2 sm:flex sm:flex-wrap">
-      <Button variant="secondary" icon="calendar" onClick={() => downloadIcs(event)}>הוספה ליומן</Button>
+      <Button variant={primary ? 'primary' : 'secondary'} icon="calendar" onClick={() => downloadIcs(event)}>הוספה ליומן בטלפון</Button>
       <ExternalButton href={googleCalendarUrl(event)} variant="ghost" icon="external">הוספה ליומן Google</ExternalButton>
     </div>
   );
@@ -115,11 +117,15 @@ export function inviteMessage(event: PublicEvent | null): string {
   return 'שמעת על המשך תנועה? מפגשי שישי ללוחמים וללוחמות: אימון, קפה ונשנושים והרצאה. בא לך לבוא איתי? כל המפגשים הקרובים כאן:';
 }
 
-/** "Invite a friend": the personal link (so the friend counts as brought by you). Web Share when the phone has it. */
-export function InviteBlock({ url, message, title = 'הזמינו עוד חברים', lead }: {
+/**
+ * "Invite a friend": the personal link (so the friend counts as brought by you, and we know whom to thank). Web Share
+ * when the phone has it. `quiet`: secondary buttons, where another step of the screen is the main one.
+ */
+export function InviteBlock({ url, message, title = 'באים עם עוד מישהו?', lead, quiet = false }: {
   url: string; message: string; title?: ReactNode;
   /** the text above the buttons; by default the general "invite more friends" one */
   lead?: ReactNode;
+  quiet?: boolean;
 }) {
   const copy = useCopy();
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -136,23 +142,22 @@ export function InviteBlock({ url, message, title = 'הזמינו עוד חבר�
       <p className="text-body-sm text-ink-soft">
         {lead ?? (
           <>
-            מכירים עוד לוחמים ולוחמות שכדאי שיבואו?
-            <span className="block">שלחו להם את קישור ההזמנה שלכם, וכך&nbsp;נדע שהגיעו&nbsp;דרככם.</span>
+            יש עוד לוחמים ולוחמות שכדאי שיבואו?
+            <span className="block">קישור ההזמנה הזה אישי: מי שנרשם דרכו נספר כהזמנה שלך, כך נדע להגיד&nbsp;תודה.</span>
           </>
         )}
       </p>
       <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         {canShare ? (
-          <Button onClick={share}>
-            <Glyph name="share" />
+          <Button variant={quiet ? 'secondary' : 'primary'} icon="share" onClick={share}>
             שיתוף הקישור
           </Button>
         ) : (
-          <ExternalButton href={`https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`} variant="primary" icon="message">
+          <ExternalButton href={`https://wa.me/?text=${encodeURIComponent(`${message}\n${url}`)}`} variant={quiet ? 'secondary' : 'primary'} icon="message">
             שליחה בוואטסאפ
           </ExternalButton>
         )}
-        <Button variant="secondary" icon="copy" onClick={() => copy(url, 'קישור ההזמנה הועתק')}>העתקת קישור ההזמנה</Button>
+        <Button variant={quiet ? 'ghost' : 'secondary'} icon="copy" onClick={() => copy(url, 'קישור ההזמנה הועתק')}>העתקת קישור ההזמנה</Button>
       </div>
     </Block>
   );
@@ -196,15 +201,15 @@ export function BeforeYouCome({ event }: { event: PublicEvent }) {
   return (
     <div className="divide-y divide-edge rounded-[var(--radius-panel)] border border-edge bg-paper">
       <section aria-labelledby="after-route" className="p-4 sm:p-5">
-        <SectionTitle id="after-route">איך מגיעים?</SectionTitle>
+        <SectionTitle id="after-route">איך מגיעים</SectionTitle>
         {place && (
           <>
             <p className="mt-2 flex items-start gap-2 text-ink">
-              <Glyph name="pin" className="mt-[3px]" />
+              <Icon name="pin" size={18} className="mt-[3px] shrink-0 text-tide" />
               <span className="min-w-0">{place}</span>
             </p>
             <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
-              <ExternalButton href={wazeUrl(place)} variant="secondary">ניווט ב-Waze</ExternalButton>
+              <ExternalButton href={wazeUrl(place)} variant="secondary">ניווט ב־Waze</ExternalButton>
               <ExternalButton href={transitUrl(place)} variant="secondary">תחבורה ציבורית</ExternalButton>
             </div>
           </>
@@ -224,7 +229,7 @@ export function BeforeYouCome({ event }: { event: PublicEvent }) {
         <section aria-labelledby="after-now" className="p-4 sm:p-5" data-fact="reminder-greeter">
           <SectionTitle id="after-now">מה הלאה</SectionTitle>
           {f.reminder && <p className="mt-2 text-body-sm text-ink-soft">{f.reminder}</p>}
-          {f.greeter && <p className="mt-1 text-body-sm font-semibold text-ink">כשמגיעים, חפשו את {f.greeter}.</p>}
+          {f.greeter && <p className="mt-1 text-body-sm font-semibold text-ink">כשמגיעים, כדאי לחפש את {f.greeter} מהצוות.</p>}
         </section>
       )}
     </div>
@@ -259,7 +264,7 @@ export function PrivacyNote({ children }: { children?: ReactNode }) {
       <p>
         {children ?? (
           <>
-            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים, וכדי לחזור אליכם לגביהם. אין חובה חוקית למסור אותם, אבל בלעדיהם אי
+            הפרטים משמשים לניהול ההרשמה וההגעה למפגשים ולחזרה אליכם בנושאים האלה. אין חובה חוקית למסור אותם, אבל בלעדיהם אי
             אפשר להירשם. רק צוות העמותה רואה אותם, כל אחד לפי תפקידו.{' '}
           </>
         )}
@@ -301,7 +306,8 @@ export function PayBlock({ event, payer = null, className = '' }: { event: Publi
   const amount = fmtMoney(event.price);
   return (
     <section aria-label="תשלום" className={cx('rounded-[var(--radius-panel)] border-2 border-ink bg-paper p-4 sm:p-5', className)}>
-      <SectionTitle>מחיר: <span className="num">{amount}</span></SectionTitle>
+      {/* the amount once: on the button when paying here, in the title when paying at the entrance */}
+      <SectionTitle>{event.payment_url ? 'תשלום בכרטיס אשראי' : <>מחיר: <span className="num">{amount}</span></>}</SectionTitle>
       {event.payment_url ? (
         <>
           <ExternalButton href={payUrl(event.payment_url, payer)} variant="primary" size="lg" cta className="mt-3 w-full sm:w-auto">
@@ -318,7 +324,7 @@ export function PayBlock({ event, payer = null, className = '' }: { event: Publi
             </p>
           )}
           <p className="mt-2 text-body-sm text-ink-soft">
-            דף התשלום המאובטח של חברת התשלום ייפתח בחלון חדש. לא מסתדר עכשיו? אפשר לשלם אחר כך בקישור&nbsp;האישי.
+            דף התשלום המאובטח ייפתח בחלון חדש. לא מסתדר עכשיו? אפשר לשלם אחר כך בקישור&nbsp;האישי.
           </p>
         </>
       ) : (

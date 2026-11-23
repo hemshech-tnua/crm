@@ -1,18 +1,20 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { useParams, useSearchParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PublicEvent } from '@/lib/types';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { allEventsUrl, manageUrl, registerUrl } from '@/lib/links';
 import { Button, ButtonLink, EmptyState, ErrorBox, Notice, Skeleton } from '@/ui/kit';
+import { Icon } from '@/ui/Icon';
+import { Tri } from '@/ui/Shapes';
 import { registerFor, usePublicEvent, usePublicSources, useRegistration, type PublicSource, type RegisterResult } from './api';
-import { saveToken, savedRegistrations } from './device';
+import { forgetToken, saveToken, savedRegistrations } from './device';
 import { EventTicket } from './EventTicket';
 import { DetailsButton, MeetingSheet, useDetailsSheet } from './MeetingDetails';
-import { Glyph } from './marks';
 import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
 import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, type Payer, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
+import { FRIDAY_FACTS } from './friday/facts';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
 import { isPriced } from '@/lib/money';
 import { PayStep, paysFirst, useWatchExpired } from './PayStep';
@@ -44,7 +46,10 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
   usePageTitle(pageTitle(done, event.data));
   const shown = done?.event ?? event.data;
   // the details sheet sits over the form or the success screen, which keep their state underneath (?d=1)
-  const details = shown ? <MeetingSheet event={shown} open={sheet.open} onClose={sheet.hide} /> : null;
+  // over the form the sheet ends with «חזרה להרשמה»: it closes and puts the cursor in the first field still empty
+  const details = shown ? (
+    <MeetingSheet event={shown} open={sheet.open} onClose={sheet.hide} onBackToForm={done ? undefined : focusFirstEmpty} />
+  ) : null;
 
   if (done && event.data) {
     const another = () => { setDone(null); setPayer(null); setPaid(false); window.scrollTo(0, 0); };
@@ -65,13 +70,13 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
     const code = errorCode(event.error);
     if (code === 'registration_not_open') {
       return (
-        <EmptyState icon="calendar" title="ההרשמה עוד לא נפתחה" action={<ButtonLink to={home}>למפגשים הפתוחים עכשיו</ButtonLink>}>
-          המפגש הזה עוד בהכנה. נסו שוב בקרוב, או עקבו אחרינו בקבוצות ובאינסטגרם.
+        <EmptyState icon="calendar" titleAs="h1" title="ההרשמה עוד לא נפתחה" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
+          המפגש הזה עוד בהכנה. נסו שוב בקרוב, או עקבו אחרינו באינסטגרם ובקבוצות&nbsp;הוואטסאפ.
         </EmptyState>
       );
     }
     return code === 'event_not_found' ? (
-      <EmptyState icon="calendar" title="לא מצאנו את המפגש" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
+      <EmptyState icon="calendar" titleAs="h1" title="לא מצאנו את המפגש" action={<ButtonLink to={home}>למפגשים הקרובים</ButtonLink>}>
         ייתכן שהקישור ישן או שהוקלד לא נכון.
       </EmptyState>
     ) : (
@@ -86,14 +91,25 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
     <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[24rem_minmax(0,1fr)] lg:items-start lg:gap-10">
       <div className="flex flex-col gap-5 lg:sticky lg:top-6">
         {e.invited_by && (
-          <p className="flex items-center gap-2 self-start rounded-[var(--radius-control)] bg-ink px-3.5 py-1.5 font-semibold text-light">
-            <Glyph name="heart" />
-            הזמנה מ{e.invited_by}
-          </p>
+          <div className="flex flex-col items-start gap-1.5">
+            <p className="flex items-center gap-2 rounded-[var(--radius-control)] bg-ink px-3.5 py-1.5 font-semibold text-light">
+              <Icon name="heart" size={18} />
+              הזמנה מ{e.invited_by}
+            </p>
+            {/* someone who got only a link: what this is, in one line, and where to read more */}
+            <p className="text-body-sm text-ink-soft">
+              <span className="whitespace-nowrap">המשך תנועה</span> היא הבית ללוחמים וללוחמות אחרי&nbsp;השירות.{' '}
+              <Link to={`/friday${trackingQuery(params)}`} className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-4 sm:min-h-0">
+                על מפגשי שישי
+                <Tri className="text-tide" />
+              </Link>
+            </p>
+          </div>
         )}
         <h1 className="font-display text-[2rem] leading-tight sm:text-title">{closed ? 'פרטי המפגש' : 'הרשמה למפגש'}</h1>
         <EventTicket event={e} highlight detailed showStatus="notable" />
         <DetailsButton event={e} onOpen={sheet.show} wide="always" className="-mt-3" />
+        {!closed && <AfterRegistering event={e} />}
       </div>
       <div className="lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
         {closed ? (
@@ -103,11 +119,89 @@ function Register({ code, params }: { code: string; params: URLSearchParams }) {
         ) : sources.isPending ? (
           <Skeleton lines={6} />
         ) : (
-          <RegisterForm event={e} sources={sources.data} refCode={ref} utm={utm} onDone={(r, who) => { setPayer(who); setDone(r); }} />
+          <>
+            <SavedHere code={e.code} />
+            <RegisterForm event={e} sources={sources.data} refCode={ref} utm={utm} onDone={(r, who) => { setPayer(who); setDone(r); }} />
+          </>
         )}
       </div>
       {details}
     </div>
+  );
+}
+
+/** Back from the details sheet to the form: the first field still empty (or the first unanswered choice) gets the cursor. */
+function focusFirstEmpty() {
+  const form = document.querySelector<HTMLFormElement>('form[aria-label="טופס הרשמה"]');
+  if (!form) return;
+  const fields = [...form.querySelectorAll<HTMLInputElement>('input:not([type=hidden]):not([type=checkbox]):not([tabindex="-1"])')];
+  const empty = fields.find((f) => (f.type === 'radio' ? !form.querySelector(`input[name="${f.name}"]:checked`) : !f.value.trim()));
+  const target = empty ?? form.querySelector<HTMLElement>('button[type=submit]');
+  target?.focus();
+  target?.scrollIntoView({ block: 'center' });
+}
+
+/**
+ * A pay-first registration from this phone that was left at the payment (an in-app browser that reloaded, a closed
+ * tab): a notice above the form, never instead of it, so on a shared phone the next person can still register. Only
+ * when exactly one registration of this meeting is saved here, it still waits for payment, and it is at most 30 minutes
+ * old. First name only; "זו לא ההרשמה שלי" forgets it on this phone.
+ */
+function SavedHere({ code }: { code: string }) {
+  const [one, setOne] = useState(() => {
+    const saved = savedRegistrations(code);
+    return saved.length === 1 && Date.now() - saved[0].at <= 30 * 60_000 ? saved[0] : null;
+  });
+  const reg = useRegistration(one?.token ?? null);
+  if (!one || reg.data?.status !== 'pending_payment') return null;
+  const name = one.name ?? reg.data.first_name;
+  const notMine = () => { forgetToken(code, one.token); setOne(null); };
+  return (
+    <div className="mb-5" data-testid="saved-here">
+      <Notice icon="card">
+        <p className="text-body-sm">
+          נרשמת מהטלפון הזה{name ? <>: <span className="font-semibold">{name}</span></> : null}. התשלום עוד לא&nbsp;הושלם.
+        </p>
+        <p className="mt-1 flex flex-wrap items-center gap-x-5">
+          <Link to={`/m/${one.token}`} className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-4">
+            לעמוד ההרשמה
+            <Tri className="text-tide" />
+          </Link>
+          <button type="button" onClick={notMine} className="inline-flex min-h-11 items-center font-semibold text-ink-soft underline underline-offset-4">
+            זו לא ההרשמה שלי
+          </button>
+        </p>
+      </Notice>
+    </div>
+  );
+}
+
+/**
+ * Wide screen only, in the column under the ticket: what happens after registering, from what the site really does
+ * (the personal page, the one-tap check-in) and the facts the team confirmed (FRIDAY_FACTS). Numbered steps, no bullets.
+ */
+function AfterRegistering({ event: e }: { event: PublicEvent }) {
+  const friday = e.type === 'friday';
+  const steps: ReactNode[] = [
+    paysFirst(e)
+      ? 'משלמים בדף התשלום המאובטח, וההרשמה מאושרת מיד אחרי התשלום.'
+      : 'מקבלים קישור אישי לעמוד ההרשמה. שם אפשר להוסיף ליומן, או לבטל אם משהו משתנה.',
+    ...(friday && FRIDAY_FACTS.reminder ? [FRIDAY_FACTS.reminder] : []),
+    'בכניסה סורקים את הברקוד ולוחצים "הגעתי". הטלפון כבר זוכר את ההרשמה.',
+    ...(friday && FRIDAY_FACTS.greeter ? [`${FRIDAY_FACTS.greeter} מהצוות מחכה בכניסה למי שבא בפעם הראשונה.`] : []),
+  ];
+  return (
+    <section aria-labelledby="after-register" className="hidden lg:block">
+      <h2 id="after-register" className="text-heading font-semibold">מה קורה אחרי ההרשמה</h2>
+      <ol className="mt-3 flex flex-col gap-3">
+        {steps.map((step, i) => (
+          <li key={i} className="grid grid-cols-[1.75rem_minmax(0,1fr)] items-baseline gap-x-2 text-body-sm text-ink-soft">
+            <span className="num font-display text-heading text-ink" aria-hidden="true">{i + 1}</span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -117,7 +211,7 @@ function pageTitle(done: RegisterResult | null, e: PublicEvent | undefined): str
   if (done) {
     if (done.status === 'pending_payment') return `תשלום: ${e.title}`;
     if (done.status === 'waitlisted' || done.status === 'already_waitlisted') return `רשימת ההמתנה: ${e.title}`;
-    return done.status === 'already_registered' ? `כבר נרשמת: ${e.title}` : `נרשמת: ${e.title}`;
+    return done.status === 'already_registered' ? `כבר נרשמת: ${e.title}` : `ההרשמה נשמרה: ${e.title}`;
   }
   const closed = e.status === 'cancelled' || !e.registration_open || (e.is_full && !e.waitlist_enabled);
   return closed ? e.title : `הרשמה: ${e.title}`;
@@ -291,7 +385,7 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
         </div>
         {paid && (
           <Notice icon="check">
-            התשלום התקבל, אבל בינתיים כל המקומות נתפסו. הצוות יחזור אליך בהקדם, כדי למצוא מקום או להחזיר את&nbsp;התשלום.
+            התשלום התקבל, אבל בינתיים כל המקומות נתפסו. הצוות יחזור אליך בהקדם כדי למצוא מקום או להחזיר את&nbsp;התשלום.
           </Notice>
         )}
         <EventTicket event={event} highlight showStatus={false} />
@@ -333,12 +427,13 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
       ) : (
         !again && <PayBlock event={event} payer={payer} />
       )}
-      <EventTicket event={event} highlight showStatus={false}>
+      {/* the pay block above says the amount; the calendar is this screen's one main next step */}
+      <EventTicket event={event} highlight showStatus={false} showPrice={paid || again}>
         <p className="mt-4 text-body-sm font-medium text-pretty text-ink">
           כדאי להכניס ליומן עכשיו, כדי ש{event.type === 'friday' ? 'השישי הזה' : 'המפגש'} לא ייבלע&nbsp;בשבוע.
         </p>
         <div className="mt-3">
-          <CalendarButtons event={event} />
+          <CalendarButtons event={event} primary />
         </div>
         <DetailsButton event={event} onOpen={onDetails} className="mt-2" />
       </EventTicket>
@@ -349,9 +444,10 @@ function Registered({ result: r, event, payer, paid = false, onAnother, onDetail
           url={invite.url}
           message={invite.message}
           title="באים ביחד?"
+          quiet
           lead={<>
-            קל יותר להגיע בפעם הראשונה עם מישהו&nbsp;מוכר.
-            <span className="block">שלחו את קישור ההזמנה שלכם לחבר או חברה&nbsp;מהשירות.</span>
+            קל יותר להגיע בפעם הראשונה עם מישהו&nbsp;מוכר. אפשר לשלוח את קישור ההזמנה לחבר או לחברה&nbsp;מהשירות.
+            <span className="block">הקישור אישי, כך נדע להגיד לך&nbsp;תודה.</span>
           </>}
         />
       )}

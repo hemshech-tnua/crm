@@ -120,7 +120,7 @@ test('#/e/<code> shows who is with us, the lecture and the details, with a worki
   await expect(page.getByText('תיאור קצר של ההרצאה לדמו.')).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'ככה נראה הבוקר' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'פרטים חשובים' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /ניווט ב-Waze/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /ניווט ב־Waze/ })).toBeVisible();
 
   // the call to action keeps the referral
   const cta = page.getByTestId('details-cta').getByRole('link');

@@ -29,7 +29,7 @@ test('a team-registered person opens the personal link once, then checks in at t
   const mineErrors = watchConsole(mine);
   await mine.goto(link);
   await expect(mine.getByRole('heading', { name: `היי ${full.split(' ')[0]}` })).toBeVisible();
-  await expect(mine.getByText('בכניסה סורקים את הברקוד ולוחצים ״הגעתי״', { exact: false })).toBeVisible();
+  await expect(mine.getByText('בכניסה סורקים את הברקוד ולוחצים "הגעתי"', { exact: false })).toBeVisible();
 
   // at the door: scans the sign, one tap
   await mine.goto(`#/c/${ev.checkin_code}`);

@@ -5,7 +5,7 @@ import { Button, ButtonLink, ErrorBox, Input, Notice } from '@/ui/kit';
 import { requestMembership, type MembershipResult } from './api';
 import { forgetPerson, knownPeople, type KnownPerson } from './device';
 import { PhoneExample, cleanText, nameError, phoneError } from './PersonForm';
-import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, TriList, usePageTitle } from './shared';
+import { Honeypot, PrivacyNote, ResultTitle, SuccessMark, BulletList, usePageTitle } from './shared';
 
 /**
  * #/member — "I want to join the association". Linked from the thank-you message sent after a meeting.
@@ -28,9 +28,9 @@ export function MemberPage() {
           המשך&nbsp;תנועה היא הבית ללוחמים וללוחמות באזרחות, ואתם מוזמנים להיות חלק ממנה.
           <span className="mt-2 block">השאירו שם וטלפון, ומישהו מהצוות יחזור אליכם עם כל הפרטים על ההצטרפות.</span>
         </p>
-        <TriList
+        <BulletList
           className="mt-4"
-          items={['חלק מקהילה של לוחמים ולוחמות', 'עדכונים ראשונים על מפגשים ופעילויות', 'אפשר לעזור ולהתנדב']}
+          items={['חלק מקהילה של לוחמים ולוחמות', 'עדכונים ראשונים על מפגשים ופעילויות', 'הזדמנות לעזור ולהתנדב']}
         />
       </div>
       <div className="flex flex-col gap-5 lg:rounded-[var(--radius-panel)] lg:border lg:border-edge lg:bg-paper lg:p-8">
@@ -43,7 +43,7 @@ export function MemberPage() {
               forgetPerson(device);
               const rest = knownPeople();
               setPeople(rest);
-              setNotice('הטלפון כבר לא זוכר אותך. אפשר להשאיר כאן שם וטלפון.');
+              setNotice('הטלפון כבר לא זוכר את הפרטים. אפשר להשאיר כאן שם וטלפון.');
               if (!rest.length) setForm(true);
             }}
             onOther={() => setForm(true)}
@@ -138,7 +138,7 @@ function ByForm({ onDone }: { onDone: (r: MembershipResult) => void }) {
       />
       <Input
         id={`${ids}-phone`}
-        label="טלפון"
+        label="טלפון נייד"
         type="tel"
         inputMode="tel"
         autoComplete="tel"
