@@ -1,0 +1,70 @@
+/* Donate (Team F). Page compositions only; shared components (.btn, .stats, .cta-band, .stripes…) come from D.
+   Motion: the five ways rise in one after another (a reveal group, 70ms apart) — nothing else moves; no attention-seeking
+   motion around giving, ever (MOTION.md). */
+@layer components {
+  /* ── hero ── */
+  .give-hero { padding-block-start: clamp(2.5rem, 1.5rem + 4vw, 5rem); }
+  .give-hero__grid { display: grid; gap: var(--space-7); }
+  .give-hero__lead { margin-block-start: var(--headline-to-lead); }
+  .give-hero__actions { margin-block-start: var(--space-7); }
+  .give-hero__photo { aspect-ratio: 4 / 3; }
+  .give-hero__photo img { object-position: 30% 70%; }
+  @media (min-width: 64rem) {
+    .give-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
+    .give-hero__text { grid-column: 1 / span 7; }
+    .give-hero__photo { grid-column: 8 / -1; aspect-ratio: 4 / 5; }
+  }
+
+  /* ── ways to give: the heading column stays in view (≥1024) while the five ways pass ── */
+  .give-ways__grid { display: grid; gap: var(--space-7); }
+  .give-ways__head { display: grid; gap: var(--headline-to-lead); align-content: start; }
+  .give-ways__head .t-body { max-inline-size: 34ch; }
+  .give-tax { display: grid; gap: var(--space-2); margin-block-start: var(--space-4); padding: var(--space-5); border-radius: var(--radius-panel); background: var(--surface); max-inline-size: 30rem; }
+  .give-tax__title { font-size: 1.1875rem; font-weight: var(--wght-bold); line-height: 1.3; letter-spacing: 0; }
+  .give-routes { display: grid; gap: var(--space-2); }
+  .give-route { display: grid; gap: var(--space-5); padding: var(--space-6) var(--space-5); border-radius: var(--radius-panel); background: var(--surface); }
+  .give-route__text { display: grid; gap: var(--space-2); justify-items: start; }
+  .give-route__text p { max-inline-size: 40ch; }
+  .give-route__note { font-weight: var(--wght-semibold); }
+  .give-route__act .btn { inline-size: 100%; }
+  @media (min-width: 48rem) {
+    .give-route { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-6); padding-inline: var(--space-6); }
+    .give-route__act .btn { inline-size: auto; }
+  }
+  .give-bank { margin-block-start: var(--space-2); }
+  div.give-bank:not(.owner-slot) { display: grid; gap: var(--space-4); padding: var(--space-6); border-radius: var(--radius-panel); background: var(--surface); }
+  .give-bank dl { display: grid; gap: var(--space-3) var(--gutter); grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); margin: 0; }
+  .give-bank dt { font-size: var(--fs-small); color: var(--ink-quiet); }
+  .give-bank dd { margin: 0; font-weight: var(--wght-semibold); }
+  @media (min-width: 64rem) {
+    .give-ways__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .give-ways__head { grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-7)); }
+    .give-routes, .give-bank { grid-column: 7 / -1; }
+  }
+
+  /* ── proof (owner content) ── */
+  .give-proof .sp-stats { margin-block-start: var(--space-8); }
+  .give-proof__grid { display: grid; gap: var(--space-8) var(--gutter); margin-block-start: var(--space-8); }
+  .give-proof__slot { margin-block-start: var(--space-7); }
+  .give-proof__grid > .give-proof__slot { margin-block-start: 0; }
+  .give-impact ul { display: grid; gap: var(--space-3); margin-block-start: var(--space-5); }
+  .give-impact li { display: flex; gap: 0.55em; align-items: baseline; font-size: var(--fs-lead); }
+  .give-impact li .tri { font-size: 0.8em; }
+  .give-stories { display: grid; gap: var(--space-7); align-content: start; }
+  @media (min-width: 64rem) { .give-proof__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* ── who is behind it · transparency ── */
+  .give-trust__grid { display: grid; gap: var(--space-8); }
+  .give-trust__who, .give-trust__open { display: grid; gap: var(--space-5); align-content: start; justify-items: start; }
+  .give-trust__open { padding: var(--space-6); border-radius: var(--radius-panel); background: var(--surface); }
+  .give-trust__open .owner-slot { justify-self: stretch; }
+  .give-trust__reg { font-weight: var(--wght-semibold); }
+  .give-people { display: grid; gap: var(--space-4) var(--gutter); grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); justify-self: stretch; }
+  .give-people li { display: grid; gap: var(--space-1); }
+  .give-reports { display: grid; gap: var(--space-1); }
+  @media (min-width: 64rem) {
+    .give-trust__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .give-trust__who { grid-column: 1 / span 6; }
+    .give-trust__open { grid-column: 8 / -1; margin-block-start: var(--space-3); }
+  }
+}

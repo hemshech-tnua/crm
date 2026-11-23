@@ -1,0 +1,151 @@
+{
+  "_source": "Answers reuse the approved public Friday FAQ (src/features/public/friday/sections.tsx, facts.ts) and Team A's copy. Keep both languages in sync. a: null = owner content (shown only in preview).",
+  "meta": {
+    "title": "FAQ · המשך תנועה",
+    "description": "Who the meetings are for, whether you need to be fit, coming alone, cost and cancellations, plus questions about our nonprofit."
+  },
+  "hero": {
+    "title": "What people ask us",
+    "body": "Answers to the questions we hear most before a first meeting.",
+    "indexLabel": "Topics"
+  },
+  "groups": [
+    {
+      "id": "meeting",
+      "title": "About the meeting",
+      "items": [
+        {
+          "q": "Who are the meetings for?",
+          "a": "Combat veterans after their service, men and women, however long it's been since discharge. You don't need to know us or anyone else beforehand."
+        },
+        {
+          "q": "Can I come alone, without knowing anyone?",
+          "a": "Yes. After the workout everyone sits down for coffee and snacks, and only then does the talk begin. There's time to meet people. Itai from our team waits at the entrance and introduces first-timers to a few people."
+        },
+        {
+          "q": "Do I have to share anything personal or talk about my service?",
+          "a": "No. It isn't a talking circle: we train, have coffee and hear a talk. Everyone shares only what they want to."
+        },
+        {
+          "q": "Do I need to be fit?",
+          "a": "No. The workout is built for every fitness level."
+        },
+        {
+          "q": "Can I bring a friend?",
+          "a": "Of course. Everyone registers separately, so send them the link to the meeting."
+        },
+        {
+          "q": "Are there meetings for women?",
+          "a": "Yes. Besides Friday mornings, which are open to everyone, there are women's evenings for women combat veterans.",
+          "link": {
+            "label": "Women's evenings",
+            "page": "evenings"
+          }
+        }
+      ]
+    },
+    {
+      "id": "arrive",
+      "title": "Getting there",
+      "items": [
+        {
+          "q": "Where is it, and how do I get there?",
+          "a": "Friday mornings take place at Holmes Place in Modi'in. The exact place of each meeting is in its details on the calendar.",
+          "link": {
+            "label": "See the calendar",
+            "page": "calendar"
+          }
+        },
+        {
+          "q": "What should I bring?",
+          "a": "Comfortable workout clothes and shoes, and a water bottle. We bring the coffee and snacks."
+        },
+        {
+          "q": "Can I change or shower?",
+          "a": "Yes. You can change and shower in the Holmes Place locker rooms."
+        },
+        {
+          "q": "Can I come for only part of the morning?",
+          "a": "Yes, you can come only for the workout or only for the talk. Part of the morning is also paid."
+        }
+      ]
+    },
+    {
+      "id": "register",
+      "title": "Registration, payment and privacy",
+      "items": [
+        {
+          "q": "How much does it cost?",
+          "a": "The price is in the details of each meeting on the calendar.",
+          "link": {
+            "label": "See the calendar",
+            "page": "calendar"
+          }
+        },
+        {
+          "q": "Is there a reminder before the meeting?",
+          "a": "Yes. Everyone who registered gets a reminder two days before the meeting."
+        },
+        {
+          "q": "How do I cancel or change my registration?",
+          "a": "With the personal link you get at the end of registration. Cancelling early frees your spot for someone on the waiting list."
+        },
+        {
+          "q": "What happens to the details I fill in?",
+          "a": "They are used only to manage registration and attendance and to get back to you. Only our team sees them. They are never sold or passed on.",
+          "link": {
+            "label": "Privacy policy (Hebrew)",
+            "crm": "privacy"
+          }
+        },
+        {
+          "q": "Do you take photos at meetings?",
+          "a": "Sometimes, for our pages. If you'd rather not appear in published photos, tick the box on the registration form and our team will see it."
+        }
+      ]
+    },
+    {
+      "id": "org",
+      "title": "About us",
+      "items": [
+        {
+          "q": "What is {org}?",
+          "a": "A nonprofit that's a home for combat veterans after their service. We hold regular meetings, and we're building a nationwide network of local community centers.",
+          "link": {
+            "label": "About us",
+            "page": "about"
+          }
+        },
+        {
+          "q": "Do I need to be a member to come?",
+          "a": null,
+          "slot": "Do participants need to be members to come to meetings (yes or no, and one line)"
+        },
+        {
+          "q": "How can I volunteer?",
+          "a": "Send us a message on WhatsApp and someone from our team will get back to you. You can also propose a talk or a workout session.",
+          "link": {
+            "label": "Volunteer",
+            "page": "volunteer"
+          }
+        },
+        {
+          "q": "Are donations tax-deductible?",
+          "a": "In Israel, our application for Section 46 recognition is in process. We'll update the site once it's approved.",
+          "link": {
+            "label": "Ways to give",
+            "page": "donate"
+          }
+        }
+      ]
+    }
+  ],
+  "closing": {
+    "title": "Didn't find your answer?",
+    "body": "Write to us and someone from our team will get back to you.",
+    "whatsapp": "Message us on WhatsApp",
+    "contact": "All the ways to reach us",
+    "register": "Sign up for a meeting",
+    "newSystem": "(opens our registration system, in Hebrew)"
+  }
+}

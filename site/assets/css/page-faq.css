@@ -1,0 +1,32 @@
+/* FAQ (Team G). The shared .faq accordion, grouped; each group's title stays beside its questions from 1024px. */
+@layer pages {
+  .faq-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
+  .faq-hero__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .faq-hero__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); text-wrap: balance; }
+  .faq-topics__title { font-size: var(--fs-small); font-weight: var(--wght-semibold); line-height: var(--lh-small); color: var(--ink-quiet); letter-spacing: 0; margin-block-end: var(--space-2); }
+  .faq-topics ul { display: grid; gap: var(--space-1); }
+  .faq-topics__link {
+    display: flex; align-items: center; min-block-size: var(--tap); padding-inline: var(--space-4); border-radius: var(--radius-control);
+    background: var(--surface); font-weight: var(--wght-semibold); text-decoration: none; transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) { .faq-topics__link:hover { background: var(--surface-hover); } }
+  @media (min-width: 48rem) { .faq-topics ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--gutter); } }
+  @media (min-width: 64rem) {
+    .faq-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .faq-hero__grid > .stack { grid-column: 1 / span 7; }
+    .faq-topics { grid-column: 9 / -1; }
+    .faq-topics ul { grid-template-columns: 1fr; }
+  }
+
+  .faq-groups { display: grid; gap: var(--space-9); }
+  .faq-group { display: grid; gap: var(--space-5) var(--gutter); scroll-margin-block-start: calc(var(--header-h) + var(--space-5)); }
+  .faq-group__title { font-size: var(--fs-title); line-height: var(--lh-title); letter-spacing: var(--track-title); font-weight: var(--wght-bold); }
+  .faq-group .faq__answer p { max-inline-size: var(--measure); }
+  .faq-group .faq__answer .link { min-block-size: var(--tap); }
+  @media (min-width: 64rem) {
+    .faq-groups { gap: var(--space-10); }
+    .faq-group { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .faq-group__title { grid-column: 1 / span 4; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+    .faq-group > .faq { grid-column: 6 / -1; }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "title": "About · המשך תנועה",
+    "description": "A home for combat veterans after their service: regular meetings built on movement, community and direction, and a nationwide network of local community centers on the way."
+  },
+  "hero": {
+    "title": "A home for combat veterans after their service",
+    "body": "We're an Israeli nonprofit that runs regular, structured activity so that men and women who served in combat roles have a place to meet, move, find direction and build a good life.",
+    "secondary": "Meet the team"
+  },
+  "why": {
+    "title": "Here for good",
+    "body": [
+      "Military service ends on a set date. The need for a team, for movement and for direction doesn't end with it.",
+      "So we didn't build a program with an end date. We're a place that stays, one you can come to at any point, and come back to again."
+    ],
+    "verbs": ["Meet", "Move", "Find direction", "Succeed"],
+    "verbsLabel": "What the meetings are for"
+  },
+  "direction": {
+    "title": "Local community centers, nationwide",
+    "body": [
+      "We're building a nationwide network of local community centers.",
+      "The goal: every combat veteran has a place close to home, with structured activity and people who have been there."
+    ],
+    "start": "Today's meetings are the beginning.",
+    "renderingCaption": "The first center"
+  },
+  "today": {
+    "title": "What we do today",
+    "lead": "Regular meetings. Every meeting is posted on the calendar.",
+    "items": [
+      {
+        "title": "Friday mornings",
+        "body": "Three times a month at Holmes Place in Modi'in: a workout, coffee and snacks, and a guest talk.",
+        "cta": "About Friday mornings",
+        "page": "friday"
+      },
+      {
+        "title": "Women's evenings",
+        "body": "Evenings by women combat veterans, for women combat veterans.",
+        "cta": "Women's evenings",
+        "page": "evenings"
+      },
+      {
+        "title": "Bonfire evenings and more",
+        "body": "Evenings and special meetings, posted on the calendar.",
+        "cta": "See the calendar",
+        "page": "calendar"
+      }
+    ]
+  },
+  "principles": {
+    "title": "What matters to us",
+    "items": [
+      { "title": "Steady", "body": "Structured meetings, every month, over time. Not a one-off event." },
+      { "title": "Open", "body": "For every combat veteran, however long it's been since discharge. You don't need to know anyone." },
+      { "title": "Moving", "body": "Every Friday meeting starts with a workout built for every fitness level." },
+      { "title": "Eye to eye", "body": "No ranks, no formations. And it isn't a talking circle: everyone shares only what they want to." }
+    ]
+  },
+  "story": {
+    "title": "How it started",
+    "founded": "Founded in {year}"
+  },
+  "name": {
+    "title": "About our name",
+    "body": "{org} means “keep moving”: in body, and in life. It's also our slogan: keep moving with us."
+  },
+  "people": {
+    "title": "The people behind it",
+    "body": "A team, a board and volunteers who make every meeting happen.",
+    "cta": "Meet the team"
+  },
+  "closing": {
+    "title": "The best way to get to know us: come",
+    "secondary": "Partner with us"
+  },
+  "slots": {
+    "story": "The founding story: when, who founded it and why, 3–5 sentences",
+    "founded": "Year founded",
+    "photo": "One real photo from a meeting for the About page (to replace the illustrative one)",
+    "rendering": "Plans or a rendering of the first center, with a one-line caption (when ready)",
+    "team": "Team and board: names, roles and photos"
+  }
+}

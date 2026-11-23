@@ -3,6 +3,7 @@
 //   data-org-phone="tel"      → href tel:+972…
 //   data-org-phone="text"     → the number as text (050-123-4567)
 // Slots stay hidden until a phone arrives (and so does their [data-org-phone-item] wrapper); no phone = nothing shows.
+// [data-org-phone-fallback] (a plain "contact the team" line) is hidden once the phone is there.
 import { rpcOnce } from './api.js';
 
 function display(e164) {
@@ -32,6 +33,7 @@ export function initOrg() {
         node.hidden = false;
         node.closest('[data-org-phone-item]')?.removeAttribute('hidden');
       }
+      for (const f of document.querySelectorAll('[data-org-phone-fallback]')) f.hidden = true;
     })
     .catch(() => {});
 }

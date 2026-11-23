@@ -1,0 +1,128 @@
+/* Home (and the 404 at the end). Semantic tokens and shared components only; compositions per DESIGN.md §8. */
+@layer pages {
+  .page-home { --edge-out: calc(var(--page-margin) + max(0px, (100vw - var(--page-max) - 2 * var(--page-margin)) / 2)); }
+
+  /* ── 1 · hero ── */
+  .hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) 0; }
+  .hero__grid { display: grid; gap: var(--space-6) var(--gutter); }
+  .hero__title > span { display: block; }
+  .hero__title { max-inline-size: 15ch; }
+  .hero__side { display: grid; gap: var(--space-5); align-content: start; }
+  .hero__lead { color: var(--ink); max-inline-size: 34ch; }
+  .hero__photo { position: relative; margin-inline: calc(var(--page-margin) * -1); }
+  .hero__photo .photo { aspect-ratio: 4 / 3; }
+  .hero__stripes { inset-block-end: 0; inset-inline-end: 0; inline-size: 34%; block-size: 26%; z-index: 1; }
+  @media (min-width: 48rem) and (max-width: 63.99rem) {
+    .hero__side { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; column-gap: var(--gutter); }
+    .hero__lead { grid-column: 1 / -1; }
+    .hero__photo .photo { aspect-ratio: 16 / 9; }
+  }
+  @media (min-width: 64rem) {
+    .hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); row-gap: var(--headline-to-lead); }
+    .hero__title { grid-column: 1 / -1; max-inline-size: none; }
+    .hero__side { grid-column: 1 / span 5; padding-block: var(--space-3) var(--space-9); }
+    .hero__photo { grid-column: 6 / -1; margin-inline: var(--space-6) calc(var(--edge-out) * -1); }
+    .hero__photo .photo { aspect-ratio: auto; block-size: 100%; min-block-size: 34rem; }
+  }
+
+  /* ── 2 · the four verbs ── */
+  .verbs__head > h2 { max-inline-size: 16ch; }
+  .verbs__head p { max-inline-size: 30ch; }
+  .verbs__index { display: none; }
+  .verbs__list { display: grid; gap: var(--space-9); }
+  .verb { display: grid; gap: var(--space-5); }
+  .verb__name { font-size: var(--fs-chapter); line-height: 1; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
+  .verb__text { display: grid; gap: var(--space-2); }
+  .verb__what { font-size: var(--fs-lead); font-weight: var(--wght-semibold); line-height: var(--lh-title); }
+  @media (min-width: 64rem) {
+    .verbs__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .verbs__index {
+      display: grid; gap: var(--space-2); grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-8));
+    }
+    .verbs__index li {
+      display: flex; align-items: center; gap: 0.3em; color: var(--beige-400);
+      font-size: var(--fs-chapter); line-height: 1.12; font-weight: var(--wght-bold); letter-spacing: var(--track-chapter);
+      transition: color var(--dur-base) var(--ease-out);
+    }
+    .verbs__index .tri { font-size: 0.6em; opacity: 0; transform: translateX(calc(var(--dir) * -8px)); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
+    .verbs__index li[data-active] { color: var(--navy); }
+    .verbs__index li[data-active] .tri { opacity: 1; transform: none; }
+    .verbs__list { grid-column: 7 / -1; gap: var(--space-11); padding-block-start: var(--space-3); }
+    .verb__name { font-size: var(--fs-title); line-height: var(--lh-title); }
+  }
+
+  /* ── 3 · פה תמיד ── */
+  .always { padding-block-end: var(--chapter-pad); }
+  .always__mark { inset-block-start: -3rem; inset-inline-end: -6rem; color: var(--navy-800); }
+  .always__head { margin-block-end: var(--space-9); }
+  .always__head, .always__direction { display: grid; gap: var(--space-6) var(--gutter); position: relative; z-index: 1; }
+  .always__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); }
+  .always__band { aspect-ratio: 4 / 3; margin-block: var(--space-7) var(--space-8); position: relative; z-index: 1; }
+  .always__band img { object-position: 50% 60%; }
+  .always__subtitle { max-inline-size: 14ch; }
+  @media (min-width: 48rem) { .always__band { aspect-ratio: 16 / 9; } }
+  @media (min-width: 64rem) {
+    .always__head, .always__direction { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .always__head > :first-child, .always__direction > :first-child { grid-column: 1 / span 5; }
+    .always__head > :last-child, .always__direction > :last-child { grid-column: 7 / -1; }
+    .always__band { aspect-ratio: 21 / 9; margin-block: var(--space-8) var(--space-9); }
+  }
+
+  /* ── 4 · Friday and the other meetings ── */
+  .meetings__friday { display: grid; gap: var(--space-9) var(--gutter); }
+  .meetings__promise { display: grid; gap: var(--space-7); align-content: start; }
+  .meetings__promise h2 { max-inline-size: 14ch; }
+  .promises { display: grid; gap: var(--space-6); }
+  .promises li { display: grid; gap: var(--space-2); }
+  .promises__title { display: flex; gap: 0.45em; align-items: baseline; font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--wght-bold); }
+  .promises__title .tri { font-size: 0.75em; }
+  .promises p { padding-inline-start: calc(var(--fs-title) * 0.24 + 0.45em); color: var(--ink-quiet); }
+  .meetings__dates { display: grid; gap: var(--space-5); align-content: start; }
+  .meetings__more { margin-block-start: var(--space-10); display: grid; gap: var(--space-6); }
+  .types { display: grid; gap: var(--gutter); }
+  .types > li { display: flex; }
+  .types .type { inline-size: 100%; }
+  @media (min-width: 48rem) { .types { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 64rem) {
+    .meetings__friday { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .meetings__promise { grid-column: 1 / span 6; }
+    .meetings__dates { grid-column: 8 / -1; padding-block-start: var(--space-4); position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+    .types .type { min-block-size: 22rem; }
+  }
+
+  /* ── 5 · proof ── */
+  .proof__stats { margin-block-start: var(--space-8); }
+  .proof__stories { display: grid; gap: var(--space-6); margin-block-start: var(--space-9); }
+  .proof__quotes { display: grid; gap: var(--space-8) var(--gutter); }
+  @media (min-width: 64rem) { .proof__quotes { grid-template-columns: 1fr 1fr; } }
+
+  /* ── 6 · join ── */
+  .join__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .join__title { max-inline-size: 12ch; }
+  .join__partners { display: grid; gap: var(--space-5); margin-block-start: var(--space-9); }
+  @media (min-width: 64rem) {
+    .join__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .join__title { grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+    .join__grid > .rows { grid-column: 6 / -1; }
+  }
+
+  /* ── 7 · closing ── */
+  .closing__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .closing__text { display: grid; gap: var(--space-9); align-content: space-between; }
+  .closing__title { max-inline-size: 10ch; }
+  .closing__share { display: grid; gap: var(--space-4); }
+  .closing__share .t-lead { color: var(--ink-quiet); max-inline-size: 30ch; }
+  .closing__photo { aspect-ratio: 3 / 2; }
+  @media (min-width: 64rem) {
+    .closing__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: stretch; }
+    .closing__text { grid-column: 1 / span 6; }
+    .closing__photo { grid-column: 8 / -1; aspect-ratio: 4 / 5; }
+  }
+
+  /* ── 404 ── */
+  .nf { min-block-size: calc(100svh - var(--header-h)); display: grid; align-items: center; }
+  .nf__in { display: grid; gap: var(--space-5); justify-items: start; }
+  .nf__code { font-size: var(--fs-stat); font-weight: var(--wght-bold); line-height: 0.9; letter-spacing: -0.03em; color: var(--beige-quiet); font-variant-numeric: tabular-nums; }
+  .nf__title { max-inline-size: 13ch; }
+  .nf__mark { inset-block-end: -6rem; inset-inline-end: -4rem; color: var(--navy-800); }
+}

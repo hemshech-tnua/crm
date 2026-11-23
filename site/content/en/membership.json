@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "title": "Membership · המשך תנועה",
+    "description": "Want to be part of our nonprofit? Leave your name and phone number, and someone from our team will get back to you with all the details."
+  },
+  "hero": {
+    "title": "Become a member",
+    "body": "{org} is a home for combat veterans in civilian life, and you're invited to be part of it.",
+    "note": "The short form is in our registration system, in Hebrew."
+  },
+  "benefits": {
+    "title": "What it means",
+    "items": [
+      "Being part of a community of combat veterans",
+      "First to hear about meetings and activities",
+      "A chance to help and volunteer"
+    ]
+  },
+  "fee": {
+    "title": "Membership fee"
+  },
+  "how": {
+    "title": "How to join",
+    "steps": [
+      {
+        "title": "Leave your name and phone number",
+        "body": "In the short form in our registration system. If you've checked in at a meeting from this phone, it takes one tap."
+      },
+      {
+        "title": "Someone from our team gets back to you",
+        "body": "With all the details about joining."
+      }
+    ],
+    "privacy": "Your details are used only to get back to you about joining. Only our team sees them."
+  },
+  "cta": "Become a member",
+  "also": {
+    "title": "More ways to be part of it",
+    "items": [
+      {
+        "label": "Come to a meeting",
+        "page": "calendar"
+      },
+      {
+        "label": "Volunteer",
+        "page": "volunteer"
+      },
+      {
+        "label": "Questions and answers",
+        "page": "faq"
+      }
+    ]
+  },
+  "slots": {
+    "fee": "Membership fee (if any) and what membership includes beyond these three points"
+  },
+  "ctaHint": "(opens our registration system, in Hebrew)"
+}

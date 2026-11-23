@@ -1,19 +1,29 @@
 {
   "site": {
-    "name": "Hemshech Tnua",
-    "description": "Hemshech Tnua is building a nationwide network of local community centres and runs structured activities, giving combat veterans a space to meet, move, find direction and succeed in life.",
-    "titleSeparator": " | "
+    "name": "המשך תנועה",
+    "description": "המשך תנועה is an Israeli nonprofit building a nationwide network of local community centers, with regular activities for combat veterans after their service: room to meet, move, find direction and build a good life.",
+    "titleSeparator": " · "
   },
-  "skip": "Skip to main content",
+  "skip": "Skip to content",
   "nav": {
-    "label": "Main navigation",
-    "footerLabel": "All pages",
+    "label": "Main",
+    "footerLabel": "Site links",
     "menuLabel": "Menu",
-    "menu": "Menu",
-    "close": "Close the menu",
-    "homeLabel": "Hemshech Tnua – home page",
+    "menuOpen": "Open menu",
+    "secondaryLabel": "More",
+    "homeLabel": "המשך תנועה: home",
     "switchTo": "עברית",
+    "switchAria": "לגרסה העברית של העמוד",
+    "currentPage": "Current page",
+    "menu": "Menu",
+    "close": "Close",
+    "switchShort": "עברית",
     "home": "Home",
+    "stories": "Stories",
+    "gallery": "Photos & videos",
+    "news": "News",
+    "transparency": "Transparency",
+    "accessibility": "Accessibility statement",
     "friday": "Friday mornings",
     "evenings": "Women's evenings & more",
     "about": "About",
@@ -24,111 +34,192 @@
     "team": "Team & board",
     "faq": "FAQ",
     "membership": "Membership",
-    "contact": "Contact",
-    "stories": "Stories",
-    "gallery": "Photos & videos",
-    "news": "News",
-    "transparency": "Transparency & reports",
-    "accessibility": "Accessibility statement"
+    "contact": "Contact"
   },
   "cta": {
-    "register": "Sign up for a meeting"
+    "register": "Sign up for a meeting",
+    "registerShort": "Sign up",
+    "barTitle": "Upcoming meetings",
+    "barAria": "Next meeting",
+    "aria": "Sign up for a meeting: upcoming meetings"
   },
   "footer": {
+    "about": "המשך תנועה is a home for combat veterans after their service: regular meetings built on movement, community and direction — and, on the way, local community centers across Israel.",
+    "slogan": "Keep moving with us",
+    "columns": [
+      {
+        "title": "Meetings",
+        "items": [
+          {
+            "page": "friday",
+            "label": "Friday mornings"
+          },
+          {
+            "page": "evenings",
+            "label": "Women's evenings & more"
+          },
+          {
+            "page": "calendar",
+            "label": "Calendar"
+          },
+          {
+            "page": "faq",
+            "label": "FAQ"
+          }
+        ]
+      },
+      {
+        "title": "Who we are",
+        "items": [
+          {
+            "page": "about",
+            "label": "About"
+          },
+          {
+            "page": "team",
+            "label": "Team & board"
+          },
+          {
+            "page": "membership",
+            "label": "Membership"
+          },
+          {
+            "page": "transparency",
+            "label": "Transparency"
+          }
+        ]
+      },
+      {
+        "title": "Get involved",
+        "items": [
+          {
+            "page": "donate",
+            "label": "Donate"
+          },
+          {
+            "page": "partners",
+            "label": "Partner with us"
+          },
+          {
+            "page": "volunteer",
+            "label": "Volunteer"
+          },
+          {
+            "crm": "propose",
+            "label": "Give a talk or lead a session"
+          }
+        ]
+      }
+    ],
     "contactTitle": "Contact",
     "whatsapp": "Message us on WhatsApp",
-    "pagesTitle": "On this site",
-    "systemTitle": "In the registration system",
-    "privacy": "Privacy policy",
-    "propose": "Offer a talk or a session",
-    "member": "Members' area",
-    "rights": "All rights reserved"
+    "whatsappNoPhone": "Reach out to our team.",
+    "socialTitle": "Follow us",
+    "socialAria": "המשך תנועה on social media",
+    "legal": {
+      "copyright": "© {year} המשך תנועה",
+      "registration": "Registered nonprofit (amuta) no. {registrationNumber}",
+      "privacy": "Privacy policy (Hebrew)",
+      "accessibility": "Accessibility statement",
+      "staff": "Staff login"
+    }
   },
   "events": {
-    "loading": "Loading the upcoming meetings…",
-    "empty": "No meetings are open for registration right now. New meetings open here and in the registration system.",
+    "loading": "Loading upcoming meetings…",
     "error": "We couldn't load the meetings right now.",
-    "retry": "Try again",
-    "fallback": "All meetings in the registration system",
-    "filterLabel": "Meeting type",
-    "all": "All",
-    "register": "Sign up",
-    "details": "Details",
-    "full": "Full",
-    "waitlist": "Waiting list",
-    "spotsLeft": "{n} places left",
-    "price": "₪{price}",
-    "count": "{n} upcoming meetings",
+    "errorCta": "See all meetings in our registration system",
+    "emptyTitle": "The next meeting will be posted soon",
+    "emptyBody": "Every meeting is posted here, on Instagram and in our WhatsApp groups.",
+    "notOpenYet": "Registration for this meeting hasn't opened yet. It will open here soon.",
+    "fullNextSoon": "This meeting is full. The next one will be posted here soon.",
+    "nextLabel": "Next meeting",
+    "cta": {
+      "register": "Register",
+      "registerAndPay": "Register and pay",
+      "waitlist": "Join the waiting list",
+      "details": "Details",
+      "allDetails": "Full meeting details"
+    },
+    "status": {
+      "cancelled": "Cancelled",
+      "closed": "Registration closed",
+      "fullWaitlist": "Full · waiting list open",
+      "full": "Full",
+      "oneLeft": "1 spot left",
+      "fewLeft": "{n} spots left",
+      "open": "Registration open"
+    },
+    "notes": {
+      "quick": "Registration takes less than a minute.",
+      "quickCancel": "Registration takes less than a minute. You can cancel with your personal link.",
+      "payAtEnd": "You pay at the end of registration, on a secure payment page.",
+      "waitlist": "If a spot opens up, we'll let you know in the order people signed up.",
+      "greeter": "Coming alone? Itai will meet you at the entrance."
+    },
     "types": {
-      "friday": "Friday meeting",
+      "friday": "Friday morning",
       "bonfire": "Bonfire evening",
       "other": "Meeting"
-    }
+    },
+    "retry": "Try again",
+    "fallback": "See all meetings in our registration system",
+    "filterLabel": "Meeting type",
+    "all": "All",
+    "price": "₪{price}",
+    "count": "{n} upcoming meetings",
+    "calendar": "See the calendar",
+    "titleNote": "Meeting titles are in Hebrew."
+  },
+  "whatsapp": {
+    "general": "Hi, I have a question about המשך תנועה.",
+    "volunteer": "Hi, I'd like to volunteer with המשך תנועה. How can I help?",
+    "partner": "Hi, I'd like to talk about a partnership with המשך תנועה.",
+    "donate": "Hi, I'd like to arrange a donation to המשך תנועה.",
+    "sponsor": "Hi, I'd like to hear about sponsoring a full meeting.",
+    "share": "Thought of you. There's a Friday morning meetup for combat veterans: a workout, coffee and a guest talk. I think it's for you."
+  },
+  "a11y": {
+    "newWindow": "(opens in a new window)",
+    "whatsappNewWindow": "(WhatsApp, opens in a new window)",
+    "registrationSystem": "(goes to our registration system)",
+    "hebrewOnly": "Registration is in Hebrew.",
+    "loading": "Loading…",
+    "backToTop": "Back to top",
+    "progress": "Reading progress"
+  },
+  "social": {
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "whatsappCommunity": "WhatsApp community",
+    "youtube": "YouTube",
+    "linkedin": "LinkedIn"
   },
   "slots": {
-    "prefix": "Owner content",
-    "stats": "impact numbers (e.g. meetings held, participants)",
-    "partners": "partner and company logos",
-    "quotes": "quotes from participants who agreed",
-    "socials": "social media links",
+    "prefix": "Content from the association",
+    "stats": "impact numbers we can prove (number, short label, period)",
+    "partners": "partner logos, with written permission",
+    "quotes": "participant quotes, with written consent",
+    "socials": "links to social media",
     "address": "postal address",
-    "email": "email address",
-    "donateUrl": "link to the donation payment page"
+    "email": "a general email address",
+    "donateUrl": "link to the donation payment page",
+    "registration": "the nonprofit registration number",
+    "team": "team and board: names, roles and photos"
   },
   "notFound": {
-    "metaTitle": "Page not found",
+    "metaTitle": "Page not found · המשך תנועה",
+    "metaDescription": "The page you were looking for wasn't found.",
     "title": "We couldn't find this page",
-    "lead": "The link may have changed. You can continue from the home page or go straight to signing up for a meeting.",
-    "home": "Home page"
-  },
-  "home": {
-    "meta": {
-      "title": "Hemshech Tnua",
-      "description": "A network of local community centres for discharged combat veterans: a space to meet, move, find direction and succeed in life."
-    },
-    "hero": {
-      "eyebrow": "Infrastructure sample page",
-      "title": "Hemshech Tnua",
-      "lead": "We are building a nationwide network of local community centres and run structured activities, giving combat veterans a space to meet, move, find direction and succeed in life."
-    },
-    "friday": {
-      "title": "Friday meetings",
-      "points": [
-        "No commitment and no talking circle",
-        "Three meetings a month",
-        "Suits every fitness level"
-      ]
-    },
-    "chapters": {
-      "title": "Chapters",
-      "items": [
-        {
-          "title": "Meet",
-          "text": "Three meetings a month, no commitment."
-        },
-        {
-          "title": "Move",
-          "text": "A workout that suits every fitness level."
-        },
-        {
-          "title": "Find direction",
-          "text": "Training, coffee and a talk on Friday mornings."
-        }
-      ]
-    },
-    "events": {
-      "title": "Upcoming meetings"
-    },
-    "owner": {
-      "title": "Places waiting for content from the association"
-    }
+    "body": "The link may have changed. All upcoming meetings are on the calendar.",
+    "cta": "See the calendar",
+    "secondary": "Home"
   },
   "photos": {
-    "training": "Outdoor group training with kettlebells and resistance bands",
-    "running": "Three people running on a dirt trail at sunrise",
-    "talk": "A talk and conversation around a long table",
-    "bonfire": "An evening around a bonfire in the hills",
-    "walk": "A soldier and a civilian walking together on a path",
-    "hills": "Hills and olive trees at sunset"
+    "training": "A group of men and women training outdoors on a hillside above a city. Some lift kettlebells, others work with resistance bands, while a coach explains something to one of them.",
+    "running": "Three people, a woman and two men, running together on a dirt trail among pine trees, in low sunlight.",
+    "talk": "A group seated around a long wooden table with coffee mugs and notebooks, listening to a woman who stands and speaks. Behind them, a large window looks out onto a street.",
+    "bonfire": "Men and women sitting around a campfire on a hillside at dusk, holding mugs and laughing.",
+    "walk": "Two young men walking and talking on a path under eucalyptus trees, both smiling. One wears a uniform; the other a T-shirt and jeans, with a backpack.",
+    "hills": "A dirt path winding down between olive trees toward rolling hills, in low sunlight."
   }
 }

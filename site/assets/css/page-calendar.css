@@ -1,0 +1,23 @@
+/* Calendar (pages/calendar.mjs). The list is the page: a short navy hero with "how to register", the live list with
+   filter chips on beige, then what happens at each kind of meeting. Semantic tokens + shared classes only. */
+@layer pages {
+  .cal-hero { padding-block: clamp(3rem, 2rem + 4vw, 6rem) clamp(3rem, 2rem + 4vw, 6rem); }
+  .cal-hero__grid { display: grid; gap: var(--space-7); }
+  .cal-hero__lead { margin-block-start: var(--headline-to-lead); }
+  .cal-note { display: grid; gap: var(--space-2); align-content: start; background-color: var(--surface); border-radius: var(--radius-panel); padding: var(--space-5) var(--space-6); max-inline-size: 34rem; }
+  .cal-note__title { font-size: var(--fs-lead); line-height: var(--lh-title); font-weight: var(--wght-semibold); letter-spacing: 0; }
+  @media (min-width: 64rem) {
+    .cal-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
+    .cal-hero__grid > :first-child { grid-column: 1 / span 7; }
+    .cal-note { grid-column: 9 / -1; }
+  }
+
+
+  .cal-kinds__grid { display: grid; gap: var(--space-7); }
+  .cal-kinds__ask { margin-block-start: var(--space-5); display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); align-items: center; }
+  @media (min-width: 64rem) {
+    .cal-kinds__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .cal-kinds__head { grid-column: 1 / span 5; }
+    .cal-rows { grid-column: 7 / -1; }
+  }
+}

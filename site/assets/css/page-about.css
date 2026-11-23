@@ -1,0 +1,93 @@
+/* About (Team G). Page compositions only: semantic tokens + the shared components (rows, photo, mark, cta-band). */
+@layer pages {
+  /* ── hero (navy): the claim at the reading edge, the illustrative photo at the inline-end, stripes cut by its corner ── */
+  .about-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
+  .about-hero__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .about-hero__title { font-size: var(--fs-hero); line-height: var(--lh-display); letter-spacing: var(--track-display); text-wrap: balance; max-inline-size: 18ch; }
+  .about-hero__actions { margin-block-start: var(--space-6); }
+  .about-hero__frame { position: relative; overflow: clip; border-radius: var(--radius-panel); }
+  .about-hero__photo { aspect-ratio: 4 / 3; }
+  .about-hero__stripes { position: absolute; z-index: 1; inset-block-end: -1px; inset-inline-start: -1px; inline-size: 38%; block-size: 26%; color: var(--ground); pointer-events: none; }
+  .about-hero__stripes svg { display: block; inline-size: 100%; block-size: 100%; }
+  .about-hero__slot { margin-block-start: var(--space-4); min-block-size: 0; }
+  @media (min-width: 64rem) {
+    .about-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .about-hero__title { grid-column: 1 / -1; max-inline-size: none; }
+    .about-hero__text { grid-column: 1 / span 5; padding-block-end: var(--space-4); }
+    .about-hero__media { grid-column: 7 / -1; }
+    .about-hero__photo { aspect-ratio: 3 / 2; }
+  }
+
+  /* ── why (beige): "פה תמיד" set as the page's largest word, the reasons beside it ── */
+  .about-why__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .about-why__title { font-size: clamp(4rem, 1.5rem + 10vw, 10rem); line-height: 0.92; letter-spacing: var(--track-display); }
+  :lang(en) .about-why__title { font-size: clamp(3.5rem, 1.5rem + 7vw, 7.5rem); }
+  .about-why__body { display: grid; gap: var(--space-5); }
+  .about-why__body p { color: var(--ink); }
+  .about-verbs { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); font-size: var(--fs-title); font-weight: var(--wght-bold); line-height: 1.15; }
+  .about-verbs > li { display: inline-flex; align-items: center; gap: 0.35em; }
+  .about-verbs .tri { font-size: 0.75em; }
+  .about-name { display: grid; gap: var(--space-2); padding: var(--space-5); border-radius: var(--radius-panel); background: var(--surface); max-inline-size: 40rem; }
+  @media (min-width: 64rem) {
+    .about-why__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .about-why__title { grid-column: 1 / span 5; grid-row: 1 / span 3; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-8)); }
+    .about-why__body, .about-verbs, .about-name { grid-column: 7 / -1; }
+  }
+
+  /* ── direction (navy): the network, the first center; the large cropped mark drifts (the page's one signature move) ── */
+  .about-direction__mark { inset-block-end: -5rem; inset-inline-end: -3rem; color: var(--navy-800); }
+  .about-direction__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .about-direction__title { max-inline-size: 15ch; }
+  .about-direction__body { --stack-gap: var(--space-5); max-inline-size: 40rem; }
+  .about-direction__start { padding-block-start: var(--space-3); font-weight: var(--wght-bold); }
+  .about-direction__center .photo { aspect-ratio: 16 / 9; }
+  .about-direction__center figcaption { margin-block-start: var(--space-3); }
+  .about-direction__center--slot { aspect-ratio: 16 / 9; min-block-size: 0; }
+  @media (max-width: 63.99rem) { .about-direction { padding-block-end: calc(var(--chapter-pad) + 9rem); } }
+  @media (min-width: 64rem) {
+    .about-direction__mark { inset-block: 50% auto; inset-inline-end: -4rem; translate: 0 -50%; }
+    .about-direction__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .about-direction__title, .about-direction__body { grid-column: 1 / span 7; }
+    .about-direction__center, .about-direction__center--slot { grid-column: 1 / span 8; }
+  }
+
+  /* ── today (beige-light): what exists now, as row links; one photo at the inline-end ── */
+  .about-today__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .about-today .head { margin-block-end: var(--space-7); max-inline-size: none; }
+  .about-row__cta { font-size: var(--fs-small); }
+  @media (max-width: 47.99rem) { .about-today__photo { aspect-ratio: 3 / 2; } }
+  @media (min-width: 64rem) {
+    .about-today__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .about-today__main { grid-column: 1 / span 7; }
+    .about-today__photo { grid-column: 9 / -1; }
+  }
+
+  /* ── principles (navy): four words, each with its one line ── */
+  .about-principles__list { display: grid; gap: var(--space-8) var(--gutter); margin-block-start: var(--space-8); }
+  .about-principle { display: grid; gap: var(--space-3); align-content: start; }
+  .about-principle dt { font-size: var(--fs-chapter); line-height: var(--lh-chapter); letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
+  .about-principle dd { margin: 0; font-size: var(--fs-lead); line-height: var(--lh-lead); max-inline-size: 34ch; }
+  @media (min-width: 48rem) { .about-principles__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 64rem) { .about-principles__list { gap: var(--space-9) calc(var(--gutter) * 3); } }
+
+  /* ── story (owner content) ── */
+  .about-story__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .about-story__year { color: var(--ink-quiet); }
+  .about-story__body { --stack-gap: var(--space-5); }
+  @media (min-width: 64rem) {
+    .about-story__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .about-story__grid > :first-child { grid-column: 1 / span 5; }
+    .about-story__grid > :last-child { grid-column: 7 / -1; }
+  }
+
+  /* ── people (beige): who is behind it; up to four faces from org.json ── */
+  .about-people__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .about-faces { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--gutter); }
+  .about-faces__name { margin-block-start: var(--space-3); font-weight: var(--wght-semibold); font-size: 1.1875rem; line-height: 1.3; }
+  .about-faces--slot { display: grid; min-block-size: 18rem; }
+  @media (min-width: 64rem) {
+    .about-people__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
+    .about-people__grid > :first-child { grid-column: 1 / span 5; }
+    .about-people__grid > :last-child { grid-column: 7 / -1; }
+  }
+}

@@ -1,0 +1,115 @@
+/* Friday mornings (pages/friday.mjs). Page compositions only: semantic tokens + the shared classes from components.css.
+   Signature motion (MOTION.md): the three promise panels stack as you scroll (CSS sticky, ≥1024px). */
+@layer pages {
+  /* ── 1. hero (beige): h1 · lead · the live next meeting · photo 4:5 with stripes in its corner ── */
+  .fr-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
+  .fr-hero__grid { display: grid; gap: var(--space-7); }
+  .fr-hero__lead { margin-block-start: var(--headline-to-lead); }
+  .fr-hero__next { margin-block-start: var(--space-6); max-inline-size: 34rem; }
+  .fr-hero__quick { margin-block-start: var(--space-3); }
+  .fr-hero__media { position: relative; }
+  .fr-hero__photo img { object-position: 50% 35%; }
+  .fr-hero__stripes { inset-block-start: -1px; inset-inline-start: -1px; inline-size: 40%; block-size: 28%; color: var(--ground); z-index: 1; }
+  @media (min-width: 48rem) and (max-width: 63.99rem) { .fr-hero__photo { aspect-ratio: 3 / 2; } }
+  @media (min-width: 64rem) {
+    .fr-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
+    .fr-hero__text { grid-column: 1 / span 6; }
+    .fr-hero__media { grid-column: 8 / -1; }
+  }
+
+  /* ── 2. the three promises (navy tones): sticky panels, each slides over the last (≥1024; phone = stacked bands) ── */
+  .fr-promises { position: relative; }
+  .fr-promise { position: relative; display: grid; align-content: center; padding-block: var(--space-9); overflow: clip; isolation: isolate; background-color: var(--navy); }
+  .fr-promise--2 { background-color: var(--navy-800); }
+  .fr-promise--3 { background-color: var(--navy-700); }
+  .fr-promise__in { display: grid; gap: var(--space-7); position: relative; z-index: 1; }
+  .fr-promise__title { font-size: clamp(2.25rem, 1.2rem + 4.3vw, 6rem); line-height: 1.02; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
+  .fr-promise__title span { display: block; }
+  .fr-promise__body { margin-block-start: var(--space-6); color: var(--ink-quiet); max-inline-size: 46ch; font-size: var(--fs-lead); line-height: var(--lh-lead); }
+  /* panel 1: a run of beige stripes entering from the inline-end corner */
+  .fr-promise__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: clamp(8rem, 2rem + 22vw, 24rem); block-size: clamp(9rem, 4rem + 22vw, 30rem); }
+  /* panel 2: the "3" of "three meetings a month", tone-on-tone, cropped by the panel's inline-end edge */
+  .fr-promise__figure { position: absolute; inset-block-end: -0.2em; inset-inline-end: 0.02em; font-size: clamp(16rem, 8rem + 30vw, 44rem); line-height: 0.8; font-weight: var(--wght-bold); letter-spacing: -0.04em; color: var(--navy-700); pointer-events: none; user-select: none; z-index: 0; }
+  /* panel 3: a training photo */
+  .fr-promise__photo { aspect-ratio: 3 / 2; }
+  @media (min-width: 64rem) {
+    .fr-promise { position: sticky; inset-block-start: var(--header-h); min-block-size: calc(100svh - var(--header-h)); }
+    .fr-promise__in { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
+    .fr-promise__text { grid-column: 1 / span 7; }
+    .fr-promise__photo { grid-column: 9 / -1; aspect-ratio: 4 / 5; max-block-size: calc(100svh - var(--header-h) - 12rem); inline-size: 100%; }
+  }
+
+  /* ── 3. ככה נראה הבוקר (beige): the shared timeline + a sticky photo that follows the step at mid-screen ── */
+  .fr-morning__grid { display: grid; gap: var(--space-8); margin-block-start: var(--space-8); }
+  .fr-morning__note { margin-block-start: var(--space-7); padding-inline-start: var(--space-7); }
+  .fr-morning__media { display: none; }
+  @media (min-width: 64rem) {
+    .fr-morning__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .fr-morning__steps { grid-column: 1 / span 5; padding-block: var(--space-6) var(--space-11); }
+    .fr-morning__media { display: block; grid-column: 7 / -1; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+    .fr-morning__photo { aspect-ratio: 4 / 5; max-block-size: calc(100svh - var(--header-h) - 4rem); inline-size: 100%; }
+    .fr-morning__photo > .fr-morning__img { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-slow) var(--ease-out); }
+    .fr-morning__img--1 { object-position: 50% 50%; }
+    .fr-morning__photo > .fr-morning__img--2 { object-position: 20% 60%; }
+    .fr-morning__photo > .fr-morning__img--3 { object-position: 78% 35%; }
+    /* follow-the-middle (scroll.js) marks the photo of the step at mid-screen; the first one shows until then */
+    .fr-morning__photo > .fr-morning__img[data-active],
+    .fr-morning__photo:not(:has(> [data-active])) > .fr-morning__img--1 { opacity: 1; }
+  }
+  .fr-gallery { margin-block-start: var(--space-9); }
+  .fr-gallery__list { display: grid; gap: var(--gutter); margin-block-start: var(--space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+
+  /* ── 4. coming alone + before you come (beige-light): facts on tone-step cards beside a 4:5 photo ── */
+  .fr-welcome__grid { display: grid; gap: var(--space-7); }
+  .fr-welcome__lead { margin-block-start: var(--headline-to-lead); }
+  .fr-facts__title { margin-block: var(--space-8) var(--space-4); font-size: var(--fs-lead); line-height: var(--lh-title); }
+  .fr-facts { display: grid; gap: var(--space-2); }
+  @media (min-width: 48rem) { .fr-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 48rem) and (max-width: 63.99rem) { .fr-welcome__photo { aspect-ratio: 3 / 2; } }
+  @media (min-width: 64rem) {
+    .fr-welcome__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
+    .fr-welcome__text { grid-column: 1 / span 7; }
+    .fr-welcome__photo { grid-column: 9 / -1; }
+  }
+
+  /* ── 5. זה בשבילכם אם… (navy): four statements with ◀ + participant quotes when they exist ── */
+  .fr-forwhom__list { gap: var(--space-6); margin-block-start: var(--space-8); }
+  .fr-forwhom__list > li { font-size: var(--fs-title); line-height: 1.25; font-weight: var(--wght-semibold); max-inline-size: 26ch; }
+  .fr-stories { margin-block-start: var(--space-9); }
+  .fr-stories__list { display: grid; gap: var(--space-7) var(--gutter); margin-block-start: var(--space-6); }
+  @media (min-width: 64rem) {
+    .fr-forwhom__list { grid-template-columns: 1fr 1fr; gap: var(--space-8) calc(var(--gutter) * 3); }
+    .fr-stories__list { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* ── 6. upcoming dates (beige): the live Friday cards ── */
+  .fr-dates__head { display: grid; gap: var(--space-4) var(--gutter); margin-block-end: var(--space-7); }
+  .fr-dates__note { max-inline-size: 44ch; }
+  .fr-dates__more { margin-block-start: var(--space-3); }
+  @media (min-width: 64rem) {
+    .fr-dates__head { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .fr-dates__head > :first-child { grid-column: 1 / span 6; }
+    .fr-dates__head > :last-child { grid-column: 8 / -1; }
+  }
+
+  /* ── 7. FAQ (beige-light): sticky heading column + the shared accordion ── */
+  .fr-faq__grid { display: grid; gap: var(--space-7); }
+  .fr-faq__head { display: grid; gap: var(--space-3); align-content: start; }
+  .fr-faq__head h2 { margin-block-end: var(--space-3); }
+  @media (min-width: 64rem) {
+    .fr-faq__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); }
+    .fr-faq__head { grid-column: 1 / span 4; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); align-self: start; }
+    .fr-faq__list { grid-column: 6 / -1; }
+  }
+
+  /* ── 8. closing (navy): the ask + share with someone from the old team ── */
+  .fr-closing__grid { display: grid; gap: var(--space-8); }
+  .fr-closing__ask { display: grid; gap: var(--space-6); justify-items: start; }
+  .fr-share { display: grid; gap: var(--space-3); justify-items: start; background-color: var(--surface); border-radius: var(--radius-panel); padding: var(--space-6); }
+  .fr-share__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-block-start: var(--space-3); }
+  @media (min-width: 64rem) {
+    .fr-closing__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
+    .fr-closing__ask { grid-column: 1 / span 6; }
+    .fr-share { grid-column: 8 / -1; }
+  }
+}

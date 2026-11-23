@@ -16,7 +16,7 @@ import { DEFAULTS, LANGS, DEFAULT_LANG, LANG_META, CTA_PAGE, crmLinks, CSS_ORDER
 import { html, raw, esc, attrs, cx, inline, keepNames, safeUrl, isHtml } from './lib/html.mjs';
 import * as brand from './lib/brand.mjs';
 import { scanPhotos, photo } from './lib/images.mjs';
-import { present, ownerBox, eventsBlock } from './lib/components.mjs';
+import { present, ownerBox, eventsBlock, nextMeeting, ui } from './lib/components.mjs';
 import { layout } from './partials/layout.mjs';
 
 const SITE = dirname(fileURLToPath(import.meta.url));
@@ -296,6 +296,10 @@ function makeCtx(page, lang) {
     img: (name, o = {}) => photo(name, photos[name], opts.base + 'assets/photos/', { ...o, alt: o.alt ?? t(`photos.${name}`) }),
     photoNames: Object.keys(photos),
     events: (o) => eventsBlock(ctx, o),
+    /** The live "next meeting" card (see lib/components.mjs nextMeeting). */
+    nextMeeting: (o) => nextMeeting(ctx, o),
+    /** Light inline markup for a string you already hold (ctx.rich does the same for a copy key). */
+    inline: (s) => inline(String(s ?? '')),
     /** data-reveal attributes: ctx.reveal('up', 2) → data-reveal="up" data-reveal-delay="2". */
     reveal: (kind = 'up', delay) => attrs({ 'data-reveal': kind, 'data-reveal-delay': delay ?? null }),
     /** A WhatsApp link to the association's phone (filled in live from public_org_info; hidden until then). */
@@ -309,6 +313,7 @@ function makeCtx(page, lang) {
       tri: (o = {}) => brand.tri({ dir: LANG_META[lang].dir, ...o }),
     },
   };
+  ctx.ui = ui(ctx);
   return ctx;
 }
 
@@ -336,9 +341,9 @@ for (const page of pages) {
       if (!isHtml(body)) throw new Error('render(ctx) must return html`…` (not a plain string)');
       const m = page.mod.meta ? page.mod.meta(ctx) : {};
       const title = m.title ?? ctx.t(page.mod.notFound ? 'notFound.metaTitle' : `${page.id}.meta.title`);
-      const description = m.description ?? ctx.t(page.mod.notFound ? 'site.description' : `${page.id}.meta.description`);
+      const description = m.description ?? ctx.t(page.mod.notFound ? 'notFound.metaDescription' : `${page.id}.meta.description`);
       const jsonld = [...(page.id === 'home' ? [orgJsonLd(ctx)] : []), ...(page.mod.jsonld ? [page.mod.jsonld(ctx)].flat() : [])];
-      doc = layout(ctx, { title, description, body, noindex: !!page.mod.notFound, jsonld, bodyClass: page.mod.bodyClass });
+      doc = layout(ctx, { title, description, body, noindex: !!page.mod.notFound, jsonld, bodyClass: page.mod.bodyClass, ctaBar: page.mod.notFound ? false : page.mod.ctaBar });
     } catch (e) {
       fail(`pages/${page.file} (${lang}): ${e.message}`);
     }

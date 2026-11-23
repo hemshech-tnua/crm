@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "title": "Contact · המשך תנועה",
+    "description": "How to reach us: WhatsApp for questions about meetings and registration, and the right way in for donations, partnerships and volunteering."
+  },
+  "hero": {
+    "title": "How can we help?",
+    "body": "The fastest way to reach us is WhatsApp."
+  },
+  "primary": {
+    "cta": "Message us on WhatsApp",
+    "phoneLabel": "or call",
+    "noPhone": "Reach out to our team.",
+    "message": "Hi, I have a question about המשך תנועה."
+  },
+  "routes": {
+    "title": "Who to contact, and for what",
+    "items": [
+      {
+        "title": "Coming to a meeting",
+        "body": "All meetings and registration are on the calendar.",
+        "cta": "See the calendar",
+        "page": "calendar"
+      },
+      {
+        "title": "Cancelling or changing a registration",
+        "body": "Use the personal link you got at the end of registration. Cancelling early frees your spot for someone waiting.",
+        "cta": "",
+        "page": ""
+      },
+      {
+        "title": "Companies and organizations",
+        "body": "Partnerships, sponsorship or corporate giving.",
+        "cta": "Partner with us",
+        "page": "partners"
+      },
+      {
+        "title": "Donations",
+        "body": "All the ways to give, and what to know.",
+        "cta": "Donate",
+        "page": "donate"
+      },
+      {
+        "title": "Volunteer, speak or coach",
+        "body": "The welcome team, guest talks and workouts.",
+        "cta": "Volunteer",
+        "page": "volunteer"
+      }
+    ],
+    "press": {
+      "title": "Press",
+      "body": "Journalists and media: please write to us by email.",
+      "cta": "Send an email"
+    }
+  },
+  "channels": {
+    "title": "Other ways",
+    "email": "Email",
+    "address": "Postal address",
+    "hours": "When we reply",
+    "socialTitle": "Follow us",
+    "networks": {
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "whatsappCommunity": "WhatsApp community",
+      "youtube": "YouTube",
+      "linkedin": "LinkedIn"
+    }
+  },
+  "faq": {
+    "title": "Your answer may already be here",
+    "cta": "Questions and answers"
+  },
+  "slots": {
+    "press": "press email, may be the general one (org.json: pressEmail or email)",
+    "email": "general email address (org.json: email)",
+    "address": "postal address, only if public (org.json: address)",
+    "hours": "response hours, if public (org.json: hours)",
+    "socials": "full links to social profiles: Instagram, Facebook, WhatsApp community, YouTube, LinkedIn (org.json: socials)"
+  }
+}

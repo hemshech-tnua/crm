@@ -1,0 +1,68 @@
+/* Women's evenings and other meetings (pages/evenings.mjs). Page compositions only: semantic tokens + shared classes.
+   Rhythm: navy hero with an index of the three kinds → women (beige, a brand colour field: no stand-in photo) →
+   bonfire (navy, the bonfire photo + live dates) → other meetings (beige-light, live dates) → closing (navy). */
+@layer pages {
+  /* ── hero: the title at the reading edge, the three kinds as large row links at the inline-end ── */
+  .ev-hero { padding-block: clamp(3rem, 2rem + 5vw, 7rem) var(--chapter-pad); }
+  .ev-hero__grid { display: grid; gap: var(--space-8); }
+  .ev-hero__title { font-size: clamp(2.5rem, 1.2rem + 4.2vw, 5.25rem); }
+  .ev-hero__lead { margin-block-start: var(--headline-to-lead); }
+  @media (min-width: 64rem) {
+    .ev-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
+    .ev-hero__text { grid-column: 1 / span 7; }
+    .ev-index { grid-column: 9 / -1; }
+  }
+
+  /* ── shared by the three kinds ── */
+  .ev-kind__statement { margin-block-start: var(--headline-to-lead); max-inline-size: 22ch; }
+  .ev-kind__body { margin-block-start: var(--space-5); }
+  .ev-kind__lead { margin-block-start: var(--headline-to-lead); }
+  .ev-kind__text > .owner-slot { margin-block-start: var(--space-6); }
+  .ev-kind__cta { margin-block-start: var(--space-6); }
+
+  /* ── women's evenings: text + a navy field with the brand's stripes and mark (never a photo of other people) ── */
+  .ev-women__grid { display: grid; gap: var(--space-8); }
+  .ev-women__field { position: relative; display: grid; align-content: end; overflow: hidden; isolation: isolate; aspect-ratio: 4 / 3; padding: var(--space-6);
+    border-radius: var(--radius-panel); background-color: var(--navy); color: var(--beige); }
+  .ev-women__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: 52%; block-size: 34%; }
+  .ev-women__statement { position: relative; z-index: 1; font-size: clamp(1.75rem, 1.1rem + 2.2vw, 3.25rem); line-height: 1.08; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); max-inline-size: 14ch; text-wrap: balance; }
+  @media (min-width: 64rem) {
+    .ev-women__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
+    .ev-women__grid > .ev-kind__text { grid-column: 1 / span 6; }
+    .ev-women__field { grid-column: 8 / -1; aspect-ratio: 4 / 5; }
+  }
+
+  /* ── bonfire evenings: the photo wide at the inline-end, then the live dates ── */
+  .ev-bonfire__grid { display: grid; gap: var(--space-8); }
+  .ev-bonfire__photo img { object-position: 50% 45%; }
+  @media (min-width: 64rem) {
+    .ev-bonfire__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
+    .ev-bonfire__grid > .ev-kind__text { grid-column: 1 / span 5; }
+    .ev-bonfire__photo { grid-column: 6 / -1; aspect-ratio: 16 / 10; }
+  }
+
+  /* ── other meetings: heading and text side by side, then the live dates ── */
+  .ev-other__head { display: grid; gap: var(--space-4) var(--gutter); }
+  .ev-other__head .ev-kind__statement { margin-block-start: 0; }
+  @media (min-width: 64rem) {
+    .ev-other__head { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .ev-other__head > :first-child { grid-column: 1 / span 5; }
+    .ev-other__head > :last-child { grid-column: 7 / -1; }
+  }
+
+  /* ── live dates block (bonfire + other) ── */
+  .ev-live { margin-block-start: var(--space-9); display: grid; gap: var(--space-5); }
+  .ev-live__note { margin-block-start: var(--space-2); }
+  .ev-gallery { margin-block-start: var(--space-9); }
+  .ev-gallery__list { display: grid; gap: var(--gutter); margin-block-start: var(--space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+
+  /* ── closing ── */
+  .ev-closing__grid { display: grid; gap: var(--space-7); }
+  .ev-closing__body { margin-block-start: var(--headline-to-lead); }
+  .ev-closing__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-6); }
+  @media (min-width: 64rem) {
+    .ev-closing__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
+    .ev-closing__grid > :first-child { grid-column: 1 / span 7; }
+    .ev-closing__actions { grid-column: 8 / -1; justify-content: flex-end; }
+  }
+}

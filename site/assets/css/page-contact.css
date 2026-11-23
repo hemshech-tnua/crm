@@ -1,0 +1,46 @@
+/* Contact (Team F). Page compositions only; shared components (.rows/.row, .btn, .cluster…) come from D.
+   Motion: the topic rows rise in one after another (a reveal group); nothing else moves. */
+@layer components {
+  /* ── hero: the question, and the fastest way in ── */
+  .ct-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
+  .ct-hero__grid { display: grid; gap: var(--space-7); }
+  .ct-hero__lead { margin-block-start: var(--headline-to-lead); }
+  /* the live WhatsApp/phone block and the no-phone line share one cell, so the swap never moves the page */
+  .ct-primary { display: grid; align-items: start; }
+  .ct-primary > * { grid-area: 1 / 1; }
+  .ct-primary__live { display: grid; gap: var(--space-4); justify-items: start; }
+  .ct-primary__wa { font-size: var(--fs-lead); min-block-size: 4rem; padding-inline: var(--space-6); }
+  .ct-primary__phone { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-3); color: var(--ink-quiet); }
+  .ct-primary__phone[hidden] { display: none; }
+  .ct-primary__phone .link { color: var(--ink); font-size: var(--fs-title); }
+  .ct-primary__none { max-inline-size: 30ch; font-size: var(--fs-lead); line-height: var(--lh-lead); }
+  .ct-primary:has(.ct-primary__wa:not([hidden])) .ct-primary__none { visibility: hidden; }
+  @media (min-width: 64rem) {
+    .ct-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
+    .ct-hero__grid > :first-child { grid-column: 1 / span 7; }
+    .ct-primary { grid-column: 8 / -1; justify-self: start; }
+  }
+
+  /* ── who to contact for what ── */
+  .ct-routes__grid { display: grid; gap: var(--space-7); }
+  .ct-row--static .row__body { color: var(--ink); }
+  .ct-rows > li.owner-slot { display: grid; }
+  @media (min-width: 64rem) {
+    .ct-routes__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .ct-routes__title { grid-column: 1 / span 4; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-7)); max-inline-size: 10ch; }
+    .ct-rows { grid-column: 6 / -1; }
+  }
+
+  /* ── other channels (owner content) ── */
+  .ct-channels__list { display: grid; gap: var(--space-6) var(--gutter); margin: var(--space-8) 0 0; }
+  .ct-channels__list > div { display: grid; gap: var(--space-2); align-content: start; }
+  .ct-channels__list dt { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--ink-quiet); }
+  .ct-channels__list dd { margin: 0; font-size: var(--fs-lead); }
+  .ct-social { display: grid; }
+  @media (min-width: 48rem) { .ct-channels__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 64rem) { .ct-channels__list { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  /* ── FAQ pointer ── */
+  .ct-faq__grid { display: grid; gap: var(--space-6); }
+  @media (min-width: 64rem) { .ct-faq__grid { grid-template-columns: 7fr 5fr; align-items: end; column-gap: var(--gutter); } }
+}

@@ -1,0 +1,113 @@
+// The site shell and the design-system rules every page shares (Team D): header, phone menu, CTA bar, footer, grounds,
+// heading order, the home page's live card and owner slots, page CSS that never redefines a shared component.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { build, walk, read, SITE } from './helpers.mjs';
+
+const prod = build();
+const preview = build({ preview: true });
+const pages = (out) => walk(out, '.html').map((f) => ({ rel: relative(out, f), html: read(f), is404: f.endsWith('404.html') }));
+const mainOf = (html) => html.slice(html.indexOf('<main'), html.indexOf('</main>'));
+const exists = (out, id, lang = 'he') => existsSync(join(out, lang === 'en' ? 'en' : '', id === 'home' ? '' : id, 'index.html'));
+
+test('builds succeed', () => {
+  assert.equal(prod.status, 0, prod.stderr);
+  assert.equal(preview.status, 0, preview.stderr);
+});
+
+for (const [name, b] of [['production', prod], ['preview', preview]]) {
+  test(`${name}: header, menu, progress stripe and footer on every page`, () => {
+    for (const { rel, html } of pages(b.out)) {
+      const at = (m) => `${rel}: ${m}`;
+      assert.match(html, /<header class="site-header" data-ground="navy" data-header>/, at('navy sticky header'));
+      assert.match(html, /<a class="brand" href="[^"]+" aria-label="[^"]+">/, at('brand link home'));
+      assert.match(html, /<a class="btn btn--sm site-header__cta" href="[^"]+"/, at('persistent CTA in the header'));
+      assert.match(html, /<a class="lang-switch site-header__lang" href="[^"]+" hreflang="(he|en)" lang="(he|en)"/, at('language switch'));
+      assert.match(html, /<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" data-menu-open>/, at('menu button'));
+      assert.match(html, /<dialog class="site-menu" id="site-menu" aria-label="[^"]+" data-ground="navy" data-menu>/, at('phone menu dialog'));
+      assert.match(html, /<div class="scroll-progress" data-progress aria-hidden="true">/, at('reading-progress stripe'));
+      assert.match(html, /<footer class="site-footer" data-ground="navy-deep">/, at('footer'));
+      assert.match(html, /<p class="site-footer__name" aria-hidden="true"/, at('the big name'));
+      assert.match(html, /data-org-phone="whatsapp"/, at('live WhatsApp slot'));
+    }
+  });
+
+  test(`${name}: every existing MUST page is one step away in the footer`, () => {
+    const must = ['friday', 'evenings', 'calendar', 'about', 'team', 'donate', 'partners', 'volunteer', 'contact'];
+    for (const lang of ['he', 'en']) {
+      const html = read(join(b.out, lang === 'en' ? 'en/index.html' : 'index.html'));
+      const footer = html.slice(html.indexOf('<footer'));
+      for (const id of must.filter((p) => exists(b.out, p, lang))) {
+        assert.ok(footer.includes(`href="/crm/site/${lang === 'en' ? 'en/' : ''}${id}/"`), `${lang} footer links to ${id}`);
+      }
+    }
+  });
+
+  test(`${name}: the phone CTA bar is on every page except donate, contact and the 404`, () => {
+    for (const { rel, html, is404 } of pages(b.out)) {
+      const none = is404 || /(^|\/)(donate|contact)\//.test(rel);
+      const bar = /<div class="cta-bar" data-cta-bar data-next="[a-z]+"[^>]* role="region" aria-label="[^"]+">/.test(html);
+      assert.equal(bar, !none, `${rel}: CTA bar ${none ? 'should be absent' : 'missing'}`);
+    }
+  });
+
+  test(`${name}: chapters set a ground, neighbours differ, headings never skip a level`, () => {
+    const GROUNDS = new Set(['navy', 'navy-deep', 'beige', 'beige-light']);
+    for (const { rel, html } of pages(b.out)) {
+      const main = mainOf(html);
+      const grounds = [...main.matchAll(/<section[^>]*\sdata-ground="([^"]+)"/g)].map((m) => m[1]);
+      assert.ok(grounds.length >= 1, `${rel}: no chapter with data-ground`);
+      for (const g of grounds) assert.ok(GROUNDS.has(g), `${rel}: unknown ground "${g}"`);
+      grounds.forEach((g, i) => i && assert.notEqual(g, grounds[i - 1], `${rel}: chapters ${i} and ${i + 1} share the ground "${g}"`));
+      const levels = [...main.matchAll(/<h([1-6])[\s>]/g)].map((m) => Number(m[1]));
+      assert.equal(levels[0], 1, `${rel}: the first heading in <main> is the h1`);
+      levels.forEach((l, i) => i && assert.ok(l <= levels[i - 1] + 1, `${rel}: heading h${levels[i - 1]} → h${l} skips a level`));
+    }
+  });
+}
+
+test('home: the live next-meeting card, the signature wipe, the CEO\'s chapter order', () => {
+  for (const lang of ['he', 'en']) {
+    const html = read(join(prod.out, lang === 'en' ? 'en/index.html' : 'index.html'));
+    const main = mainOf(html);
+    assert.match(main, /<div class="next" data-next="all" aria-busy="true" aria-live="polite">/, `${lang}: next card`);
+    assert.match(main, /<a class="btn" href="[^"]+" data-next-cta data-hero-cta>/, `${lang}: hero CTA marks where the phone bar starts`);
+    assert.equal((main.match(/data-wipe/g) ?? []).length, 1, `${lang}: exactly one signature wipe`);
+    assert.match(main, /fetchpriority="high"/, `${lang}: hero photo is the eager LCP image`);
+    const ids = [...main.matchAll(/<section class="chapter ([a-z]+)"/g)].map((m) => m[1]);
+    assert.deepEqual(ids, ['hero', 'verbs', 'always', 'meetings', 'join', 'closing'], `${lang}: chapter order (no proof without owner content)`);
+    assert.match(main, /data-events="all"/, `${lang}: live meetings list`);
+  }
+  const pv = mainOf(read(join(preview.out, 'index.html')));
+  assert.deepEqual([...pv.matchAll(/<section class="chapter ([a-z]+)"/g)].map((m) => m[1]), ['hero', 'verbs', 'always', 'meetings', 'proof', 'join', 'closing'], 'preview shows the proof chapter');
+  assert.ok((pv.match(/data-owner-slot/g) ?? []).length >= 4, 'preview marks the owner slots on home');
+});
+
+test('404: one job — back to a meeting; noindex; no CTA bar', () => {
+  for (const f of ['404.html', 'en/404.html']) {
+    const html = read(join(prod.out, f));
+    assert.match(html, /<h1 id="nf-title"/);
+    assert.match(mainOf(html), /class="btn" href="[^"]+"/);
+  }
+});
+
+test('JS sends the meeting strings for both languages and stays small', () => {
+  const js = walk(join(prod.out, 'assets/js'));
+  const config = read(js.find((f) => /\/config\./.test(f)));
+  for (const k of ['"nextLabel"', '"emptyTitle"', '"registerAndPay"', '"fullWaitlist"']) assert.ok(config.includes(k), `config.js carries ${k}`);
+});
+
+test('page CSS never redefines a shared component (selectors start with a page-scoped class)', () => {
+  const SHARED = /^(\.(btn|link|link-arrow|site-header|site-nav|site-menu|site-footer|cta-bar|brand|lang-switch|menu-toggle|photo|next|meet|events|event-card|chip|type|stats?|quote|logos|rows?|faq|timeline|cta-band|owner-slot|card|tri|stripes|corner|mark|wrap|container|chapter|section|cols|split|stack|cluster|head|t-[a-z]+)|\[data-ground)(?![\w-])/;
+  const dir = join(SITE, 'assets/css');
+  for (const f of readdirSync(dir).filter((x) => x.startsWith('page-'))) {
+    const css = read(join(dir, f)).replace(/\/\*[\s\S]*?\*\//g, '').replace(/@keyframes[^{]+\{(?:[^{}]*\{[^}]*\})*[^}]*\}/g, '');
+    for (const m of css.matchAll(/([^{};]+)\{/g)) {
+      const sel = m[1].trim();
+      if (!sel || sel.startsWith('@')) continue;
+      for (const part of sel.split(',').map((s) => s.trim())) assert.doesNotMatch(part, SHARED, `${f}: "${part}" restyles a shared component; scope it under a page class`);
+    }
+  }
+});

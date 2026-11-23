@@ -1,11 +1,11 @@
-// Header behaviour: the mobile menu (native <dialog>: modal, Esc, inert page behind it) with aria-expanded, a Tab
-// wrap-around focus trap and focus returned to the button; the header hides on scroll down and returns on scroll up.
+// Header behaviour: the phone menu (native <dialog>: modal, Esc, inert page behind it) with aria-expanded, a Tab
+// wrap-around focus trap and focus returned to the button. The header itself never hides or shrinks (MOTION.md: easy
+// navigation wins); the phone CTA bar appears once the page's own CTA has scrolled away.
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function initNav() {
   const root = document.documentElement;
-  const header = document.querySelector('[data-header]');
   const menu = document.querySelector('[data-menu]');
   const openBtn = document.querySelector('[data-menu-open]');
 
@@ -29,38 +29,29 @@ export function initNav() {
         openBtn.focus();
       });
       menu.addEventListener('click', (e) => {
-        if (e.target === menu) return close(); // a click on the backdrop
         const a = e.target.closest('a[href]');
         if (a && a.pathname === location.pathname && a.hash) close(); // a link to this page's own section
       });
       menu.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
-        const items = [...menu.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+        const items = [...menu.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null || el === document.activeElement);
         if (!items.length) return;
         const first = items[0];
         const last = items[items.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       });
-      // leaving the phone layout with the menu open (rotating a tablet) keeps it usable: nothing to do, it is a dialog
+      // a desktop-width window never needs the sheet: close it if the viewport grows past the phone layout
+      matchMedia(document.documentElement.lang === 'en' ? '(min-width: 80rem)' : '(min-width: 75rem)').addEventListener?.('change', (q) => q.matches && close());
     }
   }
 
-  if (header) {
-    let lastY = window.scrollY;
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const y = window.scrollY;
-      const dy = y - lastY;
-      if (Math.abs(dy) < 8) return;
-      const hide = dy > 0 && y > header.offsetHeight * 2 && !header.contains(document.activeElement) && !menu?.open;
-      header.toggleAttribute('data-hidden', hide);
-      lastY = y;
-    };
-    window.addEventListener('scroll', () => {
-      if (!ticking) { ticking = true; requestAnimationFrame(update); }
-    }, { passive: true });
-    header.addEventListener('focusin', () => header.removeAttribute('data-hidden'));
+  // phone CTA bar: shown once the page's CTA (or, without one, the first chapter) has scrolled above the viewport
+  const bar = document.querySelector('[data-cta-bar]');
+  const anchor = document.querySelector('[data-hero-cta]') ?? document.querySelector('main > :first-child');
+  if (bar && anchor && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => {
+      bar.toggleAttribute('data-shown', !e.isIntersecting && e.boundingClientRect.top < 0);
+    }).observe(anchor);
   }
 }

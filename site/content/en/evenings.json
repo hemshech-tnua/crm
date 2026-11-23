@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "title": "Women's evenings & more · המשך תנועה",
+    "description": "Beyond Friday mornings: women's evenings for women combat veterans, bonfire evenings and other meetings. All dates and registration in one place."
+  },
+  "hero": {
+    "title": "Women's evenings and more",
+    "lead": "Besides Friday mornings, we also meet in the evenings. Every meeting is posted on the calendar, with full details and registration.",
+    "indexLabel": "On this page"
+  },
+  "women": {
+    "name": "Women's evenings",
+    "title": "By women combat veterans, for women combat veterans",
+    "slot": "Women's evenings: who they are for, what happens, how often and where (2–3 sentences)",
+    "cta": "Upcoming women's evenings",
+    "details": "",
+    "note": "Every evening is posted here and on the calendar, with full details and registration."
+  },
+  "bonfire": {
+    "name": "Bonfire evenings",
+    "title": "An evening around the fire",
+    "slot": "Bonfire evenings: what happens, how often and where (2–3 sentences)",
+    "details": ""
+  },
+  "other": {
+    "name": "Other meetings",
+    "title": "Special meetings",
+    "body": "Every so often there's a different kind of meeting. It's posted here and on the calendar, with full details."
+  },
+  "photos": {
+    "title": "Our evenings",
+    "slot": "Real photos from women's evenings and bonfire evenings, with the consent of the people in them"
+  },
+  "upcoming": {
+    "bonfire": "Upcoming bonfire evenings",
+    "other": "Upcoming women's evenings and other meetings",
+    "note": "Registration and payment happen in our registration system, which is in Hebrew.",
+    "cta": "Full calendar"
+  },
+  "closing": {
+    "title": "Prefer mornings?",
+    "body": "Friday mornings: three times a month, a workout, coffee and a talk.",
+    "cta": "About Friday mornings"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "title": "Partner with us · המשך תנועה",
+    "description": "Companies, organizations and foundations: partner with us through meeting sponsorship, donations, speakers and coaches. Let's talk."
+  },
+  "hero": {
+    "title": "Let's build a partnership",
+    "body": "We're looking for partners for the road ahead: from today's meetings to a nationwide network of community centers.",
+    "audience": "For companies, organizations and foundations.",
+    "cta": "Talk to us about partnering",
+    "about": "About us"
+  },
+  "why": {
+    "title": "Why partner with us",
+    "items": [
+      {
+        "title": "Steady activity",
+        "body": "Three Friday mornings every month, plus evenings and other meetings."
+      },
+      {
+        "title": "A clear direction",
+        "body": "A nationwide network of local community centers."
+      },
+      {
+        "title": "Eye to eye",
+        "body": "We'll gladly show you our activity, our team and our plans, and shape a partnership that fits you."
+      }
+    ]
+  },
+  "ways": {
+    "title": "Ways to partner",
+    "body": "Every partnership starts with a conversation. These are the ways to begin:",
+    "items": [
+      {
+        "title": "Sponsor a meeting",
+        "body": "Fund a full Friday morning: the workout, the coffee and the talk."
+      },
+      {
+        "title": "Corporate donation",
+        "body": "A one-time or recurring gift to our activity."
+      },
+      {
+        "title": "Speakers and coaches",
+        "body": "Someone on your team with something to offer? Every Friday morning includes a guest talk and a movement session."
+      },
+      {
+        "title": "Foundations",
+        "body": "We'd be glad to meet and walk you through our activity and plans."
+      }
+    ]
+  },
+  "logos": {
+    "title": "Our partners"
+  },
+  "contact": {
+    "title": "Let's talk",
+    "body": "Tell us who you are and what interests you. We'll get back to you.",
+    "ctaEmail": "Send an email",
+    "ctaWhatsapp": "Message us on WhatsApp",
+    "message": "Hi, I'd like to talk about a partnership with המשך תנועה.",
+    "emailSubject": "Partnership with המשך תנועה",
+    "deckCta": "Download our partner overview",
+    "donate": "Give as an individual",
+    "about": "About us"
+  },
+  "slots": {
+    "confirm": "for the association to confirm: the partnership models (meeting sponsorship · corporate donation · speakers and coaches · foundations). Add or remove.",
+    "stats": "3–4 numbers you can prove: number, short label, period (org.json: stats)",
+    "logos": "partner logos, with written permission: SVG, name, link (org.json: partners)",
+    "person": "name and role of the partnerships contact person (org.json: partnersContact)",
+    "email": "partnerships email address (org.json: partnersEmail or email)",
+    "deck": "partner overview, a one- or two-page PDF (org.json: partnersDeck)"
+  }
+}

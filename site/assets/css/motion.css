@@ -1,50 +1,83 @@
 /*
- * Scroll storytelling. Everything is visible at rest: hiding happens only after scroll.js has run (html.js-reveal),
- * and never under prefers-reduced-motion. transform + opacity only (60fps).
- */
-@layer motion {
-  @media (prefers-reduced-motion: no-preference) {
-    .js-reveal [data-reveal] {
-      transition: opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
-      transition-delay: calc(var(--reveal-i, 0) * var(--reveal-stagger));
-    }
-    .js-reveal [data-reveal]:not(.is-revealed) { opacity: 0; transform: translateY(var(--reveal-distance)); }
-    .js-reveal [data-reveal="fade"]:not(.is-revealed) { transform: none; }
-    .js-reveal [data-reveal="start"]:not(.is-revealed) { transform: translateX(calc(var(--dir, 1) * -2rem)); }
-    .js-reveal [data-reveal="end"]:not(.is-revealed) { transform: translateX(calc(var(--dir, 1) * 2rem)); }
-    .js-reveal [data-reveal="scale"]:not(.is-revealed) { transform: scale(0.96); }
-    [data-reveal-delay="1"] { --reveal-i: 1; }
-    [data-reveal-delay="2"] { --reveal-i: 2; }
-    [data-reveal-delay="3"] { --reveal-i: 3; }
-    [data-reveal-delay="4"] { --reveal-i: 4; }
-    [data-reveal-delay="5"] { --reveal-i: 5; }
-    [data-reveal-delay="6"] { --reveal-i: 6; }
+  Scroll and motion (MOTION.md). Everything is visible at rest, without JS and under prefers-reduced-motion: hiding only
+  starts after scroll.js has run (html.js-reveal), and only inside (prefers-reduced-motion: no-preference).
+  transform / opacity only (+ clip-path on the one wipe per page). Entrances play once.
 
-    /* CSS scroll-driven animations (html.sda is set by scroll.js when supported) */
-    .sda [data-parallax] > * { animation: parallax linear both; animation-timeline: view(); animation-range: cover; scale: 1.12; }
-    .sda .parallax-host > .corner-stripes { animation: drift linear both; animation-timeline: view(); animation-range: cover; }
-    .event-card--skeleton span { animation: pulse 1.4s ease-in-out infinite alternate; }
+  Markup contract
+    data-reveal="up|fade|start|end|scale"   the element itself enters once (data-reveal-delay="1…6" = fixed stagger step)
+    data-reveal (bare) | data-reveal="group" its DIRECT CHILDREN enter in order, 70ms apart (heading → text → action → picture)
+    data-reveal-group (legacy)               staggers its direct [data-reveal] children
+    data-load="1…6" | data-load="wipe"       the once-per-page load sequence (hero), pure CSS: h1 lines, lead, card, photo
+    data-wipe                                the page's signature: a picture opens from the reading edge as it enters (scroll-linked)
+    data-parallax                            drifts −8vh → +8vh across the viewport (the large mark)
+    .timeline__fill                          fills with the scroll
+    .scroll-progress                         the reading-progress stripe (scroll timeline, JS fallback)
+    data-follow="<selector>" + data-step     follow-the-middle: the matching [data-step] item gets data-active
+    data-count="<number>"                    a stat counts up once when half visible (final value printed in the HTML)
+*/
+@layer motion {
+  [dir='rtl'] { --wipe-from: inset(0 0 0 100%); --enter-x: 1.5rem; }
+  [dir='ltr'] { --wipe-from: inset(0 100% 0 0); --enter-x: -1.5rem; }
+
+  @keyframes reveal-up { from { opacity: 0; transform: translateY(var(--rise)); } }
+  @keyframes reveal-fade { from { opacity: 0; } }
+  @keyframes reveal-start { from { opacity: 0; transform: translateX(var(--enter-x)); } }
+  @keyframes reveal-end { from { opacity: 0; transform: translateX(calc(var(--enter-x) * -1)); } }
+  @keyframes reveal-scale { from { opacity: 0; transform: scale(0.96); } }
+  @keyframes wipe { from { clip-path: var(--wipe-from); } to { clip-path: inset(0); } }
+  @keyframes drift { from { transform: translateY(var(--parallax)); } to { transform: translateY(calc(var(--parallax) * -1)); } }
+  @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes fill-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* ── A. reveals (IntersectionObserver adds .is-revealed; what was on screen at load gets .is-in and never moves) ── */
+    .js-reveal [data-reveal]:not(.is-in):not(.is-revealed) { opacity: 0; }
+    .js-reveal :is([data-reveal=''], [data-reveal='group']):not(.is-in):not(.is-revealed) { opacity: 1; }
+    .js-reveal :is([data-reveal=''], [data-reveal='group']):not(.is-in):not(.is-revealed) > * { opacity: 0; }
+
+    .js-reveal [data-reveal].is-revealed { animation: reveal-up var(--dur-reveal) var(--ease-out) backwards; animation-delay: calc(var(--reveal-i, 0) * var(--stagger)); }
+    .js-reveal [data-reveal='fade'].is-revealed { animation-name: reveal-fade; }
+    .js-reveal [data-reveal='start'].is-revealed { animation-name: reveal-start; }
+    .js-reveal [data-reveal='end'].is-revealed { animation-name: reveal-end; }
+    .js-reveal [data-reveal='scale'].is-revealed { animation-name: reveal-scale; }
+    .js-reveal :is([data-reveal=''], [data-reveal='group']).is-revealed { animation: none; }
+    .js-reveal :is([data-reveal=''], [data-reveal='group']).is-revealed > * { animation: reveal-up var(--dur-reveal) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+
+    [data-reveal-delay='1'] { --reveal-i: 1; }
+    [data-reveal-delay='2'] { --reveal-i: 2; }
+    [data-reveal-delay='3'] { --reveal-i: 3; }
+    [data-reveal-delay='4'] { --reveal-i: 4; }
+    [data-reveal-delay='5'] { --reveal-i: 5; }
+    [data-reveal-delay='6'] { --reveal-i: 6; }
+
+    /* ── the load sequence (once per page; CSS only, so it never depends on the script) ── */
+    [data-load] { animation: reveal-up var(--dur-reveal) var(--ease-out) backwards; }
+    [data-load='1'] { animation-delay: 90ms; }
+    [data-load='2'] { animation-delay: 200ms; }
+    [data-load='3'] { animation-delay: 260ms; }
+    [data-load='4'] { animation-delay: 320ms; }
+    [data-load='wipe'] { animation: wipe var(--dur-hero) var(--ease-out) 120ms backwards; }
+
+    /* ── B. scroll-driven (CSS, progressive; html.sda is set where supported) ── */
+    @supports (animation-timeline: view()) {
+      .sda [data-wipe] { animation: wipe linear both; animation-timeline: view(); animation-range: entry 0% cover 45%; }
+      .sda [data-parallax] { animation: drift linear both; animation-timeline: view(); animation-range: cover; }
+      .sda .timeline__fill { animation: fill-y linear both; animation-timeline: view(); animation-range: cover 10% cover 70%; }
+    }
+    [data-count] { font-variant-numeric: tabular-nums; }
   }
+
+  /* the reading progress is scroll-linked state, not ambient motion: it stays under reduced motion */
   @supports (animation-timeline: scroll()) {
     .sda .scroll-progress { animation: progress linear both; animation-timeline: scroll(root block); }
   }
-  @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-  @keyframes parallax { from { transform: translateY(-5%); } to { transform: translateY(5%); } }
-  @keyframes drift { from { transform: translateY(12%); } to { transform: translateY(-12%); } }
-  @keyframes pulse { from { opacity: 0.55; } to { opacity: 1; } }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-    [data-reveal] { opacity: 1 !important; transform: none !important; }
-    [data-parallax] > * { animation: none !important; scale: none !important; }
-  }
-}
-@layer motion {
-  @media (prefers-reduced-motion: reduce) {
-    .sda .scroll-progress { animation-duration: auto !important; }
+    [data-reveal], [data-reveal] > *, [data-load], [data-wipe], [data-parallax] { opacity: 1 !important; transform: none !important; clip-path: none !important; animation: none !important; }
   }
   @media print {
-    [data-reveal] { opacity: 1 !important; transform: none !important; }
-    .site-header, .site-menu, .scroll-progress { position: static; }
+    [data-reveal], [data-reveal] > *, [data-load], [data-wipe] { opacity: 1 !important; transform: none !important; clip-path: none !important; animation: none !important; }
+    .site-header, .scroll-progress, .cta-bar, .site-menu { position: static; }
+    .cta-bar, .scroll-progress { display: none; }
   }
 }

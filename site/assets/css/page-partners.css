@@ -1,0 +1,83 @@
+/* Partners (Team F). Page compositions only; shared components come from D.
+   Signature motion: the "road" under the three reasons fills from the reading edge as the chapter is read (CSS view
+   timeline, transform only). Without support, and under reduced motion, the road rests full. */
+@layer components {
+  /* ── hero ── */
+  .pt-hero { padding-block-start: clamp(2.5rem, 1.5rem + 4vw, 5rem); }
+  .pt-hero__grid { display: grid; gap: var(--space-7); }
+  .pt-hero__text { display: grid; gap: var(--space-4); justify-items: start; align-content: start; }
+  .pt-hero__lead { margin-block-start: calc(var(--headline-to-lead) - var(--space-4)); }
+  .pt-hero__text .cluster { margin-block-start: var(--space-5); }
+  .pt-hero__media { position: relative; }
+  .pt-hero__photo { aspect-ratio: 4 / 3; }
+  .pt-hero__photo img { object-position: 60% 50%; }
+  .pt-hero__media .corner { color: var(--ground); z-index: 1; inline-size: clamp(5rem, 3rem + 8vw, 11rem); block-size: clamp(3rem, 1.6rem + 4.6vw, 6.4rem); }
+  @media (min-width: 64rem) {
+    .pt-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
+    .pt-hero__text { grid-column: 1 / span 6; }
+    .pt-hero__media { grid-column: 7 / -1; }
+    .pt-hero__photo { aspect-ratio: 5 / 4; }
+  }
+
+  /* ── why us: three reasons on one road ── */
+  .pt-why__track { position: relative; margin-block-start: var(--space-8); }
+  .pt-why__list { display: grid; gap: var(--space-7) var(--gutter); padding-inline-start: var(--space-7); }
+  .pt-road { position: absolute; inset-block: 0.6rem 0; inset-inline-start: 0.6rem; inline-size: 4px; background: var(--track); }
+  .pt-road__fill { position: absolute; inset: 0; background: var(--ink); transform-origin: 50% 0; }
+  .pt-why__item { position: relative; display: grid; gap: var(--space-3); align-content: start; }
+  .pt-why__item::before {
+    content: ''; position: absolute; inset-block-start: 0.5rem; inset-inline-start: calc(var(--space-7) * -1 + 0.6rem - 6px);
+    inline-size: 16px; block-size: 16px; background: var(--ink); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  }
+  .pt-why__item .t-title { font-size: var(--fs-chapter); line-height: var(--lh-chapter); letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
+  .pt-why__item .t-body { color: var(--ink); max-inline-size: 30ch; font-size: var(--fs-lead); line-height: var(--lh-lead); }
+  @media (min-width: 48rem) {
+    .pt-why__list { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-inline-start: 0; padding-block-start: var(--space-7); }
+    .pt-road { inset-block: 0.6rem auto; inset-inline: 0; inline-size: auto; block-size: 4px; }
+    .pt-road__fill { transform-origin: 100% 50%; }
+    [dir='ltr'] .pt-road__fill { transform-origin: 0 50%; }
+    .pt-why__item::before { inset-block-start: calc(var(--space-7) * -1 + 0.6rem - 6px); inset-inline-start: 0; }
+    .pt-why__item .t-title { font-size: var(--fs-title); line-height: var(--lh-title); }
+  }
+  @media (min-width: 75rem) { .pt-why__item .t-title { font-size: clamp(2rem, 1rem + 1.6vw, 2.75rem); } }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .pt-road__fill { animation: pt-road-y linear both; animation-timeline: view(); animation-range: entry 60% cover 55%; }
+      @media (min-width: 48rem) { .pt-road__fill { animation-name: pt-road-x; animation-range: entry 100% cover 60%; } }
+    }
+  }
+  @keyframes pt-road-y { from { transform: scaleY(0.04); } to { transform: scaleY(1); } }
+  @keyframes pt-road-x { from { transform: scaleX(0.04); } to { transform: scaleX(1); } }
+  .pt-why .sp-stats { margin-block-start: var(--space-9); }
+  .pt-slot { margin-block-start: var(--space-7); }
+
+  /* ── partner logos (owner content) ── */
+  .pt-logowall, .pt-slot--logos { margin-block-start: var(--space-7); }
+
+  /* ── ways to partner ── */
+  .pt-ways__grid { display: grid; gap: var(--space-7); }
+  .pt-ways__head { display: grid; gap: var(--headline-to-lead); align-content: start; }
+  .pt-ways__head .pt-slot { margin-block-start: var(--space-3); }
+  .pt-models { display: grid; gap: var(--space-2); }
+  .pt-model { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-6) var(--space-5); border-radius: var(--radius-panel); background: var(--surface); }
+  .pt-model p { max-inline-size: 36ch; }
+  @media (min-width: 48rem) { .pt-models { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pt-model { min-block-size: 13rem; padding: var(--space-6); } }
+  @media (min-width: 64rem) {
+    .pt-ways__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .pt-ways__head { grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-7)); }
+    .pt-models { grid-column: 7 / -1; }
+  }
+
+  /* ── the conversation ── */
+  .pt-talk__grid { display: grid; gap: var(--space-7); }
+  .pt-talk__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); margin-block-end: var(--headline-to-lead); }
+  .pt-talk__act { display: grid; gap: var(--space-5); justify-items: start; align-content: end; }
+  .pt-talk__act .owner-slot { justify-self: stretch; }
+  .pt-person { display: grid; gap: var(--space-1); font-size: var(--fs-lead); }
+  .pt-talk__more { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); }
+  @media (min-width: 64rem) {
+    .pt-talk__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
+    .pt-talk__grid > :first-child { grid-column: 1 / span 7; }
+    .pt-talk__act { grid-column: 8 / -1; }
+  }
+}

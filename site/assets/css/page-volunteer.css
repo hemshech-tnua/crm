@@ -1,0 +1,49 @@
+/* Volunteer (Team F). Page compositions only; shared components (.timeline, .cta-band, .btn…) come from D.
+   Signature motion: the two "how it works" tracks fill from the first step to the last as they are read (CSS view
+   timeline on .timeline__fill, transform only). Without support, and under reduced motion, the tracks rest full. */
+@layer components {
+  /* ── hero ── */
+  .vol-hero { padding-block-start: clamp(2.5rem, 1.5rem + 4vw, 5rem); }
+  .vol-hero__grid { display: grid; gap: var(--space-7); }
+  .vol-hero__lead { margin-block-start: var(--headline-to-lead); }
+  .vol-hero__text .cluster { margin-block-start: var(--space-7); }
+  .vol-hero__media { position: relative; }
+  .vol-hero__photo { aspect-ratio: 4 / 3; }
+  .vol-hero__photo img { object-position: 55% 55%; }
+  .vol-hero__media .corner { color: var(--ground); z-index: 1; inline-size: clamp(5rem, 3rem + 8vw, 11rem); block-size: clamp(3rem, 1.6rem + 4.6vw, 6.4rem); }
+  @media (min-width: 64rem) {
+    .vol-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
+    .vol-hero__text { grid-column: 1 / span 6; }
+    .vol-hero__media { grid-column: 7 / -1; }
+    .vol-hero__photo { aspect-ratio: 5 / 4; }
+  }
+
+  /* ── the three roles: wide rows, title · what you do · the way in ── */
+  .vol-roles { display: grid; gap: var(--space-2); margin-block-start: var(--space-8); }
+  .vol-role { display: grid; gap: var(--space-4); padding: var(--space-6) var(--space-5); border-radius: var(--radius-panel); background: var(--surface); }
+  .vol-role .t-title { font-size: var(--fs-chapter); line-height: var(--lh-chapter); letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
+  .vol-role p { max-inline-size: 44ch; }
+  .vol-role__act { margin-block-start: var(--space-2); }
+  @media (min-width: 64rem) {
+    .vol-role { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; padding: var(--space-7) var(--space-6); }
+    .vol-role .t-title { grid-column: 1 / span 4; font-size: clamp(2rem, 0.9rem + 2vw, 3.25rem); }
+    .vol-role > p:not(.vol-role__act) { grid-column: 5 / span 5; font-size: var(--fs-lead); line-height: var(--lh-lead); }
+    .vol-role__act { grid-column: 10 / -1; justify-self: end; margin: 0; }
+  }
+
+  /* ── how it works: two paths side by side ── */
+  .vol-how__grid { display: grid; gap: var(--space-9) var(--gutter); margin-block-start: var(--space-8); }
+  .vol-path { display: grid; gap: var(--space-6); align-content: start; }
+  .vol-timeline .timeline__list { gap: var(--space-7); list-style: none; padding: 0; margin: 0; }
+  .vol-timeline .timeline__body { font-size: var(--fs-lead); line-height: var(--lh-lead); max-inline-size: 30ch; }
+  @media (min-width: 64rem) {
+    .vol-how__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: calc(var(--gutter) * 3); }
+    .vol-timeline .timeline__list { gap: var(--space-8); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .vol-timeline .timeline__fill { animation: vol-fill linear both; animation-timeline: view(); animation-range: entry 80% cover 60%; }
+    }
+  }
+  @keyframes vol-fill { from { transform: scaleY(0.03); } to { transform: scaleY(1); } }
+}

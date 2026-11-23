@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "title": "Friday mornings · המשך תנועה",
+    "description": "Three Friday mornings a month: a workout for every fitness level, coffee and snacks, and a guest talk. No commitment, no talking circle. Registration takes less than a minute."
+  },
+  "hero": {
+    "title": "Friday mornings",
+    "lead": "A workout, coffee and a talk, with people who have been there. Come alone or bring friends.",
+    "nextTitle": "Next meeting",
+    "allDates": "All dates",
+    "quick": "Registration takes less than a minute. It is in Hebrew.",
+    "cta": "Register",
+    "nextTitleStatic": "Friday mornings, three times a month",
+    "nextBodyStatic": "A workout, coffee and a talk. Dates are on the calendar."
+  },
+  "emphasis": {
+    "title": "What to know about Friday mornings",
+    "items": [
+      {
+        "lines": [
+          "No commitment.",
+          "No talking circle."
+        ],
+        "body": "Come when it suits you. Train, have coffee, hear a talk. Nobody has to share anything personal, and there are no ranks or formations."
+      },
+      {
+        "lines": [
+          "Three meetings",
+          "a month."
+        ],
+        "body": "A steady rhythm, so there's always a Friday coming up. Come to all of them, or whenever you can."
+      },
+      {
+        "lines": [
+          "Every fitness",
+          "level."
+        ],
+        "body": "The workout is built for every fitness level. Haven't trained in a while? This is exactly the place to start."
+      }
+    ]
+  },
+  "program": {
+    "title": "How the morning goes",
+    "items": [
+      {
+        "time": "9:00",
+        "title": "Workout",
+        "detail": "Yoga or functional training. For every fitness level."
+      },
+      {
+        "time": "After the workout",
+        "title": "Coffee and snacks",
+        "detail": "No pressure. Sit, talk, get to know people."
+      },
+      {
+        "time": "Until 11:30",
+        "title": "Guest talk",
+        "detail": "The speaker and the topic are listed in each meeting's details."
+      }
+    ],
+    "note": "Times are listed in each meeting's details."
+  },
+  "welcome": {
+    "title": "Coming alone? Itai meets you at the door.",
+    "lead": "Itai from our team waits at the entrance and will introduce you to a few people.",
+    "listTitle": "Before you come",
+    "items": [
+      {
+        "title": "What to bring",
+        "body": "Comfortable workout clothes and shoes, and a water bottle. We bring the coffee and snacks."
+      },
+      {
+        "title": "Showers",
+        "body": "You can change and shower in the Holmes Place locker rooms."
+      },
+      {
+        "title": "Just part of the morning",
+        "body": "You can come only for the workout or only for the talk. Part of the morning is also paid."
+      },
+      {
+        "title": "Reminder",
+        "body": "Everyone who registers gets a reminder two days before the meeting."
+      }
+    ],
+    "parkingTitle": "Parking and getting there",
+    "parkingSlot": "One sentence on parking and getting to the venue",
+    "parking": ""
+  },
+  "forWhom": {
+    "title": "This is for you if…",
+    "items": [
+      "You served in a combat role, no matter how long ago",
+      "You sometimes miss the feeling of a team",
+      "You'd rather start Friday moving than scrolling",
+      "You don't know anyone there. That's fine too."
+    ]
+  },
+  "stories": {
+    "title": "In their words",
+    "slot": "2–3 quotes from Friday participants, with written consent"
+  },
+  "photos": {
+    "title": "Our Friday mornings",
+    "slot": "Real photos from Friday mornings (workout, coffee, talk), with the consent of the people in them"
+  },
+  "dates": {
+    "title": "Upcoming dates",
+    "note": "Registration and payment happen in our registration system, which is in Hebrew. You pay at the end of registration, on a secure payment page.",
+    "calendar": "Full calendar"
+  },
+  "faq": {
+    "title": "Questions and answers",
+    "groups": [
+      {
+        "title": "About the meeting",
+        "items": [
+          {
+            "q": "Who are the meetings for?",
+            "a": "Combat veterans after their service, men and women, however long it's been since discharge. You don't need to know us or anyone else beforehand."
+          },
+          {
+            "q": "Can I come alone, without knowing anyone?",
+            "a": "Yes. After the workout everyone sits down for coffee and snacks, and only then does the talk begin. There's time to meet people. Itai from our team waits at the entrance and introduces first-timers to a few people."
+          },
+          {
+            "q": "Do I have to share anything personal or talk about my service?",
+            "a": "No. It isn't a talking circle: we train, have coffee and hear a talk. Everyone shares only what they want to."
+          },
+          {
+            "q": "Do I need to be fit?",
+            "a": "No. The workout is built for every fitness level."
+          },
+          {
+            "q": "Can I bring a friend?",
+            "a": "Of course. Everyone registers separately, so send them the link to this page."
+          }
+        ]
+      },
+      {
+        "title": "Getting there",
+        "items": [
+          {
+            "q": "Where is it?",
+            "a": "The place is listed in each meeting's details, under Upcoming dates above."
+          },
+          {
+            "q": "What should I bring?",
+            "a": "Comfortable workout clothes and shoes, and a water bottle. We bring the coffee and snacks."
+          },
+          {
+            "q": "Can I change or shower?",
+            "a": "Yes. You can change and shower in the Holmes Place locker rooms."
+          },
+          {
+            "q": "Can I come for only part of the morning?",
+            "a": "Yes, you can come only for the workout or only for the talk. Part of the morning is also paid."
+          }
+        ]
+      },
+      {
+        "title": "Registration, payment and privacy",
+        "items": [
+          {
+            "q": "How much does it cost?",
+            "a": "The price is listed in each meeting's details. You pay at the end of registration, on a secure payment page."
+          },
+          {
+            "q": "How do I cancel or change my registration?",
+            "a": "With the personal link you get at the end of registration. Cancelling early frees your spot for someone on the waiting list."
+          },
+          {
+            "q": "What happens to the details I fill in?",
+            "a": "They are used only to manage registration and attendance and to get back to you. Only our team sees them. They are never sold or passed on.",
+            "link": "Privacy policy (Hebrew)"
+          },
+          {
+            "q": "Do you take photos at meetings?",
+            "a": "Sometimes, for our pages. If you'd rather not appear in published photos, tick the box on the registration form and our team will see it."
+          }
+        ]
+      }
+    ],
+    "askTitle": "Another question?",
+    "ask": "Message us on WhatsApp",
+    "allQuestions": "All questions and answers"
+  },
+  "closing": {
+    "title": "See you on Friday?",
+    "cta": "See upcoming dates",
+    "shareTitle": "Know someone this is for?",
+    "shareText": "Send this to someone from your old team.",
+    "shareCopy": "Copy link",
+    "shareWhatsapp": "Share on WhatsApp",
+    "copied": "Link copied",
+    "shareMessage": "Thought of you. There's a Friday morning meetup for combat veterans: a workout, coffee and a guest talk. I think it's for you."
+  },
+  "a11y": {
+    "newWindow": "(WhatsApp, opens in a new window)"
+  }
+}

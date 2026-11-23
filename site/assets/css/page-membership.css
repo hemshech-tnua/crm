@@ -1,0 +1,45 @@
+/* Membership (Team G). What membership gives, how joining works, and the hand-off to the CRM form (#/member). */
+@layer pages {
+  .member-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
+  .member-hero__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .member-hero__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); text-wrap: balance; }
+  .member-hero__text > .t-lead { margin-block-start: var(--headline-to-lead); }
+  .member-hero__action { display: grid; justify-items: start; gap: var(--space-3); margin-block-start: var(--space-7); }
+  .member-benefits { display: grid; gap: var(--space-5); align-content: start; padding: var(--space-6); border-radius: var(--radius-panel); background: var(--surface); }
+  .member-benefits__title { font-size: var(--fs-title); line-height: var(--lh-title); letter-spacing: var(--track-title); }
+  .member-benefits__list { font-size: var(--fs-lead); line-height: var(--lh-title); font-weight: var(--wght-medium); }
+  .member-fee { display: grid; gap: var(--space-1); }
+  @media (min-width: 64rem) {
+    .member-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .member-hero__text { grid-column: 1 / span 6; }
+    .member-benefits { grid-column: 8 / -1; padding: var(--space-7); }
+  }
+
+  .member-how__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .member-steps { margin-block-start: var(--space-7); }
+  .member-steps .timeline__list { gap: var(--space-7); }
+  .member-how__action { display: grid; justify-items: start; gap: var(--space-3); margin-block-start: var(--space-8); }
+  @media (max-width: 47.99rem) { .member-how__photo { aspect-ratio: 3 / 2; } }
+  @media (min-width: 64rem) {
+    .member-how__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
+    .member-how__text { grid-column: 1 / span 6; }
+    .member-how__photo { grid-column: 8 / -1; }
+  }
+
+  .member-also__grid { display: grid; gap: var(--space-5) var(--gutter); }
+  .member-also__list { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--gutter); }
+  .member-also__link {
+    display: inline-flex; align-items: center; gap: 0.6em; min-block-size: 3.25rem; padding-inline: var(--space-5);
+    border-radius: var(--radius-control); background: var(--surface); font-weight: var(--wght-semibold); text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .member-also__link:hover { background: var(--surface-hover); }
+    .member-also__link:hover .tri { transform: translateX(calc(var(--dir) * 3px)); }
+  }
+  @media (min-width: 64rem) {
+    .member-also__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
+    .member-also__grid > h2 { grid-column: 1 / span 4; }
+    .member-also__list { grid-column: 5 / -1; justify-content: flex-start; }
+  }
+}

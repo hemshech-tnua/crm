@@ -42,6 +42,8 @@ export const crmLinks = (crmUrl) => ({
   join: `${crmUrl}#/join`,
   member: `${crmUrl}#/member`,
   privacy: `${crmUrl}#/privacy`,
+  propose: `${crmUrl}#/join`,
+  login: `${crmUrl}#/login`,
 });
 
 /** CSS files in cascade order; any other .css file in assets/css is appended after these (alphabetically). */

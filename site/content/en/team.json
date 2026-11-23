@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "title": "Team & board · המשך תנועה",
+    "description": "The people behind our work: the team, board and volunteers who run meetings for combat veterans after their service."
+  },
+  "hero": {
+    "title": "The people behind it",
+    "body": "A team, a board and volunteers who make the meetings happen, meeting after meeting."
+  },
+  "members": {
+    "title": "Team"
+  },
+  "board": {
+    "title": "Board",
+    "body": "The nonprofit's board of directors."
+  },
+  "advisors": {
+    "title": "Advisors"
+  },
+  "volunteers": {
+    "title": "And our volunteers",
+    "body": "who welcome everyone at the door of every meeting.",
+    "cta": "Join the volunteer team"
+  },
+  "closing": {
+    "title": "Want to get in touch?",
+    "cta": "Contact us",
+    "secondary": "About us"
+  },
+  "a11y": {
+    "photoAlt": "{name}, {role}"
+  },
+  "sample": {
+    "name": "Full name",
+    "role": "Role",
+    "line": "One line on what they do here"
+  },
+  "slots": {
+    "members": "Team: name (Hebrew and English), role, one line up to 20 words, portrait photo 1200×1500, with consent",
+    "board": "Board of directors: name, board role, one line (photo optional)",
+    "advisors": "Advisors or an advisory committee (if any)"
+  }
+}

@@ -1,20 +1,85 @@
-/* Layout primitives (all logical properties: they flip for RTL / LTR by themselves). */
+/*
+  Layout primitives and type roles. Logical properties only: one stylesheet serves RTL (Hebrew) and LTR (English).
+
+  A page is a run of chapters:
+    <section class="chapter" data-ground="navy" aria-labelledby="…">
+      <div class="wrap"> … </div>
+    </section>
+  .wrap        the page frame (max 1320px, equal 16 → 64px margins)
+  .cols        the 4 / 8 / 12 column grid (span with .span-*, or place children yourself)
+  .split       two columns from 1024px: text at the reading edge, picture/second column at the inline-end
+  .stack       vertical rhythm (--stack-gap between children)
+  .cluster     a wrapping row (buttons, links)
+  Type roles: .t-hero .t-display .t-chapter .t-title .t-lead .t-body .t-small .quiet
+*/
 @layer layout {
-  .container { inline-size: 100%; max-inline-size: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
-  .container--narrow { max-inline-size: 48rem; }
-  .section { position: relative; padding-block: var(--space-2xl); isolation: isolate; }
-  .section--tight { padding-block: var(--space-xl); }
-  .section--navy { background-color: var(--surface-inverse); color: var(--ink-inverse); --focus: var(--beige); --stripe: color-mix(in srgb, var(--beige) 14%, var(--navy)); --line: var(--line-inverse); --ink-muted: color-mix(in srgb, var(--beige) 82%, var(--navy)); }
-  .section--beige-deep { background-color: var(--surface-deep); }
-  .section--raised { background-color: var(--surface-raised); }
-  .stack { display: flex; flex-direction: column; gap: var(--stack-gap, var(--space-s)); }
+  .wrap, .container {
+    inline-size: 100%;
+    max-inline-size: calc(var(--page-max) + 2 * var(--page-margin));
+    margin-inline: auto;
+    padding-inline: var(--page-margin);
+  }
+  .container--narrow { max-inline-size: calc(48rem + 2 * var(--page-margin)); }
+
+  .chapter, .section { position: relative; padding-block: var(--chapter-pad); overflow: clip; isolation: isolate; }
+  .chapter--tight, .section--tight { padding-block: calc(var(--chapter-pad) * 0.6); }
+  .chapter--flush-end { padding-block-end: 0; }
+  .section--beige-deep { background-color: var(--beige-300); }
+  .section--raised { background-color: var(--surface); }
+
+  .cols { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); column-gap: var(--gutter); row-gap: var(--stack-gap); }
+  .cols > * { grid-column: 1 / -1; }
+  @media (min-width: 64rem) {
+    .span-4 { grid-column: span 4 !important; }
+    .span-5 { grid-column: span 5 !important; }
+    .span-6 { grid-column: span 6 !important; }
+    .span-7 { grid-column: span 7 !important; }
+    .span-8 { grid-column: span 8 !important; }
+    .start-7 { grid-column-start: 7 !important; }
+    .start-8 { grid-column-start: 8 !important; }
+  }
+
+  /* text at the reading edge (5–6 cols), the picture or second column at the inline-end (6 cols) */
+  .split { display: grid; gap: var(--space-7) var(--gutter); }
+  @media (min-width: 64rem) {
+    .split { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
+    .split > :first-child { grid-column: 1 / span 6; }
+    .split > :last-child { grid-column: 8 / -1; }
+    .split--wide-start > :first-child { grid-column: 1 / span 7; }
+    .split--wide-start > :last-child { grid-column: 9 / -1; }
+    .split--top { align-items: start; }
+    .split--end { align-items: end; }
+  }
+
+  .stack { display: flex; flex-direction: column; gap: var(--stack-gap, var(--space-4)); }
   .stack > * { margin: 0; }
-  .cluster { display: flex; flex-wrap: wrap; gap: var(--cluster-gap, var(--space-xs)); align-items: center; }
-  .grid { display: grid; gap: var(--grid-gap, var(--space-m)); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--grid-min, 16rem)), 1fr)); }
+  .stack--tight { --stack-gap: var(--space-4); }
+  .cluster { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); align-items: center; }
+  .grid { display: grid; gap: var(--grid-gap, var(--gutter)); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--grid-min, 16rem)), 1fr)); }
   .grid--2 { --grid-min: 22rem; }
   .grid--3 { --grid-min: 15rem; }
   .flow > * + * { margin-block-start: var(--flow-space, 1em); }
-  .measure { max-inline-size: 65ch; }
-  .sticky { position: sticky; inset-block-start: calc(var(--header-h) + var(--space-s)); }
-  .bleed { margin-inline: calc(var(--gutter) * -1); }
+  .measure { max-inline-size: var(--measure); }
+  .sticky { position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+  .bleed { margin-inline: calc(var(--page-margin) * -1); }
+
+  /* chapter head: h2 (+ lead) with the space DESIGN.md asks for before the content */
+  .head { display: grid; gap: var(--headline-to-lead); margin-block-end: var(--space-8); }
+  .head > :is(h1, h2) { max-inline-size: 18ch; }
+  .head--wide > :is(h1, h2) { max-inline-size: none; }
+  .head > p { max-inline-size: var(--measure-lead); }
+
+  /* ── type roles ── */
+  .t-hero { font-size: var(--fs-hero); line-height: var(--lh-display); letter-spacing: var(--track-display); font-weight: var(--wght-bold); }
+  .t-display, .display { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); font-weight: var(--wght-bold); }
+  .t-chapter { font-size: var(--fs-chapter); line-height: var(--lh-chapter); letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
+  .t-title { font-size: var(--fs-title); line-height: var(--lh-title); letter-spacing: var(--track-title); font-weight: var(--wght-semibold); }
+  .t-lead, .lead { font-size: var(--fs-lead); line-height: var(--lh-lead); max-inline-size: var(--measure-lead); font-weight: var(--wght-regular); }
+  .t-body { font-size: var(--fs-body); line-height: var(--lh-body); max-inline-size: var(--measure); }
+  .t-small { font-size: var(--fs-small); line-height: var(--lh-small); }
+  .quiet { color: var(--ink-quiet); }
+  /* a quiet line above or beside a heading — NOT an uppercase/tracked label (DESIGN §4). Prefer leaving it out. */
+  .eyebrow { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--ink-quiet); letter-spacing: 0; }
+  .h-lead { margin-block-start: var(--headline-to-lead); }
+  :lang(en) .t-hero, :lang(en) .t-display { letter-spacing: -0.03em; }
 }

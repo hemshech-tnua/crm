@@ -1,21 +1,23 @@
 // The "not found" page: written as /404.html (Hebrew) and /en/404.html; noindex, no canonical, not in the sitemap.
-// Every link on it is absolute, so it works at any URL the host serves it for.
+// Every link on it is absolute, so it works at any URL the host serves it for. One job: back to a meeting.
 import { html } from '../lib/html.mjs';
 
 export const notFound = true;
 
 export function render(ctx) {
+  const { t, ui } = ctx;
   return html`
-<section class="section section--navy not-found" aria-labelledby="nf-title">
-  ${ctx.brand.stripes({ width: 300, height: 300, unit: 20, className: 'hero__stripes' })}
-  <div class="container stack">
-    <p class="eyebrow">404</p>
-    <h1 id="nf-title" class="display">${ctx.t('notFound.title')}</h1>
-    <p class="lead">${ctx.t('notFound.lead')}</p>
-    <p class="cluster">
-      <a class="btn btn--on-navy" href="${ctx.link('home')}">${ctx.t('notFound.home')}</a>
-      <a class="btn btn--cta btn--on-navy" href="${ctx.ctaHref}"><span>${ctx.t('cta.register')}</span>${ctx.brand.tri()}</a>
-    </p>
+<section class="chapter nf" data-ground="navy" aria-labelledby="nf-title">
+  ${ui.corner({ pos: 'te', tone: 'beige', unit: 24 })}
+  ${ui.mark({ className: 'nf__mark', parallax: false })}
+  <div class="wrap nf__in">
+    <p class="nf__code" aria-hidden="true" data-load="0">404</p>
+    <h1 id="nf-title" class="t-display nf__title" data-load="1">${t('notFound.title')}</h1>
+    <p class="t-lead quiet" data-load="2">${t('notFound.body')}</p>
+    <div class="cluster" data-load="3">
+      ${ui.button(t('notFound.cta'), ctx.ctaHref)}
+      ${ui.link(t('notFound.secondary'), ctx.link('home'), { arrow: false })}
+    </div>
   </div>
 </section>`;
 }

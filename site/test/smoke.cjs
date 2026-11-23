@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Browser smoke test of the built site (run `npm run build:site` first, or pass --build).
-//   node site/test/smoke.cjs [--build] [--preview] [--shots <dir>] [--port 4183]
+//   node site/test/smoke.cjs [--build] [--preview] [--shots <dir>] [--port 4183] [--out <built site folder>]
+// --out serves another build folder (default dist/site), e.g. a team's SITE_OUT=…/out-x/crm/site build.
 // Loads every page of the sitemap + both 404s at 390 and 1440 px and checks: no console errors / CSP violations, no
 // horizontal overflow, no white backgrounds, one h1, lang/dir, landmarks, skip link first in tab order, 44px targets,
 // the mobile menu (aria-expanded, focus trap, Esc, focus return), live meetings (filled / empty / error states, links
@@ -8,7 +9,7 @@
 // already a devDependency). The Supabase RPCs are mocked: the test never calls production.
 'use strict';
 const { chromium } = require('playwright');
-const { spawn, spawnSync } = require('node:child_process');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -20,6 +21,7 @@ const arg = (name, def) => {
 };
 const PORT = Number(arg('--port', process.env.SMOKE_PORT || 4183));
 const SHOTS = arg('--shots', null);
+const OUT = path.resolve(arg('--out', path.join(ROOT, 'dist/site')));
 const BASE = process.env.SITE_BASE || '/crm/site/';
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 // 390 and 1440 are the required pair; 320 (smallest phone) and 768 (tablet) catch overflow and in-between layouts.
@@ -60,9 +62,31 @@ async function mock(ctx, mode = 'ok') {
 }
 
 function pagesFromSitemap() {
-  const xml = fs.readFileSync(path.join(ROOT, 'dist/site/sitemap.xml'), 'utf8');
+  const xml = fs.readFileSync(path.join(OUT, 'sitemap.xml'), 'utf8');
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
   return [...locs, `${BASE}no-such-page/`, `${BASE}en/no-such-page/`];
+}
+
+const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.xml': 'application/xml', '.txt': 'text/plain' };
+/** A static server for the built folder at BASE, with the site's own 404 pages (like a host configured for them). */
+function serve(dir) {
+  const http = require('node:http');
+  const server = http.createServer((req, res) => {
+    const u = new URL(req.url, ORIGIN);
+    if (!u.pathname.startsWith(BASE)) { res.writeHead(302, { Location: BASE }); return res.end(); }
+    let f = path.join(dir, decodeURIComponent(u.pathname.slice(BASE.length)));
+    if (!f.startsWith(dir)) { res.writeHead(403); return res.end(); }
+    if (fs.existsSync(f) && fs.statSync(f).isDirectory()) {
+      if (!u.pathname.endsWith('/')) { res.writeHead(301, { Location: u.pathname + '/' }); return res.end(); }
+      f = path.join(f, 'index.html');
+    }
+    let status = 200;
+    if (!fs.existsSync(f)) { status = 404; f = path.join(dir, u.pathname.startsWith(BASE + 'en/') ? 'en/404.html' : '404.html'); }
+    res.writeHead(status, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' });
+    fs.createReadStream(f).pipe(res);
+  });
+  server.listen(PORT, '127.0.0.1');
+  return server;
 }
 
 async function waitServer() {
@@ -81,7 +105,7 @@ async function waitServer() {
 async function settle(page) {
   await page.waitForLoadState('networkidle');
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForFunction(() => [...document.querySelectorAll('[data-events]')].every((b) => b.getAttribute('aria-busy') === 'false'), null, { timeout: 5000 }).catch(() => {});
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-events]')].every((b) => b.getAttribute('aria-busy') === 'false') && [...document.querySelectorAll('[data-next]')].every((b) => !b.hasAttribute('aria-busy')), null, { timeout: 5000 }).catch(() => {});
 }
 
 /** Scroll through the page so every reveal has fired (for checks and full-page screenshots). */
@@ -120,7 +144,7 @@ async function checkPage(browser, url, vp) {
       if (/^rgba?\(255, 255, 255(, 1)?\)$/.test(bg)) white.push(el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''));
     }
     const small = [];
-    const sel = '.btn, .chip, .menu-toggle, .menu-close, .site-nav__link, .lang-switch, .site-footer__list a, .link-arrow, .chapters__nav a, .skip-link';
+    const sel = '.btn, .chip, .menu-toggle, .menu-close, .site-nav__link, .lang-switch, .brand, .site-footer__list a, .site-footer__base a, .link, .link-arrow, .row, .meet, .faq summary, .chapters__nav a, .skip-link';
     for (const el of document.querySelectorAll(sel)) {
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
@@ -142,7 +166,9 @@ async function checkPage(browser, url, vp) {
       fontsLoaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family),
       events: document.querySelectorAll('[data-events] .event-card:not(.event-card--skeleton)').length,
       hasEvents: !!document.querySelector('[data-events]'),
-      badEventLinks: [...document.querySelectorAll('[data-events] a.btn')].map((a) => a.href).filter((h) => !/^https:\/\/hemshech-tnua\.github\.io\/crm\/#\/(r|e)\/[a-z0-9]+$/.test(h)),
+      badEventLinks: [...document.querySelectorAll('[data-events] .events__list a')].map((a) => a.href).filter((h) => !/^https:\/\/hemshech-tnua\.github\.io\/crm\/#\/(r|e)\/[a-z0-9]+$/.test(h)),
+      nextUnfilled: [...document.querySelectorAll('[data-next]:not([data-cta-bar])')].filter((n) => !n.hasAttribute('data-filled')).length,
+      badNextLinks: [...document.querySelectorAll('[data-next] [data-next-cta]')].map((a) => a.href).filter((h) => !/^https:\/\/hemshech-tnua\.github\.io\/crm\/#\/r\/[a-z0-9]+$/.test(h)),
       phone: [...document.querySelectorAll('[data-org-phone="whatsapp"]')].map((a) => ({ href: a.href, hidden: a.hidden || !!a.closest('[hidden]') })),
     };
   });
@@ -157,7 +183,9 @@ async function checkPage(browser, url, vp) {
   if (!info.fontsLoaded.includes('Google Sans')) fail(where, 'Google Sans did not load');
   if (info.hasEvents && info.events === 0) fail(where, 'meetings list stayed empty with mocked data');
   if (info.badEventLinks.length) fail(where, `meeting links not into the CRM: ${info.badEventLinks[0]}`);
-  for (const p of info.phone) if (p.hidden || p.href !== 'https://wa.me/972501234567') fail(where, `WhatsApp slot ${JSON.stringify(p)}`);
+  if (info.nextUnfilled) fail(where, 'the next-meeting card was not filled from the mocked data');
+  if (info.badNextLinks.length) fail(where, `next-meeting CTA not into CRM registration: ${info.badNextLinks[0]}`);
+  for (const p of info.phone) if (p.hidden || !p.href.startsWith('https://wa.me/972501234567')) fail(where, `WhatsApp slot ${JSON.stringify(p)}`);
 
   // keyboard: the first Tab lands on the visible skip link, which moves focus to <main>
   await page.keyboard.press('Tab');
@@ -185,9 +213,20 @@ async function checkPage(browser, url, vp) {
     if (closed.open || closed.exp !== 'false' || !closed.back) fail(where, `menu close state ${JSON.stringify(closed)}`);
   } else if (vp.width < 1024) fail(where, 'menu button not visible on a phone');
 
+  // phone CTA bar: hidden at the top, slides in once the page's CTA has scrolled away, never over the open menu
+  if (vp.width < 1024 && (await page.locator('[data-cta-bar]').count())) {
+    const top = await page.evaluate(() => getComputedStyle(document.querySelector('[data-cta-bar]')).visibility);
+    if (top !== 'hidden') fail(where, 'CTA bar visible at the top of the page');
+    await page.evaluate(() => window.scrollTo({ top: Math.max(innerHeight * 2, document.querySelector('[data-hero-cta]')?.getBoundingClientRect().bottom + scrollY + innerHeight || 0), behavior: 'instant' }));
+    await page.waitForTimeout(450);
+    const bar = await page.evaluate(() => { const b = document.querySelector('[data-cta-bar]'); const r = b.getBoundingClientRect(); return { shown: b.hasAttribute('data-shown'), vis: getComputedStyle(b).visibility, inView: r.bottom <= innerHeight + 1 && r.top < innerHeight, href: b.querySelector('a').href }; });
+    if (!bar.shown || bar.vis !== 'visible' || !bar.inView) fail(where, `CTA bar did not appear after scrolling ${JSON.stringify(bar)}`);
+    if (SHOTS && vp.name === '390') await shot(page, url, vp, 'ctabar', false);
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  }
   // reveals: after scrolling through, nothing stays hidden
   await scrollThrough(page);
-  const hidden = await page.evaluate(() => [...document.querySelectorAll('[data-reveal]')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length);
+  const hidden = await page.evaluate(() => [...document.querySelectorAll('[data-reveal], [data-reveal=""] > *, [data-reveal="group"] > *')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length);
   if (hidden) fail(where, `${hidden} [data-reveal] elements still hidden after scrolling`);
   if (SHOTS) await shot(page, url, vp, 'page', true);
 
@@ -210,7 +249,9 @@ async function checkStates(browser) {
     await page.goto(`${ORIGIN}${BASE}`);
     await settle(page);
     await page.waitForSelector('.events__message', { timeout: 8000 }).catch(() => {});
-    const st = await page.evaluate(() => ({ msg: document.querySelector('.events__message')?.textContent ?? '', retry: !!document.querySelector('.events__message button'), fallback: !!document.querySelector('.events__more a[href*="/crm/#/"]') }));
+    const st = await page.evaluate(() => ({ msg: document.querySelector('.events__message')?.textContent ?? '', retry: !!document.querySelector('.events__message button'), fallback: !!document.querySelector('.events__more a[href*="/crm/#/"]'), next: document.querySelector('.next [data-next-when]')?.textContent ?? '', nextHref: document.querySelector('.next [data-next-cta]')?.href ?? '' }));
+    if (!st.next) fail(`next card ${mode}`, 'no message in the next-meeting card');
+    if (mode === 'error' && !/\/crm\/#\/$/.test(st.nextHref)) fail('next card error', `CTA should fall back to the CRM meetings list, got ${st.nextHref}`);
     if (!st.msg) fail(`events ${mode}`, 'no message shown');
     if (mode === 'error' && !st.retry) fail('events error', 'no retry button');
     if (!st.fallback) fail(`events ${mode}`, 'no fallback link to the CRM');
@@ -226,8 +267,8 @@ async function checkStates(browser) {
   const page = await ctx.newPage();
   await page.goto(`${ORIGIN}${BASE}`);
   await settle(page);
-  const hidden = await page.evaluate(() => [...document.querySelectorAll('[data-reveal]')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length);
-  if (hidden) fail('reduced motion', `${hidden} elements hidden`);
+  const hidden = await page.evaluate(() => [...document.querySelectorAll('[data-reveal], [data-reveal] > *, [data-load], [data-wipe]')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99 || getComputedStyle(el).clipPath !== 'none').length);
+  if (hidden) fail('reduced motion', `${hidden} elements hidden or clipped`);
   if (await page.evaluate(() => document.documentElement.classList.contains('js-reveal'))) fail('reduced motion', 'reveal mode was switched on');
   await ctx.close();
 }
@@ -256,15 +297,15 @@ async function axeScan(browser, urls) {
 
 (async () => {
   if (argv.includes('--build')) {
-    const r = spawnSync(process.execPath, [path.join(ROOT, 'site/build.mjs'), ...(argv.includes('--preview') ? ['--preview'] : []), '--quiet'], { stdio: 'inherit' });
+    const r = spawnSync(process.execPath, [path.join(ROOT, 'site/build.mjs'), ...(argv.includes('--preview') ? ['--preview'] : []), '--quiet'], { stdio: 'inherit', env: { ...process.env, ...(argv.includes('--out') ? { SITE_OUT: OUT } : {}) } });
     if (r.status !== 0) process.exit(1);
   }
-  if (!fs.existsSync(path.join(ROOT, 'dist/site/sitemap.xml'))) {
-    console.error('dist/site is not built: run `npm run build:site` (or pass --build)');
+  if (!fs.existsSync(path.join(OUT, 'sitemap.xml'))) {
+    console.error(`${OUT} is not built: run \`npm run build:site\` (or pass --build)`);
     process.exit(1);
   }
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
-  const server = spawn(process.execPath, [path.join(ROOT, 'site/serve.mjs')], { env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
+  const server = serve(OUT);
   const executablePath = process.env.PW_CHROMIUM ?? (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined);
   let browser;
   try {
@@ -279,7 +320,7 @@ async function axeScan(browser, urls) {
     failures.push(`crashed: ${e.stack || e}`);
   } finally {
     await browser?.close();
-    server.kill();
+    server.close();
   }
   for (const n of notes) console.log('  · ' + n);
   if (failures.length) {

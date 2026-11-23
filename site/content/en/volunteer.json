@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "title": "Volunteer · המשך תנועה",
+    "description": "Join the Friday welcome team, give a guest talk or lead a workout for combat veterans after their service. Here's how."
+  },
+  "hero": {
+    "title": "Be part of the team",
+    "body": "Our meetings happen because people give their time. There are a few ways to join in.",
+    "cta": "Volunteer via WhatsApp",
+    "propose": "Offer a talk or a session"
+  },
+  "ways": {
+    "title": "Ways to volunteer",
+    "items": [
+      {
+        "title": "Welcome team",
+        "body": "Greet people as they arrive, check them in, and help first-timers feel at home.",
+        "cta": "Join the welcome team"
+      },
+      {
+        "title": "Guest talk",
+        "body": "Have something to offer combat veterans in civilian life? Every Friday morning includes a guest talk.",
+        "cta": "Propose a talk"
+      },
+      {
+        "title": "Lead a workout",
+        "body": "Yoga, Pilates, movement. Every Friday morning includes a movement session.",
+        "cta": "Propose a session"
+      }
+    ],
+    "message": "Hi, I'd like to volunteer with המשך תנועה. How can I help?",
+    "toCrm": "(goes to our registration system, in Hebrew)"
+  },
+  "how": {
+    "title": "How it works",
+    "volunteer": {
+      "title": "Welcome team",
+      "steps": [
+        "Send us a message on WhatsApp.",
+        "Someone from our team gets back to you.",
+        "Before meetings you get a personal link, and for each one you choose whether you're coming."
+      ]
+    },
+    "propose": {
+      "title": "Talks and sessions",
+      "steps": [
+        "Fill in a few details about your proposal (the form is in Hebrew).",
+        "Our team reviews every proposal.",
+        "We call you back."
+      ]
+    }
+  },
+  "closing": {
+    "title": "Want to see what it's like first?",
+    "body": "Come to a Friday morning.",
+    "cta": "See the calendar",
+    "friday": "About Friday mornings"
+  }
+}

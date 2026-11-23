@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "title": "המשך תנועה · A home for combat veterans after their service",
+    "description": "A home for men and women who served in combat roles. Three Friday mornings a month: a workout for every fitness level, coffee and a guest talk. No commitment, no talking circle."
+  },
+  "hero": {
+    "eyebrow": "For combat veterans, after their service",
+    "title": [
+      "Service ends.",
+      "The team doesn't have to."
+    ],
+    "body": "המשך תנועה is a home for men and women who served in combat roles. We meet three Friday mornings a month to train, have coffee and hear a guest talk — and we're building a nationwide network of local community centers.",
+    "ctaPrimary": "Sign up for a meeting",
+    "ctaPrimaryHref": "/en/calendar/",
+    "ctaSecondary": "About Friday mornings",
+    "ctaSecondaryHref": "/en/friday/"
+  },
+  "next": {
+    "title": "Next meeting",
+    "moreLink": "All upcoming meetings",
+    "moreHref": "/en/calendar/",
+    "fallbackTitle": "Friday mornings",
+    "fallbackBody": "Three times a month: a workout, coffee and a guest talk.",
+    "upcomingTitle": "Upcoming meetings"
+  },
+  "always": {
+    "eyebrow": "What makes us different",
+    "title": "Here for good",
+    "lead": "We're not a program with a start and an end. We're a place that stays.",
+    "body": [
+      "Regular meetings, several times every month. Come for the first time now, or come back after a break.",
+      "However long it's been since your discharge."
+    ]
+  },
+  "what": {
+    "eyebrow": "What we do",
+    "title": "Room to meet, move, find direction and build a good life",
+    "items": [
+      {
+        "label": "Meet",
+        "title": "Coffee and snacks",
+        "body": "Time to sit together after the workout. No ranks, no formations."
+      },
+      {
+        "label": "Move",
+        "title": "Workout",
+        "body": "Yoga, functional training and more. Built for every fitness level."
+      },
+      {
+        "label": "Find direction",
+        "title": "Guest talk",
+        "body": "Every meeting, someone with something to offer for life after service."
+      }
+    ],
+    "lead": "This is what a Friday morning looks like.",
+    "succeed": {
+      "label": "Build a good life",
+      "body": null,
+      "slot": "what “building a good life” includes today: programs, mentoring or connections (one or two lines)"
+    }
+  },
+  "friday": {
+    "eyebrow": "Friday mornings",
+    "title": "No fine print",
+    "items": [
+      {
+        "title": "No commitment, no talking circle",
+        "body": "Come when it suits you. Train, have coffee, hear a talk. Nobody has to share anything personal."
+      },
+      {
+        "title": "Three meetings a month",
+        "body": "A steady rhythm, so there's always a Friday coming up."
+      },
+      {
+        "title": "Every fitness level",
+        "body": "Haven't trained in a while? This is exactly the place to start."
+      }
+    ],
+    "cta": "Everything about Friday mornings",
+    "ctaHref": "/en/friday/"
+  },
+  "evenings": {
+    "eyebrow": "Not just Fridays",
+    "title": "Women's evenings and more",
+    "items": [
+      {
+        "title": "Women's evenings",
+        "body": "Evenings by women combat veterans, for women combat veterans."
+      },
+      {
+        "title": "Bonfire evenings",
+        "body": "An evening around the fire with the community."
+      },
+      {
+        "title": "Other meetings",
+        "body": "Every new meeting is posted on the calendar."
+      }
+    ],
+    "cta": "Women's evenings and more",
+    "ctaHref": "/en/evenings/"
+  },
+  "direction": {
+    "eyebrow": "Where we're going",
+    "title": "Community centers across Israel",
+    "body": [
+      "We're building a nationwide network of local community centers.",
+      "Each one with structured activity, and room for combat veterans to meet, move, find direction and build a good life.",
+      "Today we meet at Holmes Place in Modi'in. That's where it starts."
+    ],
+    "rendering": null,
+    "renderingAlt": null,
+    "cta": "Our story",
+    "ctaHref": "/en/about/",
+    "renderingSlot": "the first center: a plan or a rendering, with a one-line caption"
+  },
+  "numbers": {
+    "title": "By the numbers",
+    "items": null,
+    "period": null,
+    "slot": "3–4 numbers we can prove, each with a short label and a period"
+  },
+  "stories": {
+    "title": "In their words",
+    "items": null,
+    "slot": "2–3 participant quotes (up to 25 words, first name, written consent)"
+  },
+  "photos": {
+    "title": "From our meetings",
+    "items": null
+  },
+  "join": {
+    "eyebrow": "Get involved",
+    "title": "There's a place for everyone",
+    "items": [
+      {
+        "audience": "Combat veterans",
+        "body": "Come to a meeting, alone or with friends.",
+        "cta": "See the calendar",
+        "href": "/en/calendar/"
+      },
+      {
+        "audience": "Companies and organizations",
+        "body": "Build a partnership that fits you.",
+        "cta": "Partner with us",
+        "href": "/en/partners/"
+      },
+      {
+        "audience": "Donors",
+        "body": "A one-time gift, a monthly gift, or a whole meeting.",
+        "cta": "Ways to give",
+        "href": "/en/donate/"
+      },
+      {
+        "audience": "Volunteers, speakers and coaches",
+        "body": "Help at the door, give a talk or lead a workout.",
+        "cta": "Volunteer",
+        "href": "/en/volunteer/"
+      }
+    ]
+  },
+  "partners": {
+    "title": "Our partners",
+    "logos": null,
+    "slot": "partner logos, with written permission"
+  },
+  "closing": {
+    "title": "See you on Friday?",
+    "cta": "Sign up for a meeting",
+    "ctaHref": "/en/calendar/",
+    "shareText": "Send this to someone from your old team.",
+    "shareWhatsapp": "Share on WhatsApp",
+    "shareCopy": "Copy link",
+    "copied": "Link copied"
+  },
+  "people": {
+    "title": "About us",
+    "cta": "About us"
+  }
+}

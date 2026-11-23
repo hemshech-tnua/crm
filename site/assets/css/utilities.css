@@ -1,12 +1,15 @@
 /* Single-purpose helpers. */
 @layer utilities {
-  .visually-hidden:not(:focus):not(:active) {
+  .visually-hidden:not(:focus):not(:active), .sr-only:not(:focus):not(:active) {
     position: absolute !important; inline-size: 1px !important; block-size: 1px !important; overflow: hidden !important;
     clip-path: inset(50%) !important; white-space: nowrap !important; margin: -1px !important; padding: 0 !important; border: 0 !important;
   }
   .nowrap { white-space: nowrap; }
   .text-center { text-align: center; }
   .mt-0 { margin-block-start: 0; }
-  .mt-m { margin-block-start: var(--space-m); }
-  .mt-l { margin-block-start: var(--space-l); }
+  .mt-m { margin-block-start: var(--space-5); }
+  .mt-l { margin-block-start: var(--space-6); }
+  .mt-xl { margin-block-start: var(--space-8); }
+  .mt-2xl { margin-block-start: var(--space-9); }
+  .no-js .js-only { display: none !important; }
 }

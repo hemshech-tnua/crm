@@ -1,73 +1,233 @@
 /*
- * DESIGN TOKENS — placeholder by Team C (engineering). Team B (design system) replaces this file.
- * Keep the variable NAMES below (components.css and the page modules use them); change the values freely, add more.
- * Brand: navy #142837, beige #EBDCB9, Google Sans, squared corners 3–4px. NEVER a white background.
- */
+  המשך תנועה — design tokens (Team B values, installed by Team D). Source of truth: DESIGN.md / MOTION.md.
+  Brand: navy #142837, beige #EBDCB9, Google Sans, squared corners, 45° stripes, ◀. No white anywhere: the lightest
+  ground is beige-50 (#F5EEDC). Components read ONLY the semantic tokens (§2), so they work on every ground.
+
+  Grounds: put data-ground="navy | navy-deep | beige | beige-light" on a chapter <section>; it sets the background, the
+  text colour and every semantic token for what is inside it.
+
+  Page CSS: use the semantic tokens and the shared classes (components.css). The legacy names at the end (§11) are
+  aliases kept for code written against the first placeholder; prefer the new names.
+*/
+
 @layer tokens {
   :root {
-    /* brand colours */
-    --navy: #142837;
-    --navy-2: #1c3446;          /* raised surface on navy */
-    --navy-3: #29465b;          /* borders on navy */
-    --beige: #ebdcb9;
-    --beige-2: #f2e7cd;         /* raised surface on beige (still beige, never white) */
-    --beige-3: #dfcb9f;         /* deep beige band */
+    /* ───────────── 1. Colour — reference ───────────── */
+    --navy-950: #0b1822;   /* footer, the "give" chapter      beige on it 13.3:1 */
+    --navy-900: #0f202d;   /* pressed navy, phone CTA bar     12.2:1 */
+    --navy:     #142837;   /* BRAND                           11.1:1 */
+    --navy-800: #1a3244;   /* surface on navy                  9.8:1 */
+    --navy-700: #223b4f;   /* hover on navy surfaces, photo placeholder 8.6:1 */
 
-    /* roles */
-    --surface: var(--beige);
-    --surface-raised: var(--beige-2);
-    --surface-deep: var(--beige-3);
-    --surface-inverse: var(--navy);
+    --beige-50:  #f5eedc;  /* lightest ground (never "white")  navy 13.1:1 */
+    --beige-100: #f0e6cc;  /* surface on beige                 12.2:1 */
+    --beige:     #ebdcb9;  /* BRAND                            11.1:1 */
+    --beige-300: #e0cda0;  /* hover on beige surfaces           9.7:1 */
+    --beige-400: #d3bc88;  /* tone-on-tone stripes on beige, inactive verbs, timeline track 8.2:1 */
+
+    --dust: #808278;        /* navy/beige 50/50 — NON-TEXT only */
+    --navy-quiet: #4b5659;  /* secondary text on beige-50/100/beige/300 (≥4.8:1); not on beige-400 */
+    --beige-quiet: #bcb49c; /* secondary text on navy grounds (≥5.6:1) */
+
+    /* ───────────── 2. Colour — semantic (default = beige ground) ───────────── */
+    --ground: var(--beige);
+    --surface: var(--beige-100);
+    --surface-hover: var(--beige-300);
     --ink: var(--navy);
-    --ink-muted: color-mix(in srgb, var(--navy) 80%, var(--beige));
-    --ink-inverse: var(--beige);
-    --line: color-mix(in srgb, var(--navy) 22%, transparent);
-    --line-inverse: color-mix(in srgb, var(--beige) 28%, transparent);
+    --ink-quiet: var(--navy-quiet);
+    --stripe: var(--navy);
+    --stripe-soft: var(--beige-400);
+    --action-bg: var(--navy);
+    --action-ink: var(--beige);
+    --action-bg-hover: var(--navy-800);
+    --action-bg-press: var(--navy-900);
     --focus: var(--navy);
-    --stripe: color-mix(in srgb, var(--navy) 10%, var(--beige));
+    --control-edge: var(--navy);
+    --placeholder-edge: var(--navy-quiet);
+    --track: var(--beige-400);           /* unfilled timeline / progress track */
 
-    /* type */
-    --font: 'Google Sans', 'Google Sans Fallback', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-    --step--1: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
-    --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
-    --step-1: clamp(1.2rem, 1.1rem + 0.5vw, 1.5rem);
-    --step-2: clamp(1.45rem, 1.25rem + 1vw, 2rem);
-    --step-3: clamp(1.75rem, 1.4rem + 1.75vw, 2.75rem);
-    --step-4: clamp(2.2rem, 1.6rem + 3vw, 4rem);
-    --step-5: clamp(2.6rem, 1.7rem + 4.5vw, 5.5rem);
+    --bad: #a8322a;
+    --bad-on-navy: #f1a497;
+    --ok: #2f6b3a;
+
+    /* ───────────── 3. Typography ───────────── */
+    --font-sans: 'Google Sans', 'Google Sans Fallback', system-ui, 'Segoe UI', Arial, sans-serif;
+    --wght-regular: 400;
+    --wght-medium: 500;
+    --wght-semibold: 600;
+    --wght-bold: 700;
+
+    --fs-hero:      clamp(2.25rem, 0.5rem + 6.2vw, 6rem);        /* 36 → 96   home h1 */
+    --fs-display:   clamp(2.75rem, 1.43rem + 5.42vw, 7rem);      /* 44 → 112  page h1 */
+    --fs-chapter:   clamp(2.125rem, 1.38rem + 3.05vw, 4.5rem);   /* 34 → 72   h2 */
+    --fs-title:     clamp(1.5rem, 1.27rem + 0.95vw, 2.25rem);    /* 24 → 36   h3, statements */
+    --fs-lead:      clamp(1.1875rem, 1.1rem + 0.38vw, 1.5rem);   /* 19 → 24 */
+    --fs-body:      clamp(1.0625rem, 1.03rem + 0.12vw, 1.125rem);/* 17 → 18 */
+    --fs-small:     0.9375rem;                                    /* 15 */
+    --fs-stat:      clamp(3.5rem, 2.3rem + 4.9vw, 7.5rem);        /* 56 → 120 */
+
+    --lh-display: 1.0;
+    --lh-chapter: 1.05;
+    --lh-title: 1.2;
+    --lh-lead: 1.45;
+    --lh-body: 1.6;
+    --lh-small: 1.5;
+
+    --track-display: -0.02em;
+    --track-chapter: -0.015em;
+    --track-title: -0.01em;
+
+    --measure: 62ch;
+    --measure-lead: 38ch;
+
+    /* ───────────── 4. Space (4px base) ───────────── */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 3rem;
+    --space-8: 4rem;
+    --space-9: 6rem;
+    --space-10: 8rem;
+    --space-11: 10rem;
+    --space-12: 14rem;
+
+    --chapter-pad: clamp(5rem, 3.2rem + 7.4vw, 11rem);   /* 80 → 160 */
+    --stack-gap: clamp(1.5rem, 1.2rem + 1.2vw, 2.5rem);  /* 24 → 40 */
+    --headline-to-lead: clamp(1rem, 0.8rem + 0.8vw, 2rem);
+
+    /* ───────────── 5. Grid ───────────── */
+    --page-max: 82.5rem;                                  /* 1320 */
+    --page-margin: clamp(1rem, 0.3rem + 3vw, 4rem);       /* 16 → 64, both sides */
+    --gutter: clamp(1rem, 0.75rem + 1vw, 1.5rem);         /* 16 → 24 column gap */
+    --cols: 4;
+    --header-h: 4rem;
+    --tap: 2.75rem;
+
+    /* ───────────── 6. Shape ───────────── */
+    --radius-control: 3px;
+    --radius-panel: 4px;
+    --radius-none: 0;
+    --edge: 2px;
+    --focus-ring: 3px;
+    --focus-offset: 3px;
+    --stripe-unit: clamp(14px, 0.6rem + 1vw, 28px);
+
+    /* ───────────── 7. Elevation ───────────── */
+    --shadow-float: 0 1.5rem 3rem -1rem rgb(11 24 34 / 0.45);
+
+    /* ───────────── 8. Motion ───────────── */
+    --dur-instant: 100ms;
+    --dur-fast: 160ms;
+    --dur-base: 240ms;
+    --dur-slow: 420ms;
+    --dur-reveal: 700ms;
+    --dur-hero: 1000ms;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --stagger: 70ms;
+    --rise: 24px;
+    --rise-sm: 12px;
+    --parallax: 8vh;
+    --press-scale: 0.97;
+
+    /* ───────────── 9. Layers ───────────── */
+    --z-base: 0;
+    --z-raised: 10;
+    --z-sticky: 20;
+    --z-header: 100;
+    --z-progress: 110;
+    --z-cta-bar: 120;
+    --z-menu: 200;
+    --z-skip: 300;
+
+    /* ───────────── 10. Direction ───────────── */
+    --dir: -1;                 /* RTL: "forward" (the ◀ direction) is toward the inline-end = physical left */
+  }
+  [dir='ltr'] { --dir: 1; }
+
+  /* Breakpoints (literal in @media): 30rem 480 · 48rem 768 · 64rem 1024 · 75rem 1200 · 90rem 1440 */
+  @media (min-width: 48rem) { :root { --cols: 8; } }
+  @media (min-width: 64rem) { :root { --cols: 12; --header-h: 4.5rem; } }
+
+  /* ───────────── Grounds ───────────── */
+  [data-ground='navy'], [data-ground='navy-deep'], .section--navy {
+    --ground: var(--navy);
+    --surface: var(--navy-800);
+    --surface-hover: var(--navy-700);
+    --ink: var(--beige);
+    --ink-quiet: var(--beige-quiet);
+    --stripe: var(--beige);
+    --stripe-soft: var(--navy-700);
+    --action-bg: var(--beige);
+    --action-ink: var(--navy);
+    --action-bg-hover: var(--beige-50);
+    --action-bg-press: var(--beige-300);
+    --focus: var(--beige);
+    --control-edge: var(--beige);
+    --placeholder-edge: var(--beige-quiet);
+    --track: var(--navy-700);
+  }
+  [data-ground='navy-deep'] { --ground: var(--navy-950); --surface: var(--navy-900); --surface-hover: var(--navy-800); --stripe-soft: var(--navy-800); }
+  [data-ground='beige-light'] { --ground: var(--beige-50); --surface: var(--beige-100); --surface-hover: var(--beige); }
+  [data-ground], .section--navy { background-color: var(--ground); color: var(--ink); }
+
+  /* Reduced motion: travel to zero, durations shrink; colour/opacity feedback stays. */
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --rise: 0px;
+      --rise-sm: 0px;
+      --parallax: 0vh;
+      --stagger: 0ms;
+      --dur-reveal: 1ms;
+      --dur-hero: 1ms;
+      --dur-slow: 160ms;
+      --press-scale: 1;
+    }
+  }
+
+  /* ───────────── 11. Legacy aliases (first placeholder names) ───────────── */
+  :root, [data-ground], .section--navy {
+    --navy-2: var(--navy-800);
+    --navy-3: var(--navy-700);
+    --beige-2: var(--beige-100);
+    --beige-3: var(--beige-300);
+    --surface-raised: var(--surface);
+    --surface-deep: var(--beige-300);
+    --surface-inverse: var(--navy);
+    --ink-muted: var(--ink-quiet);
+    --ink-inverse: var(--beige);
+    --line: var(--surface-hover);
+    --line-inverse: var(--navy-700);
+    --font: var(--font-sans);
+    --step--1: var(--fs-small);
+    --step-0: var(--fs-body);
+    --step-1: var(--fs-lead);
+    --step-2: var(--fs-title);
+    --step-3: var(--fs-chapter);
+    --step-4: var(--fs-display);
+    --step-5: var(--fs-display);
     --leading-tight: 1.1;
     --weight-regular: 400;
     --weight-medium: 500;
     --weight-bold: 700;
-
-    /* space */
-    --space-3xs: clamp(0.25rem, 0.23rem + 0.1vw, 0.3125rem);
-    --space-2xs: clamp(0.5rem, 0.46rem + 0.2vw, 0.625rem);
-    --space-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.9375rem);
-    --space-s: clamp(1rem, 0.93rem + 0.35vw, 1.25rem);
-    --space-m: clamp(1.5rem, 1.4rem + 0.5vw, 1.875rem);
-    --space-l: clamp(2rem, 1.85rem + 0.75vw, 2.5rem);
-    --space-xl: clamp(3rem, 2.75rem + 1.25vw, 3.75rem);
-    --space-2xl: clamp(4rem, 3.6rem + 2vw, 5rem);
-    --space-3xl: clamp(5rem, 4rem + 5vw, 8rem);
-
-    /* shape + layout */
-    --radius: 4px;
-    --radius-sm: 3px;
-    --container: 76rem;
-    --gutter: 1rem;             /* 16px side gutter on phones */
-    --header-h: 4rem;
-    --tap: 44px;                /* minimum target size */
-
-    /* motion */
-    --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
-    --dur-fast: 160ms;
-    --dur: 280ms;
-    --dur-reveal: 700ms;
-    --reveal-distance: 1.5rem;
-    --reveal-stagger: 90ms;
-  }
-  @media (min-width: 48rem) {
-    :root { --gutter: clamp(1.5rem, 4vw, 3rem); --header-h: 4.5rem; }
+    --space-3xs: var(--space-1);
+    --space-2xs: var(--space-2);
+    --space-xs: var(--space-3);
+    --space-s: var(--space-4);
+    --space-m: var(--space-5);
+    --space-l: var(--space-6);
+    --space-xl: var(--space-7);
+    --space-2xl: var(--space-8);
+    --space-3xl: var(--space-10);
+    --radius: var(--radius-panel);
+    --radius-sm: var(--radius-control);
+    --container: var(--page-max);
+    --dur: var(--dur-base);
+    --reveal-distance: var(--rise);
+    --reveal-stagger: var(--stagger);
   }
 }

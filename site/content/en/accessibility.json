@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "title": "Accessibility statement · המשך תנועה",
+    "description": "What we've done to make this site accessible, and how to tell us if something doesn't work for you."
+  },
+  "title": "Accessibility statement",
+  "intro": "We want everyone to be able to use this site, including people with disabilities. Here is what we've done, what isn't perfect yet, and how to reach us.",
+  "updatedLabel": "Statement last updated: {date}",
+  "tocLabel": "On this page",
+  "standard": {
+    "title": "Accessibility level",
+    "body": "This site was built to meet Israeli Standard 5568 and WCAG 2.2 at level AA, in line with Israel's Equal Rights for Persons with Disabilities (Service Accessibility Adjustments) Regulations.",
+    "auditLabel": "Accessibility audit: {date}, {by}"
+  },
+  "features": {
+    "title": "What we've done",
+    "items": [
+      "The whole site can be used with a keyboard alone, and focus is always visible.",
+      "Every page starts with a link that skips straight to the content.",
+      "Every page has one main heading and a clear structure of headings and regions (navigation, content and footer) that screen readers recognize.",
+      "Text has sufficient contrast against its background, on every background colour on the site.",
+      "Images have text descriptions. Purely decorative images are marked so screen readers skip them.",
+      "The language of every page is set, Hebrew right to left and English left to right, including words in the other language within a page.",
+      "Buttons and links are large enough to tap: at least 44 by 44 pixels.",
+      "The site works on phones, tablets and computers, and when zoomed in: at 320 pixels wide there is no sideways scrolling.",
+      "If your device is set to reduce motion, the site shows no animation. Nothing on the site flashes, and no video plays by itself.",
+      "On phones, the menu closes with the Esc key and focus returns to the button that opened it.",
+      "The questions and answers use the browser's own open-and-close element, which works with a keyboard and with screen readers.",
+      "When upcoming meetings load, screen readers are told."
+    ]
+  },
+  "testing": {
+    "title": "How the site was checked",
+    "body": "Every page is checked with an automated tool (axe) against WCAG 2.2 level AA, in Hebrew and in English, at screen widths from 320 pixels to a desktop screen."
+  },
+  "limits": {
+    "title": "What isn't perfect yet",
+    "items": [
+      "Meeting registration, payment and joining the nonprofit happen in our registration system, which is separate and in Hebrew only. If it's hard for you to use, message or call us and we'll help you register.",
+      "Details of upcoming meetings (the meeting's name and place) come from the registration system, so they appear in Hebrew on the English site too."
+    ]
+  },
+  "venues": {
+    "title": "Accessibility at our meetings"
+  },
+  "contact": {
+    "title": "Ran into a problem?",
+    "body": "Tell us what didn't work, and we'll get back to you.",
+    "tipsTitle": "To help us help you quickly, please include:",
+    "tips": [
+      "Which page it happened on",
+      "What you were trying to do",
+      "Which device and browser you used",
+      "Any assistive technology you use, such as a screen reader or magnifier"
+    ],
+    "coordinatorTitle": "Accessibility coordinator",
+    "phone": "Phone",
+    "email": "Email",
+    "whatsapp": "Message us on WhatsApp",
+    "contactPage": "All the ways to reach us"
+  },
+  "slots": {
+    "updated": "Date the statement was last updated (after the accessibility audit)",
+    "audit": "Date of the accessibility audit and who carried it out; the “level AA” line stays only if the audit confirms it",
+    "venues": "Accessibility at meeting venues: accessible parking, step-free access, elevator, accessible toilets, and how to ask for an adjustment",
+    "coordinator": "Accessibility coordinator: name, phone and email (required by the regulations)"
+  }
+}

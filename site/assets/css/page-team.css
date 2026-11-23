@@ -1,0 +1,58 @@
+/* Team & board (Team G). Portrait grid for the team, rows for the board; both fill from content/org.json. */
+@layer pages {
+  .team-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
+  .team-hero__grid { display: grid; gap: var(--headline-to-lead) var(--gutter); }
+  .team-hero__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); max-inline-size: 13ch; text-wrap: balance; }
+  @media (min-width: 64rem) {
+    .team-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .team-hero__title { grid-column: 1 / span 8; }
+    .team-hero__grid > .t-lead { grid-column: 9 / -1; padding-block-end: 0.4em; }
+  }
+
+  .team-group__head { margin-block-end: var(--space-7); }
+
+  /* the team: portraits 4:5, name and role under each, no card around them */
+  .team-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-7) var(--gutter); }
+  @media (min-width: 48rem) { .team-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8) var(--gutter); } }
+  .team-person { display: grid; gap: var(--space-4); align-content: start; }
+  .team-person__photo { aspect-ratio: 4 / 5; }
+  .team-person__mark { display: grid; place-items: center; border-radius: var(--radius-panel); background: var(--surface); color: var(--stripe-soft); }
+  .team-person__mark svg { block-size: 46%; inline-size: auto; }
+  .team-person__text { display: grid; gap: var(--space-1); }
+  .team-person__name { font-size: clamp(1.1875rem, 0.95rem + 1.1vw, 2.25rem); line-height: var(--lh-title); letter-spacing: var(--track-title); font-weight: var(--wght-semibold); }
+  .team-person__role { font-weight: var(--wght-medium); color: var(--ink); }
+  .team-person__line { color: var(--ink-quiet); max-inline-size: 36ch; }
+  @media (min-width: 64rem) { .team-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  /* the board: rows on a tone step (two columns from 768px); a small square portrait when one is supplied */
+  .team-rows { display: grid; gap: var(--space-2) var(--gutter); }
+  .team-row { display: flex; gap: var(--space-5); align-items: center; padding: var(--space-5); border-radius: var(--radius-panel); background: var(--surface); }
+  .team-row__photo { flex: none; inline-size: 5.5rem; }
+  .team-row__text { display: grid; gap: var(--space-1); }
+  .team-row .team-person__name { font-size: 1.375rem; }
+  @media (min-width: 48rem) { .team-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* preview only: the same layout with dashed portraits, so the board sees the page fill */
+  .team-skeleton .team-person__name, .team-skeleton .team-person__role, .team-skeleton .team-person__line { color: var(--ink-quiet); }
+  .team-skeleton__photo {
+    display: grid; place-content: center; padding: var(--space-5); text-align: center; font-size: var(--fs-small); color: var(--ink-quiet);
+    border: var(--edge) dashed var(--placeholder-edge); border-radius: var(--radius-panel);
+  }
+  .team-skeleton__photo strong { color: var(--ink); font-weight: var(--wght-semibold); }
+  .team-skeleton .team-row { flex-wrap: wrap; background: transparent; border: var(--edge) dashed var(--placeholder-edge); }
+  .team-row__slot { flex-basis: 100%; min-block-size: 0; padding: var(--space-3); border: 0; text-align: start; place-content: start; }
+
+  .team-sub { margin-block-start: var(--space-8); }
+  .team-sub__title { margin-block-end: var(--space-5); }
+  .team-sub--slot { min-block-size: 0; }
+
+  /* volunteers: the sentence continues the page — "and volunteers / who welcome everyone at the door" */
+  .team-volunteers__grid { display: grid; gap: var(--space-5) var(--gutter); }
+  .team-volunteers__body { font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--wght-medium); max-inline-size: 26ch; }
+  @media (min-width: 64rem) {
+    .team-volunteers__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .team-volunteers__grid > h2 { grid-column: 1 / span 6; }
+    .team-volunteers__body { grid-column: 7 / -1; }
+    .team-volunteers__grid > .cluster { grid-column: 7 / -1; }
+  }
+}
