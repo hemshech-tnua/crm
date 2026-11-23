@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { can, useRole } from '@/lib/auth';
@@ -38,13 +38,13 @@ const AUDIENCE_GROUP: Record<Template['audience'], Group> = {
   participant: 'consented',
 };
 const GROUP_HINT: Record<Group, string> = {
-  aftercare: 'כל מי שהגיע, בנוסח המתאים: מי שאישר עדכונים ועוד לא הצטרף לעמותה מקבל תודה עם הזמנה להצטרף לעמותה. כל השאר מקבלים תודה ובקשה למשוב.',
+  aftercare: 'כל מי שהגיע, בנוסח המתאים: מי שאישר עדכונים ועוד לא הצטרף לעמותה מקבל תודה והזמנה להצטרף. כל השאר מקבלים תודה ובקשה למשוב.',
   registered: 'כל מי שרשום למפגש (בלי רשימת המתנה, מי שביטל ומי שהגיע בלי הרשמה).',
   waitlisted: 'מי שברשימת ההמתנה.',
   unpaid: 'רשומים שעוד לא שילמו, ומי שהתחיל הרשמה ולא שילם (אין לו מקום עד התשלום). כל אחד מקבל את הנוסח שמתאים לו.',
   attended: 'רשומים שסומנה להם הגעה.',
   no_show: 'רשומים שלא הגיעו. מסומנים בסגירת המפגש.',
-  consented: 'אישרו לקבל עדכונים בוואטסאפ, הגיעו לפעילות כלשהי ב-90 הימים האחרונים, ועדיין לא רשומים למפגש הזה.',
+  consented: 'אישרו לקבל עדכונים בוואטסאפ, הגיעו לפעילות כלשהי ב־90 הימים האחרונים, ועדיין לא רשומים למפגש הזה.',
 };
 /** The template each audience starts from (when the meeting has it). */
 const PREFERRED: Partial<Record<Group, string>> = { registered: 'reminder', attended: 'thanks', no_show: 'missed_you' };
@@ -68,7 +68,7 @@ function paymentBody(e: EventWithStats, started: boolean): string {
   if (started) {
     return [
       'היי {שם_פרטי},',
-      'ראינו שהתחלת להירשם ל{שם_המפגש} ({תאריך} ב-{שעה}), אבל התשלום עוד לא הושלם.',
+      'ההרשמה שלך ל{שם_המפגש} ({תאריך} בשעה {שעה}) עוד מחכה לתשלום.',
       'המקום נשמר רק אחרי התשלום. להשלמת ההרשמה:',
       '{קישור_אישי}',
       'אם כבר שילמת, אפשר פשוט לענות להודעה הזו.',
@@ -189,7 +189,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   const error = templates.error || regs.error || sent.error || (group === 'consented' ? consented.error : null) || (payment ? payments.error : null);
 
   if (templates.isLoading) return <Panel><Skeleton lines={6} /></Panel>;
-  if (templates.isError) return <ErrorBox error={errorMessage(templates.error)} onRetry={() => templates.refetch()} />;
+  if (templates.isError && !templates.data) return <ErrorBox error={errorMessage(templates.error)} onRetry={() => templates.refetch()} />;
   if (!list.length) {
     return <Panel><EmptyState icon="message" title="אין תבניות הודעה">{can.admin(role) ? 'מוסיפים תבניות בהגדרות.' : 'את נוסח התבניות קובעים המנהלים.'}</EmptyState></Panel>;
   }
@@ -213,7 +213,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   return (
     <div className="flex flex-col gap-5">
       <Notice tone="tide" icon="shield">
-        שום הודעה לא נשלחת לבד: "שליחה" פותחת וואטסאפ עם הטקסט מוכן, ושם לוחצים "שלח". כל פתיחה נרשמת בכרטיס.
+        שום הודעה לא נשלחת לבד: "שליחה" פותחת וואטסאפ עם הטקסט מוכן, ושם לוחצים "שליחה". כל פתיחה נרשמת בכרטיס.
       </Notice>
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -276,8 +276,8 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
           </div>
           {loading ? (
             <div className="p-5"><Skeleton lines={5} /></div>
-          ) : error ? (
-            <div className="p-4"><ErrorBox error={errorMessage(error)} /></div>
+          ) : error && !regs.data ? (
+            <div className="p-4"><ErrorBox error={errorMessage(error)} onRetry={() => { void regs.refetch(); void sent.refetch(); }} /></div>
           ) : ordered.length === 0 ? (
             <EmptyState icon={payment ? 'checkCircle' : 'people'} title={payment ? 'כולם שילמו' : 'אין נמענים בקבוצה הזו'}>
               {payment ? 'אין רשומים שחייבים תשלום, ואין הרשמות שמחכות לתשלום.'
@@ -305,7 +305,7 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
                     </div>
                     {at ? (
                       <div className="flex items-center gap-1.5">
-                        <Badge tone="good" icon="check" title="נפתח בוואטסאפ. המערכת לא יודעת אם נלחץ שם 'שלח'.">נפתח בוואטסאפ <span className="tabular-nums">{fmtListDate(at)}</span></Badge>
+                        <Badge tone="good" icon="check" title='נפתח בוואטסאפ. המערכת לא יודעת אם נלחץ שם "שליחה".'>נפתח בוואטסאפ <span className="tabular-nums">{fmtListDate(at)}</span></Badge>
                         <Button size="sm" variant="ghost" onClick={() => setQueue([p])}>שוב</Button>
                       </div>
                     ) : !p.phone ? (
@@ -382,7 +382,7 @@ function AftercareInfo({ readyAt, joinCount, thanks, join }: { readyAt: Date; jo
       {ready ? (
         <Notice tone="light" icon="checkCircle">עברו 24 שעות מסוף המפגש: זה הזמן לשלוח תודה. כל שליחה נרשמת, כך שרואים למי כבר נשלח.</Notice>
       ) : (
-        <Notice tone="tide" icon="calendar">ההודעות יהיו מוכנות ב-<span className="num">{fmtDateTime(readyAt.toISOString())}</span>, 24 שעות אחרי סוף המפגש. אז המפגש יופיע גם בלוח הבקרה. אפשר לשלוח כבר עכשיו.</Notice>
+        <Notice tone="tide" icon="calendar">ההודעות יהיו מוכנות ב־<span className="num">{fmtDateTime(readyAt.toISOString())}</span>, 24 שעות אחרי סוף המפגש. אז המפגש יופיע גם במסך הסקירה. אפשר לשלוח כבר עכשיו.</Notice>
       )}
       <div>
         <div className="mb-1.5 text-small font-medium">תודה (לכל מי שהגיע)</div>
@@ -424,9 +424,14 @@ function QueueComposer({ queue, plan, event: e, templates, context, onClose }: {
   // a personal link is made once per person, only when the text uses it (a new link replaces the registration's previous one)
   const wantsLink = !!p.registrationId && needsPersonalLink(body);
   const [link, setLink] = useState<{ for: string; url: string | null; error: string | null } | null>(null);
+  // asked once per person shown: a new link replaces the registration's previous one, so a second call (React's
+  // StrictMode runs effects twice in development; a quick re-render before the state lands) would void the link on
+  // screen. The ref outlives both runs; the state still decides which person's link is shown.
+  const requested = useRef<string | null>(null);
   useEffect(() => {
-    if (!wantsLink || link?.for === p.registrationId) return;
-    const id = p.registrationId!;
+    if (!wantsLink || !p.registrationId || link?.for === p.registrationId || requested.current === p.registrationId) return;
+    const id = p.registrationId;
+    requested.current = id;
     setLink({ for: id, url: null, error: null });
     supabase.rpc('staff_personal_link', { p_registration_id: id }).then(({ data, error }) => {
       // a late answer for someone already skipped is dropped
@@ -483,14 +488,14 @@ function QueueComposer({ queue, plan, event: e, templates, context, onClose }: {
         )}
         {!allowed ? (
           <Notice tone="warn" icon="alert">
-            אין הסכמה של {p.full_name} לקבל עדכונים והזמנות. לפי חוק התקשורת אפשר לשלוח הודעת וואטסאפ כזו רק אחרי הסכמה. אפשר להתקשר.
+            בכרטיס של {p.full_name} אין הסכמה לקבל עדכונים והזמנות. לפי חוק התקשורת, הודעה כזו נשלחת רק למי שהסכימו. אפשר להתקשר.
           </Notice>
         ) : (
           <Textarea label="הטקסט (אפשר לערוך לפני השליחה)" value={text} onChange={(x) => setText(x.target.value)} rows={7} />
         )}
         {wantsLink && myLink?.error && <Notice tone="warn" icon="alert">לא הצלחנו ליצור קישור אישי: {myLink.error}</Notice>}
         {wantsLink && myLink?.url && (
-          <p className="text-small text-muted">הקישור האישי חדש ומחליף קישור קודם של ההרשמה הזו, אם נשלח. הוא מיועד רק ל{firstName || 'מי שמקבל את ההודעה'}.</p>
+          <p className="text-small text-muted">זה קישור אישי חדש. אם כבר נשלח קישור להרשמה הזו, הוא יוחלף בזה. הקישור מיועד רק ל{firstName || 'מי שמקבל את ההודעה'}.</p>
         )}
         {!p.phone && <Notice tone="warn" icon="alert">אין מספר טלפון בכרטיס.</Notice>}
       </div>

@@ -6,13 +6,14 @@ import { can, useRole } from '@/lib/auth';
 import type { EventWithStats } from '@/lib/data';
 import { errorCode, errorMessage, must } from '@/lib/errors';
 import { fmtListDate, ilParts } from '@/lib/dates';
-import { formatPhone, normalizePhone } from '@/lib/phone';
-import { ATTENDANCE_LABEL, COUNT_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, REG_STATUS_LABEL, freePlaces, meetingCountLine } from '@/lib/labels';
+import { PHONE_EXAMPLE, formatPhone, normalizePhone } from '@/lib/phone';
+import { ATTENDANCE_LABEL, COUNT_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, REG_STATUS_LABEL, freePlaces } from '@/lib/labels';
 import { isPriced } from '@/lib/money';
 import { csvFileName, downloadFile, toCsv } from '@/lib/csv';
 import type { RegStatus } from '@/lib/types';
 import { Badge, Button, Checkbox, EmptyState, ErrorBox, FilterChips, IconButton, Input, Notice, Panel, SearchInput, Skeleton, Spinner, Td, Th, cx } from '@/ui/kit';
 import { Dialog, useConfirm, useToast } from '@/ui/feedback';
+import { MoreMenu } from '@/ui/MoreMenu';
 import { Icon } from '@/ui/Icon';
 import { MessageComposer } from '@/ui/MessageComposer';
 import type { EventPeople } from './context';
@@ -133,7 +134,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     },
     onSuccess: async ({ r, status }) => {
       await invalidate(e.id);
-      toast.success(status === 'waitlisted' ? `המפגש מלא: ${r.participant?.full_name ?? ''} ברשימת המתנה` : `ההרשמה של ${r.participant?.full_name ?? ''} חודשה`);
+      toast.success(status === 'waitlisted' ? `המפגש מלא: ${r.participant?.full_name ?? ''} ברשימת ההמתנה` : `ההרשמה של ${r.participant?.full_name ?? ''} חודשה`);
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -157,7 +158,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
       title: 'ביטול הרשמה',
       body: <>לבטל את ההרשמה של <b>{r.participant?.full_name}</b>? {r.status === 'registered' && waiting > 0 ? 'המקום יתפנה, ואפשר יהיה לקדם מרשימת ההמתנה.' : 'המקום יתפנה.'}</>,
       confirm: 'ביטול ההרשמה',
-      cancel: 'חזרה',
+      cancel: 'לא, להשאיר את ההרשמה',
       danger: true,
     });
     if (ok) cancelReg.mutate(r);
@@ -214,8 +215,9 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   const toReminders = () => setParams((p) => { const n = new URLSearchParams(p); n.set('tab', 'messages'); n.set('group', 'unpaid'); n.delete('filter'); return n; });
   const clear = () => { setSearch(''); setFilter('all'); };
 
-  if (q.isLoading) return <Panel><Skeleton lines={7} /></Panel>;
-  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
+  if (q.isLoading) return <Skeleton shape="rows" count={6} height={72} />;
+  // a failed refresh keeps the list on screen (the offline bar says the connection dropped); an error only when nothing loaded
+  if (q.isError && !q.data) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
 
   const addButton = canRegister ? <Button icon="userPlus" onClick={() => setAdding(true)}>הוספת נרשם</Button> : null;
   const chips = FILTERS
@@ -225,12 +227,8 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <p className="text-body text-ink-soft" data-testid="reg-counts">
-          <span className="tabular-nums">{meetingCountLine(registered, walkIns, e.capacity)}</span>
-          {waiting > 0 && <> · <span className="num">{waiting}</span> ברשימת המתנה</>}
-          {started && counts.attended > 0 && <> · <span className="num">{counts.attended}</span> הגיעו</>}
-        </p>
+      {/* the counts are in the status strip above the tabs (said once); here only the tab's own actions */}
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
         <div className="flex flex-wrap items-center gap-2">
           {can.admin(role) && rows.length > 0 && <Button variant="ghost" icon="download" onClick={exportCsv}>ייצוא לאקסל</Button>}
           {addButton}
@@ -239,7 +237,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
 
       {waiting > 0 && (free == null || free > 0) && canRegister && !started && (
         <Notice tone="light" icon="userPlus">
-          {free == null ? 'אין הגבלת מקומות' : free === 1 ? 'יש מקום פנוי אחד' : `יש ${free} מקומות פנויים`}, ו-<b className="num">{waiting}</b> ברשימת המתנה. מקדמים לפי הסדר ושולחים הודעה "התפנה מקום".{' '}
+          {free == null ? 'אין הגבלת מקומות' : free === 1 ? 'יש מקום פנוי אחד' : `יש ${free} מקומות פנויים`}, ו־<b className="num">{waiting}</b> ברשימת ההמתנה. מקדמים לפי הסדר ושולחים הודעה "התפנה מקום".{' '}
           {filter !== 'waitlisted' && <button type="button" className="font-bold underline" onClick={() => setFilter('waitlisted')}>לרשימת ההמתנה</button>}
         </Notice>
       )}
@@ -301,8 +299,9 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
             ))}
           </ul>
 
-          {/* the kit's Th/Td, in a wrapper that does not clip: each row has a menu that opens below it */}
-          <div className="hidden rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
+          {/* the kit's Th/Td; a narrow tablet scrolls the table sideways inside its frame (the row menus open in a
+              layer of their own, so the scrolling frame does not clip them) */}
+          <div className="relative hidden overflow-x-auto rounded-[var(--radius-panel)] border border-edge bg-paper md:block">
             <table className="w-full border-collapse text-body" aria-label="נרשמים">
               <thead>
                 <tr>
@@ -333,7 +332,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
                         {r.participant?.phone && (
                           <IconButton icon="message" label={`הודעת וואטסאפ ל${r.participant.full_name ?? ''}`} title="הודעת וואטסאפ" onClick={() => openComposer(r)} />
                         )}
-                        <RowMenu items={menuFor(r)} />
+                        <MoreMenu variant="icon" size="sm" items={menuFor(r)} label={`פעולות נוספות ל${r.participant?.full_name ?? 'נרשם'}`} />
                       </div>
                     </Td>
                   </tr>
@@ -388,7 +387,7 @@ function NameCell({ r }: { r: RegRow }) {
       )}
       {(r.first_time && r.status !== 'cancelled') || r.is_walk_in || r.submitted_name || p?.photo_opt_out ? (
         <div className="mt-1 flex flex-wrap gap-1">
-          {r.first_time && r.status !== 'cancelled' && <Badge tone="light">פעם ראשונה</Badge>}
+          {r.first_time && r.status !== 'cancelled' && <Badge tone="first">פעם ראשונה</Badge>}
           {r.is_walk_in && <Badge tone="neutral">בלי הרשמה</Badge>}
           {r.submitted_name && (
             <Badge tone="warn" icon="alert" title="השם שהוקלד בהרשמה שונה מהשם בכרטיס. ייתכן שהוקלד טלפון של מישהו אחר: כדאי לברר.">
@@ -441,7 +440,7 @@ function SourceCell({ r, className = '' }: { r: RegRow; className?: string }) {
   if (r.referrer) parts.push(<span key="r">הפניה: <Link to={`/app/participants/${r.referrer.id}`} className="text-tide hover:underline">{r.referrer.full_name}</Link></span>);
   else if (r.referrer_name) parts.push(<span key="r">הפניה: {r.referrer_name}</span>);
   if (r.utm_source && !r.link) parts.push(<span key="u" dir="ltr" className="num">utm: {r.utm_source}</span>);
-  if (!parts.length) return <span className={cx('text-small text-faint', className)}>{r.created_via === 'staff' ? 'הוספה בידי הצוות' : '—'}</span>;
+  if (!parts.length) return <span className={cx('text-small text-faint', className)}>{r.created_via === 'staff' ? 'הוספה על ידי הצוות' : '—'}</span>;
   return <div className={cx('flex flex-col gap-0.5 text-small text-ink-soft', className)}>{parts}</div>;
 }
 
@@ -508,7 +507,7 @@ function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
     const send = () => onRegistered({
       id: regId, participant_id: p.id, status, participant: { id: p.id, full_name: p.full_name, phone: p.phone, city: p.city, consent_updates: false, photo_opt_out: false, anonymized_at: null },
     } as RegRow);
-    if (status === 'waitlisted') toast.success(`המפגש מלא: ${p.full_name} ברשימת המתנה`);
+    if (status === 'waitlisted') toast.success(`המפגש מלא: ${p.full_name} ברשימת ההמתנה`);
     else toast.success(`ההרשמה של ${p.full_name} נשמרה`, p.phone ? { label: 'שליחת אישור', run: send } : undefined);
     onClose();
   };
@@ -539,7 +538,7 @@ function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
     onSuccess: async (res) => {
       qc.invalidateQueries({ queryKey: ['participants'] });
       if ('regError' in res) {
-        toast.error(`הכרטיס של ${res.p.full_name} נוצר, אבל הרישום למפגש לא הצליח: ${errorMessage(res.regError)}`);
+        toast.error(`הכרטיס של ${res.p.full_name} נוצר, אבל ההרשמה למפגש לא נשמרה: ${errorMessage(res.regError)}`);
         setCreating(false);
         setQ(res.p.full_name ?? '');
         return;
@@ -567,15 +566,15 @@ function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
   const fullForm = `/app/participants/new?${new URLSearchParams({ event: e.id, ...(form.name.trim() ? { name: form.name.trim() } : {}), ...(form.phone.trim() ? { phone: form.phone.trim() } : {}) })}`;
 
   return (
-    <Dialog open={open} onClose={onClose} title="הוספת נרשם">
+    <Dialog open={open} onClose={onClose} title="הוספת נרשם" dismissible={!(form.touched && (form.name.trim() || form.phone.trim()))}>
       <div className="flex flex-col gap-4">
         <SearchInput ref={searchRef} value={q} onChange={(v) => { setQ(v); setErrors((x) => ({ ...x, phone: null })); }} placeholder={SEARCH_PLACEHOLDER} label="חיפוש כרטיס" />
         {!showForm && errors.phone && <p className="-mt-2 text-small font-medium text-ink" role="status">{errors.phone}</p>}
         {free === 0 && (
-          <Checkbox label="לרשום גם מעבר למכסה" hint="בלי סימון, ההרשמה תיכנס לרשימת ההמתנה" checked={over} onChange={setOver} />
+          <Checkbox label="לרשום גם אם אין מקום" hint="בלי סימון, ההרשמה תיכנס לרשימת ההמתנה" checked={over} onChange={setOver} />
         )}
         {!enabled ? (
-          <p className="text-small text-muted">מקלידים לפחות 2 אותיות מהשם, או 3 ספרות מהטלפון. אם אין כרטיס, יוצרים אותו כאן.</p>
+          <p className="text-small text-muted">מקלידים לפחות 2 אותיות מהשם או 3 ספרות מהטלפון. אם אין כרטיס, יוצרים אותו כאן.</p>
         ) : results.isLoading ? (
           <div className="flex justify-center py-4 text-muted"><Spinner /></div>
         ) : results.isError ? (
@@ -620,7 +619,7 @@ function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Input label="שם מלא" required value={form.name} onChange={(x) => setField('name', x.target.value)} error={errors.name} maxLength={80} autoComplete="off" />
-              <Input label="טלפון" required ltr type="tel" inputMode="tel" value={form.phone} onChange={(x) => setField('phone', x.target.value)} error={errors.phone} autoComplete="off" hint="למשל 050-1234567" />
+              <Input label="טלפון" required ltr type="tel" inputMode="tel" value={form.phone} onChange={(x) => setField('phone', x.target.value)} error={errors.phone} autoComplete="off" hint={`למשל ${PHONE_EXAMPLE}`} />
             </div>
             {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
             <div className="flex flex-wrap items-center gap-2">

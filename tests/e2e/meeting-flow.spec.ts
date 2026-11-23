@@ -12,7 +12,7 @@ test('the dashboard shows the meeting running today, not "אין מפגש קרו
   await page.goto('#/app/dashboard');
   await expect(page.getByRole('region', { name: 'המפגש הבא' })).toBeVisible();
   await expect(page.getByText('אין מפגש קרוב בלוח')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'היעדים לשנה' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'מול היעדים' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'דורש תשומת לב' })).toBeVisible();
   expect(errors, errors.join('\n')).toEqual([]);
 });

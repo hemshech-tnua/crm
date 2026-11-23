@@ -1,13 +1,16 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useEvent, useSettings, useSites, useSpeakers, useEventsWithStats } from '@/lib/data';
 import { errorMessage } from '@/lib/errors';
 import { addDays, fmtDayLong, fromIl, ilParts, nextFriday, todayIl } from '@/lib/dates';
-import { EVENT_STATUS_LABEL, EVENT_TYPE_LABEL } from '@/lib/labels';
+import { DISMISS_UNSAVED, EVENT_STATUS_LABEL, EVENT_TYPE_LABEL } from '@/lib/labels';
+import { useTitle } from '@/lib/title';
+import { useUnsavedGuard } from '@/lib/unsaved';
+import { useHideTabBar } from '@/ui/chrome';
 import type { EventRow, EventStatus, EventType, Settings, Site, Speaker } from '@/lib/types';
-import { Button, ButtonLink, ChoiceGroup, ErrorBox, Input, Notice, PageHeader, Panel, Select, Skeleton, Textarea, Checkbox, cx } from '@/ui/kit';
+import { Button, ChoiceGroup, ErrorBox, Input, Notice, PageHeader, Panel, Select, Skeleton, Textarea, Checkbox, cx } from '@/ui/kit';
 import { useToast } from '@/ui/feedback';
 import { isPaymentUrl, parseAmount } from '@/lib/money';
 import { DEFAULT_TIMES, DEFAULT_TITLE, useInvalidateEvent } from './queries';
@@ -51,6 +54,17 @@ function withHttps(v: string): string {
   if (!t || /^[a-z][a-z0-9+.-]*:/i.test(t)) return t;
   if (t.startsWith('//')) return `https:${t}`;
   return /^[^\s/]+\.[^\s/]+/.test(t) ? `https://${t}` : t;
+}
+
+/**
+ * A meeting that ends at or before its start time ends the next day (a bonfire 20:00–01:00). The form keeps one date,
+ * the start's; the end is placed on the day after.
+ */
+function overnight(f: Pick<Form, 'start' | 'end'>): boolean {
+  return /^\d{2}:\d{2}$/.test(f.start) && /^\d{2}:\d{2}$/.test(f.end) && f.end < f.start;
+}
+function endsAt(f: Pick<Form, 'date' | 'start' | 'end'>): string {
+  return fromIl(overnight(f) ? addDays(f.date, 1) : f.date, f.end);
 }
 
 /** The coming Friday at 09:00 that has not started yet. */
@@ -132,6 +146,7 @@ export function EventEditPage() {
   const upcoming = useEventsWithStats({ from: fromIl(todayIl(), '00:00'), ascending: true });
   const takenFridays = new Set((upcoming.data ?? []).filter((e) => e.type === 'friday' && e.status !== 'cancelled').map((e) => ilParts(e.starts_at).date));
 
+  useTitle(id ? [event.data ? `עריכה: ${event.data.title}` : 'עריכת מפגש', 'מפגשים'] : ['מפגש חדש', 'מפגשים']);
   const loading = (id && event.isLoading) || settings.isLoading || sites.isLoading || speakers.isLoading || (!id && upcoming.isLoading);
   const error = (id && event.error) || sites.error || speakers.error;
 
@@ -142,7 +157,10 @@ export function EventEditPage() {
         back={id ? { to: `/app/events/${id}`, label: 'חזרה למפגש' } : { to: '/app/events', label: 'כל המפגשים' }}
       />
       {loading ? (
-        <Panel><Skeleton lines={8} /></Panel>
+        <div className="flex flex-col gap-5">
+          <Panel title="סוג ומועד"><Skeleton lines={5} /></Panel>
+          <Panel title="מקום"><Skeleton lines={2} /></Panel>
+        </div>
       ) : error ? (
         <ErrorBox error={errorMessage(error)} onRetry={() => { event.refetch(); sites.refetch(); speakers.refetch(); }} />
       ) : (
@@ -169,7 +187,7 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   if (f.location.length > 200) errors.location = 'עד 200 תווים.';
   if (f.capacity.trim() !== '') {
     const n = Number(f.capacity);
-    if (!Number.isInteger(n) || n < 1 || n > 1000) errors.capacity = 'מספר שלם בין 1 ל-1000, או ריק בלי הגבלה.';
+    if (!Number.isInteger(n) || n < 1 || n > 1000) errors.capacity = 'צריך מספר שלם בין 1 ל־1000. בלי הגבלה? משאירים ריק.';
   }
   if (f.activity_name.length > 60) errors.activity_name = 'עד 60 תווים.';
   if (f.lecture_topic.length > 160) errors.lecture_topic = 'עד 160 תווים.';
@@ -180,14 +198,15 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   if (price != null && (!/^\d+(\.\d{1,2})?$/.test(f.price.replace(/[,₪\s]/g, '')) || price > 10000)) {
     errors.price = 'סכום בשקלים, למשל 20. ריק = בלי תשלום.';
   }
-  if (f.payment_url.trim() && !isPaymentUrl(withHttps(f.payment_url))) errors.payment_url = 'הקישור צריך להתחיל ב-https:// (עד 500 תווים).';
+  if (f.payment_url.trim() && !isPaymentUrl(withHttps(f.payment_url))) errors.payment_url = 'הקישור צריך להתחיל ב־https:// (עד 500 תווים).';
   if (f.payment_url.trim() && !price && !errors.price) errors.price = 'יש קישור לתשלום: צריך גם סכום.';
   if (f.payment_note.length > 200) errors.payment_note = 'עד 200 תווים.';
   if (errors.date || errors.start || errors.end) return { errors };
 
   const starts = fromIl(f.date, f.start);
-  const ends = fromIl(f.date, f.end);
-  if (new Date(ends) <= new Date(starts)) errors.end = 'שעת הסיום צריכה להיות אחרי שעת ההתחלה.';
+  // ending at or before the start time = the next day (after midnight); the same time is no meeting at all
+  const ends = endsAt(f);
+  if (f.end === f.start) errors.end = 'שעת הסיום צריכה להיות אחרי שעת ההתחלה.';
   let closes: string | null = null;
   if (f.closes_early) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(f.closes_date) || !/^\d{2}:\d{2}$/.test(f.closes_time)) {
@@ -208,6 +227,10 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
   const invalidate = useInvalidateEvent();
   const [f, setF] = useState<Form>(initial);
   const [errors, setErrors] = useState<Errors>({});
+  // two quick taps on "שמירה" must not create the meeting twice
+  const inFlight = useRef(false);
+  const [base] = useState(initial);
+  const dirty = JSON.stringify(f) !== JSON.stringify(base);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => {
     setF((p) => ({ ...p, [k]: v }));
     if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
@@ -256,6 +279,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
   };
 
   const save = useMutation({
+    onSettled: () => { inFlight.current = false; },
     mutationFn: async (v: { starts: string; ends: string; closes: string | null }) => {
       const row = {
         type: f.type,
@@ -291,15 +315,21 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
     onSuccess: async (id) => {
       await invalidate(id);
       toast.success(event ? 'השינויים נשמרו' : f.status === 'draft' ? 'המפגש נוצר כטיוטה. כשהכול מוכן, פותחים הרשמה.' : 'המפגש נוצר');
+      guard.release();
       navigate(`/app/events/${id}`);
       // the form ends far down the page: the meeting opens at its top
       window.scrollTo({ top: 0 });
     },
     onError: (err) => setErrors({ form: errorMessage(err) }),
   });
+  // leaving with unsaved changes asks first; the save itself goes through (released right before it navigates)
+  const guard = useUnsavedGuard(dirty && !save.isPending);
+  // G1: on a phone the save bar is the one fixed element at the bottom, so the tab bar steps aside on this page
+  useHideTabBar(true);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (inFlight.current) return;
     const url = withHttps(f.payment_url);
     if (url !== f.payment_url) setF((p) => ({ ...p, payment_url: url }));
     const v = validate({ ...f, payment_url: url });
@@ -308,20 +338,75 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
       requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"], [role="alert"]')?.focus?.());
       return;
     }
+    inFlight.current = true;
     save.mutate({ starts: v.starts, ends: v.ends, closes: v.closes ?? null });
   };
+  const leave = () => navigate(event ? `/app/events/${event.id}` : '/app/events');
+  const saveLabel = event ? 'שמירת השינויים' : 'יצירת המפגש';
 
   const notFriday = f.type === 'friday' && /^\d{4}-\d{2}-\d{2}$/.test(f.date) && new Date(`${f.date}T12:00:00Z`).getUTCDay() !== 5;
-  const isPast = !event && /^\d{4}-\d{2}-\d{2}$/.test(f.date) && /^\d{2}:\d{2}$/.test(f.end) && new Date(fromIl(f.date, f.end)).getTime() < Date.now();
+  const isPast = !event && /^\d{4}-\d{2}-\d{2}$/.test(f.date) && /^\d{2}:\d{2}$/.test(f.end) && new Date(endsAt(f)).getTime() < Date.now();
   const started = event && hasStarted(event);
+  const nextDay = overnight(f) && /^\d{4}-\d{2}-\d{2}$/.test(f.date);
+
+  // after "שכפול לשבוע הבא" what changes every week (title, speaker, topic) comes first
+  const titleField = <Input label="כותרת" required value={f.title} onChange={(e) => set('title', e.target.value)} error={errors.title} maxLength={120} />;
+  const speakerField = (
+    <Select
+      label="מרצה"
+      value={f.speaker_id}
+      onChange={(e) => changeSpeaker(e.target.value)}
+      hint={lecturers.length ? undefined : 'אין עדיין מרצים. מוסיפים במסך מרצים ומדריכים.'}
+    >
+      <option value="">לא נקבע</option>
+      {lecturers.map((s) => (
+        <option key={s.id} value={s.id}>
+          {s.full_name}{s.topic ? ` · ${s.topic}` : ''}{s.status === 'proposed' ? ' (מחכה לאישור)' : s.status !== 'approved' ? ' (בלי אישור)' : ''}
+        </option>
+      ))}
+    </Select>
+  );
+  const topicField = <Input label="נושא ההרצאה" value={f.lecture_topic} onChange={(e) => set('lecture_topic', e.target.value)} error={errors.lecture_topic} maxLength={160} />;
+  const speakerNotes: ReactNode = (
+    <>
+      {speaker && speaker.status !== 'approved' && (
+        <Notice tone="warn" icon="alert">
+          {speaker.full_name}: {speaker.status === 'proposed' ? 'ההצעה עדיין מחכה לאישור מנהלים' : 'אין אישור מנהלים'}. אפשר לשבץ, וכדאי לאשר לפני שמפרסמים.
+        </Notice>
+      )}
+      {speaker?.bio_line && <p className="text-small text-muted">{speaker.bio_line}</p>}
+    </>
+  );
+  const lectureField = (
+    <Textarea
+      label="תיאור ההרצאה"
+      value={f.lecture_description}
+      onChange={(e) => set('lecture_description', e.target.value)}
+      error={errors.lecture_description}
+      maxLength={600}
+      rows={3}
+      hint={<>מוצג ב"כל הפרטים על המפגש", מתחת לנושא ההרצאה. <span className="whitespace-nowrap"><span className="num">{f.lecture_description.length}</span> מתוך <span className="num">600</span> תווים.</span></>}
+    />
+  );
+  const weekly = fromDup && event?.status === 'draft';
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5">
-      {fromDup && event?.status === 'draft' && (
-        <Notice tone="tide" icon="copy">
-          <span className="font-semibold">טיוטה חדשה, משוכפלת מהמפגש הקודם.</span> המרצה והנושא התאפסו: בוחרים מרצה ונושא ושומרים.
-          אחרי השמירה, בעמוד המפגש מופיע מה עוד חסר והכפתור "פתיחת הרשמה".
-        </Notice>
+      {weekly && (
+        <>
+          <Notice tone="tide" icon="copy">
+            <span className="font-semibold">טיוטה חדשה, משוכפלת מהמפגש הקודם.</span> המרצה והנושא התאפסו: בוחרים מרצה ונושא, בודקים את הכותרת ושומרים.
+            אחרי השמירה, בעמוד המפגש מופיע מה עוד חסר והכפתור "פתיחת הרשמה".
+          </Notice>
+          <Panel title="מה חדש במפגש הזה">
+            <div className="flex flex-col gap-4">
+              {titleField}
+              <div className="grid gap-4 sm:grid-cols-2">{speakerField}{topicField}</div>
+              {speakerNotes}
+              {lectureField}
+            </div>
+          </Panel>
+        </>
       )}
       {started && (
         <Notice tone="warn" icon="alert">המפגש כבר התחיל. שינוי של התאריך או השעה ישפיע על הדוחות ועל חלון הצ׳ק־אין.</Notice>
@@ -330,13 +415,13 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
       <Panel title="סוג ומועד">
         <div className="flex flex-col gap-5">
           <ChoiceGroup<EventType>
-            legend="סוג הפעילות"
+            legend="סוג המפגש"
             columns={3}
             value={f.type}
             onChange={changeType}
             options={(['friday', 'bonfire', 'other'] as EventType[]).map((t) => ({ value: t, label: EVENT_TYPE_LABEL[t] }))}
           />
-          <Input label="כותרת" required value={f.title} onChange={(e) => set('title', e.target.value)} error={errors.title} maxLength={120} />
+          {!weekly && titleField}
           <div className="grid gap-4 sm:grid-cols-3">
             <Input
               label="תאריך"
@@ -349,7 +434,17 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               hint={/^\d{4}-\d{2}-\d{2}$/.test(f.date) ? <span className={cx((notFriday || isPast) && 'font-semibold text-warn')}>{fmtDayLong(fromIl(f.date, '12:00'))}{notFriday ? ' (לא יום שישי)' : ''}{isPast ? ' · המועד כבר עבר (מתאים רק לתיעוד מפגש שהתקיים)' : ''}</span> : undefined}
             />
             <Input label="שעת התחלה" type="time" required ltr value={f.start} onChange={(e) => set('start', e.target.value)} error={errors.start} step={300} />
-            <Input label="שעת סיום" type="time" required ltr value={f.end} onChange={(e) => set('end', e.target.value)} error={errors.end} step={300} />
+            <Input
+              label="שעת סיום"
+              type="time"
+              required
+              ltr
+              value={f.end}
+              onChange={(e) => set('end', e.target.value)}
+              error={errors.end}
+              step={300}
+              hint={nextDay && !errors.end ? <span className="font-semibold text-ink">מסתיים למחרת, {fmtDayLong(fromIl(addDays(f.date, 1), '12:00'))}</span> : undefined}
+            />
           </div>
           <p className="-mt-2 text-small text-muted">השעות לפי שעון ישראל.</p>
         </div>
@@ -361,7 +456,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
             {!f.site_id && <option value="">בחירה</option>}
             {sites.filter((s) => s.is_active || s.id === f.site_id).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
-          <Input label="כתובת או מקום מדויק" value={f.location} onChange={(e) => set('location', e.target.value)} error={errors.location} maxLength={200} hint="מוצג למשתתפים בעמוד ההרשמה" />
+          <Input label="כתובת או מקום מדויק" value={f.location} onChange={(e) => set('location', e.target.value)} error={errors.location} maxLength={200} hint="מוצג בעמוד ההרשמה" />
         </div>
       </Panel>
 
@@ -369,47 +464,23 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
         <div className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Input label="פעילות" list="activity-suggestions" value={f.activity_name} onChange={(e) => set('activity_name', e.target.value)} error={errors.activity_name} maxLength={60} placeholder="יוגה / פילאטיס" />
+              <Input label="פעילות" list="activity-suggestions" value={f.activity_name} onChange={(e) => set('activity_name', e.target.value)} error={errors.activity_name} maxLength={60} placeholder="למשל: יוגה" />
               <datalist id="activity-suggestions">{ACTIVITY_SUGGESTIONS.map((a) => <option key={a} value={a} />)}</datalist>
             </div>
-            <Select label="הדרכה" value={f.instructor_id} onChange={(e) => set('instructor_id', e.target.value)} hint={instructors.length ? undefined : 'אין עדיין מדריכים מאושרים. מוסיפים במסך מרצים ומדריכים.'}>
+            <Select label="מדריך" value={f.instructor_id} onChange={(e) => set('instructor_id', e.target.value)} hint={instructors.length ? undefined : 'אין עדיין מדריכים מאושרים. מוסיפים במסך מרצים ומדריכים.'}>
               <option value="">לא נקבע</option>
               {instructors.map((s) => <option key={s.id} value={s.id}>{s.full_name}{s.status !== 'approved' ? ' (בלי אישור)' : ''}</option>)}
             </Select>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Select
-              label="מרצה"
-              value={f.speaker_id}
-              onChange={(e) => changeSpeaker(e.target.value)}
-              hint={lecturers.length ? undefined : 'אין עדיין מרצים. מוסיפים במסך מרצים ומדריכים.'}
-            >
-              <option value="">לא נקבע</option>
-              {lecturers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.full_name}{s.topic ? ` · ${s.topic}` : ''}{s.status === 'proposed' ? ' (מחכה לאישור)' : s.status !== 'approved' ? ' (בלי אישור)' : ''}
-                </option>
-              ))}
-            </Select>
-            <Input label="נושא ההרצאה" value={f.lecture_topic} onChange={(e) => set('lecture_topic', e.target.value)} error={errors.lecture_topic} maxLength={160} />
-          </div>
-          {speaker && speaker.status !== 'approved' && (
-            <Notice tone="warn" icon="alert">
-              {speaker.full_name}: {speaker.status === 'proposed' ? 'ההצעה עדיין מחכה לאישור מנהלים' : 'אין אישור מנהלים'}. אפשר לשבץ, וכדאי לאשר לפני שמפרסמים.
-            </Notice>
+          {!weekly && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">{speakerField}{topicField}</div>
+              {speakerNotes}
+              {lectureField}
+            </>
           )}
-          {speaker?.bio_line && <p className="text-small text-muted">{speaker.bio_line}</p>}
           <Textarea
-            label="תיאור ההרצאה"
-            value={f.lecture_description}
-            onChange={(e) => set('lecture_description', e.target.value)}
-            error={errors.lecture_description}
-            maxLength={600}
-            rows={3}
-            hint={<>מוצג ב״כל הפרטים על המפגש״, מתחת לנושא ההרצאה. <span className="whitespace-nowrap"><span className="num">{f.lecture_description.length}</span> מתוך <span className="num">600</span> תווים.</span></>}
-          />
-          <Textarea
-            label="תיאור למשתתפים"
+            label="תיאור המפגש"
             value={f.description}
             onChange={(e) => set('description', e.target.value)}
             error={errors.description}
@@ -465,7 +536,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
           ) : (
             <Select label="סטטוס" value={f.status} onChange={(e) => set('status', e.target.value as EventStatus)} hint="ביטול מפגש וסגירת מפגש שהתקיים נעשים מעמוד המפגש.">
               {(['draft', 'open', 'closed'] as EventStatus[]).map((s) => (
-                <option key={s} value={s}>{s === 'draft' ? 'טיוטה (לא מוצג למשתתפים)' : s === 'open' ? 'הרשמה פתוחה' : EVENT_STATUS_LABEL[s]}</option>
+                <option key={s} value={s}>{s === 'draft' ? 'טיוטה (לא מוצג ללוחמים)' : s === 'open' ? 'הרשמה פתוחה' : EVENT_STATUS_LABEL[s]}</option>
               ))}
             </Select>
           )}
@@ -507,10 +578,10 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
             error={errors.payment_note}
             maxLength={200}
             placeholder="אפשר לשלם גם במקום"
-            hint="מוצג למשתתפים ליד המחיר"
+            hint="מוצג בעמוד ההרשמה, ליד המחיר"
           />
           {event && !Number(event.price) && parseAmount(f.price) ? (
-            <Notice tone="light" icon="alert">הנרשמים הקיימים יסומנו כממתינים לתשלום.</Notice>
+            <Notice tone="light" icon="alert">הנרשמים הקיימים יסומנו "לא שולם".</Notice>
           ) : null}
         </div>
       </Panel>
@@ -523,18 +594,23 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
           error={errors.internal_notes}
           maxLength={2000}
           rows={3}
-          hint="לא מוצג למשתתפים. בלי מידע אישי או רפואי על משתתפים."
+          hint="לא מוצג ללוחמים. בלי מידע אישי או רפואי."
         />
       </Panel>
 
       {errors.form && <ErrorBox error={errors.form} />}
       {Object.keys(errors).some((k) => k !== 'form' && errors[k as keyof Errors]) && (
-        <p className="text-small font-medium text-bad" role="alert">יש שדות שצריך לתקן. הם מסומנים באדום.</p>
+        <p className="text-small font-medium text-bad" role="alert">יש שדות שצריך לתקן. ההסבר מופיע מתחת לכל שדה.</p>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" size="lg" busy={save.isPending} icon="check">{event ? 'שמירת השינויים' : 'יצירת המפגש'}</Button>
-        <ButtonLink to={event ? `/app/events/${event.id}` : '/app/events'} variant="ghost" size="lg">ביטול</ButtonLink>
+      {/* wide screens: the actions end the form; a phone gets them in the bar fixed at the bottom (always in reach) */}
+      <div className="flex flex-wrap gap-2 max-md:hidden">
+        <Button type="submit" size="lg" busy={save.isPending} icon="check">{saveLabel}</Button>
+        <Button variant="ghost" size="lg" onClick={leave}>{DISMISS_UNSAVED}</Button>
+      </div>
+      <div className="safe-bottom fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-edge bg-paper px-4 py-3 md:hidden">
+        <Button type="submit" busy={save.isPending} icon="check" className="flex-1">{saveLabel}</Button>
+        <Button variant="ghost" onClick={leave}>{DISMISS_UNSAVED}</Button>
       </div>
     </form>
   );

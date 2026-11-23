@@ -6,11 +6,13 @@ import { can, useRole } from '@/lib/auth';
 import { useSources } from '@/lib/data';
 import { errorCode, errorMessage, must } from '@/lib/errors';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
-import { normalizePhone } from '@/lib/phone';
+import { PHONE_EXAMPLE, normalizePhone } from '@/lib/phone';
 import { fmtMoney, isPriced } from '@/lib/money';
-import { Button, EmptyState, ErrorBox, Input, Notice, Panel, SearchInput, Select, Skeleton, cx } from '@/ui/kit';
-import { Dialog, useConfirm, useToast } from '@/ui/feedback';
-import { Icon, type IconName } from '@/ui/Icon';
+import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Input, Notice, Panel, RETRY_LABEL, SearchInput, Select, Skeleton, cx } from '@/ui/kit';
+import { DISMISS, Dialog, useConfirm, useToast } from '@/ui/feedback';
+import { useConnectionTrouble } from '@/ui/OfflineBar';
+import { useTitle } from '@/lib/title';
+import { Icon } from '@/ui/Icon';
 import { scrollToContentTop } from '@/ui/viewport';
 import { eventKeys, fetchCheckinList, useDoorEvent, useInvalidateEvent, type CheckinRow } from './queries';
 import { RowMenu, inDoorWindow, timeRange, type MenuItem } from './shared';
@@ -85,6 +87,8 @@ export function DoorPage() {
 
   const [search, setSearch] = useState('');
   const [onlyOwing, setOnlyOwing] = useState(false);
+  // the greeter's view: only who comes for the first time
+  const [onlyFirst, setOnlyFirst] = useState(false);
   const searchBox = useRef<HTMLDivElement>(null);
   const focusSearch = () => searchBox.current?.querySelector('input')?.focus();
   // while the search has focus (the phone keyboard is open) the header shrinks to the search row
@@ -206,7 +210,7 @@ export function DoorPage() {
       title: 'סימון ביטול',
       body: <>לסמן ביטול של <b>{row.display_name}</b>? המקום יתפנה. אם בסוף תהיה הגעה, מסמנים אותה כרגיל.</>,
       confirm: 'סימון ביטול',
-      cancel: 'חזרה',
+      cancel: DISMISS,
       danger: true,
     });
     if (ok) cancelReg.mutate(row);
@@ -215,6 +219,7 @@ export function DoorPage() {
   const rows = useMemo(() => list.data ?? [], [list.data]);
   const term = search.trim();
   const e = ev.data;
+  useTitle(e && [e.title, 'כניסה']);
   const price = isPriced(e?.price) ? Number(e!.price) : null;
   // a priced meeting: who still owes the fee (a registered place, or a walk-in); a waitlisted place pays once it is in
   function owes(r: CheckinRow) {
@@ -227,13 +232,13 @@ export function DoorPage() {
     if (firstTerm.current) { firstTerm.current = false; return; }
     // to the top of the page content, not 0: in door mode on a phone the app bar has scrolled away and stays away
     scrollToContentTop();
-  }, [term, onlyOwing]);
+  }, [term, onlyOwing, onlyFirst]);
 
   const score = (r: CheckinRow) => matchScore(r, term);
   const pinned = (r: CheckinRow) => !!marked[r.registration_id]?.pinned;
   const stays = (r: CheckinRow) => r.attendance === 'attended' && !!marked[r.registration_id];
   const justNow = rows.filter(pinned).sort((a, b) => marked[b.registration_id].at - marked[a.registration_id].at);
-  const shown = rows.filter((r) => !pinned(r) && (!onlyOwing || owes(r)) && score(r) > 0);
+  const shown = rows.filter((r) => !pinned(r) && (!onlyOwing || owes(r)) && (!onlyFirst || r.first_time) && score(r) > 0);
   const best = term ? (a: CheckinRow, b: CheckinRow) => score(b) - score(a) : () => 0;
   const notYet = shown.filter((r) => (r.status === 'registered' && r.attendance !== 'attended') || stays(r)).sort(best);
   const arrived = shown.filter((r) => r.attendance === 'attended' && !stays(r)).sort((a, b) => best(a, b) || (b.checked_in_at ?? '').localeCompare(a.checked_in_at ?? ''));
@@ -245,9 +250,10 @@ export function DoorPage() {
   const totalNotYet = rows.filter((r) => r.status === 'registered' && r.attendance !== 'attended').length;
   const walkIns = rows.filter((r) => r.is_walk_in && r.attendance === 'attended').length;
   const totalOwing = rows.filter(owes).length;
+  const totalFirst = rows.filter((r) => r.first_time && r.status !== 'cancelled').length;
   const inactive = e && (e.status === 'draft' || e.status === 'cancelled');
   const forbidden = outside || (list.isError && errorCode(list.error) === 'forbidden');
-  const filtering = !!term || onlyOwing;
+  const filtering = !!term || onlyOwing || onlyFirst;
 
   // tap the box: arrived (or back). From a search, the search is cleared and the keyboard stays up for the next person.
   const toggle = (r: CheckinRow) => {
@@ -301,7 +307,19 @@ export function DoorPage() {
   );
   const compact = typing ? 'max-sm:hidden' : '';
   const updated = list.dataUpdatedAt ? fmtTime(new Date(list.dataUpdatedAt)) : null;
-  const chipRow = !forbidden && price != null && (totalOwing > 0 || onlyOwing);
+  const owingChip = !forbidden && price != null && (totalOwing > 0 || onlyOwing);
+  const firstChip = !forbidden && !!list.data && (totalFirst > 0 || onlyFirst);
+  const chipRow = owingChip || firstChip;
+  // a refresh or a tap that failed never wipes the list at the door: the list stays, and one line says since when
+  // it is not up to date (the door header is the one sticky element here, so the line lives inside it)
+  const trouble = useConnectionTrouble();
+  const stale = !forbidden && !!list.data && (list.isError || trouble);
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    setRetrying(true);
+    try { await Promise.all([list.refetch(), ev.refetch()]); } finally { setRetrying(false); }
+  };
+  const clearFilters = () => { setSearch(''); setOnlyOwing(false); setOnlyFirst(false); focusSearch(); };
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -327,14 +345,14 @@ export function DoorPage() {
                 <span><b className="num text-ink">{totalNotYet}</b> עוד לא הגיעו</span>
                 {walkIns > 0 && <span aria-hidden="true">·</span>}
                 {walkIns > 0 && <span><b className="num text-ink">{walkIns}</b> בלי הרשמה</span>}
-                {updated && !chipRow && <span className="text-muted">· עודכן <span className="num">{updated}</span></span>}
+                {updated && !chipRow && !stale && <span className="text-muted">· עודכן <span className="num">{updated}</span></span>}
               </p>
             )}
           </div>
           {/* one live tile: how many are in */}
           {!forbidden && list.data && (
             <div className="shrink-0 rounded-[var(--radius-control)] bg-ink px-3 py-1.5 text-center text-light" aria-live="polite" aria-atomic="true">
-              <div className="num font-display text-[1.75rem] leading-none" aria-label={`הגיעו ${totalArrived}, מתוכם ${walkIns} בלי הרשמה. ${totalRegistered} רשומים`}>
+              <div className="num font-display text-title-sm leading-none" aria-label={`הגיעו ${totalArrived}, מתוכם ${walkIns} בלי הרשמה. ${totalRegistered} רשומים`}>
                 {totalArrived}
               </div>
               <div className="mt-0.5 text-micro font-medium" aria-hidden="true">הגיעו</div>
@@ -359,22 +377,50 @@ export function DoorPage() {
           </div>
         )}
 
-        {chipRow && (
-          <div className={cx('mt-2 flex items-center gap-2', compact)}>
-            <button
-              type="button"
-              aria-pressed={onlyOwing}
-              onClick={() => setOnlyOwing((v) => !v)}
-              className={cx(
-                'inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
-                onlyOwing ? 'border-ink bg-ink text-light' : 'border-warn/40 bg-warn-wash text-warn hover:border-warn',
-              )}
-            >
-              {onlyOwing ? <Icon name="check" size={16} /> : <span aria-hidden="true" className="font-display">₪</span>}
-              לא שילמו <span className="num">{totalOwing}</span>
+        {stale && (
+          <p role="status" className="mt-2 flex min-h-9 items-center gap-1.5 text-small font-semibold text-warn">
+            <Icon name="alert" size={16} />
+            <span>לא מעודכן{updated ? <> מ־<span className="num">{updated}</span></> : null}</span>
+            <span aria-hidden="true">·</span>
+            <button type="button" onClick={retry} disabled={retrying} aria-busy={retrying || undefined}
+              className="-my-1 inline-flex h-11 items-center rounded-[var(--radius-control)] px-1.5 underline underline-offset-2 hover:bg-warn/10">
+              {RETRY_LABEL}
             </button>
+          </p>
+        )}
+
+        {chipRow && (
+          <div className={cx('mt-2 flex flex-wrap items-center gap-2', compact)}>
+            {owingChip && (
+              <button
+                type="button"
+                aria-pressed={onlyOwing}
+                onClick={() => setOnlyOwing((v) => !v)}
+                className={cx(
+                  'inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
+                  onlyOwing ? 'border-ink bg-ink text-light' : 'border-warn/40 bg-warn-wash text-warn hover:border-warn',
+                )}
+              >
+                {onlyOwing ? <Icon name="check" size={16} /> : <span aria-hidden="true" className="font-display">₪</span>}
+                לא שילמו <span className="num">{totalOwing}</span>
+              </button>
+            )}
+            {firstChip && (
+              <button
+                type="button"
+                aria-pressed={onlyFirst}
+                onClick={() => setOnlyFirst((v) => !v)}
+                className={cx(
+                  'inline-flex h-11 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-small font-semibold transition-colors',
+                  onlyFirst ? 'border-ink bg-ink text-light' : 'border-ink/25 bg-light text-ink hover:border-ink',
+                )}
+              >
+                <Icon name={onlyFirst ? 'check' : 'sparkle'} size={16} />
+                פעם ראשונה <span className="num">{totalFirst}</span>
+              </button>
+            )}
             <span className="ms-auto text-small text-muted">
-              {onlyOwing ? <>רק מי שעוד לא שילמו · <span className="num">{fmtMoney(price!)}</span></> : updated && <>עודכן <span className="num">{updated}</span></>}
+              {onlyOwing ? <>רק מי שעוד לא שילמו · <span className="num">{fmtMoney(price!)}</span></> : !stale && updated && <>עודכן <span className="num">{updated}</span></>}
             </span>
           </div>
         )}
@@ -385,17 +431,21 @@ export function DoorPage() {
         {e?.status === 'cancelled' && <div className="mb-3"><Notice tone="warn" icon="alert">המפגש בוטל.</Notice></div>}
         {e?.status === 'completed' && <div className="mb-3"><Notice tone="light" icon="alert">המפגש כבר נסגר. סימון כאן מתקן את הנוכחות (גם בדוחות), ומשימות המעקב מתעדכנות בהתאם.</Notice></div>}
 
-        {ev.isError ? (
+        {ev.isError && !ev.data ? (
           <ErrorBox error={errorMessage(ev.error)} onRetry={() => ev.refetch()} />
         ) : forbidden ? (
           <Panel>
-            <EmptyState icon="door" title={e && new Date(e.ends_at).getTime() < Date.now() ? 'הרשימה כבר נסגרה' : 'הרשימה עוד לא פתוחה'}>
+            <EmptyState
+              icon="door"
+              title={e && new Date(e.ends_at).getTime() < Date.now() ? 'הרשימה כבר נסגרה' : 'הרשימה עוד לא פתוחה'}
+              action={<ButtonLink to="/app/door" variant="secondary" icon="back">למפגשים של היום</ButtonLink>}
+            >
               לצוות הכניסה רשימת הנוכחות נפתחת 12 שעות לפני המפגש ונסגרת 12 שעות אחריו.
             </EmptyState>
           </Panel>
         ) : list.isLoading || ev.isLoading ? (
-          <Panel><Skeleton lines={8} /></Panel>
-        ) : list.isError ? (
+          <Skeleton shape="rows" count={6} height={78} />
+        ) : list.isError && !list.data ? (
           <ErrorBox error={errorMessage(list.error)} onRetry={() => list.refetch()} />
         ) : rows.length === 0 ? (
           <Panel>
@@ -409,11 +459,11 @@ export function DoorPage() {
             {filtering && shown.length === 0 && (
               // compact on purpose: with the keyboard open, the way forward ("הגעה בלי הרשמה") must be in view
               <div className="rounded-[var(--radius-panel)] border border-edge bg-paper p-4" role="status">
-                <p className="text-heading font-bold">{onlyOwing && !term ? 'כולם שילמו' : 'אין תוצאות לחיפוש הזה'}</p>
-                {term && <p className="mt-0.5 text-small text-muted">אין ברשימה את ״{term}״. אולי ההרשמה בשם אחר? אפשר לחפש גם לפי טלפון.</p>}
+                <p className="text-heading font-bold">{term ? 'אין תוצאות לחיפוש הזה' : onlyOwing ? 'כולם שילמו' : 'אין כאן מי שמגיעים בפעם הראשונה'}</p>
+                {term && <p className="mt-0.5 text-small text-muted">אין ברשימה את "{term}". אולי ההרשמה בשם אחר? אפשר לחפש גם לפי טלפון.</p>}
                 <div className="mt-3 flex flex-wrap gap-2">
                   {term && !inactive && <Button size="lg" icon="userPlus" onClick={openWalkin}>הגעה בלי הרשמה</Button>}
-                  <Button variant="ghost" size="lg" onClick={() => { setSearch(''); setOnlyOwing(false); focusSearch(); }}>ניקוי החיפוש והסינון</Button>
+                  <Button variant="ghost" size="lg" onClick={clearFilters}>ניקוי החיפוש והסינון</Button>
                 </div>
               </div>
             )}
@@ -433,7 +483,7 @@ export function DoorPage() {
               </Section>
             )}
             {waiting.length > 0 && (
-              <Section title="ברשימת המתנה" count={waiting.length} hint="אם מגיעים ויש מקום, מסמנים הגעה כרגיל">
+              <Section title="ברשימת ההמתנה" count={waiting.length} hint="אם מגיעים ויש מקום, מסמנים הגעה כרגיל">
                 {waiting.map((r) => <Row key={r.registration_id} {...rowProps(r)} />)}
               </Section>
             )}
@@ -489,22 +539,6 @@ function Section({ title, count, hint, live, children }: { title: string; count:
   );
 }
 
-/** A quiet filled tag: information, not a button. Only "לא שולם" (act now) gets the warning colour. */
-function Tag({ tone = 'plain', icon, title, children }: { tone?: 'plain' | 'warn' | 'bad'; icon?: IconName; title?: string; children: ReactNode }) {
-  return (
-    <span
-      title={title}
-      className={cx(
-        'inline-flex h-7 items-center gap-1 rounded-[2px] px-2 text-small font-medium whitespace-nowrap',
-        tone === 'warn' ? 'bg-warn-wash font-semibold text-warn' : tone === 'bad' ? 'bg-bad-wash text-bad' : 'bg-ink/[0.07] text-ink-soft',
-      )}
-    >
-      {icon && <Icon name={icon} size={14} strokeWidth={2.2} />}
-      {children}
-    </span>
-  );
-}
-
 function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPaid, menu }: {
   r: CheckinRow; friday: boolean; disabled: boolean; owes: boolean; payHere: boolean; price: number | null; recent?: boolean; onToggle: () => void; onPaid: () => void; menu: MenuItem[];
 }) {
@@ -531,24 +565,26 @@ function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPa
         {on ? <Icon name="check" size={30} strokeWidth={3} /> : <span aria-hidden="true" className="h-7 w-7 rounded-[var(--radius-control)] border-[3px] border-current" />}
       </button>
       <div className="min-w-0 flex-1">
-        <div className={cx('truncate text-heading font-bold', gone && 'font-semibold text-muted')}>{r.display_name}</div>
+        {/* names wrap (two lines at most) instead of being cut: at 320px a long name must still be readable */}
+        <div className={cx('line-clamp-2 text-heading leading-snug font-bold break-words', gone && 'font-semibold text-muted')}>{r.display_name}</div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-small text-muted">
-          {r.phone_last4 && <span className="num" aria-label={`טלפון שמסתיים ב-${r.phone_last4}`}>••{r.phone_last4}</span>}
-          {gone && <Tag>ביטול</Tag>}
-          {owes && <Tag tone="warn" icon="alert">לא שולם</Tag>}
-          {r.attendance === 'no_show' && <Tag tone="bad" icon="alert">סומנה אי־הגעה</Tag>}
+          {r.phone_last4 && <span className="num" aria-label={`טלפון שמסתיים ב־${r.phone_last4}`}>••{r.phone_last4}</span>}
+          {gone && <Badge size="md">ביטול</Badge>}
+          {/* money owed and "בלי צילום" are never toned down at the door */}
+          {owes && <Badge size="md" tone="warn" icon="alert">לא שולם</Badge>}
+          {r.attendance === 'no_show' && <Badge size="md" tone="bad" icon="alert">סומנה אי־הגעה</Badge>}
           {r.photo_opt_out && (
             <span className="inline-flex items-center gap-1 font-semibold text-bad" title="בקשה לא להופיע בתמונות">
               <Icon name="noCamera" size={17} label="לא מצלמים" />
               בלי צילום
             </span>
           )}
-          {r.first_time && <Tag icon="sparkle">פעם ראשונה</Tag>}
-          {friday && !r.first_time && isMilestone(nth) && <Tag icon="star" title={`מפגש שישי מספר ${nth}. כדאי לברך!`}>מפגש שישי {nth}</Tag>}
-          {r.is_member && <Tag title="חברות בעמותה">חברות בעמותה</Tag>}
-          {r.is_walk_in && <Tag>בלי הרשמה</Tag>}
+          {r.first_time && <Badge size="md" tone="first" icon="sparkle">פעם ראשונה</Badge>}
+          {friday && !r.first_time && isMilestone(nth) && <Badge size="md" icon="star" title={`מפגש שישי מספר ${nth}. כדאי לברך!`}>מפגש שישי {nth}</Badge>}
+          {r.is_member && <Badge size="md" title="חברות בעמותה">חברות בעמותה</Badge>}
+          {r.is_walk_in && <Badge size="md">בלי הרשמה</Badge>}
           {r.invited_by && <span title="מי הזמין">בהזמנת {r.invited_by}</span>}
-          {r.status === 'waitlisted' && r.waitlist_position && <span>בהמתנה <span className="num">#{r.waitlist_position}</span></span>}
+          {r.status === 'waitlisted' && r.waitlist_position && <span>רשימת המתנה <span className="num">#{r.waitlist_position}</span></span>}
           {price != null && r.payment_status === 'paid' && r.cash_just_marked && <span className="inline-flex items-center gap-1"><Icon name="check" size={14} />שולם במקום</span>}
           {on && r.checked_in_at && (
             <span>
@@ -579,15 +615,19 @@ function Row({ r, friday, disabled, owes, payHere, price, recent, onToggle, onPa
 function WalkinDialog({ open, initial, onClose, eventId, price, onDone }: {
   open: boolean; initial: { name: string; phone: string }; onClose: () => void; eventId: string; price: number | null; onDone: (registrationId: string | null) => void;
 }) {
+  // typed details are not lost to a stray tap outside the dialog
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => { if (!open) setDirty(false); }, [open]);
   return (
-    <Dialog open={open} onClose={onClose} title="הגעה בלי הרשמה" size="sm">
-      {open && <WalkinForm key={`${initial.name}|${initial.phone}`} initial={initial} onClose={onClose} eventId={eventId} price={price} onDone={onDone} />}
+    <Dialog open={open} onClose={onClose} title="הגעה בלי הרשמה" size="sm" dismissible={!dirty}>
+      {open && <WalkinForm key={`${initial.name}|${initial.phone}`} initial={initial} onClose={onClose} eventId={eventId} price={price} onDone={onDone} onDirty={setDirty} />}
     </Dialog>
   );
 }
 
-function WalkinForm({ initial, onClose, eventId, price, onDone }: {
+function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
   initial: { name: string; phone: string }; onClose: () => void; eventId: string; price: number | null; onDone: (registrationId: string | null) => void;
+  onDirty: (dirty: boolean) => void;
 }) {
   const toast = useToast();
   const invalidate = useInvalidateEvent();
@@ -601,6 +641,8 @@ function WalkinForm({ initial, onClose, eventId, price, onDone }: {
   // the fee, taken in cash right here: recorded together with the arrival, so the money is not forgotten later
   const [paid, setPaid] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; phone?: string; age?: string; form?: string }>({});
+  const dirty = name !== initial.name || phone !== initial.phone || !!city || !!age || !!source || paid;
+  useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
 
   /** After the arrival is saved: record the cash, if it was taken. Returns a note for the toast. */
   const recordCash = async (registrationId: string): Promise<string> => {
@@ -674,8 +716,8 @@ function WalkinForm({ initial, onClose, eventId, price, onDone }: {
     ev.preventDefault();
     const errs: typeof errors = {};
     if (name.trim().length < 2 || /[0-9<>@/\\{}=;]/.test(name)) errs.name = 'צריך שם מלא (אותיות בלבד).';
-    if (!normalizePhone(phone)) errs.phone = 'מספר הטלפון לא נראה תקין. למשל: 050-1234567.';
-    if (age.trim() && !(Number(age) >= 16 && Number(age) <= 99)) errs.age = 'גיל בין 16 ל-99, או להשאיר ריק.';
+    if (!normalizePhone(phone)) errs.phone = `צריך מספר טלפון נייד, למשל ${PHONE_EXAMPLE}.`;
+    if (age.trim() && !(Number(age) >= 16 && Number(age) <= 99)) errs.age = 'הגיל צריך להיות בין 16 ל־99. אפשר גם להשאיר ריק.';
     setErrors(errs);
     if (Object.keys(errs).length) return;
     add.mutate();
@@ -700,7 +742,7 @@ function WalkinForm({ initial, onClose, eventId, price, onDone }: {
           </ul>
         </div>
       )}
-      <Input label="טלפון" required type="tel" inputMode="tel" ltr autoFocus={!!initial.name} value={phone} onChange={(x) => setPhone(x.target.value)} error={errors.phone} hint="למשל 050-1234567" autoComplete="off" />
+      <Input label="טלפון" required type="tel" inputMode="tel" ltr autoFocus={!!initial.name} value={phone} onChange={(x) => setPhone(x.target.value)} error={errors.phone} hint={`למשל ${PHONE_EXAMPLE}`} autoComplete="off" />
       {more ? (
         <>
           <Input label="עיר" value={city} onChange={(x) => setCity(x.target.value)} maxLength={60} autoComplete="off" />

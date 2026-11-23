@@ -65,7 +65,7 @@ export function SummaryTab({ event: e, onTab }: { event: EventWithStats; onTab: 
         />
         <BigStat label="לא הגיעו" value={s?.no_show_count ?? 0} />
         <BigStat label="הגיעו בלי הרשמה" value={s?.walk_in_count ?? 0} />
-        <BigStat label="צ׳ק־אין עצמי" value={pct(selfShare)} sub={attended ? <span><span className="num">{s?.self_checkin_count ?? 0}</span> סרקו QR בכניסה</span> : undefined} />
+        <BigStat label="צ׳ק־אין עצמי" value={pct(selfShare)} sub={attended ? <span><span className="num">{s?.self_checkin_count ?? 0}</span> סרקו את קוד ה־QR</span> : undefined} />
         <BigStat label="ביטלו" value={s?.cancelled_count ?? 0} />
         <BigStat label="משובים" value={s?.feedback_count ?? 0} sub={attended ? `${pct(ratio(s?.feedback_count ?? 0, attended))} מהמגיעים` : undefined} />
       </section>
@@ -116,7 +116,7 @@ function CloseCard({ e, a }: { e: EventWithStats; a: ReturnType<typeof useMeetin
         <div className="min-w-0 max-w-xl">
           <h2 className="text-heading font-semibold">{hasEnded(e) ? 'המפגש הסתיים ועוד לא נסגר' : 'המפגש מתקיים עכשיו'}</h2>
           <p className="mt-1 text-small text-ink-soft">
-            בסגירה מסומנים מי שלא הגיעו ונפתחות משימות מעקב. עד אז "לא הגיעו" ושיעור ההגעה אינם סופיים, והמפגש לא נכלל ביעדים.
+            בסגירה מסומנים מי שלא הגיעו ונפתחות משימות מעקב. עד אז "לא הגיעו" ושיעור ההגעה עוד לא סופיים, והמפגש לא נכלל ביעדים.
           </p>
         </div>
         <Button icon="checkCircle" cta size="lg" busy={a.completing} onClick={a.askComplete}>סגירת המפגש</Button>
@@ -139,7 +139,7 @@ function RatingStat({ label, value }: { label: string; value: number | null | un
     <div className="rounded-[var(--radius-control)] border border-edge px-3 py-3">
       <div className="line-clamp-2 min-h-[2lh] text-small leading-snug font-medium text-muted">{label}</div>
       <div className="mt-1 flex items-baseline gap-1">
-        <span className="num font-display text-[1.75rem] leading-none sm:text-stat">{value == null ? '—' : num(value, 1)}</span>
+        <span className="num font-display text-title-sm leading-none sm:text-stat">{value == null ? '—' : num(value, 1)}</span>
         {value != null && <span className="text-small text-muted">/ 5</span>}
       </div>
     </div>

@@ -1,41 +1,47 @@
 // Small building blocks shared by the event screens.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import QRCode from 'qrcode';
-import { fmtDay, fmtShortDate, fmtTime } from '@/lib/dates';
+import { fmtDay, fmtShortDate, fmtTime, ilParts } from '@/lib/dates';
 import { EVENT_STATUS_LABEL, freePlaces, meetingCountLine } from '@/lib/labels';
 import type { EventRow, EventStats, EventStatus, EventType } from '@/lib/types';
-import { Badge, cx } from '@/ui/kit';
+import { Badge, LOADING_LABEL, cx } from '@/ui/kit';
 import { Icon, type IconName } from '@/ui/Icon';
 
-const TYPE_SHORT: Record<EventType, { label: string; icon: IconName; tone: 'tide' | 'neutral' }> = {
-  friday: { label: 'שישי', icon: 'sun', tone: 'tide' },
-  bonfire: { label: 'מדורה', icon: 'flame', tone: 'neutral' },
-  other: { label: 'אחר', icon: 'calendar', tone: 'neutral' },
+const TYPE_SHORT: Record<EventType, { label: string; icon: IconName }> = {
+  friday: { label: 'שישי', icon: 'sun' },
+  bonfire: { label: 'מדורה', icon: 'flame' },
+  other: { label: 'אחר', icon: 'calendar' },
 };
 
+/** The meeting's kind as quiet text with its glyph: information, not a tag (G4: tags only for what is unusual). */
 export function TypeBadge({ type }: { type: EventType }) {
   const t = TYPE_SHORT[type];
-  return <Badge tone={t.tone} icon={t.icon}>{t.label}</Badge>;
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 text-small font-medium text-ink-soft">
+      <Icon name={t.icon} size={15} />
+      {t.label}
+    </span>
+  );
 }
 
-const STATUS_TONE: Record<EventStatus, 'neutral' | 'good' | 'tide' | 'warn' | 'bad'> = {
-  draft: 'warn',
-  open: 'good',
-  closed: 'tide',
-  completed: 'neutral',
-  cancelled: 'bad',
-};
-
-export function StatusBadge({ status, endsAt }: { status: EventStatus; endsAt?: string }) {
+/**
+ * The meeting's status. Only what needs attention is a filled tag (a draft, a cancelled meeting, one that ended and was
+ * not closed); the routine states ("הרשמה פתוחה", "התקיים", "הרשמה סגורה") are quiet text, or nothing with `quiet`.
+ */
+export function StatusBadge({ status, endsAt, quiet = false }: { status: EventStatus; endsAt?: string; quiet?: boolean }) {
   if (endsAt && (status === 'open' || status === 'closed') && new Date(endsAt).getTime() < Date.now()) {
     return <Badge tone="warn" icon="alert">הסתיים, לא נסגר</Badge>;
   }
-  const tone = STATUS_TONE[status];
-  return <Badge tone={tone} icon={tone === 'warn' || tone === 'bad' ? 'alert' : status === 'completed' ? 'check' : undefined}>{EVENT_STATUS_LABEL[status]}</Badge>;
+  if (status === 'draft') return <Badge tone="warn" icon="alert">{EVENT_STATUS_LABEL.draft}</Badge>;
+  if (status === 'cancelled') return <Badge tone="bad" icon="alert">{EVENT_STATUS_LABEL.cancelled}</Badge>;
+  if (quiet) return null;
+  return <span className="text-small text-muted">{EVENT_STATUS_LABEL[status]}</span>;
 }
 
 /** "09:00–11:30" (shown LTR). */
 export const timeRange = (e: Pick<EventRow, 'starts_at' | 'ends_at'>) => `${fmtTime(e.starts_at)}–${fmtTime(e.ends_at)}`;
+/** The meeting ends on a later (Israel) day than it starts: a bonfire 20:00–01:00. Shown as "מסתיים למחרת". */
+export const endsNextDay = (e: Pick<EventRow, 'starts_at' | 'ends_at'>) => ilParts(e.ends_at).date > ilParts(e.starts_at).date;
 /** "יום שישי, 13.11" */
 export const shortWhen = (e: Pick<EventRow, 'starts_at'>) => `${fmtDay(e.starts_at)}, ${fmtShortDate(e.starts_at)}`;
 
@@ -71,7 +77,7 @@ export function seats(e: Pick<EventRow, 'capacity'> & { stats?: Pick<EventStats,
 export function seatText(e: Parameters<typeof seats>[0], { waitlist = false }: { waitlist?: boolean } = {}) {
   const s = seats(e);
   const line = meetingCountLine(s.registered, s.walkIns, s.capacity);
-  return waitlist && s.waitlisted ? `${line} · ${s.waitlisted} ברשימת המתנה` : line;
+  return waitlist && s.waitlisted ? `${line} · ${s.waitlisted} ברשימת ההמתנה` : line;
 }
 
 /** "3 מקומות פנויים" / "מקום פנוי אחד" / "אין מקומות פנויים" / "בלי הגבלת מקומות". */
@@ -99,7 +105,7 @@ export function QrImage({ value, size = 220, className = '', label }: { value: s
   return src ? (
     <img src={src} width={size} height={size} alt={label} className={cx('block bg-white', className)} style={{ width: size, height: size }} />
   ) : (
-    <div className={cx('skeleton', className)} style={{ width: size, height: size }} role="status" aria-label="טוען" />
+    <div className={cx('skeleton', className)} style={{ width: size, height: size }} role="status" aria-label={LOADING_LABEL} />
   );
 }
 

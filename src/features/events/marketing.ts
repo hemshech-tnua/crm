@@ -1068,9 +1068,9 @@ function hashtags(c: CaptionInput): string {
 
 function speakerLine(c: CaptionInput) {
   if (!c.speakerName && !c.topic) return '';
-  if (c.speakerName && c.topic) return `הרצאת אורח: ${c.speakerName}, על ״${c.topic}״`;
+  if (c.speakerName && c.topic) return `הרצאת אורח: ${c.speakerName}, על "${c.topic}"`;
   if (c.speakerName) return `הרצאת אורח: ${c.speakerName}`;
-  return `הרצאה: ״${c.topic}״`;
+  return `הרצאה: "${c.topic}"`;
 }
 
 export function instagramCaption(c: CaptionInput, cta = 'ההרשמה בקישור בביו.'): string {

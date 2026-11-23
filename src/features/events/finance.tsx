@@ -1,6 +1,6 @@
 // Participant payments on the staff screens: the payment badge, the "mark payment" dialog and the meeting's finance
 // snapshot (migration 20261106002300_payments.sql). Payment itself happens on the provider's page, never here.
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { errorCode, errorMessage, must } from '@/lib/errors';
@@ -8,7 +8,7 @@ import { fmtMoney, isPriced, parseAmount } from '@/lib/money';
 import { MONEY_LABEL, PAYMENT_METHOD_LABEL } from '@/lib/labels';
 import type { EventRow, PaymentMethod, PaymentStatus, RegStatus } from '@/lib/types';
 import { Badge, Button, ChoiceGroup, Input, Panel, Select } from '@/ui/kit';
-import { Dialog, useToast } from '@/ui/feedback';
+import { DISMISS, Dialog, useToast } from '@/ui/feedback';
 import { useInvalidateEvent } from './queries';
 import { BigStat } from './shared';
 
@@ -64,14 +64,17 @@ export type PaymentTarget = {
 const METHODS: PaymentMethod[] = ['cash', 'bit', 'paybox', 'card', 'transfer', 'other'];
 
 export function PaymentDialog({ target, event, onClose }: { target: PaymentTarget | null; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void }) {
+  // typed details are not lost to a stray tap outside the dialog
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => { if (!target) setDirty(false); }, [target]);
   return (
-    <Dialog open={!!target} onClose={onClose} title={target?.name ? `תשלום: ${target.name}` : 'סימון תשלום'} size="sm">
-      {target && <PaymentForm key={target.id} target={target} event={event} onClose={onClose} />}
+    <Dialog open={!!target} onClose={onClose} title={target?.name ? `תשלום: ${target.name}` : 'סימון תשלום'} size="sm" dismissible={!dirty}>
+      {target && <PaymentForm key={target.id} target={target} event={event} onClose={onClose} onDirty={setDirty} />}
     </Dialog>
   );
 }
 
-function PaymentForm({ target: t, event, onClose }: { target: PaymentTarget; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void }) {
+function PaymentForm({ target: t, event, onClose, onDirty }: { target: PaymentTarget; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void; onDirty: (d: boolean) => void }) {
   const toast = useToast();
   const invalidate = useInvalidateEvent();
   const wasPaid = t.payment_status === 'paid' || t.payment_status === 'refunded';
@@ -80,6 +83,9 @@ function PaymentForm({ target: t, event, onClose }: { target: PaymentTarget; eve
   const [method, setMethod] = useState<PaymentMethod>(t.payment_method ?? 'cash');
   const [ref, setRef] = useState(t.payment_ref ?? '');
   const [errors, setErrors] = useState<{ amount?: string; form?: string }>({});
+  const [first] = useState({ status, amount, method, ref });
+  const dirty = status !== first.status || amount !== first.amount || method !== first.method || ref !== first.ref;
+  useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
 
   const options: { value: PaymentStatus; label: string }[] = [
     { value: 'paid', label: 'שולם' },
@@ -131,7 +137,7 @@ function PaymentForm({ target: t, event, onClose }: { target: PaymentTarget; eve
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-      <ChoiceGroup<PaymentStatus> legend="מצב התשלום" columns={2} value={status} onChange={setStatus} options={options} />
+      <ChoiceGroup<PaymentStatus> legend="סטטוס התשלום" columns={2} value={status} onChange={setStatus} options={options} />
       {(status === 'paid' || status === 'refunded') && (
         <Input
           label={status === 'refunded' ? 'הסכום שהוחזר (₪)' : 'סכום (₪)'}
@@ -161,7 +167,7 @@ function PaymentForm({ target: t, event, onClose }: { target: PaymentTarget; eve
       {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button type="submit" icon="check" busy={save.isPending}>שמירה</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </div>
     </form>
   );
@@ -176,19 +182,24 @@ export type ConfirmTarget = { id: string; name: string | null };
  * marked paid and registered, or put on the waitlist when the meeting filled up meanwhile (staff_confirm_payment).
  */
 export function ConfirmPaymentDialog({ target, event, onClose }: { target: ConfirmTarget | null; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void }) {
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => { if (!target) setDirty(false); }, [target]);
   return (
-    <Dialog open={!!target} onClose={onClose} title={target?.name ? `אישור תשלום: ${target.name}` : 'אישור תשלום'} size="sm">
-      {target && <ConfirmForm key={target.id} target={target} event={event} onClose={onClose} />}
+    <Dialog open={!!target} onClose={onClose} title={target?.name ? `אישור תשלום: ${target.name}` : 'אישור תשלום'} size="sm" dismissible={!dirty}>
+      {target && <ConfirmForm key={target.id} target={target} event={event} onClose={onClose} onDirty={setDirty} />}
     </Dialog>
   );
 }
 
-function ConfirmForm({ target: t, event, onClose }: { target: ConfirmTarget; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void }) {
+function ConfirmForm({ target: t, event, onClose, onDirty }: { target: ConfirmTarget; event: Pick<EventRow, 'id' | 'price'>; onClose: () => void; onDirty: (d: boolean) => void }) {
   const toast = useToast();
   const invalidate = useInvalidateEvent();
   const [amount, setAmount] = useState(isPriced(event.price) ? String(Number(event.price)) : '');
   const [ref, setRef] = useState('');
   const [errors, setErrors] = useState<{ amount?: string; form?: string }>({});
+  const [firstAmount] = useState(amount);
+  const dirty = !!ref.trim() || amount !== firstAmount;
+  useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -201,7 +212,7 @@ function ConfirmForm({ target: t, event, onClose }: { target: ConfirmTarget; eve
     onSuccess: async (status) => {
       await invalidate(event.id);
       const who = t.name ? ` של ${t.name}` : '';
-      if (status === 'waitlisted') toast.success(`התשלום${who} אושר. המפגש מלא, ההרשמה ברשימת המתנה ונפתחה משימה`);
+      if (status === 'waitlisted') toast.success(`התשלום${who} אושר. המפגש מלא, ההרשמה ברשימת ההמתנה ונפתחה משימה`);
       else toast.success(`התשלום${who} אושר, ההרשמה הושלמה`);
       onClose();
     },
@@ -244,7 +255,7 @@ function ConfirmForm({ target: t, event, onClose }: { target: ConfirmTarget; eve
       {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button type="submit" icon="check" busy={save.isPending}>אישור תשלום</Button>
-        <Button variant="ghost" onClick={onClose}>ביטול</Button>
+        <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
       </div>
     </form>
   );

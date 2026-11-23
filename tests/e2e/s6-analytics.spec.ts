@@ -33,7 +33,7 @@ test('dashboard and reports match the source data', async ({ page }) => {
   const goal = (label: string) => page.getByRole('button').filter({ hasText: label }).or(page.locator('div').filter({ hasText: label }).filter({ has: page.locator('.font-display') })).first();
   // 4 attendances / 2 meetings; 4 of 6 registered came; 1 of 3 came twice; 2 of 3 new came through a friend
   await expect(goal('ממוצע לוחמים למפגש')).toContainText('2.0');
-  await expect(goal('הגיעו מתוך מי שנרשם')).toContainText('67%');
+  await expect(goal('שיעור הגעה')).toContainText('67%');
   await expect(goal('הגיעו ליותר ממפגש אחד')).toContainText('33%');
   await expect(goal('חדשים שהגיעו דרך חבר')).toContainText('67%');
   await expect(goal('דירוג ממוצע למפגש')).toContainText('—');

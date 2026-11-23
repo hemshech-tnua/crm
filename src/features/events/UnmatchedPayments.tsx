@@ -60,7 +60,7 @@ export function UnmatchedPayments({ eventId = null }: { eventId?: string | null 
   const [open, setOpen] = useState(!eventId);
   const [all, setAll] = useState(false);
   const n = q.data?.length ?? 0;
-  if (q.isError) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
+  if (q.isError && !q.data) return <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   if (!n) return null;
 
   const title = n === 1 ? 'תשלום אחד מחכה להתאמה' : `${n} תשלומים מחכים להתאמה`;
@@ -91,7 +91,7 @@ export function UnmatchedPayments({ eventId = null }: { eventId?: string | null 
           </ul>
           {n > FIRST && (
             <Button variant="ghost" size="sm" className="mt-3" onClick={() => setAll((x) => !x)}>
-              {all ? 'הצגת שלושה בלבד' : `עוד ${n - FIRST} תשלומים`}
+              {all ? 'הצגת פחות' : `עוד ${n - FIRST} תשלומים`}
             </Button>
           )}
         </>
@@ -156,7 +156,7 @@ function PaymentRow({ p, eventId, prices }: { p: UnmatchedPayment; eventId: stri
       await refresh(c.event_id);
       const who = c.full_name ?? '';
       toast.success(status === 'waitlisted'
-        ? `התשלום של ${who} הותאם. המפגש מלא, ההרשמה ברשימת המתנה`
+        ? `התשלום של ${who} הותאם. המפגש מלא, ההרשמה ברשימת ההמתנה`
         : `התשלום של ${who} הותאם, ההרשמה הושלמה`);
     },
     onError: (err) => toast.error(errorMessage(err)),

@@ -30,7 +30,8 @@ test('scenario 2: a coordinator creates a Friday meeting, opens registration, an
 
   await page.getByRole('button', { name: 'פתיחת הרשמה' }).first().click();
   await confirmIfAsked(page, 'פתיחת הרשמה');
-  await expect(page.getByText('הרשמה פתוחה').first()).toBeVisible();
+  // open and days away: sharing the link is the meeting's next step (a routine "open" state carries no tag)
+  await expect(page.getByRole('button', { name: 'העתקת קישור ההרשמה' })).toBeVisible();
 
   const coord = await staff('coord');
   const { data: ev } = await coord.from('events').select('id, status, capacity, starts_at, lecture_topic, public_code, type').eq('title', title).single();

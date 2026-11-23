@@ -149,13 +149,13 @@ export function EventsPage() {
           </div>
         </div>
         {show === 'upcoming'
-          ? <FilterChips<UpStatus> label="סינון לפי מצב" value={upStatus} onChange={(v) => patch({ status: v })} options={upChips} />
-          : <FilterChips<PastStatus> label="סינון לפי מצב" value={pastStatus} onChange={(v) => patch({ status: v })} options={pastChips} />}
+          ? <FilterChips<UpStatus> label="סינון לפי סטטוס" value={upStatus} onChange={(v) => patch({ status: v })} options={upChips} />
+          : <FilterChips<PastStatus> label="סינון לפי סטטוס" value={pastStatus} onChange={(v) => patch({ status: v })} options={pastChips} />}
       </div>
 
       {q.isLoading ? (
-        <Panel><Skeleton lines={6} /></Panel>
-      ) : q.isError ? (
+        <Skeleton shape="rows" count={6} height={72} />
+      ) : q.isError && !q.data ? (
         <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />
       ) : list.length === 0 ? (
         <Panel>
@@ -186,7 +186,7 @@ export function EventsPage() {
           <PastList events={list} now={now} />
           {(pastQ.data?.length ?? 0) >= pastLimit && (
             <div className="mt-4 flex justify-center">
-              <Button variant="secondary" busy={pastQ.isFetching} onClick={() => setPastLimit((n) => n + PAST_PAGE)}>הצגת מפגשים קודמים נוספים</Button>
+              <Button variant="secondary" busy={pastQ.isFetching} onClick={() => setPastLimit((n) => n + PAST_PAGE)}>עוד מפגשים קודמים</Button>
             </div>
           )}
         </>
@@ -228,7 +228,7 @@ function WhenCell({ e, highlight }: { e: EventWithStats; highlight?: boolean }) 
         <div className="font-semibold tabular-nums">{fmtListDate(e.starts_at, { time: false })}</div>
         <div className="flex items-center gap-1.5 text-small text-muted">
           <span className="num">{timeRange(e)}</span>
-          {today ? <Badge tone="light">היום</Badge> : highlight ? <span>· {relativeDays(e.starts_at)}</span> : null}
+          {today ? <span className="font-semibold text-ink">· היום</span> : highlight ? <span>· {relativeDays(e.starts_at)}</span> : null}
         </div>
       </div>
     </div>
@@ -263,7 +263,7 @@ function UpcomingList({ events, speakers, nextId, now }: { events: EventWithStat
                 </div>
                 {(sp.name || sp.topic) && (
                   <div className="mt-1 text-small text-ink-soft">
-                    {sp.name ?? 'עוד אין מרצה'}{sp.topic ? `: ${sp.topic}` : ''}
+                    {sp.name ?? 'בלי מרצה'}{sp.topic ? `: ${sp.topic}` : ''}
                     {sp.pending && <span className="ms-1.5 font-medium text-muted">(מחכה לאישור)</span>}
                   </div>
                 )}
@@ -315,7 +315,7 @@ function UpcomingList({ events, speakers, nextId, now }: { events: EventWithStat
                     {sp.name || sp.topic ? (
                       <div className="leading-snug">
                         <div className="font-medium">
-                          {sp.name ?? <span className="text-muted">עוד אין מרצה</span>}
+                          {sp.name ?? <span className="text-muted">בלי מרצה</span>}
                           {sp.pending && <span className="ms-1.5 text-small text-muted">(מחכה לאישור)</span>}
                         </div>
                         {sp.topic && <div className="truncate text-small text-muted">{sp.topic}</div>}
@@ -373,7 +373,7 @@ function PastList({ events, now }: { events: EventWithStats[]; now: number }) {
                 {e.status !== 'cancelled' && (
                   <dl className="mt-3 grid grid-cols-4 gap-2 text-center">
                     <MiniStat label="הגיעו" value={n.attended} />
-                    <MiniStat label="חדשים/חוזרים" value={n.newRet} />
+                    <MiniStat label="חדשים / חוזרים" value={n.newRet} />
                     <MiniStat label="שיעור הגעה" value={n.show} />
                     <MiniStat label="דירוג" value={n.rating} />
                   </dl>

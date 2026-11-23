@@ -25,7 +25,7 @@ const LAYOUTS: { value: PostLayout; label: string; hint: string }[] = [
 ];
 const FORMATS: { value: PostFormat; label: string; noun: string; file: string }[] = [
   { value: 'portrait', label: 'פוסט 4:5', noun: 'פוסט', file: 'post' },
-  { value: 'square', label: 'ריבועי', noun: 'ריבועי', file: 'post-square' },
+  { value: 'square', label: 'פוסט ריבועי', noun: 'פוסט ריבועי', file: 'post-square' },
   { value: 'story', label: 'סטורי', noun: 'סטורי', file: 'story' },
 ];
 const shortTime = (iso: string) => fmtTime(iso).replace(/^0/, '');
@@ -162,10 +162,10 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
       {people.speaker && people.speaker.status !== 'approved' && (
         <Notice tone="warn" icon="alert">{people.speaker.full_name}: עדיין אין אישור. כדאי לאשר לפני שמפרסמים.</Notice>
       )}
-      {e.status === 'draft' && <Notice tone="light" icon="alert">המפגש עדיין טיוטה. הקישור יעבוד רק אחרי פתיחת ההרשמה (בלשונית ״סקירה״).</Notice>}
+      {e.status === 'draft' && <Notice tone="light" icon="alert">המפגש עדיין טיוטה. הקישור יעבוד רק אחרי פתיחת ההרשמה (בלשונית "סקירה").</Notice>}
 
       <p className="max-w-3xl text-body text-ink-soft">
-        מכינים הזמנה בשלושה צעדים: בוחרים עיצוב, בודקים את הטקסט, מורידים ומפרסמים. מקבלים פוסט, סטורי וריבועי, טקסט לאינסטגרם והודעה לוואטסאפ.
+        מכינים הזמנה בשלושה צעדים: בוחרים עיצוב, בודקים את הטקסט, מורידים ומפרסמים. מקבלים פוסט, סטורי ופוסט ריבועי, טקסט לאינסטגרם והודעה לוואטסאפ.
       </p>
 
       <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr]">
@@ -231,7 +231,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
               <div className="flex flex-wrap gap-2">
                 {(['navy', 'beige'] as PostTheme[]).map((t) => (
                   <Choice key={t} on={theme === t} onClick={() => setTheme(t)} row>
-                    <span className={cx('h-5 w-5 rounded-[2px] border border-ink/50', t === 'navy' ? 'bg-ink' : 'bg-light')} aria-hidden="true" />
+                    <span className={cx('h-5 w-5 rounded-tag border border-ink/50', t === 'navy' ? 'bg-ink' : 'bg-light')} aria-hidden="true" />
                     {t === 'navy' ? 'כחול כהה' : 'בז׳'}
                   </Choice>
                 ))}
@@ -288,7 +288,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
               <Input label="תאריך" value={content.date} onChange={(x) => set('date', x.target.value)} maxLength={40} />
               <Input label="שעות" ltr value={content.time} onChange={(x) => set('time', x.target.value)} maxLength={20} />
             </div>
-            <Input label="מה בתוכנית" hint="מפרידים בנקודה: יוגה · ארוחת בוקר" value={content.program} onChange={(x) => set('program', x.target.value)} maxLength={90} />
+            <Input label="מה בתוכנית" hint="מפרידים בנקודה אמצעית (·): יוגה · קפה ונשנושים" value={content.program} onChange={(x) => set('program', x.target.value)} maxLength={90} />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Input label="שם המרצה" value={content.speakerName} onChange={(x) => set('speakerName', x.target.value)} maxLength={60} />
               <Input label="מקום" value={content.place} onChange={(x) => set('place', x.target.value)} maxLength={60} />
@@ -326,7 +326,7 @@ export function MarketingTab({ event: e, people }: { event: EventWithStats; peop
               onCopy={() => copy(waText, 'ההודעה הועתקה')}
               copyLabel="העתקת ההודעה"
               link={<LinkPick label="קישור בהודעה" value={waId} onChange={setWaPick} links={active} url={waUrl} onCopy={() => copy(waUrl, 'הקישור הועתק')} />}
-              downloads={<Button icon="download" variant="secondary" onClick={() => download(['square'])} disabled={!fontsReady}>הורדת ריבועי</Button>}
+              downloads={<Button icon="download" variant="secondary" onClick={() => download(['square'])} disabled={!fontsReady}>הורדת פוסט ריבועי</Button>}
             />
           </div>
         </Panel>
@@ -345,7 +345,8 @@ function Channel({ title, text, onCopy, copyLabel, link, extra, downloads }: {
       <div className="mt-3 flex flex-col gap-3">
         {link}
         {extra}
-        <div className="max-h-72 overflow-y-auto rounded-[var(--radius-control)] bg-mist px-3.5 py-3 text-body-sm leading-relaxed break-words whitespace-pre-line select-all">{text}</div>
+        {/* a long text scrolls in its box: focusable, so it scrolls from the keyboard too */}
+        <div tabIndex={0} role="region" aria-label={`הטקסט ל${title}`} className="max-h-72 overflow-y-auto rounded-[var(--radius-control)] bg-mist px-3.5 py-3 text-body-sm leading-relaxed break-words whitespace-pre-line select-all focus-visible:outline-3 focus-visible:outline-ink">{text}</div>
         <div className="flex flex-wrap gap-2">
           <Button icon="copy" onClick={onCopy}>{copyLabel}</Button>
           {downloads}
@@ -361,7 +362,7 @@ function LinkPick({ label, value, onChange, links, url, onCopy }: {
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <Select label={label} value={value} onChange={(x) => onChange(x.target.value)} hint={links.length ? undefined : 'אפשר ליצור קישור לכל ערוץ בלשונית ״סקירה״, כדי לדעת כמה נרשמו מכל ערוץ.'}>
+      <Select label={label} value={value} onChange={(x) => onChange(x.target.value)} hint={links.length ? undefined : 'אפשר ליצור קישור לכל ערוץ בלשונית "סקירה", כדי לדעת כמה נרשמו מכל ערוץ.'}>
         <option value="">הקישור הכללי</option>
         {links.map((l) => <option key={l.id} value={l.id}>{l.label} ({l.code})</option>)}
       </Select>

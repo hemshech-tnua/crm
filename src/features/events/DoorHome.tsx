@@ -39,8 +39,8 @@ export function DoorHome() {
         actions={can.manage(role) ? <ButtonLink to="/app/events" variant="secondary" icon="calendar">כל המפגשים</ButtonLink> : undefined}
       />
       {q.isLoading ? (
-        <Panel><Skeleton lines={4} /></Panel>
-      ) : q.isError ? (
+        <Skeleton shape="tiles" count={1} height={236} cols="grid-cols-1" />
+      ) : q.isError && !q.data ? (
         <ErrorBox error={errorMessage(q.error)} onRetry={() => q.refetch()} />
       ) : list.length === 0 ? (
         <Panel>
@@ -138,7 +138,7 @@ function DoorCard({ e, now, manager }: { e: DoorEvent; now: number; manager: boo
             <Tri className="ms-1" />
           </span>
         ) : (
-          <p className="text-muted">הרשימה תיפתח ב-<span className="num">{fmtTime(new Date(new Date(e.starts_at).getTime() - WINDOW))}</span>.</p>
+          <p className="text-muted">הרשימה תיפתח בשעה <span className="num">{fmtTime(new Date(new Date(e.starts_at).getTime() - WINDOW))}</span>.</p>
         )}
       </div>
     </div>

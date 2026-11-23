@@ -3,17 +3,18 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { supabase } from '@/lib/supabase';
 import { errorMessage, must } from '@/lib/errors';
-import { useSettings, type EventWithStats } from '@/lib/data';
+import { useSettings, useSites, type EventWithStats } from '@/lib/data';
 import { derived, num, pct, type Kpis } from '@/lib/metrics';
 import { fmtDate, fmtDayLong, fmtTime, relativeDays, todayIl, ilParts } from '@/lib/dates';
 import { registerUrl } from '@/lib/links';
 import { useMe } from '@/lib/auth';
-import { Badge, Button, ButtonLink, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, cx } from '@/ui/kit';
-import { useCopy } from '@/ui/feedback';
+import { Button, ButtonLink, EmptyState, ErrorBox, Notice, PageHeader, Panel, Skeleton, cx } from '@/ui/kit';
+import { Dialog, useCopy } from '@/ui/feedback';
+import { useConnectionTrouble } from '@/ui/OfflineBar';
 import { Icon, type IconName } from '@/ui/Icon';
 import { FridayLine, GoalStat, SplitBars } from '@/ui/charts';
 import { Stripes, Tri } from '@/ui/Shapes';
-import { FilterBar, rpcArgs, useFilters } from '@/features/reports/period';
+import { FilterBar, periodLabel, rpcArgs, useFilters, type Filters } from '@/features/reports/period';
 import { Drilldown, type DrillKind } from '@/features/reports/Drilldown';
 import { securityAlerts, useSecurityOverview } from '@/features/settings/SecuritySettings';
 import { MyWeekPanel } from '@/features/prep/MyWeekPanel';
@@ -79,6 +80,11 @@ export function DashboardPage() {
   const g = kpis.data?.goals;
   const firstRun = upcomingQ.data && pastQ.data && upcomingQ.data.length === 0 && pastQ.data.length === 0;
   const unclosed = kpis.data?.unclosed_events ?? attention.data?.events_unclosed.length ?? 0;
+  // one page error with one retry, instead of an error in every panel; with no connection the offline bar says it
+  const failed = [kpis, attention, sources, upcomingQ, pastQ].filter((q) => q.isError && !q.data);
+  const trouble = useConnectionTrouble();
+  const retryFailed = () => failed.forEach((q) => void q.refetch());
+  const notLoaded = <p className="text-small text-muted">לא נטען.</p>;
   const hour = Number(ilParts(new Date()).time.slice(0, 2));
   const hello = hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
 
@@ -86,10 +92,15 @@ export function DashboardPage() {
     <>
       <PageHeader
         title={`${hello}${me.data ? `, ${me.data.full_name.split(' ')[0]}` : ''}`}
-        subtitle="מה קורה במפגשים, מול היעדים לשנה, ומה דורש טיפול."
+        subtitle="מה קורה במפגשים, איך אנחנו מול היעדים, ומה דורש טיפול."
         actions={<ButtonLink to="/app/events/new" icon="plus">מפגש חדש</ButtonLink>}
       />
       {me.data?.role === 'admin' && <SecurityAlert />}
+      {failed.length > 0 && !trouble && (
+        <div className="mb-5">
+          <ErrorBox error={`חלק מהנתונים במסך לא נטענו. ${errorMessage(failed[0].error)}`} onRetry={retryFailed} />
+        </div>
+      )}
 
       {firstRun ? (
         <Panel>
@@ -108,9 +119,30 @@ export function DashboardPage() {
           {nextIsToday && <NextMeeting next={next} nextOpen={nextOpen} last={last} loading={loadingEvents} className="mb-6" onCopy={(url) => copy(url, 'קישור ההרשמה הועתק')} />}
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-section font-bold">היעדים לשנה</h2>
-            <FilterBar filters={filters} set={set} />
+            <h2 className="text-section font-bold">מול היעדים</h2>
+            {/* a phone gets one chip that names the active filters and opens them; wider screens show the bar */}
+            <div className="max-sm:hidden"><FilterBar filters={filters} set={set} /></div>
+            <FilterChip filters={filters} set={set} />
           </div>
+          {kpis.error && !kpis.data ? <div className="mb-6">{notLoaded}</div> : (
+            <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
+              {!kpis.data || !d || !g ? Array.from({ length: 5 }).map((_, i) => <div key={i} role="status" aria-label="בטעינה…" className={cx('skeleton h-[9.5rem] rounded-[var(--radius-panel)] sm:h-[11.25rem]', i === 4 && 'col-span-2 lg:col-span-1')} />) : (
+                <>
+                  <GoalStat label="ממוצע לוחמים למפגש" value={d.avgAttendance} display={num(d.avgAttendance, 1)} goal={g.avg_attendance} goalDisplay={num(g.avg_attendance)}
+                    hint={kpis.data.events === 1 ? `${kpis.data.attendances} הגעות במפגש אחד` : `${kpis.data.attendances} הגעות ב־${kpis.data.events} מפגשים`} onOpen={() => setDrill('attendees')} />
+                  <GoalStat label="שיעור הגעה" value={d.showRate} display={pct(d.showRate)} goal={g.show_rate} goalDisplay={pct(g.show_rate)}
+                    hint={`${kpis.data.preregistered_attended} מתוך ${kpis.data.preregistered} רשומים`} />
+                  <GoalStat label="הגיעו ליותר ממפגש אחד" value={d.returnRate} display={pct(d.returnRate)} goal={g.return_rate} goalDisplay={pct(g.return_rate)}
+                    hint={`${kpis.data.returning_attendees} מתוך ${kpis.data.unique_attendees} לוחמים`} onOpen={() => setDrill('returning')} />
+                  <GoalStat label="חדשים שהגיעו דרך חבר" value={d.friendShare} display={pct(d.friendShare)} goal={g.friend_share} goalDisplay={pct(g.friend_share)}
+                    hint={`${kpis.data.friend_new} מתוך ${kpis.data.new_attendees} חדשים`} onOpen={() => setDrill('friend_new')} />
+                  <GoalStat className="col-span-2 lg:col-span-1" label="דירוג ממוצע למפגש" value={d.avgRating} display={num(d.avgRating, 1)} goal={g.avg_rating} goalDisplay={num(g.avg_rating, 1)}
+                    hint={kpis.data.feedback_count ? `${kpis.data.feedback_count} משובים` : 'עוד אין משובים'} />
+                </>
+              )}
+            </div>
+          )}
+          {/* under the tiles, not above them: it appears with the numbers and must not push them down (CLS) */}
           {kpis.data && (unclosed > 0 || kpis.data.events === 0) && (
             <div className="mb-3">
               <Notice tone="light" icon="alert">
@@ -126,35 +158,17 @@ export function DashboardPage() {
               </Notice>
             </div>
           )}
-          {kpis.error ? <ErrorBox error={errorMessage(kpis.error)} onRetry={() => kpis.refetch()} /> : (
-            <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
-              {!kpis.data || !d || !g ? Array.from({ length: 5 }).map((_, i) => <div key={i} className={cx('skeleton h-40', i === 4 && 'col-span-2 lg:col-span-1')} />) : (
-                <>
-                  <GoalStat label="ממוצע לוחמים למפגש" value={d.avgAttendance} display={num(d.avgAttendance, 1)} goal={g.avg_attendance} goalDisplay={num(g.avg_attendance)}
-                    hint={kpis.data.events === 1 ? `${kpis.data.attendances} הגעות במפגש אחד` : `${kpis.data.attendances} הגעות ב-${kpis.data.events} מפגשים`} onOpen={() => setDrill('attendees')} />
-                  <GoalStat label="הגיעו מתוך מי שנרשם" value={d.showRate} display={pct(d.showRate)} goal={g.show_rate} goalDisplay={pct(g.show_rate)}
-                    hint={`${kpis.data.preregistered_attended} מתוך ${kpis.data.preregistered} רשומים`} />
-                  <GoalStat label="הגיעו ליותר ממפגש אחד" value={d.returnRate} display={pct(d.returnRate)} goal={g.return_rate} goalDisplay={pct(g.return_rate)}
-                    hint={`${kpis.data.returning_attendees} מתוך ${kpis.data.unique_attendees} לוחמים`} onOpen={() => setDrill('returning')} />
-                  <GoalStat label="חדשים שהגיעו דרך חבר" value={d.friendShare} display={pct(d.friendShare)} goal={g.friend_share} goalDisplay={pct(g.friend_share)}
-                    hint={`${kpis.data.friend_new} מתוך ${kpis.data.new_attendees} חדשים`} onOpen={() => setDrill('friend_new')} />
-                  <GoalStat className="col-span-2 lg:col-span-1" label="דירוג ממוצע למפגש" value={d.avgRating} display={num(d.avgRating, 1)} goal={g.avg_rating} goalDisplay={num(g.avg_rating, 1)}
-                    hint={kpis.data.feedback_count ? `${kpis.data.feedback_count} משובים` : 'עוד אין משובים'} />
-                </>
-              )}
-            </div>
-          )}
-          {kpis.data && (
+          {kpis.data ? (
             <p className="mb-6 text-small text-muted">
               בתקופה, במפגשים שנסגרו: <button type="button" className="inline-flex min-h-11 items-center font-semibold text-tide hover:underline sm:min-h-0" onClick={() => setDrill('new')}>{kpis.data.new_attendees} לוחמים חדשים</button>
               {' · '}{kpis.data.walk_ins} הגיעו בלי הרשמה · {kpis.data.cancelled} ביטולים
               {kpis.data.attendances > 0 && <> · {pct(d?.selfCheckinShare ?? null)} עשו צ׳ק־אין עצמי</>}
             </p>
-          )}
+          ) : kpis.isLoading ? <div className="mb-6 h-11 sm:h-5" aria-hidden="true" /> : null}
 
           <div className="mb-6 grid items-start gap-6 lg:grid-cols-2">
             <Panel title="דורש תשומת לב">
-              {attention.isLoading ? <Skeleton lines={4} /> : attention.error ? <ErrorBox error={errorMessage(attention.error)} /> : (
+              {attention.isLoading ? <Skeleton shape="rows" count={4} height={56} className="border-0" /> : !attention.data ? notLoaded : (
                 <AttentionList a={attention.data!} />
               )}
             </Panel>
@@ -165,7 +179,7 @@ export function DashboardPage() {
                 description={unclosed > 0 ? 'כולל מפגשים שעוד לא נסגרו' : undefined}
                 actions={<Link to="/app/reports?tab=sources" className="-my-2 inline-flex min-h-11 items-center text-small font-semibold text-tide hover:underline">לדוח המלא</Link>}
               >
-                {sources.isLoading ? <Skeleton lines={4} /> : sources.error ? <ErrorBox error={errorMessage(sources.error)} /> : !sources.data?.some((s) => s.participants > 0) ? (
+                {sources.isLoading ? <Skeleton shape="block" height={160} /> : !sources.data ? notLoaded : !sources.data.some((s) => s.participants > 0) ? (
                   <p className="text-muted">כשלוחמים חדשים יגיעו למפגשים, יופיע כאן מאיזה מקור הם הגיעו וכמה מהם חזרו.</p>
                 ) : (
                   <SplitBars
@@ -181,7 +195,7 @@ export function DashboardPage() {
           {!nextIsToday && <NextMeeting next={next} nextOpen={nextOpen} last={last} loading={loadingEvents} className="mb-6" onCopy={(url) => copy(url, 'קישור ההרשמה הועתק')} />}
 
           <Panel title="קו השישי" className="mb-6" description="כל נקודה היא מפגש שנסגר. לחיצה פותחת את הסיכום שלו.">
-            {loadingEvents ? <Skeleton lines={4} /> : past.length === 0 && !next ? (
+            {loadingEvents ? <Skeleton shape="block" height={220} /> : !pastQ.data && pastQ.isError ? notLoaded : past.length === 0 && !next ? (
               <p className="text-muted">הקו יתחיל להתמלא אחרי המפגש הראשון שנסגר.</p>
             ) : (
               <FridayLine
@@ -206,7 +220,7 @@ function NextMeeting({ next, nextOpen, last, loading, className, onCopy }: {
   next: EventWithStats | undefined; nextOpen: EventWithStats | undefined; last: EventWithStats | undefined; loading: boolean; className?: string;
   onCopy: (url: string) => void;
 }) {
-  if (loading) return <Skeleton lines={3} className={className} />;
+  if (loading) return <div role="status" aria-label="בטעינה…" className={cx('skeleton h-[15rem] rounded-[var(--radius-panel)] sm:h-[8.5rem]', className)} />;
   if (!next) {
     return (
       <Panel className={className}>
@@ -258,7 +272,7 @@ function NextMeeting({ next, nextOpen, last, loading, className, onCopy }: {
           {st.waitlisted > 0 && (
             <div>
               <div className="num font-display text-stat">{st.waitlisted}</div>
-              <div className="text-small text-light/75">ברשימת המתנה</div>
+              <div className="text-small text-light/75">ברשימת ההמתנה</div>
             </div>
           )}
           <div className="flex flex-wrap gap-2">
@@ -271,7 +285,7 @@ function NextMeeting({ next, nextOpen, last, loading, className, onCopy }: {
               <ButtonLink to={`/app/events/${next.id}`} variant="light" cta>ניהול המפגש</ButtonLink>
             )}
             {!today && nextOpen?.status === 'open' && (
-              <Button variant="onDark" icon="copy" onClick={() => onCopy(registerUrl(nextOpen.public_code))}>קישור הרשמה</Button>
+              <Button variant="onDark" icon="copy" onClick={() => onCopy(registerUrl(nextOpen.public_code))}>העתקת קישור ההרשמה</Button>
             )}
           </div>
         </div>
@@ -294,22 +308,22 @@ function AttentionList({ a }: { a: Attention }) {
     else list.forEach((e) => items.push(one(e)));
   };
   capped(a.events_unclosed,
-    (e) => ({ icon: 'alert', tone: 'bad', text: <>המפגש מ-<span className="num">{fmtDate(e.starts_at)}</span> הסתיים ולא נסגר. בלי סגירה, מי שלא הגיע לא מקבל מעקב.</>, to: `/app/events/${e.id}?close=1`, action: 'לסגירה' }),
+    (e) => ({ icon: 'alert', tone: 'bad', text: <>המפגש מ־<span className="num">{fmtDate(e.starts_at)}</span> הסתיים ולא נסגר. בלי סגירה, מי שלא הגיע לא מקבל מעקב.</>, to: `/app/events/${e.id}?close=1`, action: 'לסגירה' }),
     (n) => ({ icon: 'alert', tone: 'bad', text: <><span className="num font-bold">{n}</span> מפגשים הסתיימו ולא נסגרו. בלי סגירה, מי שלא הגיע לא מקבל מעקב.</>, to: '/app/events?show=past&status=unclosed', action: 'לרשימה' }));
   capped(a.aftercare ?? [],
-    (e) => ({ icon: 'message', tone: 'warn', text: <>עברו 24 שעות מ{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>): <span className="num font-bold">{e.pending}</span> הודעות תודה מחכות{e.join_invites > 0 && <>, מהן <span className="num">{e.join_invites}</span> עם הזמנה להצטרף לעמותה</>}</>, to: `/app/events/${e.id}?tab=messages&group=aftercare`, action: 'לשליחה' }),
-    (n) => ({ icon: 'message', tone: 'warn', text: <>ב-<span className="num font-bold">{n}</span> מפגשים מהשבוע האחרון עוד לא נשלחו הודעות תודה</>, to: `/app/events/${a.aftercare![0].id}?tab=messages&group=aftercare`, action: 'למפגש הראשון' }));
+    (e) => ({ icon: 'message', tone: 'warn', text: <>{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>) הסתיים לפני יותר מיממה: <span className="num font-bold">{e.pending}</span> הודעות תודה מחכות לשליחה{e.join_invites > 0 && <>, מהן <span className="num">{e.join_invites}</span> עם הזמנה להצטרף לעמותה</>}</>, to: `/app/events/${e.id}?tab=messages&group=aftercare`, action: 'לשליחה' }),
+    (n) => ({ icon: 'message', tone: 'warn', text: <>ב־<span className="num font-bold">{n}</span> מפגשים מהשבוע האחרון עוד לא נשלחו הודעות תודה</>, to: `/app/events/${a.aftercare![0].id}?tab=messages&group=aftercare`, action: 'למפגש הראשון' }));
   if (a.followups_overdue) items.push({ icon: 'task', tone: 'bad', text: <><span className="num font-bold">{a.followups_overdue}</span> משימות מעקב באיחור</>, to: '/app/followups?tab=open', action: 'למשימות' });
   const lapsedNoTask = a.lapsed.filter((l) => !l.has_open_task);
   if (lapsedNoTask.length) items.push({ icon: 'people', tone: 'warn', text: <><span className="num font-bold">{lapsedNoTask.length}</span> קבועים הפסיקו להגיע: {lapsedNoTask.slice(0, 3).map((l) => l.full_name).join(', ')}{lapsedNoTask.length > 3 ? ' ועוד' : ''}</>, to: '/app/followups?tab=open', action: 'לבדיקה' });
   capped(a.waitlist_with_space,
-    (e) => ({ icon: 'userPlus', tone: 'warn', text: <>התפנו מקומות ב{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>) ויש <span className="num">{e.waitlisted}</span> ברשימת המתנה</>, to: `/app/events/${e.id}?tab=registrations`, action: 'לקידום' }),
-    (n) => ({ icon: 'userPlus', tone: 'warn', text: <>ב-<span className="num font-bold">{n}</span> מפגשים התפנו מקומות ויש לוחמים ברשימת המתנה</>, to: '/app/events?status=waitlist', action: 'למפגשים' }));
+    (e) => ({ icon: 'userPlus', tone: 'warn', text: <>התפנו מקומות ב{e.title} (<span className="num">{fmtDate(e.starts_at)}</span>) ויש <span className="num">{e.waitlisted}</span> ברשימת ההמתנה</>, to: `/app/events/${e.id}?tab=registrations`, action: 'לקידום' }),
+    (n) => ({ icon: 'userPlus', tone: 'warn', text: <>ב־<span className="num font-bold">{n}</span> מפגשים התפנו מקומות ויש לוחמים ברשימת ההמתנה</>, to: '/app/events?status=waitlist', action: 'למפגשים' }));
   capped(a.fridays_without_speaker,
     (e) => ({ icon: 'mic', tone: 'tide', text: <>אין מרצה מאושר לשישי <span className="num">{fmtDate(e.starts_at)}</span> ({relativeDays(e.starts_at)})</>, to: `/app/events/${e.id}/edit`, action: 'לשיבוץ' }),
     (n) => ({ icon: 'mic', tone: 'tide', text: <><span className="num font-bold">{n}</span> מפגשי שישי בחמשת השבועות הקרובים עדיין בלי מרצה מאושר</>, to: '/app/events?status=nospeaker', action: 'למפגשים' }));
   capped(a.drafts_soon,
-    (e) => ({ icon: 'calendar', tone: 'tide', text: <>{e.title} ב-<span className="num">{fmtDate(e.starts_at)}</span> עדיין טיוטה</>, to: `/app/events/${e.id}`, action: 'לפתיחה' }),
+    (e) => ({ icon: 'calendar', tone: 'tide', text: <>{e.title} ב־<span className="num">{fmtDate(e.starts_at)}</span> עדיין טיוטה</>, to: `/app/events/${e.id}`, action: 'לפתיחה' }),
     (n) => ({ icon: 'calendar', tone: 'tide', text: <><span className="num font-bold">{n}</span> מפגשים בשבוע הקרוב עדיין טיוטה, וההרשמה אליהם סגורה</>, to: '/app/events?status=draft', action: 'למפגשים' }));
   const mism = a.name_mismatches ?? [];
   capped(mism,
@@ -320,19 +334,30 @@ function AttentionList({ a }: { a: Attention }) {
   if (a.followups_mine) items.push({ icon: 'task', tone: 'tide', text: <><span className="num font-bold">{a.followups_mine}</span> משימות פתוחות משויכות אליך</>, to: '/app/followups', action: 'למשימות שלי' });
 
   if (!items.length) {
-    return <EmptyState icon="checkCircle" title="הכול מטופל">אין מפגשים פתוחים, משימות באיחור או קבועים שנעלמו.</EmptyState>;
+    return <EmptyState icon="checkCircle" title="הכול מטופל">אין מפגשים שמחכים לסגירה, משימות באיחור או קבועים שהפסיקו להגיע.</EmptyState>;
   }
-  const toneCls = { bad: 'bg-bad-wash text-bad ring-1 ring-inset ring-bad/30', warn: 'bg-warn-wash text-warn ring-1 ring-inset ring-warn/40', tide: 'bg-ink text-light' };
+  // G4: the urgent first, then what needs doing soon, then the rest. Red appears once, as the urgent group's
+  // header; the rows themselves carry only a tinted glyph (warning wash for "soon", a quiet tint for the rest)
+  const rank = { bad: 0, warn: 1, tide: 2 } as const;
+  const sorted = items.map((it, i) => ({ ...it, i })).sort((x, y) => rank[x.tone] - rank[y.tone] || x.i - y.i);
+  const urgent = sorted.filter((it) => it.tone === 'bad').length;
+  const toneCls = { bad: 'bg-bad-wash text-bad', warn: 'bg-warn-wash text-warn', tide: 'bg-ink/[0.07] text-ink-soft' };
   return (
     <ul className="flex flex-col divide-y divide-edge">
-      {items.map((it, i) => (
-        <li key={i} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+      {urgent > 0 && (
+        <li className="flex items-center gap-2 pb-2 text-small font-bold text-bad">
+          <Icon name="alert" size={16} />
+          {urgent === 1 ? 'דחוף: דבר אחד' : <>דחוף: <span className="num">{urgent}</span> דברים</>}
+        </li>
+      )}
+      {sorted.map((it) => (
+        <li key={it.i} className={cx('flex items-start gap-3 py-2.5 last:pb-0', urgent === 0 && 'first:pt-0')}>
           <span className={`mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] ${toneCls[it.tone]}`}><Icon name={it.icon} size={17} /></span>
           <span className="flex-1 py-2 text-body leading-snug">{it.text}</span>
           <Link to={it.to} className="-mx-2 inline-flex min-h-11 shrink-0 items-center px-2 text-small font-semibold text-tide hover:underline">{it.action}</Link>
         </li>
       ))}
-      {a.followups_open > 0 && <li className="pt-3 text-small text-muted">סה״כ <Badge>{a.followups_open}</Badge> משימות מעקב פתוחות</li>}
+      {a.followups_open > 0 && <li className="pt-3 text-small text-muted">בסך הכול <span className="num font-semibold text-ink">{a.followups_open}</span> משימות מעקב פתוחות</li>}
     </ul>
   );
 }
@@ -345,9 +370,48 @@ function SecurityAlert() {
   return (
     <div className="mb-5">
       <Notice tone="warn" icon="alert">
-        יש {n === 1 ? 'התראת אבטחה אחת' : <><span className="num">{n}</span> התראות אבטחה</>} לבדיקה: חשבונות שאינם צוות, או חסימות בכניסת הצוות.{' '}
+        יש {n === 1 ? 'התראת אבטחה אחת' : <><span className="num">{n}</span> התראות אבטחה</>} לבדיקה: חשבונות שלא שייכים לצוות, או חסימות בכניסת הצוות.{' '}
         <Link to="/app/settings?tab=security" className="font-semibold underline">למסך האבטחה</Link>
       </Notice>
+    </div>
+  );
+}
+
+const PERIOD_WORD: Partial<Record<Filters['period'], string>> = {
+  month: 'החודש', prev_month: 'החודש הקודם', '30d': '30 יום', '90d': '3 חודשים', year: 'השנה', all: 'הכול',
+};
+const TYPE_WORD: Record<string, string> = { friday: 'שישי', bonfire: 'מדורה' };
+
+/**
+ * Phones: the filters as one chip that names what is on ("3 חודשים · שישי"), opening the full filter bar in a dialog.
+ * The choice applies at once (as on the wide bar); "הצגה" closes the dialog.
+ */
+function FilterChip({ filters, set }: { filters: Filters; set: (p: Partial<Record<string, string | null>>) => void }) {
+  const [open, setOpen] = useState(false);
+  const sites = useSites();
+  const site = filters.site ? sites.data?.find((x) => x.id === filters.site)?.name : null;
+  const parts = [
+    PERIOD_WORD[filters.period] ?? periodLabel(filters),
+    filters.type ? TYPE_WORD[filters.type] ?? 'מפגש אחר' : 'כל הפעילויות',
+    site,
+  ].filter(Boolean);
+  return (
+    <div className="sm:hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-label={`סינון: ${parts.join(', ')}`}
+        className="inline-flex h-11 items-center gap-2 rounded-[var(--radius-control)] border border-control-line bg-paper px-3 text-small font-semibold text-ink hover:border-ink"
+      >
+        <Icon name="filter" size={16} />
+        {parts.join(' · ')}
+        <Icon name="chevron" size={14} className="text-muted" />
+      </button>
+      <Dialog open={open} onClose={() => setOpen(false)} title="סינון המספרים" layout="sheet"
+        footer={<Button onClick={() => setOpen(false)}>הצגה</Button>}>
+        <FilterBar filters={filters} set={set} />
+      </Dialog>
     </div>
   );
 }

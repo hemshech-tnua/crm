@@ -13,15 +13,15 @@ import { downloadFile } from '@/lib/csv';
 import { pct, ratio } from '@/lib/metrics';
 import { Badge, Button, ButtonLink, Input, KeyValue, Notice, Panel, Select, Textarea, cx } from '@/ui/kit';
 import type { IconName } from '@/ui/Icon';
-import { Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
+import { DISMISS, Dialog, useConfirm, useCopy, useToast } from '@/ui/feedback';
 import { Icon } from '@/ui/Icon';
 import { Logo } from '@/ui/Logo';
 import { Stripes, Tri } from '@/ui/Shapes';
 import type { EventTab } from './EventPage';
 import { dataUrlToBlob, type EventPeople } from './context';
-import { useInvalidateEvent } from './queries';
-import { BigStat, LinkRow, QrImage, freeText, hasEnded, hasStarted, isUnclosed, seats, timeRange } from './shared';
-import { MoreMenu, type MoreMenuItem } from '@/ui/MoreMenu';
+import { DEFAULT_TITLE, useInvalidateEvent } from './queries';
+import { BigStat, LinkRow, QrImage, endsNextDay, hasEnded, hasStarted, isUnclosed, seats, timeRange } from './shared';
+import type { MoreMenuItem } from '@/ui/MoreMenu';
 import { FinancePanel, useEventFinance } from './finance';
 import { isOverdue, useEventTasks, useTickMany } from '@/features/prep/shared';
 import { slotsFor } from '@/features/volunteers/model';
@@ -52,29 +52,24 @@ export function OverviewTab({ event: e, people, onTab }: Props) {
 
 // ───────────── counters ─────────────
 
+/**
+ * Once the meeting has started: who came, and what it means. Before that the status strip above the tabs already says
+ * how many registered, how many are waiting and how many cancelled (the count is shown once, there).
+ * "לא הגיעו" and "חוזרים" are known only when the meeting is closed: "—" until then.
+ */
 function Counters({ e }: { e: EventWithStats }) {
   const s = e.stats;
-  const started = hasStarted(e);
-  const st = seats(e);
-  if (e.status === 'cancelled' && !st.registered && !st.waitlisted) return null;
-  // one definition everywhere: "24 רשומים · 2 בלי הרשמה · 26 מתוך 28", free = capacity − (registered + walk-ins)
-  const regSub = [st.walkIns ? `${st.walkIns} בלי הרשמה` : null, st.capacity != null ? `${st.taken} מתוך ${st.capacity}` : null, freeText(e)].filter(Boolean).join(' · ');
+  if (!hasStarted(e) || e.status === 'cancelled') return null;
+  const closed = e.status === 'completed';
+  const after = 'אחרי הסגירה';
   return (
-    <section aria-label="מספרים" className={cx('grid gap-3', started && e.status !== 'cancelled' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3')}>
-      {started && e.status !== 'cancelled' && (
-        <BigStat highlight label="הגיעו" value={s?.attended_count ?? 0} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : undefined} />
-      )}
-      <BigStat highlight={!started && e.status === 'open'} label="רשומים" value={st.registered} sub={regSub} />
-      <BigStat label="רשימת המתנה" value={st.waitlisted} />
+    <section aria-label="מספרים" className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      <BigStat highlight label="הגיעו" value={s?.attended_count ?? 0} sub={s?.walk_in_count ? `מתוכם ${s.walk_in_count} בלי הרשמה` : undefined} />
+      <BigStat label="חדשים" value={s?.new_count ?? 0} />
+      <BigStat label="חוזרים" value={closed ? s?.returning_count ?? 0 : '—'} sub={closed ? undefined : after} />
+      <BigStat label="לא הגיעו" value={closed ? s?.no_show_count ?? 0 : '—'} sub={closed ? undefined : after} />
+      <BigStat label="צ׳ק־אין עצמי" value={pct(ratio(s?.self_checkin_count ?? 0, s?.attended_count ?? 0))} sub="מתוך מי שהגיעו" />
       <BigStat label="ביטלו" value={s?.cancelled_count ?? 0} />
-      {started && e.status !== 'cancelled' && (
-        <>
-          <BigStat label="חדשים" value={s?.new_count ?? 0} />
-          <BigStat label="חוזרים" value={s?.returning_count ?? 0} />
-          <BigStat label="לא הגיעו" value={s?.no_show_count ?? 0} sub={e.status !== 'completed' ? 'מסומנים בסגירת המפגש' : undefined} />
-          <BigStat label="צ׳ק־אין עצמי" value={pct(ratio(s?.self_checkin_count ?? 0, s?.attended_count ?? 0))} sub="מתוך מי שהגיעו" />
-        </>
-      )}
     </section>
   );
 }
@@ -87,7 +82,7 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
     <Panel title="פרטי המפגש" actions={<ButtonLink to={`/app/events/${e.id}/edit`} variant="ghost" size="sm" icon="edit">עריכה</ButtonLink>}>
       <KeyValue
         items={[
-          ['מתי', <span key="w">{fmtDayLong(e.starts_at)} · <span className="num whitespace-nowrap">{timeRange(e)}</span></span>],
+          ['מתי', <span key="w">{fmtDayLong(e.starts_at)} · <span className="num whitespace-nowrap">{timeRange(e)}</span>{endsNextDay(e) ? ' (מסתיים למחרת)' : ''}</span>],
           ['מקום', people.place ? <span key="p">{people.place}{people.site && people.site.name !== people.place ? <span className="text-muted"> · {people.site.name}</span> : null}</span> : null],
           ['פעילות', e.activity_name || people.instructor ? <span key="a">{e.activity_name ?? 'פעילות'}{people.instructor ? <span className="text-muted"> עם {people.instructor.full_name}</span> : null}</span> : null],
           ['מרצה', sp ? (
@@ -98,7 +93,7 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
           ) : e.type === 'friday' ? <span key="s" className="text-muted">עוד אין</span> : null],
           ['נושא', e.lecture_topic],
           ['מקומות', e.capacity != null ? <span key="c"><span className="num">{e.capacity}</span>{e.waitlist_enabled ? ' · עם רשימת המתנה' : ' · בלי רשימת המתנה'}</span> : 'בלי הגבלה'],
-          ['השתתפות', isPriced(e.price) ? (
+          ['מחיר', isPriced(e.price) ? (
             <span key="pr"><span className="num">{fmtMoney(e.price)}</span>{e.payment_url
               ? <> · <a href={e.payment_url} target="_blank" rel="noopener noreferrer" className="text-tide hover:underline">קישור לתשלום</a></>
               : <span className="text-muted"> · משלמים בכניסה</span>}{e.payment_note ? <span className="text-muted"> · {e.payment_note}</span> : null}</span>
@@ -251,8 +246,8 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
   const askDelete = async () => {
     const ok = await confirm({
       title: 'מחיקת המפגש',
-      body: 'המפגש יימחק לגמרי, כולל הקישורים שלו. אין בו הרשמות. אי אפשר לשחזר.',
-      confirm: 'מחיקה',
+      body: 'המפגש יימחק לגמרי, כולל הקישורים שלו. אין בו הרשמות. אי אפשר לבטל את המחיקה.',
+      confirm: 'מחיקת המפגש',
       danger: true,
     });
     if (ok) remove.mutate();
@@ -268,8 +263,8 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
     primaryKey = 'open';
     primary = <Button key="open" icon="check" cta busy={setStatus.isPending} onClick={askOpen}>פתיחת הרשמה</Button>;
   } else if (active && ended) {
+    // the meeting is over and not closed: the status strip says so, with "סגירת המפגש" right inside it
     primaryKey = 'complete';
-    primary = <Button key="complete" icon="checkCircle" cta busy={complete.isPending} onClick={askComplete}>סגירת המפגש</Button>;
   } else if (active && (started || doorSoon)) {
     primaryKey = 'door';
     primary = <ButtonLink key="door" icon="door" cta to={doorTo}>מצב כניסה</ButtonLink>;
@@ -314,7 +309,7 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
           <>
             <ButtonLink to={`/app/followups?event=${e.id}`} icon="task">למשימות המעקב של המפגש</ButtonLink>
             <Button variant="secondary" onClick={() => { setResult(null); onTab('summary'); }} icon="chart">לסיכום המפגש</Button>
-            <Button variant="ghost" onClick={() => setResult(null)}>סגירה</Button>
+            <Button variant="ghost" onClick={() => setResult(null)}>{DISMISS}</Button>
           </>
         }
       >
@@ -348,10 +343,11 @@ export function useMeetingActions(e: EventWithStats, onTab: Props['onTab']) {
 }
 
 /**
- * The meeting's actions in the page header: the stage's one primary step, "עריכה", and "⋯ עוד".
- * Links may ask for a dialog: `?dup=1` opens the duplicate dialog, `?close=1` the closing confirmation.
+ * The meeting's actions for the page header: the stage's one primary step, "עריכה", and the "⋯" menu (rendered by
+ * the header, together with `dialogs`). Links may ask for a dialog: `?dup=1` opens the duplicate dialog, `?close=1`
+ * the closing confirmation.
  */
-export function EventHeaderActions({ e, onTab }: { e: EventWithStats; onTab: Props['onTab'] }) {
+export function useEventHeaderActions(e: EventWithStats, onTab: Props['onTab']) {
   const a = useMeetingActions(e, onTab);
   const [params, setParams] = useSearchParams();
   const asked = useRef(false);
@@ -368,14 +364,7 @@ export function EventHeaderActions({ e, onTab }: { e: EventWithStats; onTab: Pro
     if (dup) a.openDuplicate();
     else if (close) void a.askComplete();
   }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <>
-      {a.primary}
-      {a.secondary}
-      <MoreMenu items={a.menu} />
-      {a.dialogs}
-    </>
-  );
+  return a;
 }
 
 // ───────────── status at a glance ─────────────
@@ -386,7 +375,11 @@ type StripItem = { key: string; icon?: IconName; text: ReactNode; state: 'done' 
  * One line under the title: places, speaker, coach, volunteers, payments and tasks. Each item opens its tab.
  * ✓ when done, muted when still missing, the warning colour only for what needs doing today (late tasks).
  */
-export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; people: EventPeople; onTab: Props['onTab'] }) {
+export function EventStatusStrip({ e, people, onTab, close }: {
+  e: EventWithStats; people: EventPeople; onTab: Props['onTab'];
+  /** the meeting is over and not closed: the strip leads with that, and its "סגירת המפגש" button */
+  close?: { ask: () => void; busy: boolean } | null;
+}) {
   const navigate = useNavigate();
   const live = e.status !== 'cancelled';
   /** not closed yet: tasks still count */
@@ -408,7 +401,8 @@ export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; peop
       <span className="num font-bold">{st.registered}</span> רשומים
       {st.walkIns ? <> · <span className="num">{st.walkIns}</span> בלי הרשמה</> : null}
       {st.capacity != null ? <> · <span className="num">{st.taken}</span> מתוך <span className="num">{st.capacity}</span></> : null}
-      {st.waitlisted ? <> · <span className="num">{st.waitlisted}</span> ברשימת המתנה</> : null}
+      {st.waitlisted ? <> · <span className="num">{st.waitlisted}</span> ברשימת ההמתנה</> : null}
+      {e.stats?.cancelled_count ? <> · <span className="num">{e.stats.cancelled_count}</span> ביטלו</> : null}
     </>,
   });
   if (ahead && (e.type === 'friday' || e.speaker_id)) {
@@ -441,7 +435,7 @@ export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; peop
     const list = tasks.data.filter((t) => t.kind === 'task' && !t.dismissed);
     const late = list.filter((t) => isOverdue(t, todayIl())).length;
     const done = list.filter((t) => t.done_at).length;
-    if (late > 0) items.push({ key: 'tasks', icon: 'task', state: 'warn', label: 'להכנות', go: () => onTab('prep'), text: late === 1 ? 'משימה אחת שעבר התאריך שלה' : <><span className="num font-bold">{late}</span> משימות שעבר התאריך שלהן</> });
+    if (late > 0) items.push({ key: 'tasks', icon: 'task', state: 'warn', label: 'להכנות', go: () => onTab('prep'), text: late === 1 ? 'משימה אחת באיחור' : <><span className="num font-bold">{late}</span> משימות באיחור</> });
     else if (list.length) items.push({ key: 'tasks', icon: 'task', state: done === list.length ? 'done' : 'info', label: 'להכנות', go: () => onTab('prep'), text: <>הכנות <span className="num">{done}/{list.length}</span></> });
   }
   if (e.status === 'completed' && (e.stats?.feedback_count ?? 0) > 0) {
@@ -449,13 +443,25 @@ export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; peop
       text: <><span className="num">{e.stats!.feedback_count}</span> משובים{e.stats?.avg_overall != null ? <> · דירוג <span className="num">{Number(e.stats.avg_overall).toFixed(1)}</span></> : null}</> });
   }
 
+  // still missing = quiet (muted text on a plain edge): a dashed edge is kept for an empty slot that can be filled
   const tone = {
     done: 'border-ink/40 text-ink',
-    todo: 'border-dashed border-ink/35 text-muted',
+    todo: 'border-edge text-muted',
     warn: 'border-warn/50 bg-warn-wash text-warn',
     info: 'border-edge text-ink',
   };
   return (
+    <>
+    {close && (
+      // the meeting is over and not closed: the one thing to do now, with its button right here
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--radius-control)] border-s-[3px] border-warn bg-warn-wash px-3.5 py-3 text-warn">
+        <p className="flex min-w-0 flex-[1_1_16rem] items-start gap-2 text-small font-medium leading-relaxed">
+          <Icon name="alert" size={18} className="mt-0.5 shrink-0" />
+          <span><b>המפגש הסתיים ועוד לא נסגר.</b> בסגירה מסומנים מי שלא הגיעו ונפתחות משימות מעקב.</span>
+        </p>
+        <Button icon="checkCircle" cta busy={close.busy} onClick={close.ask}>סגירת המפגש</Button>
+      </div>
+    )}
     <ul aria-label="מצב המפגש" className="mb-4 flex flex-wrap gap-2">
       {items.map((it) => (
         <li key={it.key}>
@@ -472,6 +478,7 @@ export function EventStatusStrip({ e, people, onTab }: { e: EventWithStats; peop
         </li>
       ))}
     </ul>
+    </>
   );
 }
 
@@ -481,6 +488,8 @@ function OpenChecklist({ e, people, onTab }: { e: EventWithStats; people: EventP
   const a = useMeetingActions(e, onTab);
   const friday = e.type === 'friday';
   const rows: { label: string; ok: boolean; note?: string; optional?: boolean }[] = [
+    // a generic title ("מפגש שישי") or one carried over from a duplicate is worth a look before the link goes out
+    { label: 'כותרת', ok: !!e.title.trim() && e.title.trim() !== DEFAULT_TITLE[e.type], note: e.title, optional: true },
     { label: 'תאריך, שעה ומקום', ok: true, note: `${fmtDayLong(e.starts_at)} · ${people.place ?? 'בלי כתובת'}` },
     ...(friday || e.speaker_id ? [{ label: 'מרצה', ok: !!people.speaker, note: people.speaker?.full_name, optional: true }] : []),
     ...(friday || e.lecture_topic ? [{ label: 'נושא ההרצאה', ok: !!e.lecture_topic?.trim(), note: e.lecture_topic ?? undefined, optional: true }] : []),
@@ -490,16 +499,17 @@ function OpenChecklist({ e, people, onTab }: { e: EventWithStats; people: EventP
   const missing = rows.filter((r) => !r.ok);
   return (
     <Panel title="מה חסר כדי לפתוח הרשמה" description={missing.length ? 'אפשר לפתוח גם עכשיו ולהשלים אחר כך. כל עוד המפגש טיוטה, הוא לא מוצג ללוחמים.' : 'הכול מוכן. כשפותחים הרשמה, הקישור מתחיל לעבוד.'}>
+      {/* a list, not a form: a check for what is set, a dash for what is missing (no boxes that look tappable) */}
       <ul className="mb-4 flex flex-col gap-2">
         {rows.map((r) => (
           <li key={r.label} className="flex items-start gap-2.5">
-            <span className={cx('mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px]', r.ok ? 'bg-ink text-light' : 'border border-dashed border-ink/40')} aria-hidden="true">
-              {r.ok && <Icon name="check" size={13} strokeWidth={2.6} />}
+            <span className={cx('mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center', r.ok ? 'text-ink' : 'text-muted')} aria-hidden="true">
+              {r.ok ? <Icon name="check" size={17} strokeWidth={2.6} /> : <span className="h-0.5 w-3 rounded-tag bg-current" />}
             </span>
             <span className="min-w-0">
               <span className={cx('font-semibold', !r.ok && 'text-ink-soft')}>{r.label}</span>
               {r.ok && r.note ? <span className="text-muted"> · {r.note}</span> : null}
-              {!r.ok && <span className="text-muted"> · עוד לא נקבע</span>}
+              {!r.ok && <span className="text-muted"> · {r.label === 'כותרת' ? (r.note ? `"${r.note}", כדאי כותרת שאומרת מה במפגש` : 'עוד לא נקבעה') : 'עוד לא נקבע'}</span>}
             </span>
           </li>
         ))}
@@ -525,40 +535,59 @@ function DuplicateDialog({ open, onClose, e }: { open: boolean; onClose: () => v
   const navigate = useNavigate();
   const toast = useToast();
   const invalidate = useInvalidateEvent();
-  const [{ date, time }, setWhen] = useState(() => nextWeekDate(e));
-  const [err, setErr] = useState<string | null>(null);
+  const [initial] = useState(() => nextWeekDate(e));
+  const [{ date, time }, setWhen] = useState(initial);
+  // the old title usually names last week's lecture: the copy starts from the generic one, and the old title is shown
+  const [title, setTitle] = useState(DEFAULT_TITLE[e.type] || e.title);
+  const [err, setErr] = useState<{ date?: string; title?: string; form?: string }>({});
+  const dirty = date !== initial.date || time !== initial.time || title !== (DEFAULT_TITLE[e.type] || e.title);
+  const inFlight = useRef(false);
   const dup = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc('staff_duplicate_event', { p_event_id: e.id, p_starts_at: fromIl(date, time) });
       if (error) throw error;
-      return data as string;
+      const id = data as string;
+      if (title.trim() !== e.title) {
+        const { error: titleError } = await supabase.from('events').update({ title: title.trim() }).eq('id', id).select('id').single();
+        if (titleError) throw titleError;
+      }
+      return id;
     },
+    onSettled: () => { inFlight.current = false; },
     onSuccess: async (id) => {
       await invalidate(e.id);
       onClose();
-      toast.success('נוצרה טיוטה. מעדכנים מרצה ונושא ושומרים');
+      toast.success('נוצרה טיוטה. עכשיו בוחרים מרצה ונושא ושומרים.');
       navigate(`/app/events/${id}/edit?from=dup`);
       window.scrollTo({ top: 0 });
     },
-    onError: (x) => setErr(errorMessage(x)),
+    onError: (x) => setErr({ form: errorMessage(x) }),
   });
   const submit = (ev: FormEvent) => {
     ev.preventDefault();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return setErr('צריך לבחור תאריך.');
-    setErr(null);
+    const errs: typeof err = {};
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) errs.date = 'צריך לבחור תאריך.';
+    const t = title.trim();
+    if (t.length < 2 || t.length > 120) errs.title = 'צריך כותרת (2 עד 120 תווים).';
+    setErr(errs);
+    if (Object.keys(errs).length || inFlight.current) return;
+    inFlight.current = true;
     dup.mutate();
   };
   return (
-    <Dialog open={open} onClose={onClose} title="שכפול לשבוע הבא" size="sm">
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <p className="text-body-sm text-ink-soft">נוצרת טיוטה עם אותם פרטים, מקום, מכסה ופעילות. המרצה והנושא מתאפסים (בכל שבוע הרצאה חדשה).</p>
+    <Dialog open={open} onClose={onClose} title="שכפול לשבוע הבא" size="sm" dismissible={!dirty}>
+      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+        <p className="text-body-sm text-ink-soft">נוצרת טיוטה עם אותו מקום, מספר מקומות ופעילות. הכותרת, המרצה והנושא מתחילים מחדש: בכל שבוע הרצאה אחרת.</p>
+        <Input label="כותרת" required value={title} onChange={(x) => setTitle(x.target.value)} error={err.title} maxLength={120}
+          hint={title.trim() !== e.title ? <>הכותרת הקודמת: "{e.title}"</> : 'זו הכותרת של המפגש הקודם. כדאי לעדכן אותה לנושא החדש.'} />
         <div className="grid grid-cols-2 gap-3">
-          <Input label="תאריך" type="date" ltr value={date} onChange={(x) => setWhen({ date: x.target.value, time })} error={err} hint={/^\d{4}-\d{2}-\d{2}$/.test(date) && !err ? fmtDayLong(fromIl(date, '12:00')) : undefined} />
+          <Input label="תאריך" type="date" ltr value={date} onChange={(x) => setWhen({ date: x.target.value, time })} error={err.date} hint={/^\d{4}-\d{2}-\d{2}$/.test(date) && !err.date ? fmtDayLong(fromIl(date, '12:00')) : undefined} />
           <Input label="שעת התחלה" type="time" ltr value={time} onChange={(x) => setWhen({ date, time: x.target.value })} step={300} />
         </div>
+        {err.form && <p className="text-small font-medium text-bad" role="alert">{err.form}</p>}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" busy={dup.isPending} icon="copy">יצירת טיוטה</Button>
-          <Button variant="ghost" onClick={onClose}>ביטול</Button>
+          <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
         </div>
       </form>
     </Dialog>
@@ -590,17 +619,18 @@ function CancelDialog({ open, onClose, e, onTab }: { open: boolean; onClose: () 
       onClose={onClose}
       title="ביטול המפגש"
       size="sm"
+      dismissible={!reason.trim()}
       footer={
         <>
           <Button variant="danger" busy={cancel.isPending} onClick={() => cancel.mutate()}>ביטול המפגש</Button>
-          <Button variant="ghost" onClick={onClose}>חזרה</Button>
+          <Button variant="ghost" onClick={onClose}>לא, להשאיר את המפגש</Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
         {reg + wait > 0 ? (
           <Notice tone="warn" icon="alert">
-            רשומים למפגש <b className="num">{reg}</b> אנשים{wait ? <> ועוד <b className="num">{wait}</b> בהמתנה</> : null}. הם לא יקבלו הודעה אוטומטית. אחרי הביטול כדאי לעדכן אותם בוואטסאפ מלשונית "הודעות".
+            רשומים למפגש <b className="num">{reg}</b> אנשים{wait ? <> ועוד <b className="num">{wait}</b> ברשימת ההמתנה</> : null}. הם לא יקבלו הודעה אוטומטית. אחרי הביטול כדאי לעדכן אותם בוואטסאפ מלשונית "הודעות".
           </Notice>
         ) : (
           <p className="text-body-sm text-ink-soft">אין הרשמות למפגש.</p>
@@ -637,7 +667,7 @@ function LinksPanel({ e }: { e: EventWithStats }) {
             לכל ערוץ כדאי קישור משלו: כך הדוחות יודעים מאיפה הגיעה כל הרשמה.
           </p>
         </div>
-        <QrBlock value={pub} label="QR להרשמה" filename={`registration-qr-${e.public_code}.png`} size={132} />
+        <QrBlock value={pub} label="קוד QR להרשמה" download="להרשמה" filename={`registration-qr-${e.public_code}.png`} size={132} />
       </div>
       {links.isError ? (
         <p className="mt-3 text-small text-bad">{errorMessage(links.error)}</p>
@@ -668,22 +698,22 @@ function LinksPanel({ e }: { e: EventWithStats }) {
   );
 }
 
-function QrBlock({ value, label, filename, size }: { value: string; label: string; filename: string; size: number }) {
+function QrBlock({ value, label, download: downloadLabel, filename, size }: { value: string; label: string; download: string; filename: string; size: number }) {
   const toast = useToast();
   const download = async () => {
     try {
       const url = await QRCode.toDataURL(value, { width: 1024, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#142837', light: '#FFFFFF' } });
       downloadFile(filename, dataUrlToBlob(url));
     } catch {
-      toast.error('לא הצלחנו ליצור את הקוד. נסו שוב.');
+      toast.error('לא הצלחנו ליצור את הקוד. אפשר לנסות שוב.');
     }
   };
   return (
     <div className="flex shrink-0 flex-col items-center gap-1.5">
       <QrImage value={value} size={size} label={label} className="rounded-[var(--radius-panel)] border border-line-soft" />
-      <button type="button" onClick={download} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] px-2 text-small font-semibold text-tide hover:bg-tide-wash">
+      <button type="button" onClick={download} className="inline-flex h-9 items-center gap-1 rounded-[var(--radius-control)] px-2 text-small font-semibold text-tide hover:bg-tide-wash pointer-coarse:h-11">
         <Icon name="download" size={16} />
-        הורדת QR
+        הורדת QR<span className="sr-only"> {downloadLabel}</span>
       </button>
     </div>
   );
@@ -729,7 +759,7 @@ function NewLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }
     ev.preventDefault();
     const c = code.trim().toLowerCase();
     const errs: typeof errors = {};
-    if (!CODE_RE.test(c) || c.startsWith('f-')) errs.code = 'אותיות באנגלית קטנות, ספרות ומקף (2–40 תווים), לא מתחיל ב-f-.';
+    if (!CODE_RE.test(c) || c.startsWith('f-')) errs.code = 'הקוד יכול לכלול רק אותיות קטנות באנגלית, ספרות ומקף (2–40 תווים), ולא להתחיל ב־f-.';
     if (label.trim().length < 2 || label.trim().length > 80) errs.label = 'צריך תיאור קצר (2–80 תווים).';
     setErrors(errs);
     if (Object.keys(errs).length) return;
@@ -737,7 +767,7 @@ function NewLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="קישור הרשמה לערוץ חדש" size="sm">
+    <Dialog open={open} onClose={onClose} title="קישור הרשמה לערוץ חדש" size="sm" dismissible={!(code || label || sourceId || campaign)}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <p className="text-body-sm text-ink-soft">הקישור עובד לכל מפגש: מוסיפים לקישור ההרשמה <span dir="ltr" className="num">?ref=קוד</span>, והדוחות סופרים כמה נרשמו והגיעו דרכו.</p>
         <Input label="תיאור" required value={label} onChange={(x) => setLabel(x.target.value)} error={errors.label} placeholder="קבוצת הוואטסאפ של מודיעין" maxLength={80} />
@@ -750,7 +780,7 @@ function NewLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }
         {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" busy={create.isPending} icon="link">יצירת קישור</Button>
-          <Button variant="ghost" onClick={onClose}>ביטול</Button>
+          <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
         </div>
       </form>
     </Dialog>
@@ -779,7 +809,7 @@ function EntrancePanel({ e }: { e: EventWithStats }) {
             <LinkRow label="קישור למשוב" url={fb} onCopy={() => copy(fb, 'קישור המשוב הועתק')} />
           </div>
         </div>
-        <QrBlock value={checkin} label="QR לצ׳ק־אין בכניסה" filename={`checkin-qr-${e.public_code}.png`} size={132} />
+        <QrBlock value={checkin} label="קוד QR לצ׳ק־אין בכניסה" download="לצ׳ק־אין" filename={`checkin-qr-${e.public_code}.png`} size={132} />
       </div>
       <PrintSignDialog open={printing} onClose={() => setPrinting(false)} e={e} url={checkin} />
     </Panel>
@@ -859,7 +889,7 @@ function PrintSignDialog({ open, onClose, e, url }: { open: boolean; onClose: ()
         footer={
           <>
             <Button onClick={() => window.print()}>הדפסה</Button>
-            <Button variant="ghost" onClick={onClose}>סגירה</Button>
+            <Button variant="ghost" onClick={onClose}>{DISMISS}</Button>
           </>
         }
       >

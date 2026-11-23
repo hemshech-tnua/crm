@@ -39,7 +39,7 @@ test('pay first: the pay step, the webhook turns the open tab into "נרשמת!"
   // an http link is refused before it reaches the server
   await page.getByLabel('קישור לתשלום').fill('http://pay.example.org/x');
   await page.getByRole('button', { name: 'יצירת המפגש' }).click();
-  await expect(page.getByText('הקישור צריך להתחיל ב-https://')).toBeVisible();
+  await expect(page.getByText('הקישור צריך להתחיל ב־https://')).toBeVisible();
   await expect(page.getByText('יש קישור לתשלום: צריך גם סכום.')).toBeVisible();
   await page.getByLabel('מחיר (₪)').fill('20');
   await page.getByLabel('קישור לתשלום').fill(PAY_URL);
