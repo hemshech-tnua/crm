@@ -7,7 +7,6 @@ export const slug = { he: 'calendar', en: 'calendar' };
 
 export function render(ctx) {
   const { t } = ctx;
-  const tri = () => ctx.brand.tri();
   const rows = [
     ['friday', 'calendar.kinds.friday'],
     ['evenings', 'calendar.kinds.evenings'],
@@ -46,13 +45,7 @@ export function render(ctx) {
         ${ctx.whatsapp(t('calendar.help.whatsapp'), { className: 'link' })}
       </p>
     </div>
-    <ul class="rows cal-rows" role="list" data-reveal="group">
-      ${rows.map(
-        ([id, key]) => html`<li><a class="row" href="${ctx.link(id)}">
-        <span class="row__text"><span class="row__title">${t(`nav.${id}`)}</span><span class="row__body">${t(key)}</span></span>${tri()}
-      </a></li>`,
-      )}
-    </ul>
+    ${ctx.ui.rows(rows.map(([id, key]) => ({ title: t(`nav.${id}`), body: t(key), href: ctx.link(id) })), { className: 'cal-rows' })}
   </div>
 </section>`;
 }

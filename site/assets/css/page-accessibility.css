@@ -3,7 +3,7 @@
 @layer pages {
   .a11y-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--space-9); }
   .a11y-hero__grid { display: grid; gap: var(--space-6) var(--gutter); }
-  .a11y-hero__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); text-wrap: balance; }
+  .a11y-hero__title { text-wrap: balance; } /* size: the shared inner-page h1 (.t-display) */
   @media (min-width: 64rem) {
     .a11y-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
     .a11y-hero__title { grid-column: 1 / span 7; }
@@ -12,7 +12,6 @@
 
   .a11y-body { padding-block-start: var(--space-9); }
   .a11y-body__grid { display: grid; gap: var(--space-8) var(--gutter); }
-  .a11y-toc__title { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--ink-quiet); margin-block-end: var(--space-2); }
   .a11y-toc ul { display: grid; gap: var(--space-1); }
   .a11y-toc a {
     display: flex; align-items: center; min-block-size: var(--tap); padding-inline: var(--space-4); border-radius: var(--radius-control);

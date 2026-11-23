@@ -2,7 +2,8 @@
   "site": {
     "name": "המשך תנועה",
     "description": "המשך תנועה is an Israeli nonprofit building a nationwide network of local community centers, with regular activities for combat veterans after their service: room to meet, move, find direction and build a good life.",
-    "titleSeparator": " · "
+    "titleSeparator": " · ",
+    "ogImageAlt": "The המשך תנועה mark and name above the Hebrew line “Service ends. The team doesn’t have to.”, beige on navy."
   },
   "skip": "Skip to content",
   "nav": {
@@ -11,6 +12,9 @@
     "menuLabel": "Menu",
     "menuOpen": "Open menu",
     "secondaryLabel": "More",
+    "menuNames": {
+      "volunteer": "Volunteer & speak"
+    },
     "homeLabel": "המשך תנועה: home",
     "switchTo": "עברית",
     "switchAria": "לגרסה העברית של העמוד",
@@ -40,6 +44,7 @@
     "register": "Sign up for a meeting",
     "registerShort": "Sign up",
     "barTitle": "Upcoming meetings",
+    "barTitleFriday": "Next Friday morning",
     "barAria": "Next meeting",
     "aria": "Sign up for a meeting: upcoming meetings"
   },
@@ -106,7 +111,7 @@
           },
           {
             "crm": "propose",
-            "label": "Give a talk or lead a session"
+            "label": "Offer a talk or a session"
           }
         ]
       }
@@ -134,15 +139,15 @@
     "fullNextSoon": "This meeting is full. The next one will be posted here soon.",
     "nextLabel": "Next meeting",
     "cta": {
-      "register": "Register",
-      "registerAndPay": "Register and pay",
+      "register": "Sign up",
+      "registerAndPay": "Sign up and pay",
       "waitlist": "Join the waiting list",
       "details": "Details",
       "allDetails": "Full meeting details"
     },
     "status": {
-      "cancelled": "Cancelled",
-      "closed": "Registration closed",
+      "cancelled": "Canceled",
+      "notOpen": "Registration isn't open right now",
       "fullWaitlist": "Full · waiting list open",
       "full": "Full",
       "oneLeft": "1 spot left",
@@ -150,16 +155,17 @@
       "open": "Registration open"
     },
     "notes": {
-      "quick": "Registration takes less than a minute.",
-      "quickCancel": "Registration takes less than a minute. You can cancel with your personal link.",
-      "payAtEnd": "You pay at the end of registration, on a secure payment page.",
+      "quick": "Signing up takes less than a minute.",
+      "quickCancel": "Signing up takes less than a minute. You can cancel with your personal link.",
+      "payAtEnd": "You pay at the end of sign-up, on a secure payment page.",
       "waitlist": "If a spot opens up, we'll let you know in the order people signed up.",
       "greeter": "Coming alone? Itai will meet you at the entrance."
     },
     "types": {
       "friday": "Friday morning",
       "bonfire": "Bonfire evening",
-      "other": "Meeting"
+      "other": "Meeting",
+      "women": "Women's evening"
     },
     "retry": "Try again",
     "fallback": "See all meetings in our registration system",
@@ -167,22 +173,28 @@
     "all": "All",
     "price": "₪{price}",
     "count": "{n} upcoming meetings",
+    "countOne": "1 upcoming meeting",
     "calendar": "See the calendar",
-    "titleNote": "Meeting titles are in Hebrew."
+    "titleNote": "Meeting titles are in Hebrew.",
+    "filters": {
+      "friday": "Friday mornings",
+      "bonfire": "Bonfire evenings",
+      "other": "Women's evenings & other meetings"
+    }
   },
   "whatsapp": {
     "general": "Hi, I have a question about המשך תנועה.",
     "volunteer": "Hi, I'd like to volunteer with המשך תנועה. How can I help?",
     "partner": "Hi, I'd like to talk about a partnership with המשך תנועה.",
     "donate": "Hi, I'd like to arrange a donation to המשך תנועה.",
-    "sponsor": "Hi, I'd like to hear about sponsoring a full meeting.",
+    "sponsor": "Hi, I'd like to hear about funding a Friday morning.",
     "share": "Thought of you. There's a Friday morning meetup for combat veterans: a workout, coffee and a guest talk. I think it's for you."
   },
   "a11y": {
     "newWindow": "(opens in a new window)",
     "whatsappNewWindow": "(WhatsApp, opens in a new window)",
     "registrationSystem": "(goes to our registration system)",
-    "hebrewOnly": "Registration is in Hebrew.",
+    "hebrewOnly": "Registration is in Hebrew and takes less than a minute.",
     "loading": "Loading…",
     "backToTop": "Back to top",
     "progress": "Reading progress"
@@ -215,11 +227,11 @@
     "secondary": "Home"
   },
   "photos": {
-    "training": "A group of men and women training outdoors on a hillside above a city. Some lift kettlebells, others work with resistance bands, while a coach explains something to one of them.",
-    "running": "Three people, a woman and two men, running together on a dirt trail among pine trees, in low sunlight.",
-    "talk": "A group seated around a long wooden table with coffee mugs and notebooks, listening to a woman who stands and speaks. Behind them, a large window looks out onto a street.",
-    "bonfire": "Men and women sitting around a campfire on a hillside at dusk, holding mugs and laughing.",
-    "walk": "Two young men walking and talking on a path under eucalyptus trees, both smiling. One wears a uniform; the other a T-shirt and jeans, with a backpack.",
+    "training": "Men and women training outdoors with kettlebells and resistance bands on a hill above a city.",
+    "running": "A woman and two men running together on a dirt trail among pine trees, in low sunlight.",
+    "talk": "A group at a long wooden table with coffee, listening to a woman who stands and speaks.",
+    "bonfire": "Men and women around a campfire on a hillside at dusk, holding mugs and laughing.",
+    "walk": "Two young men walking and talking under eucalyptus trees, smiling. One is in uniform.",
     "hills": "A dirt path winding down between olive trees toward rolling hills, in low sunlight."
   }
 }

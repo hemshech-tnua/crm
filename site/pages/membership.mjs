@@ -1,7 +1,7 @@
 // Membership — "הצטרפות לעמותה". One job: say what membership is (only as far as the facts go) and hand off to the
 // existing CRM form (#/member), which is where joining happens. One action, repeated: "להצטרפות לעמותה".
 import { html } from '../lib/html.mjs';
-import { tx, action, pageHref, corner } from './_g.mjs';
+import { tx, action, pageHref, corner, H1 } from './_g.mjs';
 
 export const slug = { he: 'membership', en: 'membership' };
 
@@ -15,7 +15,7 @@ export function render(ctx) {
   ${corner(ctx, { pos: 'te' })}
   <div class="wrap member-hero__grid">
     <div class="member-hero__text">
-      <h1 id="member-h1" class="member-hero__title" data-load>${t('membership.hero.title')}</h1>
+      <h1 id="member-h1" class="${H1} member-hero__title" data-load>${t('membership.hero.title')}</h1>
       <p class="t-lead" data-load="1">${tx(ctx, 'membership.hero.body')}</p>
       <div class="member-hero__action" data-load="2">
         ${join()}

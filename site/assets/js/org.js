@@ -1,17 +1,17 @@
 // The association's contact phone, live from public_org_info, into [data-org-phone] slots:
 //   data-org-phone="whatsapp" → href https://wa.me/<digits>[?text=data-org-text]
 //   data-org-phone="tel"      → href tel:+972…
-//   data-org-phone="text"     → the number as text (050-123-4567)
+//   data-org-phone="text"     → the number as text (050-123-4567; +972 50-123-4567 on English pages)
 // Slots stay hidden until a phone arrives (and so does their [data-org-phone-item] wrapper); no phone = nothing shows.
 // [data-org-phone-fallback] (a plain "contact the team" line) is hidden once the phone is there.
 import { rpcOnce } from './api.js';
 
-function display(e164) {
-  if (e164.startsWith('+9725') && e164.length === 13) {
-    const local = '0' + e164.slice(4);
-    return `${local.slice(0, 3)}-${local.slice(3, 6)}-${local.slice(6)}`;
-  }
-  return e164.startsWith('+972') ? '0' + e164.slice(4) : e164;
+/** 050-123-4567 on Hebrew pages; +972 50-123-4567 on English ones (readers abroad dial the country code). */
+function display(e164, lang) {
+  if (!e164.startsWith('+972')) return e164;
+  const rest = e164.slice(4);
+  const groups = rest.startsWith('5') && rest.length === 9 ? `${rest.slice(0, 2)}-${rest.slice(2, 5)}-${rest.slice(5)}` : rest;
+  return lang === 'he' ? `0${groups}` : `+972 ${groups}`;
 }
 
 export function initOrg() {
@@ -27,9 +27,9 @@ export function initOrg() {
         } else if (kind === 'tel') {
           node.setAttribute('href', `tel:${phone}`);
         } else if (kind === 'text') {
-          node.textContent = display(phone);
+          node.textContent = display(phone, document.documentElement.lang === 'en' ? 'en' : 'he');
+          node.setAttribute('dir', 'ltr'); // a number inside a Hebrew sentence keeps its digit order
         }
-        if (node.tagName === 'A' && kind !== 'text') node.setAttribute('dir', node.getAttribute('dir') ?? 'auto');
         node.hidden = false;
         node.closest('[data-org-phone-item]')?.removeAttribute('hidden');
       }

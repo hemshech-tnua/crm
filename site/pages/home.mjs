@@ -1,9 +1,10 @@
 // Home: in ten seconds, what המשך תנועה is, what happens there, why it is different and where it is going; then each
 // audience is routed to its page. Chapters follow the CEO's order (DESIGN.md §8, Team A's home story):
-//   1 hero (navy)            the two-line promise, the lead, the live next meeting, the group photo opening from the edge
+//   1 hero (navy)            the two-line promise, the lead (with "פה תמיד"), the live next FRIDAY, the group photo
+//                            (on phones it comes right after the lead, above the fold; the card follows)
 //   2 the four verbs (beige)  לפגוש · לזוז · למצוא כיוון · להצליח — a sticky index follows the block at mid-screen
 //   3 פה תמיד (navy)          the difference and the direction; SIGNATURE: the hills band opens from the reading edge
-//   4 Friday (beige-light)   the three promises beside the next live dates; the other meeting formats as tiles
+//   4 Friday (beige-light)   the three promises beside the next live Fridays; the other meeting formats as tiles
 //   5 proof (navy)           numbers + participant quotes — owner content, omitted in production until it exists
 //   6 join (beige/navy-deep) one row per audience (veterans, companies, donors, volunteers) + the partner logo wall
 //   7 closing                "נתראה בשישי?" + share with someone from the old team
@@ -24,7 +25,8 @@ export function render(ctx) {
   const { t, ui, org } = ctx;
   const get = (k) => ctx.get(`home.${k}`);
   const hasProof = ctx.preview || ctx.has(org.stats) || ctx.has(org.quotes);
-  const grounds = hasProof ? { join: 'beige', closing: 'navy' } : { join: 'navy-deep', closing: 'beige' };
+  // the closing chapter is always a light band, so it never runs into the navy footer
+  const grounds = hasProof ? { join: 'beige', closing: 'beige-light' } : { join: 'navy-deep', closing: 'beige' };
   const fridayUrl = ctx.pageExists('friday') ? ctx.link('friday') : null;
 
   // ── 1 · hero ──
@@ -33,10 +35,15 @@ export function render(ctx) {
 <section class="chapter hero" data-ground="navy" aria-labelledby="home-title">
   <div class="wrap hero__grid">
     <h1 id="home-title" class="t-hero hero__title">${title.map((line, i) => html`<span data-load="${i}">${line}</span> `)}</h1>
-    <div class="hero__side">
-      <p class="t-lead hero__lead" data-load="2">${t('home.hero.body')}</p>
+    <p class="t-lead hero__lead" data-load="2">${t('home.hero.body')}</p>
+    <div class="hero__photo" data-load="wipe">
+      ${ui.photo('training', { ratio: '4:5', focus: 40, bleed: true, eager: true, sizes: '(min-width: 64rem) 58vw, 100vw' })}
+      ${ctx.brand.stripes({ width: 240, height: 140, unit: 22, dir: 'cut', count: 3, anchor: 'te', className: 'stripes stripes--beige hero__stripes' })}
+    </div>
+    <div class="hero__act">
       <div data-load="3">${ctx.nextMeeting({
-        type: 'all',
+        type: 'friday',
+        pay: true,
         label: t('home.next.title'),
         title: t('home.next.fallbackTitle'),
         body: t('home.next.fallbackBody'),
@@ -44,10 +51,6 @@ export function render(ctx) {
         more: { href: hrefOf(ctx, get('next.moreHref'), ctx.crm.home), label: t('home.next.moreLink') },
       })}</div>
       ${fridayUrl ? html`<p data-load="4">${ui.link(t('home.hero.ctaSecondary'), fridayUrl)}</p>` : ''}
-    </div>
-    <div class="hero__photo" data-load="wipe">
-      ${ui.photo('training', { ratio: '4:5', focus: 40, bleed: true, eager: true, sizes: '(min-width: 64rem) 58vw, 100vw' })}
-      ${ctx.brand.stripes({ width: 240, height: 140, unit: 22, dir: 'rise', count: 3, className: 'stripes stripes--beige hero__stripes' })}
     </div>
   </div>
 </section>`;
@@ -63,7 +66,7 @@ export function render(ctx) {
 <section class="chapter verbs" data-ground="beige" aria-labelledby="verbs-title">
   <div class="wrap">
     <div class="head verbs__head" data-reveal>
-      <h2 id="verbs-title" class="t-chapter">${t('home.what.title')}</h2>
+      <h2 id="verbs-title" class="t-chapter">${t(showSucceed ? 'home.what.title' : 'home.what.titleShown')}</h2>
       <p class="t-lead">${t('home.what.lead')}</p>
     </div>
     <div class="verbs__grid">
@@ -128,13 +131,13 @@ export function render(ctx) {
       </div>
       <div class="meetings__dates" data-reveal="up">
         <h3 class="t-title">${t('home.next.upcomingTitle')}</h3>
-        ${ctx.events({ type: 'all', limit: 3, heading: 4, id: 'home-events', stack: true })}
+        ${ctx.events({ type: 'friday', limit: 3, heading: 4, id: 'home-events', stack: true })}
       </div>
     </div>
     <div class="meetings__more">
       <h3 class="t-title" data-reveal="up">${t('home.evenings.title')}</h3>
       <ul class="types" role="list" data-reveal>
-        <li><a class="type" href="${eveningsUrl}">${ctx.brand.stripes({ width: 200, height: 140, unit: 26, dir: 'fall', count: 3, className: 'stripes' })}<span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
+        <li><a class="type" href="${eveningsUrl}">${ctx.brand.stripes({ width: 200, height: 140, unit: 26, dir: 'cut', count: 3, anchor: 'te', className: 'stripes' })}<span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
         <li><a class="type" href="${eveningsUrl}">${ctx.img('bonfire', { alt: '', sizes: '(min-width: 48rem) 33vw, 100vw', className: 'focus-70' })}<span class="type__title">${evItems[1].title}</span><span class="type__body">${evItems[1].body}</span></a></li>
         <li><a class="type type--deep" href="${ctx.ctaHref}"><span class="type__title">${evItems[2].title}</span><span class="type__body">${evItems[2].body}</span><span class="type__go">${t('events.calendar')}${ctx.brand.tri()}</span></a></li>
       </ul>

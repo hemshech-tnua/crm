@@ -2,7 +2,7 @@
 // Order: the invitation → why us (facts only) → the partnership models (Team A's list, pending the owner's confirmation)
 // → partners' logos (owner content) → the conversation itself (email when the owner gives one, WhatsApp today).
 import { html } from '../lib/html.mjs';
-import { C, pageHref, waAction, action, chapters, corner, own } from './_support.mjs';
+import { C, pageHref, waAction, action, chapters, corner, own, waRow, linkRow } from './_support.mjs';
 
 export const slug = { he: 'partners', en: 'partners' };
 
@@ -71,11 +71,15 @@ export function render(ctx) {
       <p class="${C.lead}" ${ctx.reveal('up', 1)}>${t(k('ways.body'))}</p>
       ${ctx.slot(null, t(k('slots.confirm')), () => '', { className: 'pt-slot' })}
     </div>
-    <ul class="pt-models" role="list" data-reveal-group>
-      ${ctx.list(k('ways.items')).map(
-        (it) => html`<li class="pt-model" data-reveal="up"><h3 class="${C.title}">${it.title}</h3><p>${it.body}</p></li>`,
-      )}
-    </ul>
+    ${ctx.ui.rows(
+      ctx.list(k('ways.items')).map((it) => {
+        const text = t(k('ways.message'), { model: it.title });
+        return email
+          ? linkRow(ctx, { title: it.title, body: it.body, label: t(k('ways.go')), href: `mailto:${email}?subject=${encodeURIComponent(`${t(k('contact.emailSubject'))}: ${it.title}`)}` })
+          : waRow(ctx, { title: it.title, body: it.body, label: t(k('ways.go')), text, hint: t('donate.ways.waHint') });
+      }),
+      { level: 3, className: 'pt-models' },
+    )}
   </div>
 </section>`;
 

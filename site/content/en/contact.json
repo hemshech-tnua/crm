@@ -23,10 +23,11 @@
         "page": "calendar"
       },
       {
-        "title": "Cancelling or changing a registration",
-        "body": "Use the personal link you got at the end of registration. Cancelling early frees your spot for someone waiting.",
-        "cta": "",
-        "page": ""
+        "title": "Canceling or changing a registration",
+        "body": "Use the personal link you got at the end of registration. Canceling early frees your spot for someone waiting.",
+        "cta": "Read the answer",
+        "page": "faq",
+        "faq": "cancel"
       },
       {
         "title": "Companies and organizations",

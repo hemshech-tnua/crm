@@ -72,17 +72,52 @@ test('home: the live next-meeting card, the signature wipe, the CEO\'s chapter o
   for (const lang of ['he', 'en']) {
     const html = read(join(prod.out, lang === 'en' ? 'en/index.html' : 'index.html'));
     const main = mainOf(html);
-    assert.match(main, /<div class="next" data-next="all" aria-busy="true" aria-live="polite">/, `${lang}: next card`);
+    assert.match(main, /<div class="next" data-next="friday" data-next-pay aria-busy="true" aria-live="polite">/, `${lang}: next card = the next Friday (registration + payment)`);
+    const order = [...main.matchAll(/class="[^"]*\bhero__(title|lead|photo|act)\b/g)].map((m) => m[1]);
+    assert.deepEqual(order, ['title', 'lead', 'photo', 'act'], `${lang}: hero source order (phones: the photo right after the lead)`);
     assert.match(main, /<a class="btn" href="[^"]+" data-next-cta data-hero-cta>/, `${lang}: hero CTA marks where the phone bar starts`);
     assert.equal((main.match(/data-wipe/g) ?? []).length, 1, `${lang}: exactly one signature wipe`);
     assert.match(main, /fetchpriority="high"/, `${lang}: hero photo is the eager LCP image`);
     const ids = [...main.matchAll(/<section class="chapter ([a-z]+)"/g)].map((m) => m[1]);
     assert.deepEqual(ids, ['hero', 'verbs', 'always', 'meetings', 'join', 'closing'], `${lang}: chapter order (no proof without owner content)`);
-    assert.match(main, /data-events="all"/, `${lang}: live meetings list`);
+    assert.match(main, /data-events="friday"/, `${lang}: live list of the next Fridays`);
   }
   const pv = mainOf(read(join(preview.out, 'index.html')));
   assert.deepEqual([...pv.matchAll(/<section class="chapter ([a-z]+)"/g)].map((m) => m[1]), ['hero', 'verbs', 'always', 'meetings', 'proof', 'join', 'closing'], 'preview shows the proof chapter');
   assert.ok((pv.match(/data-owner-slot/g) ?? []).length >= 4, 'preview marks the owner slots on home');
+});
+
+test('titles: the name exactly once in <title>, og:title and every JSON-LD name', () => {
+  for (const [name, b] of [['production', prod], ['preview', preview]]) {
+    for (const { rel, html } of pages(b.out)) {
+      const norm = (s) => s.replace(/&nbsp;|\u00a0/g, ' ');
+      const title = norm(html.match(/<title>([^<]*)<\/title>/)[1]);
+      assert.equal(title.split('המשך תנועה').length - 1, 1, `${name} ${rel}: <title>${title}</title>`);
+      const og = html.match(/<meta property="og:title" content="([^"]*)">/);
+      if (og) assert.equal(norm(og[1]).split('המשך תנועה').length - 1, 1, `${name} ${rel}: og:title ${og[1]}`);
+      assert.match(html, /<meta property="og:image:alt" content="[^"]{10,}">/, `${name} ${rel}: og:image:alt`);
+    }
+  }
+});
+
+test('pages waiting for owner content (config PAGE_WHEN): out of production, in preview', () => {
+  // org.json has no team yet: production has no team page and no link to it; preview builds and lists it
+  assert.ok(!exists(prod.out, 'team') && !exists(prod.out, 'team', 'en'), 'production: no team page');
+  for (const { rel, html } of pages(prod.out)) assert.doesNotMatch(html, /href="\/crm\/site\/(en\/)?team\//, `${rel}: links to the hidden team page`);
+  assert.doesNotMatch(read(join(prod.out, 'sitemap.xml')), /\/team\//, 'sitemap');
+  assert.ok(exists(preview.out, 'team'), 'preview: team page built');
+  assert.match(read(join(preview.out, 'index.html')), /href="\/crm\/site\/team\/"/, 'preview: listed');
+});
+
+test('the phone CTA bar: the next Friday by default, every live page preconnects to Supabase', () => {
+  const html = read(join(prod.out, 'about/index.html'));
+  assert.match(html, /<div class="cta-bar" data-ground="navy" data-cta-bar data-next="friday" data-next-pay /);
+  for (const { rel, html: h } of pages(prod.out)) {
+    if (/data-(events|next|org-phone)=/.test(h)) assert.match(h, /<link rel="preconnect" href="https:\/\/[a-z0-9]+\.supabase\.co" crossorigin>/, `${rel}: preconnect`);
+  }
+  const cal = read(join(prod.out, 'calendar/index.html'));
+  assert.equal((cal.match(/<link rel="modulepreload" href="\/crm\/site\/assets\/js\/(events|api|config)\.[0-9a-f]{10}\.js">/g) ?? []).length, 3, 'calendar preloads the meetings modules');
+  assert.doesNotMatch(read(join(prod.out, 'index.html')), /modulepreload/, 'home does not');
 });
 
 test('404: one job — back to a meeting; noindex; no CTA bar', () => {

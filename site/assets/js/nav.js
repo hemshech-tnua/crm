@@ -42,16 +42,24 @@ export function initNav() {
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       });
       // a desktop-width window never needs the sheet: close it if the viewport grows past the phone layout
-      matchMedia(document.documentElement.lang === 'en' ? '(min-width: 80rem)' : '(min-width: 75rem)').addEventListener?.('change', (q) => q.matches && close());
+      matchMedia(document.documentElement.lang === 'en' ? '(min-width: 75rem)' : '(min-width: 64rem)').addEventListener?.('change', (q) => q.matches && close());
     }
   }
 
-  // phone CTA bar: shown once the page's CTA (or, without one, the first chapter) has scrolled above the viewport
+  // the header bar wraps under text spacing / zoom: --header-h (scroll padding, sticky offsets) follows its real height
+  const head = document.querySelector('.site-header__bar');
+  if (head && 'ResizeObserver' in window) {
+    new ResizeObserver(() => root.style.setProperty('--header-h', `${Math.ceil(head.getBoundingClientRect().height)}px`)).observe(head);
+  }
+
+  // phone CTA bar: shown once the page's CTA (or, without one, the first chapter) is above the viewport. A scroll check
+  // (rAF-throttled), not an IntersectionObserver: a jump from below the fold to past the CTA never intersects it.
   const bar = document.querySelector('[data-cta-bar]');
   const anchor = document.querySelector('[data-hero-cta]') ?? document.querySelector('main > :first-child');
-  if (bar && anchor && 'IntersectionObserver' in window) {
-    new IntersectionObserver(([e]) => {
-      bar.toggleAttribute('data-shown', !e.isIntersecting && e.boundingClientRect.top < 0);
-    }).observe(anchor);
+  if (bar && anchor) {
+    let ticking = false;
+    const check = () => { ticking = false; bar.toggleAttribute('data-shown', anchor.getBoundingClientRect().bottom < 0); };
+    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(check); } }, { passive: true });
+    check();
   }
 }

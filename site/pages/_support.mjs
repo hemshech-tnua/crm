@@ -6,7 +6,7 @@ import { html, attrs } from '../lib/html.mjs';
 export const C = {
   wrap: 'wrap',
   chapter: 'chapter',
-  display: 't-display',
+  display: 't-display', // the shared inner-page h1 size (layout.css)
   chapterTitle: 't-chapter',
   title: 't-title',
   lead: 't-lead',
@@ -69,27 +69,37 @@ export function chapters(sections, pattern = ['navy', 'beige', 'navy', 'beige-li
 /**
  * Corner stripes: three 45° bands entering from one corner (tone-on-tone by default), decorative.
  * pos is logical (ts | te | bs | be: inline start/end × top/bottom) or physical (tl | tr | bl | br, for a photo whose
- * quiet corner is fixed). The bands are drawn into the corner they sit in, in either reading direction.
+ * quiet corner is fixed). The run is anchored to that corner by the shared stripes helper (lib/brand.mjs), so it stays
+ * in the corner whatever the box's shape, in either reading direction.
  */
 export function corner(ctx, pos = 'te', { unit = 22, tone } = {}) {
   const rtl = ctx.dir === 'rtl';
-  const W = 260;
-  const H = 150;
-  let v = pos[0];
-  let side; // physical: 'l' | 'r'
-  let logical;
-  if (pos[1] === 's' || pos[1] === 'e') {
-    logical = pos;
-    side = (pos[1] === 's') === rtl ? 'r' : 'l';
-  } else {
-    side = pos[1];
-    logical = v + ((side === 'r') === rtl ? 's' : 'e');
-  }
-  // fall (\) with offset 0 fills bottom-left, with offset W top-right; rise (/) with offset 0 fills top-left, W bottom-right
-  const dir = (v === 't') === (side === 'l') ? 'rise' : 'fall';
-  const offset = (v === 't' && side === 'r') || (v === 'b' && side === 'r') ? W : 0;
-  return html`<div class="${['stripes', 'corner', `corner--${logical}`, tone && `stripes--${tone}`].filter(Boolean).join(' ')}" aria-hidden="true">${ctx.brand.stripes({ width: W, height: H, unit, dir, offset, count: 3 })}</div>`;
+  const logical = pos[1] === 's' || pos[1] === 'e' ? pos : pos[0] + ((pos[1] === 'r') === rtl ? 's' : 'e');
+  const physical = /^[tb][lr]$/.test(pos) ? pos : pos[0] + ((pos[1] === 's') === rtl ? 'r' : 'l');
+  // fall (\) runs into the top-right / bottom-left corners, rise (/) into the top-left / bottom-right ones
+  const dir = (physical === 'tr' || physical === 'bl') ? 'fall' : 'rise';
+  return html`<div class="${['stripes', 'corner', `corner--${logical}`, tone && `stripes--${tone}`].filter(Boolean).join(' ')}" aria-hidden="true">${ctx.brand.stripes({ width: 260, height: 150, unit, dir, count: 3, anchor: physical })}</div>`;
 }
 
 /** A bilingual owner value ({he,en}) or plain value. */
 export const own = (ctx, v) => ctx.l(v);
+
+/**
+ * A row for ctx.ui.rows (the shared big row link: whole row clickable, ◀ at the end) that opens WhatsApp with a
+ * prefilled message. It links to the contact page until assets/js/org.js fills in the association's phone.
+ */
+export function waRow(ctx, { title, body, note, label, text, hint, fallback } = {}) {
+  return { title, body, note, href: fallback ?? pageHref(ctx, 'contact'), go: label, hint, whatsapp: { text } };
+}
+
+/** A row for ctx.ui.rows that goes to a page or an outside link (`hint` is read out after the label, e.g. "(opens …)"). */
+export function linkRow(ctx, { title, body, note, label, href, hint, external = false } = {}) {
+  return { title, body, note, href, go: label, hint, external };
+}
+
+/** A giving route as a row: the owner's payment link when org.json has one, otherwise WhatsApp to arrange it. */
+export function giveRow(ctx, { title, body, url, cta, wa, message, external }) {
+  return ctx.has(url)
+    ? linkRow(ctx, { title, body, label: cta, href: url, hint: external, external: true })
+    : waRow(ctx, { title, body, label: wa, text: message, hint: ctx.t('donate.ways.waHint') });
+}

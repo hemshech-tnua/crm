@@ -8,7 +8,7 @@ export function csp(supabaseOrigin) {
     "script-src 'self'",
     "style-src 'self'",
     "font-src 'self'",
-    `img-src 'self' data:${supabaseOrigin ? ` ${supabaseOrigin}/storage/v1/object/public/people/` : ''}`,
+    "img-src 'self' data:",
     `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
     "object-src 'none'",
     "base-uri 'self'",
@@ -21,7 +21,7 @@ export function csp(supabaseOrigin) {
 
 const jsonLd = (obj) => raw(`<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`);
 
-export function head(ctx, { title, description, noindex, jsonld }) {
+export function head(ctx, { title, description, noindex, jsonld, live = false }) {
   const { page, site } = ctx;
   const fonts = ctx.lang === 'he' ? ['google-sans-hebrew-wght-normal.woff2', 'google-sans-latin-wght-normal.woff2'] : ['google-sans-latin-wght-normal.woff2'];
   const ogImage = site.origin + site.base + 'assets/og-image.png';
@@ -49,10 +49,17 @@ ${alt ? html`<meta property="og:url" content="${alt[ctx.lang]}">` : ''}
 <meta property="og:locale" content="${ctx.meta.locale}">
 <meta property="og:locale:alternate" content="${ctx.lang === 'he' ? 'en_US' : 'he_IL'}">
 <meta name="twitter:card" content="summary_large_image">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${ctx.t('site.ogImageAlt')}">
+<meta name="twitter:image:alt" content="${ctx.t('site.ogImageAlt')}">
 <link rel="icon" href="${site.base}assets/favicon.svg" type="image/svg+xml">
-${fonts.map((f) => html`<link rel="preload" href="${site.base}assets/fonts/${f}" as="font" type="font/woff2" crossorigin>
+${live && site.supabaseOrigin ? html`<link rel="preconnect" href="${site.supabaseOrigin}" crossorigin>
+` : ''}${fonts.map((f) => html`<link rel="preload" href="${site.base}assets/fonts/${f}" as="font" type="font/woff2" crossorigin>
 `)}<link rel="stylesheet" href="${ctx.assetUrl('css')}">
 <script type="module" src="${ctx.assetUrl('js')}"></script>
+${(ctx.livePreload ?? []).map((m) => html`<link rel="modulepreload" href="${ctx.jsUrl(m)}">
+`)}
 ${(jsonld ?? []).map(jsonLd)}
 </head>`;
 }

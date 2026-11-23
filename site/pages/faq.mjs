@@ -2,7 +2,7 @@
 // public Friday FAQ + Team A's questions about the association). Native <details> accordion, grouped; a topic index
 // that follows the reading position (sticky beside the questions from 1024px). Quiet page: reveals only.
 import { html } from '../lib/html.mjs';
-import { txs, plain, action, waAction, pageHref } from './_g.mjs';
+import { txs, plain, action, waAction, pageHref, H1 } from './_g.mjs';
 
 export const slug = { he: 'faq', en: 'faq' };
 
@@ -16,6 +16,9 @@ function answerLink(ctx, link) {
 
 const groupsOf = (ctx) => ctx.list('faq.groups');
 
+/** The answer to show: `aApproved` replaces `a` once the association is recognized under Section 46 (org.section46). */
+const answerOf = (ctx, it) => (ctx.org.section46 === true && it.aApproved ? it.aApproved : it.a);
+
 export function render(ctx) {
   const { t } = ctx;
   const groups = groupsOf(ctx)
@@ -26,11 +29,11 @@ export function render(ctx) {
 <section class="chapter faq-hero" data-ground="navy" aria-labelledby="faq-h1">
   <div class="wrap faq-hero__grid">
     <div class="stack">
-      <h1 id="faq-h1" class="faq-hero__title" ${ctx.reveal('up')}>${t('faq.hero.title')}</h1>
+      <h1 id="faq-h1" class="${H1} faq-hero__title" ${ctx.reveal('up')}>${t('faq.hero.title')}</h1>
       <p class="t-lead" ${ctx.reveal('up', 1)}>${t('faq.hero.body')}</p>
     </div>
     <nav class="faq-topics" aria-labelledby="faq-topics-h" ${ctx.reveal('up', 2)}>
-      <h2 id="faq-topics-h" class="faq-topics__title">${t('faq.hero.indexLabel')}</h2>
+      <h2 id="faq-topics-h" class="visually-hidden">${t('faq.hero.indexLabel')}</h2>
       <ul role="list">
         ${groups.map((g) => html`<li><a class="faq-topics__link" href="#faq-${g.id}"><span>${g.title}</span></a></li>`)}
       </ul>
@@ -47,11 +50,13 @@ export function render(ctx) {
         <div class="faq faq__items">
           ${g.items.map((it) => {
             const link = answerLink(ctx, it.link);
+            const a = answerOf(ctx, it);
+            // an answer with an id can be linked to (…/faq/#faq-cancel): the browser opens its <details> on arrival
             return html`<details>
             <summary><span>${txs(ctx, it.q)}</span></summary>
-            <div class="faq__answer">
-              ${ctx.has(it.a)
-                ? html`<p>${txs(ctx, it.a)}</p>${link ? html`<p>${action(ctx, { href: link.href, label: link.label, className: 'link', external: link.external, hint: link.external ? t('faq.closing.newSystem') : null })}</p>` : ''}`
+            <div class="faq__answer"${it.id ? html` id="faq-${it.id}"` : ''}>
+              ${ctx.has(a)
+                ? html`<p>${txs(ctx, a)}</p>${link ? html`<p>${action(ctx, { href: link.href, label: link.label, className: 'link', external: link.external, hint: link.external ? t('faq.closing.newSystem') : null })}</p>` : ''}`
                 : ctx.slot(null, it.slot ?? it.q, () => '')}
             </div>
           </details>`;
@@ -79,7 +84,7 @@ export function render(ctx) {
 
 /** FAQPage structured data from the answered questions (owner-pending ones are left out). */
 export function jsonld(ctx) {
-  const items = groupsOf(ctx).flatMap((g) => g.items).filter((it) => ctx.has(it.a));
+  const items = groupsOf(ctx).flatMap((g) => g.items).map((it) => ({ ...it, a: answerOf(ctx, it) })).filter((it) => ctx.has(it.a));
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',

@@ -16,10 +16,25 @@ const corner = (ctx, pos, { dir = 'fall', tone = 'beige' } = {}) =>
 export function render(ctx) {
   const { t, org } = ctx;
   const tri = () => ctx.brand.tri();
+  // stripes cut the corner they sit in: "\" for the top-right corner, "/" for the top-left, in either reading direction
+  const cut = (pos) => ((pos[1] === 's') === (ctx.dir === 'rtl') ? 'fall' : 'rise');
   const shareUrl = ctx.abs(ctx.page.url);
   const waShare = `https://wa.me/?text=${encodeURIComponent(`${t('friday.closing.shareMessage')}\n${shareUrl}`)}`;
   const program = ctx.list('friday.program.items');
   const emphasis = ctx.list('friday.emphasis.items');
+
+  // one real fact beside each promise: the morning's structure · the next three Fridays (live) · a photo
+  const promiseFact = [
+    html`<div class="fr-promise__fact fr-glance" data-reveal="up" data-reveal-delay="2">
+      <h4 class="fr-promise__factTitle">${t('friday.emphasis.glanceTitle')}</h4>
+      <ol class="fr-glance__list" role="list">${program.map((s) => html`<li><span class="fr-glance__time">${s.time}</span><span class="fr-glance__what">${s.title}</span></li>`)}</ol>
+    </div>`,
+    html`<div class="fr-promise__fact fr-next3" data-reveal="up" data-reveal-delay="2">
+      <h4 class="fr-promise__factTitle">${t('friday.emphasis.datesTitle')}</h4>
+      ${ctx.events({ type: 'friday', limit: 3, heading: 5, id: 'fr-next3', stack: true, more: false, className: 'fr-next3__events' })}
+    </div>`,
+    html`<figure class="photo fr-promise__photo" data-reveal="fade" data-reveal-delay="2">${ctx.img('training', { sizes: '(min-width: 64rem) 34vw, 100vw' })}</figure>`,
+  ];
 
   return html`
 <section class="chapter fr-hero" data-ground="beige" aria-labelledby="fr-title">
@@ -41,7 +56,7 @@ export function render(ctx) {
     </div>
     <div class="fr-hero__media">
       <figure class="photo r-45 fr-hero__photo" data-load="wipe">${ctx.img('running', { eager: true, alt: '', sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
-      ${ctx.brand.stripes({ width: 220, height: 150, unit: 20, dir: 'fall', count: 3, className: 'stripes fr-hero__stripes' })}
+      ${ctx.brand.stripes({ width: 220, height: 150, unit: 20, dir: cut('ts'), count: 3, className: 'stripes fr-hero__stripes', anchor: 'ts' })}
     </div>
   </div>
 </section>
@@ -50,14 +65,13 @@ export function render(ctx) {
   <h2 id="fr-promises-title" class="visually-hidden">${t('friday.emphasis.title')}</h2>
   ${emphasis.map(
     (p, i) => html`<div class="fr-promise fr-promise--${i + 1}">
-    ${i === 0 ? ctx.brand.stripes({ width: 300, height: 420, unit: 34, dir: 'fall', count: 3, className: 'stripes stripes--beige fr-promise__stripes' }) : ''}
-    ${i === 1 ? html`<span class="fr-promise__figure" aria-hidden="true">3</span>` : ''}
+    ${i === 0 ? ctx.brand.stripes({ width: 300, height: 420, unit: 34, dir: cut('te'), count: 3, className: 'stripes stripes--beige fr-promise__stripes', anchor: 'te' }) : ''}
     <div class="wrap fr-promise__in">
       <div class="fr-promise__text">
         <h3 class="fr-promise__title" data-reveal="up">${p.lines.map((l) => html`<span>${l}</span>`)}</h3>
         <p class="fr-promise__body" data-reveal="up" data-reveal-delay="1">${p.body}</p>
       </div>
-      ${i === 2 ? html`<figure class="photo fr-promise__photo" data-reveal="fade" data-reveal-delay="2">${ctx.img('training', { sizes: '(min-width: 64rem) 34vw, 100vw' })}</figure>` : ''}
+      ${promiseFact[i] ?? ''}
     </div>
   </div>`,
   )}

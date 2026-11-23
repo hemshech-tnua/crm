@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Women's evenings & more · המשך תנועה",
-    "description": "Beyond Friday mornings: women's evenings for women combat veterans, bonfire evenings and other meetings. All dates and registration in one place."
+    "description": "Beyond Friday mornings: evenings for women combat veterans, bonfire evenings and other meetings. All dates and registration in one place."
   },
   "hero": {
     "title": "Women's evenings and more",
@@ -10,9 +10,8 @@
   },
   "women": {
     "name": "Women's evenings",
-    "title": "By women combat veterans, for women combat veterans",
+    "title": "Evenings for women combat veterans",
     "slot": "Women's evenings: who they are for, what happens, how often and where (2–3 sentences)",
-    "cta": "Upcoming women's evenings",
     "details": "",
     "note": "Every evening is posted here and on the calendar, with full details and registration."
   },
@@ -35,7 +34,10 @@
     "bonfire": "Upcoming bonfire evenings",
     "other": "Upcoming women's evenings and other meetings",
     "note": "Registration and payment happen in our registration system, which is in Hebrew.",
-    "cta": "Full calendar"
+    "cta": "Full calendar",
+    "women": "Upcoming women's evenings",
+    "womenEmptyTitle": "No women's evening on the calendar right now",
+    "womenEmptyBody": "When one is set, it will appear here and on the calendar."
   },
   "closing": {
     "title": "Prefer mornings?",

@@ -22,18 +22,24 @@ export function ownerBox(ctx, label, { tag = 'div', className } = {}) {
 /**
  * The live meetings list. The build writes the container with a loading skeleton and a link to the CRM (works without
  * JavaScript too); assets/js/events.js fills it from public_list_events with .meet cards (one link per card).
- *   type: 'all' | 'friday' | 'bonfire' | 'other'   limit: max cards   filter: show type filter buttons
+ *   type: 'all' | 'friday' | 'bonfire' | 'other' | 'women'   limit: max cards   filter: show type filter buttons
+ *     'women' = the women's evenings among the CRM's "other" meetings (events.js isWomensEvening: the title or activity
+ *     says נשים / לוחמות / women); 'other' keeps every "other" meeting, women's evenings included.
  *   heading: heading level of each card title (2–4)   id: a stable id when a page has more than one list
  *   stack: one card per row at every width   more: false to drop the "all meetings in the registration system" link
+ *   empty: { title, body } the empty state for this list (default: copy events.emptyTitle / events.emptyBody)
  */
-export function eventsBlock(ctx, { type = 'all', limit = 6, filter = false, heading = 3, id = 'events', className, stack = false, more = true } = {}) {
+export function eventsBlock(ctx, { type = 'all', limit = 6, filter = false, heading = 3, id = 'events', className, stack = false, more = true, empty } = {}) {
   return html`<div${attrs({
     class: cx('events', stack && 'events--stack', className),
     id,
+    tabindex: '-1',
     'data-events': type,
     'data-events-limit': limit,
     'data-events-filter': filter || null,
     'data-events-heading': heading,
+    'data-events-empty-title': empty?.title ?? null,
+    'data-events-empty-body': empty?.body ?? null,
     'aria-busy': 'true',
   })}>
   <div class="events__filters" data-events-filters hidden></div>
@@ -48,15 +54,16 @@ export function eventsBlock(ctx, { type = 'all', limit = 6, filter = false, head
 /**
  * The live "next meeting" card (hero of home, Friday). Static text first (no JS: it links to the calendar); events.js
  * swaps in the soonest open meeting of `type`, its date, time, place, availability and a registration link.
- *   type: 'all' | 'friday' | …   label/title/body: copy shown before the data arrives   cta: button label (copy)
+ *   type: 'friday' (default: the CEO's first goal) | 'all' | 'bonfire' | 'other' | 'women'
+ *   label/title/body: copy shown before the data arrives   cta: button label (copy)
  *   more: { href, label } a secondary link   heroCta: mark the button as the page's CTA (the phone bar appears after it)
  */
-export function nextMeeting(ctx, { type = 'all', label, title, body, cta, more, heroCta = true, className, pay = false } = {}) {
+export function nextMeeting(ctx, { type = 'friday', label, title, body, cta, more, heroCta = true, className, pay = false } = {}) {
   return html`<div${attrs({ class: cx('next', className), 'data-next': type, 'data-next-pay': pay || null, 'aria-busy': 'true', 'aria-live': 'polite' })}>
   <p class="next__label" data-next-label>${label ?? ctx.t('events.nextLabel')}</p>
   <p class="next__when" data-next-when><span>${title}</span></p>
   <p class="next__what" data-next-what>${body}</p>
-  <p class="next__status" data-next-status hidden></p>
+  <p class="next__status" data-next-status></p>
   <div class="cluster">
     <a${attrs({ class: 'btn', href: ctx.ctaHref, 'data-next-cta': true, 'data-hero-cta': heroCta || null })}><span data-next-cta-label>${cta ?? ctx.t('cta.register')}</span>${ctx.brand.tri()}</a>
     ${more ? html`<a class="link" href="${more.href}">${more.label}</a>` : ''}
@@ -64,10 +71,14 @@ export function nextMeeting(ctx, { type = 'all', label, title, body, cta, more, 
 </div>`;
 }
 
-/** The phone CTA bar (layout adds it to every page except those that opt out with `export const ctaBar = false`). */
-export function ctaBar(ctx, { type = 'all', label, pay = false } = {}) {
+/**
+ * The phone CTA bar (layout adds it to every page except those that opt out with `export const ctaBar = false`).
+ * Default: the next Friday morning (registration + payment). A page about other meetings asks for { type: 'all' }.
+ * Filled live with the meeting's kind on the first line and "שישי 27.11 · 09:00" on the second.
+ */
+export function ctaBar(ctx, { type = 'friday', label, pay = type === 'friday' } = {}) {
   return html`<div class="cta-bar" data-ground="navy" data-cta-bar data-next="${type}"${pay ? html` data-next-pay` : ''} role="region" aria-label="${ctx.t('cta.barAria')}">
-  <p class="cta-bar__text"><b data-next-label>${ctx.t('cta.barTitle')}</b><span data-next-when></span></p>
+  <p class="cta-bar__text"><b data-next-label>${ctx.t(type === 'friday' ? 'cta.barTitleFriday' : 'cta.barTitle')}</b><span data-next-when></span></p>
   <a class="btn btn--sm" href="${ctx.ctaHref}" data-next-cta><span data-next-cta-label>${label ?? ctx.t('cta.registerShort')}</span>${ctx.brand.tri()}</a>
 </div>`;
 }
@@ -88,7 +99,8 @@ export function ui(ctx) {
      * A framed photo: <figure class="photo r-32">…</figure>.
      *   ratio '4:5'|'3:2'|'4:3'|'16:9'|'21:9'|'1:1'|'16:10'   focus 'top'|30|40|70|'bottom' (object-position)
      *   bleed (no radius) · sizes · eager (the LCP image) · alt ('' when decorative) · caption · wipe (the page's signature)
-     *   stripes: { width, height, unit, dir, className } three stripes cut by the frame's corner
+     *   stripes: { width, height, unit, dir, anchor, className } three stripes in one corner of the frame: anchor
+ *     'ts'|'te'|'bs'|'be' (or a corner--xx class) pins them there; pick the corner with no faces in the photo
      */
     photo(name, { ratio = '3:2', focus, bleed, sizes = '(min-width: 64rem) 50vw, 100vw', eager, alt, caption, className, wipe, load, stripes, attrs: extra = {} } = {}) {
       return html`<figure${attrs({ class: cx('photo', RATIO[ratio] ?? ratio, focus != null && FOCUS[focus], bleed && 'photo--bleed', className), 'data-wipe': wipe || null, 'data-load': load ?? null, ...extra })}>${ctx.img(name, { sizes, eager, alt })}${stripes ? ctx.brand.stripes({ count: 3, unit: 22, dir: 'rise', width: 240, height: 140, ...stripes, className: cx('stripes', stripes.className) }) : ''}${caption ? html`<figcaption>${caption}</figcaption>` : ''}</figure>`;
@@ -130,9 +142,29 @@ export function ui(ctx) {
         return html`<li>${p.url ? html`<a href="${ctx.safeUrl(p.url)}" rel="noopener">${img}</a>` : img}</li>`;
       })}</ul>`;
     },
-    /** Big row links with ◀: items [{ title, body?, href, go?, attrs? }]. */
-    rows(items, { level, className } = {}) {
-      return html`<ul class="${cx('rows', className)}" role="list" data-reveal>${items.map((r) => html`<li><a${attrs({ class: 'row', href: r.href, ...(r.attrs ?? {}) })}><span class="row__text">${level ? H(level, 'row__title', r.title) : html`<span class="row__title">${r.title}</span>`}${r.body ? html`<span class="row__body">${r.body}</span>` : ''}</span><span class="row__go">${r.go ?? ''}${tri()}</span></a></li>`)}</ul>`;
+    /**
+     * Big row links: the whole row is one link, ending in "<go> ◀". items [{ title, body?, note?, href, go?, hint?,
+     * external?, whatsapp?, attrs?, li? }]
+     *   body / note: a line (string or html) and a smaller second line (e.g. an amount)
+     *   hint: words for screen readers only (e.g. "(opens WhatsApp)")   external: rel="noopener" (an outside site)
+     *   whatsapp: { text } the row becomes the association's WhatsApp link (filled live like ctx.whatsapp(); it keeps
+     *     `href` — e.g. the contact page — until the phone arrives, so it always works)
+     *   attrs / li: extra attributes for the <a> / the <li>   level: render titles as h<level> (inside the link)
+     *   A row without href is plain text (no ◀).
+     */
+    rows(items, { level, className, reveal = true } = {}) {
+      const title = (r) => (level ? H(level, 'row__title', r.title) : html`<span class="row__title">${r.title}</span>`);
+      const text = (r) => html`<span class="row__text">${title(r)}${r.body ? html`<span class="row__body">${r.body}</span>` : ''}${r.note ? html`<span class="row__note">${r.note}</span>` : ''}</span>`;
+      return html`<ul class="${cx('rows', className)}" role="list"${reveal ? html` data-reveal` : ''}>${items.filter(Boolean).map((r) => html`<li${attrs(r.li ?? {})}>${r.href
+        ? html`<a${attrs({
+          class: cx('row', !r.go && 'row--bare'),
+          href: ctx.safeUrl(r.href),
+          rel: r.external || r.whatsapp ? 'noopener' : null,
+          'data-org-phone': r.whatsapp ? 'whatsapp' : null,
+          'data-org-text': r.whatsapp?.text ?? null,
+          ...(r.attrs ?? {}),
+        })}>${text(r)}<span class="row__go">${r.go ?? ''}${tri()}</span>${r.hint ? html`<span class="visually-hidden"> ${r.hint}</span>` : ''}</a>`
+        : html`<div class="row row--static">${text(r)}</div>`}</li>`)}</ul>`;
     },
     /** A list with ◀ bullets. */
     triList(items, { className } = {}) {

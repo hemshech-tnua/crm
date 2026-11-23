@@ -2,7 +2,7 @@
 @layer pages {
   .team-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
   .team-hero__grid { display: grid; gap: var(--headline-to-lead) var(--gutter); }
-  .team-hero__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); max-inline-size: 13ch; text-wrap: balance; }
+  .team-hero__title { max-inline-size: 13ch; text-wrap: balance; } /* size: the shared inner-page h1 (.t-display) */
   @media (min-width: 64rem) {
     .team-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
     .team-hero__title { grid-column: 1 / span 8; }

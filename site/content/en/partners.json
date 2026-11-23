@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Partner with us · המשך תנועה",
-    "description": "Companies, organizations and foundations: partner with us through meeting sponsorship, donations, speakers and coaches. Let's talk."
+    "description": "Companies, organizations and foundations: partner with us through meeting sponsorship, corporate giving, speakers and coaches. Let's talk."
   },
   "hero": {
     "title": "Let's build a partnership",
@@ -22,7 +22,7 @@
         "body": "A nationwide network of local community centers."
       },
       {
-        "title": "Eye to eye",
+        "title": "Straightforward",
         "body": "We'll gladly show you our activity, our team and our plans, and shape a partnership that fits you."
       }
     ]
@@ -47,7 +47,9 @@
         "title": "Foundations",
         "body": "We'd be glad to meet and walk you through our activity and plans."
       }
-    ]
+    ],
+    "go": "Let's talk",
+    "message": "Hi, I'd like to talk with המשך תנועה about: {model}."
   },
   "logos": {
     "title": "Our partners"

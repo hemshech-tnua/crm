@@ -3,7 +3,7 @@
 // arrive: { name:{he,en}, role:{he,en}, line?:{he,en}, photo?: '<photo set name>' | 'photos/…' }.
 // Preview builds show the layout with dashed portraits; production omits every empty group.
 import { html } from '../lib/html.mjs';
-import { action, pageHref, corner, personPhoto, rhythm } from './_g.mjs';
+import { action, pageHref, corner, personPhoto, rhythm, tx, H1 } from './_g.mjs';
 
 export const slug = { he: 'team', en: 'team' };
 
@@ -94,7 +94,7 @@ export function render(ctx) {
 <section class="chapter team-hero" data-ground="navy" aria-labelledby="team-h1">
   ${corner(ctx, { pos: 'be', dir: 'rise' })}
   <div class="wrap team-hero__grid">
-    <h1 id="team-h1" class="team-hero__title" data-load>${t('team.hero.title')}</h1>
+    <h1 id="team-h1" class="${H1} team-hero__title" data-load>${tx(ctx, 'team.hero.title')}</h1>
     <p class="t-lead" data-load="1">${t('team.hero.body')}</p>
   </div>
 </section>
@@ -107,7 +107,7 @@ ${sections}
       <p class="team-volunteers__body" ${ctx.reveal('up', 1)}>${t('team.volunteers.body')}</p>
       <div class="cluster" ${ctx.reveal('up', 2)}>${action(ctx, { href: volunteerHref, label: t('team.volunteers.cta'), className: 'btn btn--ghost' })}</div>
     </div>
-    <figure class="photo r-32 focus-30 team-volunteers__photo" ${ctx.reveal('fade')}>${ctx.img('running', { alt: '', sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
+    <figure class="photo r-32 focus-30 team-volunteers__photo" ${ctx.reveal('fade')}>${ctx.img('running', { alt: '', eager: !members.length && !board.length, sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
   </div>
 </section>
 <section class="chapter team-closing" data-ground="${closingGround}" aria-labelledby="team-closing">

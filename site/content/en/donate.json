@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Donate · המשך תנועה",
-    "description": "Your gift keeps regular meetings going for combat veterans after their service. Give once, monthly, sponsor a meeting, give as a company, or give from abroad."
+    "description": "Your gift keeps regular meetings going for combat veterans: give once or monthly, fund a Friday meeting, give as a company, or give from abroad."
   },
   "hero": {
     "title": "Support our work",
@@ -27,20 +27,20 @@
       "message": "Hi, I'd like to set up a monthly donation to המשך תנועה."
     },
     "sponsor": {
-      "title": "Sponsor a meeting",
-      "body": "Fund a full Friday morning: the workout, the coffee and the talk.",
-      "amount": "One Friday morning costs ₪{amount}",
-      "wa": "Talk to us about sponsoring",
-      "message": "Hi, I'd like to hear about sponsoring a full meeting of המשך תנועה."
+      "title": "Fund a Friday meeting",
+      "body": "Cover a full Friday morning: the workout, the coffee and the talk.",
+      "amount": "One Friday meeting costs ₪{amount}",
+      "wa": "Talk to us about funding a meeting",
+      "message": "Hi, I'd like to hear about funding a Friday meeting of המשך תנועה."
     },
     "company": {
       "title": "Corporate giving",
-      "body": "Companies and organizations can donate, sponsor or build a partnership with us.",
+      "body": "Companies and organizations can donate, sponsor a meeting or build a partnership with us.",
       "cta": "Partner with us"
     },
     "abroad": {
       "title": "Giving from abroad",
-      "body": "Giving from outside Israel? Write to us and we'll work out the way together.",
+      "body": "Giving from outside Israel? Write to us and we'll find the best way together.",
       "cta": "Give from abroad",
       "wa": "Arrange a gift from abroad",
       "message": "Hi, I'd like to give to המשך תנועה from outside Israel."
@@ -61,31 +61,32 @@
     "storiesTitle": "In their words"
   },
   "tax": {
-    "title": "Tax status in Israel (Section 46)",
-    "body": "Our application for Section 46 recognition, which gives Israeli taxpayers a tax credit, is in process. We'll update this page once it's approved.",
+    "title": "Section 46: application in process",
+    "titleApproved": "Tax credit in Israel (Section 46)",
+    "body": "Our application for Section 46 recognition, which gives Israeli taxpayers a tax credit, is in process. We'll update this page when there's a decision.",
     "approved": "We are recognized under Section 46 of the Israeli Income Tax Ordinance: gifts from Israeli taxpayers qualify for a tax credit under the law."
   },
   "trust": {
     "title": "Who's behind it",
     "body": "The team and board who run the meetings and lead the way toward the community centers.",
-    "cta": "Meet the team"
+    "cta": "Meet the team",
+    "ctaAbout": "More about us"
   },
   "transparency": {
     "title": "Transparency",
-    "body": "Our financial and activity reports will be published here.",
     "registration": "Registered nonprofit (amuta) no. {n}",
     "reports": "Reports"
   },
   "closing": {
     "title": "You don't have to give to be part of this",
-    "body": "You can volunteer, give a talk, or simply send the link to a friend from your old team.",
+    "body": "You can volunteer, give a talk, or simply send the link to a friend you served with.",
     "cta": "Volunteer",
-    "propose": "Offer a talk or a session"
+    "propose": "Offer a talk or a workout session"
   },
   "slots": {
     "oneTimeUrl": "payment page link for one-time gifts (org.json: donateUrl)",
     "monthlyUrl": "monthly standing order link (org.json: donateMonthlyUrl)",
-    "sponsorAmount": "cost of one Friday meeting, if public (org.json: sponsorAmount)",
+    "sponsorAmount": "cost of funding one Friday meeting, if public (org.json: sponsorAmount)",
     "abroad": "how to give from abroad: receiving entity, currencies, tax receipt in the donor's country, link (org.json: abroad)",
     "bank": "bank account details, only if public (org.json: bank)",
     "stats": "3–4 numbers you can prove: number, short label, period (org.json: stats)",

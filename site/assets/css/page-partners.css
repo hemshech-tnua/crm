@@ -58,10 +58,8 @@
   .pt-ways__grid { display: grid; gap: var(--space-7); }
   .pt-ways__head { display: grid; gap: var(--headline-to-lead); align-content: start; }
   .pt-ways__head .pt-slot { margin-block-start: var(--space-3); }
-  .pt-models { display: grid; gap: var(--space-2); }
-  .pt-model { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-6) var(--space-5); border-radius: var(--radius-panel); background: var(--surface); }
-  .pt-model p { max-inline-size: 36ch; }
-  @media (min-width: 48rem) { .pt-models { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pt-model { min-block-size: 13rem; padding: var(--space-6); } }
+  /* the partnership models: the shared row links (.rows/.row); each row opens the conversation about that model */
+  .pt-models .row__body { max-inline-size: 40ch; }
   @media (min-width: 64rem) {
     .pt-ways__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
     .pt-ways__head { grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-7)); }

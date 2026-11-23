@@ -1,5 +1,5 @@
 /* Friday mornings (pages/friday.mjs). Page compositions only: semantic tokens + the shared classes from components.css.
-   Signature motion (MOTION.md): the three promise panels stack as you scroll (CSS sticky, ≥1024px). */
+   Signature motion (MOTION.md): the three promise panels stack as you scroll (CSS sticky, ≥1024px), each with one fact. */
 @layer pages {
   /* ── 1. hero (beige): h1 · lead · the live next meeting · photo 4:5 with stripes in its corner ── */
   .fr-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
@@ -27,16 +27,25 @@
   .fr-promise__title span { display: block; }
   .fr-promise__body { margin-block-start: var(--space-6); color: var(--ink-quiet); max-inline-size: 46ch; font-size: var(--fs-lead); line-height: var(--lh-lead); }
   /* panel 1: a run of beige stripes entering from the inline-end corner */
-  .fr-promise__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: clamp(8rem, 2rem + 22vw, 24rem); block-size: clamp(9rem, 4rem + 22vw, 30rem); }
-  /* panel 2: the "3" of "three meetings a month", tone-on-tone, cropped by the panel's inline-end edge */
-  .fr-promise__figure { position: absolute; inset-block-end: -0.2em; inset-inline-end: 0.02em; font-size: clamp(16rem, 8rem + 30vw, 44rem); line-height: 0.8; font-weight: var(--wght-bold); letter-spacing: -0.04em; color: var(--navy-700); pointer-events: none; user-select: none; z-index: 0; }
-  /* panel 3: a training photo */
+  .fr-promise__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: clamp(6rem, 2rem + 14vw, 16rem); block-size: clamp(5rem, 1rem + 9vw, 11rem); }
+  /* one real fact beside each promise: panel 1 the morning at a glance, panel 2 the next three Fridays (live),
+     panel 3 a training photo */
+  .fr-promise__fact { display: grid; gap: var(--space-4); align-content: start; padding: var(--space-6); border-radius: var(--radius-panel); background-color: var(--surface); }
+  .fr-promise__factTitle { font-size: var(--fs-small); line-height: var(--lh-small); font-weight: var(--wght-semibold); letter-spacing: 0; color: var(--ink-quiet); }
+  .fr-glance__list { display: grid; gap: var(--space-3); }
+  .fr-glance__list > li { display: grid; grid-template-columns: minmax(7.5rem, auto) 1fr; gap: var(--space-4); align-items: baseline; padding-block-end: var(--space-3); border-block-end: var(--edge) solid var(--line); }
+  .fr-glance__list > li:last-child { padding-block-end: 0; border-block-end: 0; }
+  .fr-glance__time { color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
+  .fr-glance__what { font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--wght-bold); }
+  .fr-next3 .events__list { gap: var(--space-2); }
   .fr-promise__photo { aspect-ratio: 3 / 2; }
   @media (min-width: 64rem) {
-    .fr-promise { position: sticky; inset-block-start: var(--header-h); min-block-size: calc(100svh - var(--header-h)); }
+    /* sticky panels about two-thirds of the screen tall: each slides over the last, the next one already in view */
+    .fr-promise { position: sticky; inset-block-start: var(--header-h); min-block-size: 70svh; }
     .fr-promise__in { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
-    .fr-promise__text { grid-column: 1 / span 7; }
-    .fr-promise__photo { grid-column: 9 / -1; aspect-ratio: 4 / 5; max-block-size: calc(100svh - var(--header-h) - 12rem); inline-size: 100%; }
+    .fr-promise__text { grid-column: 1 / span 6; }
+    .fr-promise__fact, .fr-promise__photo { grid-column: 8 / -1; }
+    .fr-promise__photo { aspect-ratio: 4 / 3; max-block-size: calc(70svh - var(--space-9) * 2); inline-size: 100%; }
   }
 
   /* ── 3. ככה נראה הבוקר (beige): the shared timeline + a sticky photo that follows the step at mid-screen ── */

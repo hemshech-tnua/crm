@@ -145,8 +145,13 @@ test('environment: base path, origin, Supabase and robots are configurable', () 
   assert.match(read(join(b.out, 'robots.txt')), /Disallow: \//);
 });
 
-test('refuses to empty a folder outside dist/ or /tmp', () => {
-  const b = build({ env: { SITE_OUT: 'site', SITE_OUT_ANYWHERE: '' } });
-  assert.notEqual(b.status, 0);
-  assert.match(b.stderr, /refusing to empty/);
+test('output guard: refuses folders the site does not own; rebuilds its own', () => {
+  for (const o of ['site', '.', 'dist', 'src']) {
+    const r = build({ env: { SITE_OUT: o } });
+    assert.notEqual(r.status, 0, `SITE_OUT=${o} must be refused`);
+    assert.match(r.stderr, /refusing to empty/);
+  }
+  const again = build({ env: { SITE_OUT: prod.out } }); // carries .site-build from the first build
+  assert.equal(again.status, 0, again.stderr);
+  assert.ok(existsSync(join(prod.out, '.site-build')));
 });

@@ -57,8 +57,8 @@
     --wght-semibold: 600;
     --wght-bold: 700;
 
-    --fs-hero:      clamp(2.25rem, 0.5rem + 6.2vw, 6rem);        /* 36 → 96   home h1 */
-    --fs-display:   clamp(2.75rem, 1.43rem + 5.42vw, 7rem);      /* 44 → 112  page h1 */
+    --fs-hero:      clamp(2.75rem, 1.6rem + 4.9vw, 6rem);         /* 44 → 96   home h1 (≥ 44px on phones) */
+    --fs-display:   clamp(2.75rem, 1.43rem + 5.42vw, 7rem);      /* 44 → 112  EVERY inner page h1: class .t-display */
     --fs-chapter:   clamp(2.125rem, 1.38rem + 3.05vw, 4.5rem);   /* 34 → 72   h2 */
     --fs-title:     clamp(1.5rem, 1.27rem + 0.95vw, 2.25rem);    /* 24 → 36   h3, statements */
     --fs-lead:      clamp(1.1875rem, 1.1rem + 0.38vw, 1.5rem);   /* 19 → 24 */
@@ -103,7 +103,8 @@
     --page-margin: clamp(1rem, 0.3rem + 3vw, 4rem);       /* 16 → 64, both sides */
     --gutter: clamp(1rem, 0.75rem + 1vw, 1.5rem);         /* 16 → 24 column gap */
     --cols: 4;
-    --header-h: 4rem;
+    --header-h: 4rem;          /* nav.js replaces it with the header's real height when the bar wraps */
+    --cta-bar-h: 4.25rem;      /* the phone CTA bar (two lines + a 44px button); the footer clears it */
     --tap: 2.75rem;
 
     /* ───────────── 6. Shape ───────────── */

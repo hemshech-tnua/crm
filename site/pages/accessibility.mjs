@@ -5,7 +5,7 @@
 // Owner fields come from content/org.json → accessibility: { coordinator: { name:{he,en}, phone, email },
 // audit: { date, by:{he,en} }, venues:{he,en}, updated }. Preview builds show dashed boxes where they are missing.
 import { html } from '../lib/html.mjs';
-import { waAction, action, pageHref } from './_g.mjs';
+import { waAction, action, pageHref, H1 } from './_g.mjs';
 
 export const slug = { he: 'accessibility', en: 'accessibility' };
 
@@ -24,8 +24,12 @@ export function render(ctx) {
   const sections = [
     {
       id: 'standard',
-      body: html`<p>${t('accessibility.standard.body')}</p>
-        ${ctx.slot(a.audit?.date, t('accessibility.slots.audit'), (date) => html`<p class="quiet">${t('accessibility.standard.auditLabel', { date: fmtDate(ctx, date), by: ctx.l(a.audit.by) ?? '' }).replace(/,\s*$/, '')}</p>`)}`,
+      // the conformance line ("level AA") is stated only once an accessibility audit confirms it (org.json:
+      // accessibility.audit); until then the section says what the site was built to, without claiming the level
+      body: ctx.has(a.audit?.date)
+        ? html`<p>${t('accessibility.standard.body')}</p>
+        <p class="quiet">${t('accessibility.standard.auditLabel', { date: fmtDate(ctx, a.audit.date), by: ctx.l(a.audit.by) ?? '' }).replace(/,\s*$/, '')}</p>`
+        : html`<p>${t('accessibility.standard.pending')}</p>${ctx.slot(null, t('accessibility.slots.audit'), () => '')}`,
     },
     {
       id: 'features',
@@ -66,7 +70,7 @@ export function render(ctx) {
   return html`
 <section class="chapter chapter--tight a11y-hero" data-ground="navy" aria-labelledby="a11y-h1">
   <div class="wrap a11y-hero__grid">
-    <h1 id="a11y-h1" class="a11y-hero__title">${t('accessibility.title')}</h1>
+    <h1 id="a11y-h1" class="${H1} a11y-hero__title">${t('accessibility.title')}</h1>
     <div class="stack a11y-hero__text">
       <p class="t-lead">${t('accessibility.intro')}</p>
       ${ctx.slot(a.updated, t('accessibility.slots.updated'), (d) => html`<p class="t-small quiet">${t('accessibility.updatedLabel', { date: fmtDate(ctx, d) })}</p>`)}
@@ -77,7 +81,6 @@ export function render(ctx) {
 <section class="chapter a11y-body" data-ground="beige-light">
   <div class="wrap a11y-body__grid" data-chapters>
     <nav class="a11y-toc" aria-label="${t('accessibility.tocLabel')}">
-      <p class="a11y-toc__title" aria-hidden="true">${t('accessibility.tocLabel')}</p>
       <ul role="list">
         ${sections.map((s) => html`<li><a href="#a11y-${s.id}" data-chapter-link>${t(`accessibility.${s.id}.title`)}</a></li>`)}
       </ul>

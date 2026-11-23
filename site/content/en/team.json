@@ -4,8 +4,8 @@
     "description": "The people behind our work: the team, board and volunteers who run meetings for combat veterans after their service."
   },
   "hero": {
-    "title": "The people behind it",
-    "body": "A team, a board and volunteers who make the meetings happen, meeting after meeting."
+    "title": "The people behind {org}",
+    "body": "A team, a board and volunteers who make the meetings happen."
   },
   "members": {
     "title": "Team"
@@ -18,8 +18,8 @@
     "title": "Advisors"
   },
   "volunteers": {
-    "title": "And our volunteers",
-    "body": "who welcome everyone at the door of every meeting.",
+    "title": "Our volunteers",
+    "body": "who help at the door and welcome people as they arrive.",
     "cta": "Join the volunteer team"
   },
   "closing": {

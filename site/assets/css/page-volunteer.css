@@ -18,17 +18,16 @@
     .vol-hero__photo { aspect-ratio: 5 / 4; }
   }
 
-  /* ── the three roles: wide rows, title · what you do · the way in ── */
-  .vol-roles { display: grid; gap: var(--space-2); margin-block-start: var(--space-8); }
-  .vol-role { display: grid; gap: var(--space-4); padding: var(--space-6) var(--space-5); border-radius: var(--radius-panel); background: var(--surface); }
-  .vol-role .t-title { font-size: var(--fs-chapter); line-height: var(--lh-chapter); letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
-  .vol-role p { max-inline-size: 44ch; }
-  .vol-role__act { margin-block-start: var(--space-2); }
+  /* ── the three roles: the shared row links (.rows/.row), one large title per row; the whole row is the action ── */
+  .vol-roles { margin-block-start: var(--space-8); }
+  .vol-roles .row { padding-block: var(--space-6); }
+  .vol-roles .row__title { font-size: var(--fs-chapter); line-height: var(--lh-chapter); letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
+  .vol-roles .row__body { max-inline-size: 44ch; }
   @media (min-width: 64rem) {
-    .vol-role { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; padding: var(--space-7) var(--space-6); }
-    .vol-role .t-title { grid-column: 1 / span 4; font-size: clamp(2rem, 0.9rem + 2vw, 3.25rem); }
-    .vol-role > p:not(.vol-role__act) { grid-column: 5 / span 5; font-size: var(--fs-lead); line-height: var(--lh-lead); }
-    .vol-role__act { grid-column: 10 / -1; justify-self: end; margin: 0; }
+    .vol-roles .row { padding: var(--space-7) var(--space-6); }
+    .vol-roles .row__text { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr); column-gap: var(--gutter); align-items: center; flex: 1; }
+    .vol-roles .row__title { font-size: clamp(2rem, 0.9rem + 2vw, 3.25rem); }
+    .vol-roles .row__body { font-size: var(--fs-lead); line-height: var(--lh-lead); }
   }
 
   /* ── how it works: two paths side by side ── */

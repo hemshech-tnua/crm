@@ -12,7 +12,7 @@ export const ROOT = resolve(SITE, '..');
 export function build({ preview = false, env = {} } = {}) {
   const out = mkdtempSync(join(tmpdir(), 'site-test-'));
   const r = spawnSync(process.execPath, [join(SITE, 'build.mjs'), ...(preview ? ['--preview'] : [])], {
-    env: { ...process.env, SITE_PREVIEW: '', SITE_OUT: out, SITE_OUT_ANYWHERE: '1', ...env },
+    env: { ...process.env, SITE_PREVIEW: '', SITE_OUT: out, ...env },
     encoding: 'utf8',
   });
   return { out, status: r.status, stdout: r.stdout, stderr: r.stderr };

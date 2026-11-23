@@ -3,11 +3,16 @@ import config from './config.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** POST /rest/v1/rpc/<fn> with the public anon key. Retries once on a network error or a 5xx; 8 s timeout. */
+/**
+ * POST /rest/v1/rpc/<fn> with the public anon key, within one time budget (8 s by default, all attempts together).
+ * A network error or a 5xx/429 is retried once if enough of the budget is left; a timeout is final (a hung network
+ * must not keep the skeleton up for twice the budget), and so is any other 4xx.
+ */
 export async function rpc(fn, args = {}, { timeout = 8000, retries = 1 } = {}) {
+  const deadline = Date.now() + timeout;
   for (let attempt = 0; ; attempt++) {
     const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), timeout);
+    const timer = setTimeout(() => ctl.abort(), Math.max(0, deadline - Date.now()));
     try {
       const res = await fetch(`${config.supabaseUrl}/rest/v1/rpc/${fn}`, {
         method: 'POST',
@@ -28,9 +33,9 @@ export async function rpc(fn, args = {}, { timeout = 8000, retries = 1 } = {}) {
       }
       return await res.json();
     } catch (e) {
-      const final = e.status && e.status < 500 && e.status !== 429;
-      if (final || attempt >= retries) throw e;
-      await sleep(800);
+      const final = ctl.signal.aborted || (e.status && e.status < 500 && e.status !== 429);
+      if (final || attempt >= retries || deadline - Date.now() < 2000) throw e;
+      await sleep(600);
     } finally {
       clearTimeout(timer);
     }

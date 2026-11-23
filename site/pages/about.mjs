@@ -3,7 +3,7 @@
 // (DESIGN §3.5 — once on home, once here). Owner content (founding story, first-center rendering, team, a real photo)
 // renders only when it exists in content/org.json; preview builds show dashed boxes in its place.
 import { html } from '../lib/html.mjs';
-import { tx, txs, action, pageHref, corner, ownerImg, personPhoto } from './_g.mjs';
+import { tx, txs, action, pageHref, corner, ownerImg, personPhoto, H1 } from './_g.mjs';
 
 export const slug = { he: 'about', en: 'about' };
 
@@ -17,7 +17,7 @@ export function render(ctx) {
   const hero = html`
 <section class="chapter about-hero" data-ground="navy" aria-labelledby="about-h1">
   <div class="wrap about-hero__grid">
-    <h1 id="about-h1" class="about-hero__title" data-load>${t('about.hero.title')}</h1>
+    <h1 id="about-h1" class="${H1} about-hero__title" data-load>${t('about.hero.title')}</h1>
     <div class="about-hero__text">
       <p class="t-lead" data-load="1">${t('about.hero.body')}</p>
       <div class="cluster about-hero__actions" data-load="2">
@@ -139,8 +139,13 @@ export function render(ctx) {
   // with faces (or the preview slot) the text sits beside them; without (production, no team yet) the heading and the
   // text share the width, so the chapter never leaves half the screen empty
   const showFaces = team.length > 0 || ctx.preview;
+  // the team page is built only once the association's team is in org.json; until then this chapter points to
+  // volunteering (the part of "the people behind it" anyone can join), never to a missing or empty page
+  const peopleAct = teamHref
+    ? action(ctx, { href: teamHref, label: t('about.people.cta'), className: 'btn btn--ghost' })
+    : action(ctx, { href: pageHref(ctx, 'volunteer'), label: t('about.people.volunteer'), className: 'btn btn--ghost' });
   const peopleText = html`<p class="t-lead">${t('about.people.body')}</p>
-      <div class="cluster">${action(ctx, { href: teamHref, label: t('about.people.cta'), className: 'btn btn--ghost' })}</div>`;
+      ${peopleAct ? html`<div class="cluster">${peopleAct}</div>` : ''}`;
   const people = html`
 <section class="chapter about-people" data-ground="beige" aria-labelledby="about-people">
   ${showFaces

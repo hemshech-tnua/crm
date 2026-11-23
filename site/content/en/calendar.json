@@ -1,17 +1,17 @@
 {
   "meta": {
     "title": "Calendar · המשך תנועה",
-    "description": "Every upcoming meeting, by date: Friday mornings, women's evenings, bonfire evenings and more. Pick a meeting and register."
+    "description": "Every upcoming meeting, by date: Friday mornings, women's evenings, bonfire evenings and more. Pick a meeting and sign up."
   },
   "hero": {
     "title": "Upcoming meetings",
-    "lead": "Every meeting, by date. Pick one and register."
+    "lead": "Every meeting, by date. Pick one and sign up."
   },
   "list": {
     "title": "The calendar"
   },
   "note": {
-    "title": "How to register",
+    "title": "How to sign up",
     "body": "Registration and payment happen in our registration system, which is in Hebrew. After registering you get a personal link to cancel or make changes.",
     "quick": "Registration takes less than a minute."
   },
@@ -22,7 +22,7 @@
     "faq": "Answers to what people ask before their first time."
   },
   "help": {
-    "title": "A question before you register?",
+    "title": "A question before you sign up?",
     "whatsapp": "Message us on WhatsApp"
   }
 }

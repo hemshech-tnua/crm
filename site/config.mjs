@@ -30,6 +30,19 @@ export const NAV = {
   secondary: ['calendar', 'team', 'faq', 'membership', 'contact', 'stories', 'gallery', 'news', 'transparency', 'accessibility'],
 };
 
+/**
+ * Pages that are built and listed only while their owner content exists (content/org.json). In a production build a
+ * page whose test is false is not written at all: it leaves the header, menu and footer, the sitemap, and
+ * ctx.pageExists(id) answers false, so links to it fall back by themselves. Fill the content and rebuild: it returns.
+ * Preview builds always build and list it, with its dashed owner-content boxes.
+ */
+export const PAGE_WHEN = {
+  team: (org) => [org.team, org.board, org.advisors].some((v) => Array.isArray(v) && v.length > 0),
+};
+
+/** Pages whose main job is the live meetings list: the browser fetches the meetings modules at once (modulepreload). */
+export const LIVE_FIRST = ['calendar'];
+
 /** The page the persistent "להרשמה למפגש" button goes to; falls back to the CRM's public meetings list. */
 export const CTA_PAGE = 'calendar';
 

@@ -1,15 +1,15 @@
 {
   "meta": {
     "title": "Friday mornings · המשך תנועה",
-    "description": "Three Friday mornings a month: a workout for every fitness level, coffee and snacks, and a guest talk. No commitment, no talking circle. Registration takes less than a minute."
+    "description": "Three Friday mornings a month: a workout for every fitness level, coffee and snacks, and a guest talk. No commitment, no talking circle."
   },
   "hero": {
     "title": "Friday mornings",
     "lead": "A workout, coffee and a talk, with people who have been there. Come alone or bring friends.",
     "nextTitle": "Next meeting",
     "allDates": "All dates",
-    "quick": "Registration takes less than a minute. It is in Hebrew.",
-    "cta": "Register",
+    "quick": "Registration is in Hebrew and takes less than a minute.",
+    "cta": "Sign up",
     "nextTitleStatic": "Friday mornings, three times a month",
     "nextBodyStatic": "A workout, coffee and a talk. Dates are on the calendar."
   },
@@ -21,7 +21,7 @@
           "No commitment.",
           "No talking circle."
         ],
-        "body": "Come when it suits you. Train, have coffee, hear a talk. Nobody has to share anything personal, and there are no ranks or formations."
+        "body": "Come when it suits you. Train, have coffee, hear a talk. Nobody has to share anything personal. No ranks, no roll call."
       },
       {
         "lines": [
@@ -37,13 +37,15 @@
         ],
         "body": "The workout is built for every fitness level. Haven't trained in a while? This is exactly the place to start."
       }
-    ]
+    ],
+    "glanceTitle": "The morning at a glance",
+    "datesTitle": "The next three Friday mornings"
   },
   "program": {
     "title": "How the morning goes",
     "items": [
       {
-        "time": "9:00",
+        "time": "09:00",
         "title": "Workout",
         "detail": "Yoga or functional training. For every fitness level."
       },
@@ -75,7 +77,7 @@
       },
       {
         "title": "Just part of the morning",
-        "body": "You can come only for the workout or only for the talk. Part of the morning is also paid."
+        "body": "You can come only for the workout or only for the talk. Coming for part of the morning is paid as well."
       },
       {
         "title": "Reminder",
@@ -153,7 +155,7 @@
           },
           {
             "q": "Can I come for only part of the morning?",
-            "a": "Yes, you can come only for the workout or only for the talk. Part of the morning is also paid."
+            "a": "Yes, you can come only for the workout or only for the talk. Coming for part of the morning is paid as well."
           }
         ]
       },
@@ -166,7 +168,7 @@
           },
           {
             "q": "How do I cancel or change my registration?",
-            "a": "With the personal link you get at the end of registration. Cancelling early frees your spot for someone on the waiting list."
+            "a": "With the personal link you get at the end of registration. Canceling early frees your spot for someone on the waiting list."
           },
           {
             "q": "What happens to the details I fill in?",
@@ -175,7 +177,7 @@
           },
           {
             "q": "Do you take photos at meetings?",
-            "a": "Sometimes, for our pages. If you'd rather not appear in published photos, tick the box on the registration form and our team will see it."
+            "a": "Sometimes, for our pages. If you'd rather not appear in published photos, check the box on the registration form and our team will see it."
           }
         ]
       }
@@ -188,7 +190,7 @@
     "title": "See you on Friday?",
     "cta": "See upcoming dates",
     "shareTitle": "Know someone this is for?",
-    "shareText": "Send this to someone from your old team.",
+    "shareText": "Send the link to a friend you served with and miss.",
     "shareCopy": "Copy link",
     "shareWhatsapp": "Share on WhatsApp",
     "copied": "Link copied",

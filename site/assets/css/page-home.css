@@ -2,26 +2,35 @@
 @layer pages {
   .page-home { --edge-out: calc(var(--page-margin) + max(0px, (100vw - var(--page-max) - 2 * var(--page-margin)) / 2)); }
 
-  /* ── 1 · hero ── */
+  /* ── 1 · hero ──
+     phone: h1 · lead · the photo (16:9, above the fold) · the next Friday card
+     tablet: h1 · lead · card · photo     desktop: h1 across; lead + card at the reading edge, the photo bleeding out */
   .hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) 0; }
-  .hero__grid { display: grid; gap: var(--space-6) var(--gutter); }
+  .hero__grid { display: grid; gap: var(--space-5) var(--gutter); grid-template-areas: 'title' 'lead' 'photo' 'act'; }
+  .hero__title { grid-area: title; max-inline-size: 15ch; }
   .hero__title > span { display: block; }
-  .hero__title { max-inline-size: 15ch; }
-  .hero__side { display: grid; gap: var(--space-5); align-content: start; }
-  .hero__lead { color: var(--ink); max-inline-size: 34ch; }
-  .hero__photo { position: relative; margin-inline: calc(var(--page-margin) * -1); }
-  .hero__photo .photo { aspect-ratio: 4 / 3; }
-  .hero__stripes { inset-block-end: 0; inset-inline-end: 0; inline-size: 34%; block-size: 26%; z-index: 1; }
+  .hero__lead { grid-area: lead; color: var(--ink); max-inline-size: 34ch; }
+  .hero__act { grid-area: act; display: grid; gap: var(--space-5); align-content: start; padding-block-end: var(--space-8); }
+  .hero__photo { grid-area: photo; position: relative; margin-inline: calc(var(--page-margin) * -1); }
+  .hero__photo .photo { aspect-ratio: 16 / 9; }
+  .hero__photo .photo > img { object-position: 50% 12%; } /* the 16:9 band keeps sky above the heads for the stripes */
+  /* three beige stripes cut the photo's outer top corner: sky and hills there, never a face */
+  .hero__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: 30%; block-size: 22%; z-index: 1; }
   @media (min-width: 48rem) and (max-width: 63.99rem) {
-    .hero__side { max-inline-size: 36rem; }
-    .hero__photo .photo { aspect-ratio: 16 / 9; }
+    .hero__grid { grid-template-areas: 'title' 'lead' 'act' 'photo'; }
+    .hero__act { max-inline-size: 36rem; padding-block-end: 0; }
   }
   @media (min-width: 64rem) {
-    .hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); row-gap: var(--headline-to-lead); }
-    .hero__title { grid-column: 1 / -1; max-inline-size: none; }
-    .hero__side { grid-column: 1 / span 5; padding-block: var(--space-3) var(--space-9); }
-    .hero__photo { grid-column: 6 / -1; margin-inline: var(--space-6) calc(var(--edge-out) * -1); }
+    .hero__grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto auto 1fr; row-gap: var(--headline-to-lead);
+      grid-template-areas: none;
+    }
+    .hero__title { grid-column: 1 / -1; grid-row: 1; max-inline-size: none; }
+    .hero__lead { grid-column: 1 / span 5; grid-row: 2; padding-block-start: var(--space-3); }
+    .hero__act { grid-column: 1 / span 5; grid-row: 3; padding-block: var(--space-3) var(--space-9); }
+    .hero__photo { grid-column: 6 / -1; grid-row: 2 / span 2; margin-inline: var(--space-6) calc(var(--edge-out) * -1); }
     .hero__photo .photo { aspect-ratio: auto; block-size: 100%; min-block-size: 34rem; }
+    .hero__photo .photo > img { object-position: 50% 40%; }
   }
 
   /* ── 2 · the four verbs ── */

@@ -12,7 +12,7 @@ import { join, dirname, relative, resolve, extname, basename, sep } from 'node:p
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
-import { DEFAULTS, LANGS, DEFAULT_LANG, LANG_META, CTA_PAGE, crmLinks, CSS_ORDER, JS_ENTRY } from './config.mjs';
+import { DEFAULTS, LANGS, DEFAULT_LANG, LANG_META, CTA_PAGE, PAGE_WHEN, LIVE_FIRST, crmLinks, CSS_ORDER, JS_ENTRY } from './config.mjs';
 import { html, raw, esc, attrs, cx, inline, keepNames, safeUrl, isHtml } from './lib/html.mjs';
 import * as brand from './lib/brand.mjs';
 import { scanPhotos, photo } from './lib/images.mjs';
@@ -112,10 +112,13 @@ for (const f of pageFiles) {
   }
   if (!pages.some((p) => p.id === 'home')) fail('there must be a pages/home.mjs');
 }
-const byId = new Map(pages.map((p) => [p.id, p]));
+// Pages that wait for owner content (config.mjs PAGE_WHEN): left out of a production build until it exists.
+const waiting = new Set(opts.preview ? [] : pages.filter((p) => PAGE_WHEN[p.id] && !PAGE_WHEN[p.id](org)).map((p) => p.id));
+const byId = new Map(pages.filter((p) => !waiting.has(p.id)).map((p) => [p.id, p]));
 
 const pagePath = (id, lang) => {
   const p = byId.get(id);
+  if (!p && waiting.has(id)) throw new Error(`link("${id}"): that page waits for owner content (config.mjs PAGE_WHEN) and is not in this build; check ctx.pageExists("${id}") first`);
   if (!p) throw new Error(`link("${id}"): there is no page with that id (pages/${id}.mjs)`);
   if (p.mod.notFound) throw new Error(`link("${id}"): the 404 page cannot be linked`);
   const slug = p.mod.slug[lang];
@@ -125,14 +128,23 @@ const pagePath = (id, lang) => {
 // ───────────── output folder ─────────────
 
 const out = opts.out;
-// The folder is emptied first, so it must be a dedicated one: under dist/ (not dist/ itself, the CRM build) or under /tmp.
+// The folder is emptied first, so it must be one the site owns: dist/site (the default), a folder that does not exist
+// yet or is empty, or one an earlier site build wrote (it carries the MARKER file). Never the repository, dist/ itself
+// (the CRM build) or a folder that holds either of them.
+const MARKER = '.site-build';
 {
-  const inDist = out.startsWith(resolve(ROOT, 'dist') + sep);
-  const inTmp = out.startsWith(resolve('/tmp') + sep) || (env.SITE_OUT_ANYWHERE === '1' && !(ROOT + sep).startsWith(out + sep) && !out.startsWith(ROOT + sep));
-  if (!inDist && !inTmp) fail(`refusing to empty ${out}: SITE_OUT must be a folder under dist/ or /tmp`);
+  const isDir = existsSync(out) && statSync(out).isDirectory();
+  // (a build from before the marker existed is recognised by its sitemap, robots.txt and fingerprinted stylesheet)
+  const legacy = () => ['sitemap.xml', 'robots.txt'].every((f) => existsSync(join(out, f))) && existsSync(join(out, 'assets/css')) && readdirSync(join(out, 'assets/css')).some((f) => /^site\.[0-9a-f]{10}\.css$/.test(f));
+  const owned = out === resolve(ROOT, 'dist/site') || !existsSync(out) || (isDir && (readdirSync(out).length === 0 || existsSync(join(out, MARKER)) || legacy()));
+  const holds = (dir) => dir === out || dir.startsWith(out + sep);
+  if (!owned || holds(ROOT) || holds(resolve(ROOT, 'dist')) || out.startsWith(join(ROOT, 'src') + sep) || out.startsWith(SITE + sep)) {
+    fail(`refusing to empty ${out}: SITE_OUT must be dist/site, a new or empty folder, or the output of an earlier site build (it has ${MARKER})`);
+  }
 }
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
+writeFileSync(join(out, MARKER), 'Written by site/build.mjs. This folder is emptied on every build.\n');
 
 const write = (rel, data) => {
   const f = join(out, rel);
@@ -282,6 +294,7 @@ function makeCtx(page, lang) {
     has: present,
     /** Owner content: render(value) when it exists; else a dashed box in preview builds, nothing in production. */
     slot: (value, label, render, o = {}) => (present(value) ? render(value) : opts.preview ? ownerBox(ctx, label, o) : ''),
+    /** Whether page `id` is in this build (it may wait for owner content: config.mjs PAGE_WHEN). Check before ctx.link. */
     pageExists: (id) => byId.has(id) && !byId.get(id).mod.notFound,
     link: (id, l = lang) => pagePath(id, l),
     abs,
@@ -292,6 +305,13 @@ function makeCtx(page, lang) {
       return opts.base + 'assets/' + rel;
     },
     assetUrl: (kind) => opts.base + (kind === 'css' ? cssName : jsOut[JS_ENTRY].file),
+    /** URL of a fingerprinted JS module (e.g. 'events.js'). */
+    jsUrl: (name) => {
+      if (!jsOut[name]) throw new Error(`jsUrl("${name}"): no such module in assets/js`);
+      return opts.base + jsOut[name].file;
+    },
+    /** The browser modules a page with live meetings needs at once (config.mjs LIVE_FIRST pages only). */
+    livePreload: LIVE_FIRST.includes(page.id) ? ['events.js', 'api.js', 'config.js'] : [],
     /** Responsive photo from site/assets/photos (alt defaults to content photos.<name>). */
     img: (name, o = {}) => photo(name, photos[name], opts.base + 'assets/photos/', { ...o, alt: o.alt ?? t(`photos.${name}`) }),
     photoNames: Object.keys(photos),
@@ -308,7 +328,8 @@ function makeCtx(page, lang) {
     ctaHref: byId.has(CTA_PAGE) ? pagePath(CTA_PAGE, lang) : crm.home,
     brand: {
       logo: brand.logo,
-      stripes: brand.stripes,
+      /** Stripes in this page's reading direction; a `corner--ts|te|bs|be` class pins them to that corner (anchor). */
+      stripes: (o = {}) => brand.stripes({ rtl: LANG_META[lang].dir === 'rtl', anchor: String(o.className ?? '').match(/\bcorner--([tb][se])\b/)?.[1], ...o }),
       chevron: (o = {}) => brand.chevron({ dir: LANG_META[lang].dir, ...o }),
       tri: (o = {}) => brand.tri({ dir: LANG_META[lang].dir, ...o }),
     },
@@ -325,14 +346,15 @@ function orgJsonLd(ctx) {
     name: 'המשך תנועה',
     ...(org.nameEn ? { alternateName: org.nameEn } : {}),
     url: ctx.abs(pagePath('home', DEFAULT_LANG)),
-    logo: ctx.abs(opts.base + 'assets/og-image.png'),
+    logo: ctx.abs(opts.base + 'assets/img/logo-square.png'),
+    image: ctx.abs(opts.base + 'assets/og-image.png'),
     description: ctx.t('site.description'),
     ...(sameAs.length ? { sameAs } : {}),
   };
 }
 
 const rendered = [];
-for (const page of pages) {
+for (const page of pages.filter((p) => byId.has(p.id))) {
   for (const lang of LANGS) {
     const ctx = makeCtx(page, lang);
     let doc;

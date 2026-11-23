@@ -2,7 +2,7 @@
 // welcome team (a WhatsApp message, then a personal link to choose meetings), a guest talk or a workout (the CRM's
 // "propose" form, #/join). Signature move: the two "how it works" paths fill as they are read.
 import { html } from '../lib/html.mjs';
-import { C, pageHref, waAction, action, chapters, corner } from './_support.mjs';
+import { C, pageHref, waAction, action, chapters, corner, waRow, linkRow } from './_support.mjs';
 
 export const slug = { he: 'volunteer', en: 'volunteer' };
 
@@ -13,10 +13,12 @@ export function render(ctx) {
   const message = t(k('ways.message'));
   const toCrm = t(k('ways.toCrm'));
   const items = ctx.list(k('ways.items'));
-  const acts = [
-    (cls) => waAction(ctx, { label: items[0]?.cta, text: message, className: cls, hint: t('donate.ways.waHint') }),
-    (cls) => action(ctx, { href: ctx.crm.join, label: items[1]?.cta, className: cls, hint: toCrm, external: true }),
-    (cls) => action(ctx, { href: ctx.crm.join, label: items[2]?.cta, className: cls, hint: toCrm, external: true }),
+  // the three roles as the shared row links: the whole row is the action (WhatsApp for the welcome team, the CRM's
+  // "propose" form for a talk or a workout)
+  const roles = [
+    waRow(ctx, { title: items[0]?.title, body: items[0]?.body, label: items[0]?.cta, text: message, hint: t('donate.ways.waHint') }),
+    linkRow(ctx, { title: items[1]?.title, body: items[1]?.body, label: items[1]?.cta, href: ctx.crm.join, hint: toCrm, external: true }),
+    linkRow(ctx, { title: items[2]?.title, body: items[2]?.body, label: items[2]?.cta, href: ctx.crm.join, hint: toCrm, external: true }),
   ];
 
   const hero = (g) => html`
@@ -41,15 +43,7 @@ export function render(ctx) {
 <section class="${`${C.chapter} vol-ways`}" data-ground="${g}" aria-labelledby="ways-h2">
   <div class="${C.wrap}">
     <h2 id="ways-h2" class="${C.chapterTitle}" ${ctx.reveal('up')}>${t(k('ways.title'))}</h2>
-    <ul class="vol-roles" role="list" data-reveal-group>
-      ${items.map(
-        (it, i) => html`<li class="vol-role" data-reveal="up">
-        <h3 class="${C.title}">${it.title}</h3>
-        <p>${it.body}</p>
-        <p class="vol-role__act">${acts[i]?.(C.ghost) ?? ''}</p>
-      </li>`,
-      )}
-    </ul>
+    ${ctx.ui.rows(roles, { level: 3, className: 'vol-roles' })}
   </div>
 </section>`;
 

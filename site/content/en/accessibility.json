@@ -10,7 +10,8 @@
   "standard": {
     "title": "Accessibility level",
     "body": "This site was built to meet Israeli Standard 5568 and WCAG 2.2 at level AA, in line with Israel's Equal Rights for Persons with Disabilities (Service Accessibility Adjustments) Regulations.",
-    "auditLabel": "Accessibility audit: {date}, {by}"
+    "auditLabel": "Accessibility audit: {date}, {by}",
+    "pending": "This site was built following Israeli Standard 5568 and WCAG 2.2, in line with Israel's Equal Rights for Persons with Disabilities (Service Accessibility Adjustments) Regulations. We'll state the conformance level here after an accessibility audit."
   },
   "features": {
     "title": "What we've done",
@@ -18,7 +19,7 @@
       "The whole site can be used with a keyboard alone, and focus is always visible.",
       "Every page starts with a link that skips straight to the content.",
       "Every page has one main heading and a clear structure of headings and regions (navigation, content and footer) that screen readers recognize.",
-      "Text has sufficient contrast against its background, on every background colour on the site.",
+      "Text has sufficient contrast against its background, on every background color on the site.",
       "Images have text descriptions. Purely decorative images are marked so screen readers skip them.",
       "The language of every page is set, Hebrew right to left and English left to right, including words in the other language within a page.",
       "Buttons and links are large enough to tap: at least 44 by 44 pixels.",

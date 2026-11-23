@@ -3,8 +3,7 @@
   /* ── hero (navy): the claim at the reading edge, the illustrative photo at the inline-end, stripes cut by its corner ── */
   .about-hero { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) var(--chapter-pad); }
   .about-hero__grid { display: grid; gap: var(--space-7) var(--gutter); }
-  .about-hero__title { font-size: clamp(2rem, 0.6rem + 6vw, 6rem); line-height: var(--lh-display); letter-spacing: var(--track-display); text-wrap: balance; }
-  :lang(en) .about-hero__title { font-size: clamp(1.625rem, 0.1rem + 6.4vw, 6rem); }
+  .about-hero__title { text-wrap: balance; } /* size: the shared inner-page h1 (.t-display) */
   .about-hero__actions { margin-block-start: var(--space-6); }
   .about-hero__frame { position: relative; overflow: clip; border-radius: var(--radius-panel); }
   .about-hero__photo { aspect-ratio: 4 / 3; }

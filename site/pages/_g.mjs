@@ -8,6 +8,9 @@ import { imageSize } from '../lib/images.mjs';
 
 const ASSETS = fileURLToPath(new URL('../assets/', import.meta.url));
 
+/** The shared class for an inner page's h1 (one size for every inner page; layout.css). */
+export const H1 = 't-display';
+
 /** The association's name, set in Hebrew (and marked lang="he" inside English text). */
 export const orgName = (ctx) => (ctx.lang === 'he' ? html`המשך תנועה` : html`<span lang="he">המשך תנועה</span>`);
 

@@ -51,17 +51,46 @@ function band(k, w, dir, h) {
     : `M${n(k - B)} ${-B}L${n(k + w - B)} ${-B}L${n(k + w + h + B)} ${h + B}L${n(k + h + B)} ${h + B}Z`;
 }
 
+/** Logical corner (ts|te|bs|be: top/bottom × inline start/end) → physical (tl|tr|bl|br) for a reading direction. */
+export function physicalCorner(pos, rtl) {
+  if (/^[tb][lr]$/.test(pos)) return pos;
+  if (!/^[tb][se]$/.test(pos)) throw new Error(`stripes: unknown corner "${pos}" (ts|te|bs|be or tl|tr|bl|br)`);
+  const startIsRight = rtl;
+  return pos[0] + ((pos[1] === 's') === startIsRight ? 'r' : 'l');
+}
+const ALIGN = { tl: 'xMinYMin', tr: 'xMaxYMin', bl: 'xMinYMax', br: 'xMaxYMax' };
+
 /**
  * A run of parallel 45° stripes (brand "stripe": width = gap = unit). Put it against an edge or a corner of a section,
- * never over faces or text. dir: 'fall' ("\") or 'rise' ("/"). Decorative (aria-hidden).
+ * never over faces or text. dir: 'fall' ("\\"), 'rise' ("/") or, with an anchor, 'cut' (the direction that cuts the
+ * corner off, so it mirrors between Hebrew and English). Decorative (aria-hidden).
+ * anchor: the corner the run belongs to — logical 'ts'|'te'|'bs'|'be' (needs rtl) or physical 'tl'|'tr'|'bl'|'br'.
+ * The bands are then drawn into that corner and the drawing is pinned to it (preserveAspectRatio), so whatever the
+ * box's shape, the stripes stay in the corner instead of floating to the middle of the box. ctx.brand.stripes() fills
+ * rtl from the page and takes the anchor from a `corner--xx` class when none is given.
  */
-export function stripes({ width = 400, height = 100, unit = 24, dir = 'fall', offset = 0, count, className } = {}) {
+export function stripes({ width = 400, height = 100, unit = 24, dir = 'fall', offset = 0, count, className, anchor, rtl = true } = {}) {
   const w = unit * R2;
   const step = 2 * w;
   const n = count ?? Math.ceil((width + height) / step) + 2;
-  const start = dir === 'fall' ? -height + offset : offset;
+  let align = 'xMidYMid';
+  const c = anchor ? physicalCorner(anchor, rtl) : null;
+  if (dir === 'cut') dir = c === 'tl' || c === 'br' ? 'rise' : 'fall';
+  let start = dir === 'fall' ? -height + offset : offset;
+  if (c) {
+    align = ALIGN[c];
+    // a band covers v ∈ [k, k + w], v = x + y (rise) or x − y (fall); v at the corner decides where the run starts
+    const x = c[1] === 'r' ? width : 0;
+    const y = c[0] === 'b' ? height : 0;
+    const v = dir === 'rise' ? x + y : x - y;
+    const [lo, hi] = dir === 'rise' ? [0, width + height] : [-height, width];
+    if (v === lo) start = lo; //                                     the run cuts the corner, first band at the tip
+    else if (v === hi) start = hi - w - (n - 1) * step; //           … from the far side
+    else start = v - w / 2 - Math.floor((n - 1) / 2) * step; //      the bands run into the corner: centre the run on it
+    start += offset;
+  }
   const d = Array.from({ length: n }, (_, i) => band(start + i * step, w, dir, height)).join('');
-  return html`<svg${attrs({ viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMidYMid slice', class: className, 'aria-hidden': 'true', focusable: 'false' })}><path fill="currentColor" d="${d}"/></svg>`;
+  return html`<svg${attrs({ viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: `${align} slice`, class: className, 'aria-hidden': 'true', focusable: 'false' })}><path fill="currentColor" d="${d}"/></svg>`;
 }
 
 /** The chevron (two stripes meeting), pointing in the reading direction of `dir`. */

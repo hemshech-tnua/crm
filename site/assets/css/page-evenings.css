@@ -5,7 +5,6 @@
   /* ── hero: the title at the reading edge, the three kinds as large row links at the inline-end ── */
   .ev-hero { padding-block: clamp(3rem, 2rem + 5vw, 7rem) var(--chapter-pad); }
   .ev-hero__grid { display: grid; gap: var(--space-8); }
-  .ev-hero__title { font-size: clamp(2.5rem, 1.2rem + 4.2vw, 5.25rem); }
   .ev-hero__lead { margin-block-start: var(--headline-to-lead); }
   @media (min-width: 64rem) {
     .ev-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
@@ -18,9 +17,9 @@
   .ev-kind__body { margin-block-start: var(--space-5); }
   .ev-kind__lead { margin-block-start: var(--headline-to-lead); }
   .ev-kind__text > .owner-slot { margin-block-start: var(--space-6); }
-  .ev-kind__cta { margin-block-start: var(--space-6); }
+  .ev-women__live { margin-block-start: var(--space-7); }
 
-  /* ── women's evenings: text + a navy field with the brand's stripes and mark (never a photo of other people) ── */
+  /* ── women's evenings: text + the live list of women's evenings + a navy field with the brand's stripes and mark (never a photo of other people) ── */
   .ev-women__grid { display: grid; gap: var(--space-8); }
   .ev-women__field { position: relative; display: grid; align-content: end; overflow: hidden; isolation: isolate; aspect-ratio: 4 / 3; padding: var(--space-6);
     border-radius: var(--radius-panel); background-color: var(--navy); color: var(--beige); }

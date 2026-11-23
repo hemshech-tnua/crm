@@ -1,20 +1,25 @@
 {
   "meta": {
     "title": "About · המשך תנועה",
-    "description": "A home for combat veterans after their service: regular meetings built on movement, community and direction, and a nationwide network of local community centers on the way."
+    "description": "A home for combat veterans after their service: regular meetings built on movement, community and direction, and local community centers on the way."
   },
   "hero": {
     "title": "A home for combat veterans after their service",
-    "body": "We're an Israeli nonprofit that runs regular, structured activity so that men and women who served in combat roles have a place to meet, move, find direction and build a good life.",
+    "body": "We're an Israeli nonprofit that runs regular, structured activity so that men and women who served in combat roles have a place to meet, move, find direction and succeed in life.",
     "secondary": "Meet the team"
   },
   "why": {
     "title": "Here for good",
     "body": [
       "Military service ends on a set date. The need for a team, for movement and for direction doesn't end with it.",
-      "So we didn't build a program with an end date. We're a place that stays, one you can come to at any point, and come back to again."
+      "So we didn't build a program with an end date. We're a place that stays: come at any point, and come back whenever you like."
     ],
-    "verbs": ["Meet", "Move", "Find direction", "Succeed"],
+    "verbs": [
+      "Meet",
+      "Move",
+      "Find direction",
+      "Succeed"
+    ],
     "verbsLabel": "What the meetings are for"
   },
   "direction": {
@@ -38,7 +43,7 @@
       },
       {
         "title": "Women's evenings",
-        "body": "Evenings by women combat veterans, for women combat veterans.",
+        "body": "Evenings for women combat veterans.",
         "cta": "Women's evenings",
         "page": "evenings"
       },
@@ -53,10 +58,22 @@
   "principles": {
     "title": "What matters to us",
     "items": [
-      { "title": "Steady", "body": "Structured meetings, every month, over time. Not a one-off event." },
-      { "title": "Open", "body": "For every combat veteran, however long it's been since discharge. You don't need to know anyone." },
-      { "title": "Moving", "body": "Every Friday meeting starts with a workout built for every fitness level." },
-      { "title": "Eye to eye", "body": "No ranks, no formations. And it isn't a talking circle: everyone shares only what they want to." }
+      {
+        "title": "Steady",
+        "body": "Structured meetings, every month, over time. Not a one-off event."
+      },
+      {
+        "title": "Open",
+        "body": "For every combat veteran, however long it's been since discharge. You don't need to know anyone."
+      },
+      {
+        "title": "Moving",
+        "body": "Every Friday meeting starts with a workout built for every fitness level."
+      },
+      {
+        "title": "As equals",
+        "body": "No ranks, no roll call. And it isn't a talking circle: everyone shares only what they want to."
+      }
     ]
   },
   "story": {
@@ -69,8 +86,9 @@
   },
   "people": {
     "title": "The people behind it",
-    "body": "A team, a board and volunteers who make every meeting happen.",
-    "cta": "Meet the team"
+    "body": "A team, a board and volunteers who make the meetings happen.",
+    "cta": "Meet the team",
+    "volunteer": "Join our volunteers"
   },
   "closing": {
     "title": "The best way to get to know us: come",

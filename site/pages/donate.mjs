@@ -2,7 +2,7 @@
 // transparency beside it. No amounts preselected, no urgency, no guilt; it closes with "לא חייבים לתרום כדי להיות חלק".
 // Owner content (payment links, numbers, quotes, team, reports) comes from content/org.json and appears when it exists.
 import { html } from '../lib/html.mjs';
-import { C, pageHref, waAction, action, giveAction, chapters, corner, own } from './_support.mjs';
+import { C, pageHref, action, chapters, corner, own, waRow, linkRow, giveRow } from './_support.mjs';
 
 export const slug = { he: 'donate', en: 'donate' };
 export const bodyClass = 'no-cta-bar';
@@ -14,46 +14,33 @@ export function render(ctx) {
   const has = ctx.has;
   const ext = t(k('ways.external'));
 
-  // ── the five giving routes. Each works today (WhatsApp, prefilled per route) and switches to the owner's link.
+  // ── the five giving routes, as the shared row links (the whole row is the action, ◀ at its end). Each works today
+  // (WhatsApp, prefilled per route) and switches to the owner's payment link once org.json has it.
   const routes = [
-    {
-      id: 'once',
-      title: t(k('ways.oneTime.title')),
-      body: t(k('ways.oneTime.body')),
-      act: giveAction(ctx, { url: org.donateUrl, cta: t(k('ways.oneTime.cta')), wa: t(k('ways.oneTime.wa')), message: t(k('ways.oneTime.message')), className: C.ghost, external: ext }),
-      slot: has(org.donateUrl) ? '' : ctx.slot(null, t(k('slots.oneTimeUrl')), () => '', { tag: 'span' }),
-    },
-    {
-      id: 'monthly',
-      title: t(k('ways.monthly.title')),
-      body: t(k('ways.monthly.body')),
-      act: giveAction(ctx, { url: org.donateMonthlyUrl, cta: t(k('ways.monthly.cta')), wa: t(k('ways.monthly.wa')), message: t(k('ways.monthly.message')), className: C.ghost, external: ext }),
-      slot: has(org.donateMonthlyUrl) ? '' : ctx.slot(null, t(k('slots.monthlyUrl')), () => '', { tag: 'span' }),
-    },
-    {
-      id: 'sponsor',
+    giveRow(ctx, { title: t(k('ways.oneTime.title')), body: t(k('ways.oneTime.body')), url: org.donateUrl, cta: t(k('ways.oneTime.cta')), wa: t(k('ways.oneTime.wa')), message: t(k('ways.oneTime.message')), external: ext }),
+    giveRow(ctx, { title: t(k('ways.monthly.title')), body: t(k('ways.monthly.body')), url: org.donateMonthlyUrl, cta: t(k('ways.monthly.cta')), wa: t(k('ways.monthly.wa')), message: t(k('ways.monthly.message')), external: ext }),
+    waRow(ctx, {
       title: t(k('ways.sponsor.title')),
       body: t(k('ways.sponsor.body')),
-      note: has(org.sponsorAmount) ? t(k('ways.sponsor.amount'), { amount: org.sponsorAmount }) : '',
-      act: waAction(ctx, { label: t(k('ways.sponsor.wa')), text: t(k('ways.sponsor.message')), className: C.ghost, hint: t(k('ways.waHint')) }),
-      slot: has(org.sponsorAmount) ? '' : ctx.slot(null, t(k('slots.sponsorAmount')), () => '', { tag: 'span' }),
-    },
-    {
-      id: 'company',
-      title: t(k('ways.company.title')),
-      body: t(k('ways.company.body')),
-      act: action(ctx, { href: pageHref(ctx, 'partners', 'contact'), label: t(k('ways.company.cta')), className: C.ghost }),
-    },
-    {
-      id: 'abroad',
-      title: t(k('ways.abroad.title')),
-      body: has(org.abroad?.body) ? own(ctx, org.abroad.body) : t(k('ways.abroad.body')),
-      act: giveAction(ctx, { url: org.abroad?.url, cta: t(k('ways.abroad.cta')), wa: t(k('ways.abroad.wa')), message: t(k('ways.abroad.message')), className: C.ghost, external: ext }),
-      slot: has(org.abroad?.body) ? '' : ctx.slot(null, t(k('slots.abroad')), () => '', { tag: 'span' }),
-    },
+      note: has(org.sponsorAmount) ? t(k('ways.sponsor.amount'), { amount: org.sponsorAmount }) : null,
+      label: t(k('ways.sponsor.wa')),
+      text: t(k('ways.sponsor.message')),
+      hint: t(k('ways.waHint')),
+    }),
+    linkRow(ctx, { title: t(k('ways.company.title')), body: t(k('ways.company.body')), label: t(k('ways.company.cta')), href: pageHref(ctx, 'partners', 'contact') }),
+    giveRow(ctx, { title: t(k('ways.abroad.title')), body: has(org.abroad?.body) ? own(ctx, org.abroad.body) : t(k('ways.abroad.body')), url: org.abroad?.url, cta: t(k('ways.abroad.cta')), wa: t(k('ways.abroad.wa')), message: t(k('ways.abroad.message')), external: ext }),
   ];
+  // preview only: what the association still has to send for the routes (production renders nothing here)
+  const routeSlots = [
+    has(org.donateUrl) ? '' : ctx.slot(null, t(k('slots.oneTimeUrl')), () => '', { tag: 'li' }),
+    has(org.donateMonthlyUrl) ? '' : ctx.slot(null, t(k('slots.monthlyUrl')), () => '', { tag: 'li' }),
+    has(org.sponsorAmount) ? '' : ctx.slot(null, t(k('slots.sponsorAmount')), () => '', { tag: 'li' }),
+    has(org.abroad?.body) ? '' : ctx.slot(null, t(k('slots.abroad')), () => '', { tag: 'li' }),
+  ].filter((x) => String(x).trim());
 
-  const taxText = org.section46 === true ? t(k('tax.approved')) : t(k('tax.body'));
+  const approved = org.section46 === true;
+  const taxTitle = approved ? t(k('tax.titleApproved')) : t(k('tax.title'));
+  const taxText = approved ? t(k('tax.approved')) : t(k('tax.body'));
 
   const hero = (g) => html`
 <section class="${`${C.chapter} give-hero`}" data-ground="${g}" aria-labelledby="donate-h1">
@@ -78,23 +65,14 @@ export function render(ctx) {
       <h2 id="ways-h2" class="${C.chapterTitle}" ${ctx.reveal('up')}>${t(k('ways.title'))}</h2>
       <p class="${C.body}" ${ctx.reveal('up', 1)}>${t(k('ways.body'))}</p>
       <div class="give-tax" ${ctx.reveal('up', 2)}>
-        <h3 class="give-tax__title">${t(k('tax.title'))}</h3>
+        <h3 class="give-tax__title">${taxTitle}</h3>
         <p>${taxText}</p>
       </div>
     </div>
-    <ol class="give-routes" role="list" data-reveal-group>
-      ${routes.map(
-        (r) => html`<li class="give-route" id="${`way-${r.id}`}" data-reveal="up">
-        <div class="give-route__text">
-          <h3 class="${C.title}">${r.title}</h3>
-          <p>${r.body}</p>
-          ${r.note ? html`<p class="give-route__note">${r.note}</p>` : ''}
-          ${r.slot || ''}
-        </div>
-        <div class="give-route__act">${r.act}</div>
-      </li>`,
-      )}
-    </ol>
+    <div class="give-routes">
+      ${ctx.ui.rows(routes, { level: 3, className: 'give-rows' })}
+      ${routeSlots.length ? html`<ul class="give-slots" role="list">${routeSlots}</ul>` : ''}
+    </div>
     ${ctx.slot(
       org.bank,
       t(k('slots.bank')),
@@ -148,11 +126,15 @@ export function render(ctx) {
   </div>
 </section>`;
 
-  // ── who is behind it + transparency (Section 46 status sits beside the routes, where donors look for it first).
+  // ── who is behind it + transparency. The transparency panel exists only once there is something to show (the
+  // registration number or reports); until then a production build leaves it out entirely: no promises on an empty box.
   const people = [...(org.team ?? []), ...(org.board ?? [])];
+  const teamPage = ctx.pageExists('team');
+  const hasOpen = has(org.registrationNumber) || has(org.reports);
+  const showOpen = hasOpen || ctx.preview;
   const trust = (g) => html`
 <section class="${`${C.chapter} give-trust`}" data-ground="${g}" aria-labelledby="trust-h2">
-  <div class="${`${C.wrap} give-trust__grid`}">
+  <div class="${`${C.wrap} give-trust__grid${showOpen ? '' : ' give-trust__grid--solo'}`}">
     <div class="give-trust__who" ${ctx.reveal('up')}>
       <h2 id="trust-h2" class="${C.chapterTitle}">${t(k('trust.title'))}</h2>
       <p class="${C.lead}">${t(k('trust.body'))}</p>
@@ -161,15 +143,19 @@ export function render(ctx) {
         t(k('slots.team')),
         (list) => html`<ul class="give-people" role="list">${list.slice(0, 8).map((p) => html`<li><b>${own(ctx, p.name)}</b><span class="${C.quiet}">${own(ctx, p.role)}</span></li>`)}</ul>`,
       )}
-      <p><a class="${C.link}" href="${pageHref(ctx, 'team', 'about')}">${t(k('trust.cta'))}${ctx.brand.tri()}</a></p>
+      <p><a class="${C.link}" href="${pageHref(ctx, 'team', 'about')}">${teamPage ? t(k('trust.cta')) : t(k('trust.ctaAbout'))}${ctx.brand.tri()}</a></p>
     </div>
-    <div class="give-trust__open" ${ctx.reveal('up', 1)}>
+    ${showOpen
+      ? html`<div class="give-trust__open" ${ctx.reveal('up', 1)}>
       <h3 class="${C.title}">${t(k('transparency.title'))}</h3>
       ${ctx.slot(org.registrationNumber, t(k('slots.registration')), (n) => html`<p class="give-trust__reg">${t(k('transparency.registration'), { n })}</p>`)}
-      ${has(org.reports)
-        ? html`<ul class="give-reports" role="list">${org.reports.map((r) => html`<li><a class="${C.link}" href="${ctx.asset(r.file)}">${own(ctx, r.title)} <span class="${C.ltr}">${r.year}</span>${ctx.brand.tri()}</a></li>`)}</ul>`
-        : html`<p>${t(k('transparency.body'))}</p>${ctx.slot(null, t(k('slots.reports')), () => '')}`}
-    </div>
+      ${ctx.slot(
+        org.reports,
+        t(k('slots.reports')),
+        (reports) => html`<ul class="give-reports" role="list">${reports.map((r) => html`<li><a class="${C.link}" href="${ctx.asset(r.file)}">${own(ctx, r.title)} <span class="${C.ltr}">${r.year}</span>${ctx.brand.tri()}</a></li>`)}</ul>`,
+      )}
+    </div>`
+      : ''}
   </div>
 </section>`;
 

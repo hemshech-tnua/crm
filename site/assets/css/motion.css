@@ -69,7 +69,7 @@
 
   /* the reading progress is scroll-linked state, not ambient motion: it stays under reduced motion */
   @supports (animation-timeline: scroll()) {
-    .sda .scroll-progress { animation: progress linear both; animation-timeline: scroll(root block); }
+    .sda .scroll-progress::after { animation: progress linear both; animation-timeline: scroll(root block); }
   }
 
   @media (prefers-reduced-motion: reduce) {

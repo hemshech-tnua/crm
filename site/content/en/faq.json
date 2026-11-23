@@ -66,7 +66,7 @@
         },
         {
           "q": "Can I come for only part of the morning?",
-          "a": "Yes, you can come only for the workout or only for the talk. Part of the morning is also paid."
+          "a": "Yes, you can come only for the workout or only for the talk. Coming for part of the morning is paid as well."
         }
       ]
     },
@@ -84,11 +84,12 @@
         },
         {
           "q": "Is there a reminder before the meeting?",
-          "a": "Yes. Everyone who registered gets a reminder two days before the meeting."
+          "a": "Yes. Everyone who registers gets a reminder two days before the meeting."
         },
         {
           "q": "How do I cancel or change my registration?",
-          "a": "With the personal link you get at the end of registration. Cancelling early frees your spot for someone on the waiting list."
+          "a": "With the personal link you get at the end of registration. Canceling early frees your spot for someone on the waiting list.",
+          "id": "cancel"
         },
         {
           "q": "What happens to the details I fill in?",
@@ -100,7 +101,7 @@
         },
         {
           "q": "Do you take photos at meetings?",
-          "a": "Sometimes, for our pages. If you'd rather not appear in published photos, tick the box on the registration form and our team will see it."
+          "a": "Sometimes, for our pages. If you'd rather not appear in published photos, check the box on the registration form and our team will see it."
         }
       ]
     },
@@ -123,19 +124,20 @@
         },
         {
           "q": "How can I volunteer?",
-          "a": "Send us a message on WhatsApp and someone from our team will get back to you. You can also propose a talk or a workout session.",
+          "a": "Send us a message on WhatsApp and someone from our team will get back to you. You can also offer a talk or a workout session.",
           "link": {
             "label": "Volunteer",
             "page": "volunteer"
           }
         },
         {
-          "q": "Are donations tax-deductible?",
-          "a": "In Israel, our application for Section 46 recognition is in process. We'll update the site once it's approved.",
+          "q": "Can I get a tax benefit for my gift?",
+          "a": "In Israel, our application for Section 46 recognition is in process. We'll update the site when there's a decision.",
           "link": {
             "label": "Ways to give",
             "page": "donate"
-          }
+          },
+          "aApproved": "Yes, in Israel: we are recognized under Section 46 of the Israeli Income Tax Ordinance, so gifts from Israeli taxpayers qualify for a tax credit."
         }
       ]
     }

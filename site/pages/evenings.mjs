@@ -1,5 +1,6 @@
 // Women's evenings and other meetings — what each kind of evening is (only the facts we have; the owner's details
-// fill the slots), with the live upcoming meetings of each kind. Women's evenings first (the CEO named them), then
+// fill the slots), with the live upcoming meetings of each kind. Women's evenings first (the CEO named them; their live list is the "other" meetings that events.js recognises as
+// women's evenings), then
 // bonfire evenings, then other meetings. Women's evenings never get a stand-in photo of people: a brand colour field.
 import { html } from '../lib/html.mjs';
 
@@ -23,9 +24,7 @@ export function render(ctx) {
       <p class="t-lead ev-hero__lead" data-load="2">${t('evenings.hero.lead')}</p>
     </div>
     <nav class="ev-index" aria-label="${t('evenings.hero.indexLabel')}" data-load="3">
-      <ul class="rows" role="list">
-        ${kinds.map(([k, id]) => html`<li><a class="row" href="#${id}"><span class="row__title">${t(`evenings.${k}.name`)}</span>${tri()}</a></li>`)}
-      </ul>
+      ${ctx.ui.rows(kinds.map(([k, id]) => ({ title: t(`evenings.${k}.name`), href: `#${id}` })), { className: 'ev-index__rows' })}
     </nav>
   </div>
 </section>
@@ -36,7 +35,10 @@ export function render(ctx) {
       <h2 id="ev-women-title" class="t-chapter" data-reveal="up">${t('evenings.women.name')}</h2>
       <p class="t-lead ev-kind__lead" data-reveal="up" data-reveal-delay="1">${t('evenings.women.note')}</p>
       ${ctx.slot(t('evenings.women.details'), t('evenings.women.slot'), (v) => html`<p class="t-body ev-kind__body" data-reveal="up" data-reveal-delay="2">${v}</p>`)}
-      <p class="ev-kind__cta" data-reveal="up" data-reveal-delay="2"><a class="link" href="#ev-other-list">${t('evenings.women.cta')}${tri()}</a></p>
+      <div class="ev-live ev-women__live" id="ev-women-list">
+        <h3 class="t-title" data-reveal="up">${t('evenings.upcoming.women')}</h3>
+        ${ctx.events({ type: 'women', limit: 3, heading: 4, id: 'ev-women-events', stack: true, empty: { title: t('evenings.upcoming.womenEmptyTitle'), body: t('evenings.upcoming.womenEmptyBody') } })}
+      </div>
     </div>
     <div class="ev-women__field" data-reveal="fade">
       ${ctx.ui.corner({ pos: 'te', tone: 'beige', unit: 24 })}

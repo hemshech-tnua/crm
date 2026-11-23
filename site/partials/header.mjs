@@ -4,8 +4,10 @@
 import { html } from '../lib/html.mjs';
 import { NAV, CTA_PAGE } from '../config.mjs';
 
+/** Nav entries for the pages of `ids` that are in this build (a page waiting for owner content is skipped). */
 export function navItems(ctx, ids) {
-  return ids.filter((id) => ctx.pageExists(id)).map((id) => ({ id, href: ctx.link(id), label: ctx.t(`nav.${id}`), current: ctx.page.id === id }));
+  const longer = ctx.get('nav.menuNames') ?? {};
+  return ids.filter((id) => ctx.pageExists(id)).map((id) => ({ id, href: ctx.link(id), label: ctx.t(`nav.${id}`), menuLabel: longer[id] || ctx.t(`nav.${id}`), current: ctx.page.id === id }));
 }
 
 const cur = (on) => (on ? html` aria-current="page"` : '');
@@ -51,9 +53,9 @@ export function header(ctx) {
   </div>
   <nav class="wrap site-menu__nav" aria-label="${ctx.t('nav.menuLabel')}">
     <ul class="site-menu__list site-menu__list--primary" role="list">
-      ${primary.map((i) => html`<li><a class="site-menu__link" href="${i.href}"${cur(i.current)}><span>${i.label}</span>${ctx.brand.tri()}</a></li>`)}
+      ${primary.map((i) => html`<li><a class="site-menu__link" href="${i.href}"${cur(i.current)}><span>${i.menuLabel}</span>${ctx.brand.tri()}</a></li>`)}
     </ul>
-    ${secondary.length ? html`<ul class="site-menu__list site-menu__list--secondary" role="list" aria-label="${ctx.t('nav.secondaryLabel')}">${secondary.map((i) => html`<li><a class="site-menu__link" href="${i.href}"${cur(i.current)}>${i.label}</a></li>`)}</ul>` : ''}
+    ${secondary.length ? html`<ul class="site-menu__list site-menu__list--secondary" role="list" aria-label="${ctx.t('nav.secondaryLabel')}">${secondary.map((i) => html`<li><a class="site-menu__link" href="${i.href}"${cur(i.current)}>${i.menuLabel}</a></li>`)}</ul>` : ''}
     <div class="site-menu__extra">
       <a href="${ctx.crm.home}" data-org-phone="whatsapp" data-org-text="${ctx.t('whatsapp.general')}" rel="noopener" hidden>${ctx.t('footer.whatsapp')}</a>
       ${langSwitch(ctx, 'lang-switch')}

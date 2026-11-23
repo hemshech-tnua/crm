@@ -7,7 +7,7 @@
     "title": "Be part of the team",
     "body": "Our meetings happen because people give their time. There are a few ways to join in.",
     "cta": "Volunteer via WhatsApp",
-    "propose": "Offer a talk or a session"
+    "propose": "Offer a talk or a workout session"
   },
   "ways": {
     "title": "Ways to volunteer",
@@ -20,12 +20,12 @@
       {
         "title": "Guest talk",
         "body": "Have something to offer combat veterans in civilian life? Every Friday morning includes a guest talk.",
-        "cta": "Propose a talk"
+        "cta": "Offer a talk"
       },
       {
         "title": "Lead a workout",
         "body": "Yoga, Pilates, movement. Every Friday morning includes a movement session.",
-        "cta": "Propose a session"
+        "cta": "Offer a workout session"
       }
     ],
     "message": "Hi, I'd like to volunteer with המשך תנועה. How can I help?",
@@ -42,7 +42,7 @@
       ]
     },
     "propose": {
-      "title": "Talks and sessions",
+      "title": "Talks and workout sessions",
       "steps": [
         "Fill in a few details about your proposal (the form is in Hebrew).",
         "Our team reviews every proposal.",
