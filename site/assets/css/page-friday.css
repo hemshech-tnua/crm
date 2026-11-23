@@ -42,19 +42,20 @@
   /* ── 3. ככה נראה הבוקר (beige): the shared timeline + a sticky photo that follows the step at mid-screen ── */
   .fr-morning__grid { display: grid; gap: var(--space-8); margin-block-start: var(--space-8); }
   .fr-morning__note { margin-block-start: var(--space-7); padding-inline-start: var(--space-7); }
-  .fr-morning__media { display: none; }
+  /* phones: the photo sits under the timeline (4:3); desktop: sticky beside it (4:5). Three stacked images, the one
+     for the step at mid-screen is shown (follow-the-middle in scroll.js); the first shows until then. */
+  .fr-morning__photo { aspect-ratio: 4 / 3; inline-size: 100%; }
+  .fr-morning__photo > .fr-morning__img { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-slow) var(--ease-out); }
+  .fr-morning__photo > .fr-morning__img--1 { object-position: 50% 50%; }
+  .fr-morning__photo > .fr-morning__img--2 { object-position: 20% 60%; }
+  .fr-morning__photo > .fr-morning__img--3 { object-position: 78% 35%; }
+  .fr-morning__photo > .fr-morning__img[data-active],
+  .fr-morning__photo:not(:has(> [data-active])) > .fr-morning__img--1 { opacity: 1; }
   @media (min-width: 64rem) {
     .fr-morning__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
     .fr-morning__steps { grid-column: 1 / span 5; padding-block: var(--space-6) var(--space-11); }
-    .fr-morning__media { display: block; grid-column: 7 / -1; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
-    .fr-morning__photo { aspect-ratio: 4 / 5; max-block-size: calc(100svh - var(--header-h) - 4rem); inline-size: 100%; }
-    .fr-morning__photo > .fr-morning__img { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-slow) var(--ease-out); }
-    .fr-morning__img--1 { object-position: 50% 50%; }
-    .fr-morning__photo > .fr-morning__img--2 { object-position: 20% 60%; }
-    .fr-morning__photo > .fr-morning__img--3 { object-position: 78% 35%; }
-    /* follow-the-middle (scroll.js) marks the photo of the step at mid-screen; the first one shows until then */
-    .fr-morning__photo > .fr-morning__img[data-active],
-    .fr-morning__photo:not(:has(> [data-active])) > .fr-morning__img--1 { opacity: 1; }
+    .fr-morning__media { grid-column: 7 / -1; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+    .fr-morning__photo { aspect-ratio: 4 / 5; max-block-size: calc(100svh - var(--header-h) - 4rem); }
   }
   .fr-gallery { margin-block-start: var(--space-9); }
   .fr-gallery__list { display: grid; gap: var(--gutter); margin-block-start: var(--space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }

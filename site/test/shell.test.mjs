@@ -48,7 +48,7 @@ for (const [name, b] of [['production', prod], ['preview', preview]]) {
   test(`${name}: the phone CTA bar is on every page except donate, contact and the 404`, () => {
     for (const { rel, html, is404 } of pages(b.out)) {
       const none = is404 || /(^|\/)(donate|contact)\//.test(rel);
-      const bar = /<div class="cta-bar" data-cta-bar data-next="[a-z]+"[^>]* role="region" aria-label="[^"]+">/.test(html);
+      const bar = /<div class="cta-bar" data-ground="navy" data-cta-bar data-next="[a-z]+"[^>]* role="region" aria-label="[^"]+">/.test(html);
       assert.equal(bar, !none, `${rel}: CTA bar ${none ? 'should be absent' : 'missing'}`);
     }
   });

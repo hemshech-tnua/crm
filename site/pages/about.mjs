@@ -112,6 +112,7 @@ export function render(ctx) {
         (p) => html`<div class="about-principle" data-reveal="up"><dt>${p.title}</dt><dd>${p.body}</dd></div>`,
       )}
     </dl>
+    <figure class="photo r-219 focus-30 about-principles__photo" ${ctx.reveal('fade')}>${ctx.img('running', { alt: '', sizes: '(min-width: 82.5rem) 1320px, 100vw' })}</figure>
   </div>
 </section>`;
 
@@ -136,13 +137,18 @@ export function render(ctx) {
 </section>`
       : '';
 
+  // with faces (or the preview slot) the text sits beside them; without (production, no team yet) the heading and the
+  // text share the width, so the chapter never leaves half the screen empty
+  const showFaces = team.length > 0 || ctx.preview;
+  const peopleText = html`<p class="t-lead">${t('about.people.body')}</p>
+      <div class="cluster">${action(ctx, { href: teamHref, label: t('about.people.cta'), className: 'btn btn--ghost' })}</div>`;
   const people = html`
 <section class="chapter about-people" data-ground="beige" aria-labelledby="about-people">
-  <div class="wrap about-people__grid">
+  ${showFaces
+    ? html`<div class="wrap about-people__grid">
     <div class="stack" ${ctx.reveal('up')}>
       <h2 id="about-people" class="t-chapter">${t('about.people.title')}</h2>
-      <p class="t-lead">${t('about.people.body')}</p>
-      <div class="cluster">${action(ctx, { href: teamHref, label: t('about.people.cta'), className: 'btn btn--ghost' })}</div>
+      ${peopleText}
     </div>
     ${ctx.slot(
       team,
@@ -152,7 +158,11 @@ export function render(ctx) {
       </ul>`,
       { className: 'about-faces--slot' },
     )}
-  </div>
+  </div>`
+    : html`<div class="wrap about-people__grid about-people__grid--text">
+    <h2 id="about-people" class="t-chapter" ${ctx.reveal('up')}>${t('about.people.title')}</h2>
+    <div class="stack" ${ctx.reveal('up', 1)}>${peopleText}</div>
+  </div>`}
 </section>`;
 
   const closing = html`

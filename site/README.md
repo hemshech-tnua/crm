@@ -59,7 +59,8 @@ export function render(ctx) {
 }
 ```
 
-Also optional: `export const bodyClass = '…'`, `export function jsonld(ctx) { return {…} }` (structured data),
+Also optional: `export const ctaBar = false | { type: 'friday', label: '<copy key>', pay: true }` (the phone CTA bar;
+default on, off for donate/contact), `export const bodyClass = '…'`, `export function jsonld(ctx) { return {…} }` (structured data),
 `export const notFound = true` (only the 404). The page appears in the header/menu/footer once its id is in
 `config.mjs` `NAV` and it has a `nav.<id>` label in both languages. Pages must exist in both languages.
 
@@ -77,7 +78,10 @@ Also optional: `export const bodyClass = '…'`, `export function jsonld(ctx) { 
 | `ctx.img(name, { alt?, sizes, eager, className })` | responsive `<img>` from `assets/photos/<name>-<w>.webp`: srcset, width/height, lazy (eager + `fetchpriority=high` for the hero). `alt` defaults to copy `photos.<name>`. |
 | `ctx.org`, `ctx.l(v)`, `ctx.has(v)` | owner content (`org.json`); `l()` picks `{he,en}`; `has()` = not empty |
 | `ctx.slot(value, label, render, { tag })` | owner content slot: `render(value)` when it exists; otherwise a dashed **“תוכן מהעמותה: label”** box in preview builds and **nothing** in production. `tag: 'li'` inside lists. |
-| `ctx.events({ type, limit, filter, heading, id })` | the live meetings list (see below) |
+| `ctx.events({ type, limit, filter, heading, id, stack, more })` | the live meetings list (see below) |
+| `ctx.nextMeeting({ type, label, title, body, cta, more, heroCta, pay })` | the live "next meeting" card (static text until the data arrives) |
+| `ctx.ui.*` | shared blocks (lib/components.mjs): `photo(name,{ratio,focus,bleed,wipe,…})`, `corner({pos,tone})`, `mark()`, `faq(groups)`, `timeline(steps)`, `stats(items)`, `quote(q)`, `logos(list)`, `rows(items)`, `triList(items)`, `ctaBand({…})`, `button(label, href)`, `link(label, href)` |
+| `ctx.inline(str)` | the `ctx.rich` markup for a string you already hold |
 | `ctx.whatsapp(label, { className, text })` | WhatsApp link to the association's phone, filled live; hidden until the phone arrives |
 | `ctx.reveal('up', 2)` | `data-reveal="up" data-reveal-delay="2"` |
 | `ctx.brand.logo({ variant: 'symbol'|'lockup' })`, `.stripes({…})`, `.chevron()`, `.tri()` | brand artwork as inline SVG (logo paths read from `src/ui/Logo.tsx`; ◀/▶ follows the language) |
@@ -120,6 +124,14 @@ he/en copy have identical keys; no slashed/dotted gender forms (`לוחמים/ו
 | `quotes` | `[{ text:{he,en}, name:{he,en}, context?:{he,en} }]` (written consent required) |
 | `reports` | `[{ year, title:{he,en}, file: 'files/x.pdf' }]` |
 | `photos`, `videos` | lists for a gallery |
+| `registrationNumber` | string — ע״ר number (footer legal row, donate) |
+| `donateMonthlyUrl` | URL for a monthly standing order |
+| `sponsorAmount` | number (₪) — cost of sponsoring one meeting, if public |
+| `abroad` | `{ url, body:{he,en} }` — how to give from abroad |
+| `impact` | `[{ label:{he,en}, value }]` — what donations pay for |
+| `partnersEmail`, `partnersContact`, `partnersDeck` | string · `{ name:{he,en}, role:{he,en} }` · `'files/x.pdf'` |
+| `pressEmail`, `hours` | string · `{he,en}` |
+| `properConduct` | `{ file:'files/x.pdf', validUntil }` — אישור ניהול תקין |
 
 **Preview vs production:** `--preview` / `SITE_PREVIEW=1` shows every empty owner slot as a dashed box so the board sees
 the full layout; production omits those sections (and fails on missing copy). Deploys are production builds.
@@ -144,8 +156,10 @@ data). `api.js` POSTs to `/rest/v1/rpc/<fn>` (8 s timeout, one retry, one shared
 `data-chapters` + `data-chapter` + `data-chapter-link` (sticky chapters: active chapter gets `data-active`, its link
 `aria-current="true"`), `data-parallax` (CSS scroll-driven, where supported: `html.sda`), `data-progress` (reading bar;
 scroll timeline or JS fallback). Content is visible at rest and without JS; what is on screen at load never animates;
-`prefers-reduced-motion: reduce` disables all of it. Transform/opacity only. The header hides on scroll down and
-returns on scroll up (never while it holds focus or the menu is open). The mobile menu is a native `<dialog>`
+`prefers-reduced-motion: reduce` disables all of it. Transform/opacity only. The full contract (bare `data-reveal` =
+stagger the children, `data-load`, `data-wipe`, `data-follow`, `data-count`) is at the top of `assets/css/motion.css`.
+The header never hides (MOTION.md); below 1024px a phone CTA bar slides in once the page's `[data-hero-cta]` has
+scrolled away. The mobile menu is a native `<dialog>`
 (modal, Esc, inert page) with `aria-expanded`, a Tab focus trap and focus return.
 
 ## CSS

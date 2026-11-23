@@ -66,7 +66,7 @@ export function nextMeeting(ctx, { type = 'all', label, title, body, cta, more, 
 
 /** The phone CTA bar (layout adds it to every page except those that opt out with `export const ctaBar = false`). */
 export function ctaBar(ctx, { type = 'all', label, pay = false } = {}) {
-  return html`<div class="cta-bar" data-cta-bar data-next="${type}"${pay ? html` data-next-pay` : ''} role="region" aria-label="${ctx.t('cta.barAria')}">
+  return html`<div class="cta-bar" data-ground="navy" data-cta-bar data-next="${type}"${pay ? html` data-next-pay` : ''} role="region" aria-label="${ctx.t('cta.barAria')}">
   <p class="cta-bar__text"><b data-next-label>${ctx.t('cta.barTitle')}</b><span data-next-when></span></p>
   <a class="btn btn--sm" href="${ctx.ctaHref}" data-next-cta><span data-next-cta-label>${label ?? ctx.t('cta.registerShort')}</span>${ctx.brand.tri()}</a>
 </div>`;

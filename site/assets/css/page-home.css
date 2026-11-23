@@ -13,8 +13,7 @@
   .hero__photo .photo { aspect-ratio: 4 / 3; }
   .hero__stripes { inset-block-end: 0; inset-inline-end: 0; inline-size: 34%; block-size: 26%; z-index: 1; }
   @media (min-width: 48rem) and (max-width: 63.99rem) {
-    .hero__side { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; column-gap: var(--gutter); }
-    .hero__lead { grid-column: 1 / -1; }
+    .hero__side { max-inline-size: 36rem; }
     .hero__photo .photo { aspect-ratio: 16 / 9; }
   }
   @media (min-width: 64rem) {
@@ -40,7 +39,7 @@
       display: grid; gap: var(--space-2); grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-8));
     }
     .verbs__index li {
-      display: flex; align-items: center; gap: 0.3em; color: var(--beige-400);
+      display: flex; align-items: center; gap: 0.3em; color: color-mix(in srgb, var(--dust) 82%, var(--navy)); /* ≈3.6:1 on beige: AA for large text (beige-400 failed) */
       font-size: var(--fs-chapter); line-height: 1.12; font-weight: var(--wght-bold); letter-spacing: var(--track-chapter);
       transition: color var(--dur-base) var(--ease-out);
     }

@@ -78,8 +78,6 @@
   .t-body { font-size: var(--fs-body); line-height: var(--lh-body); max-inline-size: var(--measure); }
   .t-small { font-size: var(--fs-small); line-height: var(--lh-small); }
   .quiet { color: var(--ink-quiet); }
-  /* a quiet line above or beside a heading — NOT an uppercase/tracked label (DESIGN §4). Prefer leaving it out. */
-  .eyebrow { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--ink-quiet); letter-spacing: 0; }
   .h-lead { margin-block-start: var(--headline-to-lead); }
   :lang(en) .t-hero, :lang(en) .t-display { letter-spacing: -0.03em; }
 }

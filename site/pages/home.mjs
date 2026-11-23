@@ -61,7 +61,6 @@ export function render(ctx) {
   const index = [...verbs.map((v) => v.label), ...(showSucceed ? [succeed.label] : [])];
   const verbsChapter = html`
 <section class="chapter verbs" data-ground="beige" aria-labelledby="verbs-title">
-  ${ui.corner({ pos: 'te', tone: 'ink' })}
   <div class="wrap">
     <div class="head verbs__head" data-reveal>
       <h2 id="verbs-title" class="t-chapter">${t('home.what.title')}</h2>

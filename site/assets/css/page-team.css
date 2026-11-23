@@ -47,12 +47,12 @@
   .team-sub--slot { min-block-size: 0; }
 
   /* volunteers: the sentence continues the page — "and volunteers / who welcome everyone at the door" */
-  .team-volunteers__grid { display: grid; gap: var(--space-5) var(--gutter); }
+  .team-volunteers__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .team-volunteers__text { --stack-gap: var(--space-5); }
   .team-volunteers__body { font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--wght-medium); max-inline-size: 26ch; }
   @media (min-width: 64rem) {
-    .team-volunteers__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
-    .team-volunteers__grid > h2 { grid-column: 1 / span 6; }
-    .team-volunteers__body { grid-column: 7 / -1; }
-    .team-volunteers__grid > .cluster { grid-column: 7 / -1; }
+    .team-volunteers__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
+    .team-volunteers__text { grid-column: 1 / span 5; }
+    .team-volunteers__photo { grid-column: 7 / -1; }
   }
 }

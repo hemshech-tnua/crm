@@ -35,7 +35,7 @@ try {
 
 const failures = [];
 const notes = [];
-const fail = (where, msg) => failures.push(`${where}: ${msg}`);
+const fail = (where, msg) => { failures.push(`${where}: ${msg}`); console.error(`  ✗ ${where}: ${msg}`); };
 
 // ───────────── fixtures (mocked RPC answers; shape = private.event_public) ─────────────
 const day = (d, h, m = 0) => {
@@ -312,7 +312,7 @@ async function axeScan(browser, urls) {
     await waitServer();
     browser = await chromium.launch({ executablePath });
     const urls = pagesFromSitemap();
-    for (const vp of VIEWPORTS) for (const url of urls) await checkPage(browser, url, vp);
+    for (const vp of VIEWPORTS) for (const url of urls) { await checkPage(browser, url, vp); if (argv.includes('--verbose')) console.log(`  · ${url} @${vp.name}`); }
     await checkStates(browser);
     await axeScan(browser, urls);
     console.log(`checked ${urls.length} pages × ${VIEWPORTS.length} viewports`);

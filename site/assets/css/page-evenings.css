@@ -24,7 +24,7 @@
   .ev-women__grid { display: grid; gap: var(--space-8); }
   .ev-women__field { position: relative; display: grid; align-content: end; overflow: hidden; isolation: isolate; aspect-ratio: 4 / 3; padding: var(--space-6);
     border-radius: var(--radius-panel); background-color: var(--navy); color: var(--beige); }
-  .ev-women__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: 52%; block-size: 34%; }
+  .ev-women__field > .corner { inline-size: 58%; block-size: 32%; }
   .ev-women__statement { position: relative; z-index: 1; font-size: clamp(1.75rem, 1.1rem + 2.2vw, 3.25rem); line-height: 1.08; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); max-inline-size: 14ch; text-wrap: balance; }
   @media (min-width: 64rem) {
     .ev-women__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }

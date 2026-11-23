@@ -39,7 +39,7 @@ export function render(ctx) {
       <p class="ev-kind__cta" data-reveal="up" data-reveal-delay="2"><a class="link" href="#ev-other-list">${t('evenings.women.cta')}${tri()}</a></p>
     </div>
     <div class="ev-women__field" data-reveal="fade">
-      ${ctx.brand.stripes({ width: 420, height: 300, unit: 30, dir: 'fall', count: 3, className: 'stripes stripes--beige ev-women__stripes' })}
+      ${ctx.ui.corner({ pos: 'te', tone: 'beige', unit: 24 })}
       <p class="ev-women__statement">${t('evenings.women.title')}</p>
     </div>
   </div>
