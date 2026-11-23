@@ -392,7 +392,7 @@ function FilterChip({ filters, set }: { filters: Filters; set: (p: Partial<Recor
   const site = filters.site ? sites.data?.find((x) => x.id === filters.site)?.name : null;
   const parts = [
     PERIOD_WORD[filters.period] ?? periodLabel(filters),
-    filters.type ? TYPE_WORD[filters.type] ?? 'מפגש אחר' : 'כל הפעילויות',
+    filters.type ? TYPE_WORD[filters.type] ?? 'מפגש אחר' : 'כל סוגי המפגשים',
     site,
   ].filter(Boolean);
   return (

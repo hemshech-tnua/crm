@@ -27,8 +27,10 @@ export async function loginAs(page: Page, role: 'admin' | 'coord' | 'door') {
 }
 
 export async function logout(page: Page) {
+  // clear and reload in place first: navigating while the app still holds the old session in memory sends a few
+  // requests without a token (401s in the console check)
   await page.evaluate(() => localStorage.clear());
-  await page.goto('#/login');
   await page.reload();
+  await page.goto('#/login');
   await expect(page.getByRole('heading', { name: 'כניסת צוות' })).toBeVisible();
 }
