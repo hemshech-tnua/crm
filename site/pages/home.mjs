@@ -3,8 +3,9 @@
 //   1 hero (navy)            "ללוחמים וללוחמות במילואים ואחרי השירות" · the two-line promise · the Friday facts with the
 //                            fact strip (שישי · 09:00 · הולמס פלייס מודיעין · price · איתי, live) · the next FRIDAY card
 //                            (its button on the first screen at 390) · the WhatsApp question · the founders' faces
-//                            ("שניהם משרתי מילואים פעילים") · the group photo (after the card on phones)
-//   2 the four verbs (beige)  לפגוש · לזוז · למצוא כיוון · להצליח — a sticky index follows the block at mid-screen
+//                            ("שניהם משרתי מילואים פעילים") · the high-five photo (after the card on phones)
+//   2 the four verbs (beige)  לפגוש · לזוז · למצוא כיוון · להצליח — a sticky index follows the block at mid-screen;
+//                            לפגוש carries the coffee photo (the social part, after the workout)
 //   3 פה תמיד (navy)          the difference (also between reserve rounds) and the direction (the centers, with the municipalities); the hills band opens from the reading edge
 //   4 Friday (beige-light)   the three promises beside the next live Fridays; the other meeting formats as tiles
 //   5 proof (navy)           numbers + participant quotes — owner content, omitted in production until it exists
@@ -56,7 +57,7 @@ export function render(ctx) {
       ${factStrip(ctx, { className: 'hero__facts' })}
     </div>
     <div class="hero__photo" data-load="wipe">
-      ${ui.photo('training', { ratio: '4:5', focus: 40, bleed: true, eager: true, sizes: '(min-width: 64rem) 58vw, 100vw' })}
+      ${ui.photo('highfive', { ratio: '4:5', bleed: true, eager: true, sizes: '(min-width: 64rem) 58vw, 100vw' })}
       ${ctx.brand.stripes({ width: 240, height: 140, unit: 22, dir: 'cut', count: 3, anchor: 'te', className: 'stripes stripes--beige hero__stripes' })}
     </div>
     <div class="hero__act">
@@ -100,6 +101,7 @@ export function render(ctx) {
             <p class="verb__what">${v.title}</p>
             <p class="verb__body">${v.body}</p>
           </div>
+          ${v.step === 1 ? ui.photo('coffee', { ratio: '3:2', sizes: '(min-width: 64rem) 50vw, 100vw', className: 'verb__photo' }) : ''}
         </article>`)}
         ${showSucceed ? html`<article class="verb" data-step="${verbs.length + 1}" aria-labelledby="verb-${verbs.length + 1}" data-reveal>
           <h3 id="verb-${verbs.length + 1}" class="verb__name">${succeed.label}</h3>

@@ -18,6 +18,9 @@ hemshechtnua.org.il /images/ariel.png and /images/elazar.png):
     resize-photos.py --grade training.png walk.png hills.webp
     resize-photos.py --portrait --name team-ariel ariel.png
     resize-photos.py --portrait --name team-elazar elazar.png
+    resize-photos.py --name highfive team-highfive.png    # these three came already graded: no --grade
+    resize-photos.py --name coffee coffee-after.png
+    resize-photos.py --name welcome welcome-at-door.png
 """
 import glob
 import math

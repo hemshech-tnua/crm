@@ -22,7 +22,7 @@
   .hero__act { grid-area: act; display: grid; gap: var(--space-5); align-content: start; padding-block-end: var(--space-6); }
   .hero__photo { grid-area: photo; position: relative; margin-inline: calc(var(--page-margin) * -1); }
   .hero__photo .photo { aspect-ratio: 16 / 9; }
-  .hero__photo .photo > img { object-position: 50% 12%; } /* the 16:9 band keeps sky above the heads for the stripes */
+  .hero__photo .photo > img { object-position: 50% 10%; } /* the 16:9 band keeps sky above the heads for the stripes */
   /* three beige stripes cut the photo's outer top corner: sky and hills there, never a face */
   .hero__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: 30%; block-size: 22%; z-index: 1; }
   @media (min-width: 48rem) and (max-width: 63.99rem) {
@@ -40,7 +40,7 @@
     .hero__act { grid-column: 1 / span 5; grid-row: 4; padding-block: 0 var(--space-9); }
     .hero__photo { grid-column: 6 / -1; grid-row: 3 / span 2; margin-inline: var(--space-6) calc(var(--edge-out) * -1); }
     .hero__photo .photo { aspect-ratio: auto; block-size: 100%; min-block-size: 34rem; }
-    .hero__photo .photo > img { object-position: 50% 40%; }
+    .hero__photo .photo > img { object-position: 54% 40%; } /* both faces of the high-five in the tall column */
   }
 
   /* ── 2 · the four verbs ── */
@@ -64,6 +64,7 @@
     align-self: end; font-size: var(--fs-chapter); line-height: 1.02; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); max-inline-size: 12ch;
   }
   .verb__body { color: var(--beige-quiet); max-inline-size: 38ch; }
+  .verb__photo > img { object-position: 50% 30%; }
   @media (min-width: 64rem) {
     .verbs__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
     .verbs__index {

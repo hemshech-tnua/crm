@@ -11,8 +11,10 @@
   .fr-hero__facts { margin-block-start: var(--space-5); }
   .fr-hero__ask { margin-block-start: var(--space-1); }
   .fr-hero__media { position: relative; }
-  .fr-hero__photo img { object-position: 50% 35%; }
-  .fr-hero__stripes { inset-block-start: -1px; inset-inline-start: -1px; inline-size: 40%; block-size: 28%; color: var(--ground); z-index: 1; }
+  .fr-hero__photo img { object-position: 54% 35%; } /* the high-five: both faces in the 4:5 crop */
+  .fr-hero__stripes { inset-block-start: -1px; inset-inline-start: -1px; inline-size: 34%; block-size: 20%; color: var(--ground); z-index: 1; }
+  /* the high-five puts a face in the top-right corner: the stripes keep to the top-left (the tree and the sun) in both languages */
+  [dir='rtl'] .fr-hero__stripes { inset-inline-start: auto; inset-inline-end: -1px; }
   @media (min-width: 48rem) and (max-width: 63.99rem) { .fr-hero__photo { aspect-ratio: 3 / 2; } }
   @media (min-width: 64rem) {
     .fr-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
@@ -20,13 +22,15 @@
     .fr-hero__media { grid-column: 8 / -1; }
   }
 
-  /* ── 1b. פעם ראשונה? (beige-light): six labelled icon answers, before the first scroll ── */
+  /* ── 1b. פעם ראשונה? (beige-light): six labelled icon answers beside the welcome photo (after them on phones) ── */
   .fr-first__grid { display: grid; gap: var(--space-7); }
   .fr-first__list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+  .fr-first__photo img { object-position: 55% 30%; } /* illustrative welcome at the door: both faces and the handshake */
   @media (min-width: 64rem) {
     .fr-first__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
-    .fr-first__title { grid-column: 1 / span 3; }
-    .fr-first__list { grid-column: 4 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--space-8); }
+    .fr-first__title { grid-column: 1 / span 4; grid-row: 1; }
+    .fr-first__photo { grid-column: 1 / span 4; grid-row: 2; }
+    .fr-first__list { grid-column: 6 / -1; grid-row: 1 / span 2; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-8); }
   }
 
   /* ── 2. the three promises (navy tones): sticky panels, each slides over the last (≥1024; phone = stacked bands) ── */

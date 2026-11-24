@@ -1,6 +1,7 @@
 // Friday mornings — the site's first goal: bring new לוחמים ולוחמות to Friday mornings.
 // Story (DESIGN.md §8, MOTION.md "Friday", R2): hero ("שלושה בקרים בחודש. באים לבד? איתי מחכה בכניסה." + the fact
-// strip, live, + the next meeting + a WhatsApp question) → "פעם ראשונה?" labelled icon answers → the three promises in
+// strip, live, + the next meeting + a WhatsApp question; the high-five photo) → "פעם ראשונה?" labelled icon answers
+// beside the (illustrative) welcome photo → the three promises in
 // the CEO's order (sticky panels that stack) → "הפעם הראשונה שלך, צעד אחר צעד" (arrival → איתי → workout → coffee →
 // lecture; leaving after the workout is fine) → for whom (+ quotes when the owner sends them) → live dates beside
 // "אחרי ההרשמה" (details + payment → a reminder two days before → איתי) → FAQ → closing + "באים עם חבר?".
@@ -57,8 +58,8 @@ export function render(ctx) {
       ${askLine(ctx, { className: 'fr-hero__ask' })}
     </div>
     <div class="fr-hero__media">
-      <figure class="photo r-45 fr-hero__photo" data-load="wipe">${ctx.img('training', { eager: true, alt: '', sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
-      ${ctx.brand.stripes({ width: 220, height: 150, unit: 20, dir: 'cut', count: 3, className: 'stripes fr-hero__stripes', anchor: 'ts' })}
+      <figure class="photo r-45 fr-hero__photo" data-load="wipe">${ctx.img('highfive', { eager: true, sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
+      ${ctx.brand.stripes({ width: 220, height: 150, unit: 20, dir: 'cut', count: 3, className: 'stripes fr-hero__stripes', anchor: 'tl' })}
     </div>
   </div>
 </section>
@@ -67,6 +68,7 @@ export function render(ctx) {
   <div class="wrap fr-first__grid">
     <h2 id="fr-first-title" class="t-chapter fr-first__title" data-reveal="up">${t('friday.first.title')}</h2>
     ${iconList(ctx, ctx.list('friday.first.items').map((it) => ({ icon: it.icon, title: it.q, body: it.a })), { className: 'fr-first__list' })}
+    <figure class="photo r-43 fr-first__photo" data-reveal="fade">${ctx.img('welcome', { sizes: '(min-width: 64rem) 30vw, 100vw' })}</figure>
   </div>
 </section>
 

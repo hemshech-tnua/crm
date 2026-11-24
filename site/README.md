@@ -262,10 +262,12 @@ placeholder that the design system replaces; `components.css` is neutral tempora
 image toward one target brightness, shadows and midtones opened, highlights protected, saturation and vibrance raised
 (muted colours most; foliage greens and sky blues a little more), a light denoise and an unsharp mask at each size,
 WebP q72. `--portrait` is the gentle version for the founders' portraits (a little brighter and clearer, skin left
-natural). Run every photo through it, so the set stays consistent. Stripes on a photo sit in a corner with no faces.
+natural). Run every photo through it, so the set stays consistent (`highfive`, `coffee`, `welcome` arrived already graded: they
+were resized without `--grade`). Stripes on a photo sit in a corner with no faces.
 Add `photos.<name>` alt text in both languages.
 
-The set: `training`, `walk` and `hills` (illustrative: never caption them as specific people or events) and
+The set: `training`, `walk`, `hills`, `highfive`, `coffee` and `welcome` (illustrative: never caption them as specific
+people or events; `welcome` is not Itai) and
 `team-elazar`, `team-ariel`, the founders' portraits from the association's own site (hemshechtnua.org.il), used
 through `org.json` `team[].photo`. The staged-looking `running`, `talk` and `bonfire` were removed (25.11, owner:
 "תוריד תמונות שהם יותר מידיי ai"); their places are brand colour fields with large type (home's three verbs, the
