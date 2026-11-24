@@ -3,6 +3,7 @@
 // women's evenings), then
 // bonfire evenings, then other meetings. Women's evenings never get a stand-in photo of people: a brand colour field.
 import { html } from '../lib/html.mjs';
+import { iconList } from './_facts.mjs';
 
 export const slug = { he: 'evenings', en: 'evenings' };
 
@@ -36,6 +37,7 @@ export function render(ctx) {
     <div class="ev-kind__text">
       <h2 id="ev-women-title" class="t-chapter" data-reveal="up">${t('evenings.women.name')}</h2>
       <p class="t-lead ev-kind__lead" data-reveal="up" data-reveal-delay="1">${t('evenings.women.note')}</p>
+      ${iconList(ctx, ctx.list('evenings.women.facts').map((f) => ({ ...f, href: f.page && ctx.pageExists(f.page) ? ctx.link(f.page) : null })), { className: 'ev-women__facts', level: 3, label: t('evenings.women.factsLabel') })}
       ${ctx.slot(t('evenings.women.details'), t('evenings.women.slot'), (v) => html`<p class="t-body ev-kind__body" data-reveal="up" data-reveal-delay="2">${v}</p>`)}
       <div class="ev-live ev-women__live" id="ev-women-list">
         <h3 class="t-title" data-reveal="up">${t('evenings.upcoming.women')}</h3>

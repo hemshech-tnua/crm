@@ -15,6 +15,7 @@ import { gzipSync } from 'node:zlib';
 import { DEFAULTS, LANGS, DEFAULT_LANG, LANG_META, CTA_PAGE, PAGE_WHEN, LIVE_FIRST, crmLinks, CSS_ORDER, JS_ENTRY } from './config.mjs';
 import { html, raw, esc, attrs, cx, inline, keepNames, safeUrl, isHtml } from './lib/html.mjs';
 import * as brand from './lib/brand.mjs';
+import { loadIcons, iconHelper, iconTextHelper } from './lib/icons.mjs';
 import { scanPhotos, photo } from './lib/images.mjs';
 import { present, ownerBox, eventsBlock, nextMeeting, ui } from './lib/components.mjs';
 import { layout } from './partials/layout.mjs';
@@ -177,6 +178,8 @@ copyDir(ASSETS, join(out, 'assets'), (src, name) => [join(ASSETS, 'css'), join(A
 copyDir(join(ROOT, 'src/assets/fonts'), join(out, 'assets/fonts'), (_, n) => !n.endsWith('.woff2') && !n.endsWith('.txt'));
 for (const f of ['favicon.svg', 'og-image.png']) copyFileSync(join(ROOT, 'public', f), join(out, 'assets', f));
 const photos = scanPhotos(join(ASSETS, 'photos'));
+const icon = iconHelper(loadIcons(join(ASSETS, 'icons')));
+const iconText = iconTextHelper(icon);
 
 // CSS: one file, layered, in a fixed order (config CSS_ORDER, then any other file alphabetically).
 const cssDir = join(ASSETS, 'css');
@@ -315,6 +318,10 @@ function makeCtx(page, lang) {
     /** Responsive photo from site/assets/photos (alt defaults to content photos.<name>). */
     img: (name, o = {}) => photo(name, photos[name], opts.base + 'assets/photos/', { ...o, alt: o.alt ?? t(`photos.${name}`) }),
     photoNames: Object.keys(photos),
+    /** An icon from site/assets/icons (lib/icons.mjs): decorative unless { label }; a missing name renders nothing. */
+    icon,
+    /** Icon + its visible label on one line: <span class="icon-text">. */
+    iconText,
     events: (o) => eventsBlock(ctx, o),
     /** The live "next meeting" card (see lib/components.mjs nextMeeting). */
     nextMeeting: (o) => nextMeeting(ctx, o),

@@ -72,5 +72,9 @@
     "person": "name and role of the partnerships contact person (org.json: partnersContact)",
     "email": "partnerships email address (org.json: partnersEmail or email)",
     "deck": "partner overview, a one- or two-page PDF (org.json: partnersDeck)"
+  },
+  "stat": {
+    "value": "15,000",
+    "label": "young men and women complete combat service every year"
   }
 }

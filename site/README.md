@@ -16,7 +16,8 @@ site/
   assets/js/         ES modules (main, nav, scroll, events, org, api), fingerprinted; config.js is generated
   assets/photos/     <name>-<width>.webp variants (480/720/960/≤1440, bright vivid grade, WebP q72)
   assets/img/        logo-square.png (the JSON-LD logo)
-  tools/             resize-photos.py, logo-square.mjs (one-off helpers; not part of the build)
+  assets/icons/      the icon set (24 SVGs, from tools/icons.mjs) · assets/og/  per-page share images (from tools/og.mjs)
+  tools/             resize-photos.py, logo-square.mjs, icons.mjs, og.mjs (one-off generators; not part of the build)
   test/              node --test suites + smoke.cjs (Playwright)
 ```
 
@@ -97,6 +98,7 @@ the page returns by itself. Preview builds always include it, with its dashed bo
 | `ctx.ui.*` | shared blocks (lib/components.mjs): `photo(name,{ratio,focus,bleed,wipe,stripes,…})`, `corner({pos,tone})`, `mark()`, `faq(groups)`, `timeline(steps)`, `stats(items)`, `quote(q)`, `logos(list)`, `rows(items)` (whole row = one link with ◀; `{ title, body, note, href, go, hint, external, whatsapp:{text} }`), `triList(items)`, `ctaBand({…})`, `button(label, href)`, `link(label, href)` |
 | `ctx.inline(str)` | the `ctx.rich` markup for a string you already hold |
 | `ctx.whatsapp(label, { className, text })` | WhatsApp link to the association's phone, filled live; hidden until the phone arrives |
+| `ctx.icon(name, { label?, size?, className? })`, `ctx.iconText(name, label, { size?, tag? })` | the site's icon set (below) as inline SVG: decorative (`aria-hidden`) unless `label` is given (`role="img"` + `<title>`); `iconText` = icon + visible label in a `<span class="icon-text">`. An unknown name renders nothing. |
 | `ctx.reveal('up', 2)` | `data-reveal="up" data-reveal-delay="2"` |
 | `ctx.brand.logo({ variant: 'symbol'|'lockup' })`, `.stripes({…, anchor})`, `.chevron()`, `.tri()` | brand artwork as inline SVG (logo paths read from `src/ui/Logo.tsx`; ◀/▶ follows the language). Stripes with `anchor: 'ts'|'te'|'bs'|'be'` (or a `corner--xx` class) are drawn into that corner and pinned there whatever the box's shape; `dir: 'cut'` cuts the corner off (mirrored in English) |
 | `ctx.crm.register(code)`, `.event(code)`, `.home`, `.join`, `.member`, `.privacy` | links into the CRM |
@@ -119,6 +121,24 @@ CSP blocks them: set CSS custom properties from JS with `el.style.setProperty`, 
 internal link, `src` and `srcset` resolves; images have `alt` + `width`/`height`; JS < 30 KB; CSS has **no white
 background** and only **logical properties** (`margin-inline-start`, `inset-inline-end`, `text-align: start` …);
 he/en copy have identical keys; no slashed/dotted gender forms (`לוחמים/ות`, `ללוחמים.ות`).
+
+## Icons and share images
+
+**Icons** (`assets/icons/<name>.svg`, drawn by `tools/icons.mjs` — edit there and run `node site/tools/icons.mjs
+[--sheet <dir>]`, which also writes a contact sheet on navy and beige at 20–64px). 24 names, the shared contract in
+`lib/icons.mjs` `ICON_NAMES`: kettlebell, coffee, lecture, shower, calendar-3, greeter, bonfire, women, whatsapp,
+friend, alone, all-levels, no-circle, no-commitment, map-pin, clock, price, reminder, calendar-add, heart-hand, partner,
+volunteer, center, route. Built from the mark: 24×24 grid, one 2px stroke with square caps and miter joins, lines at
+0°/45°/90° only (no curves, no circles: round things are 45° octagons), people are the mark's figure (a solid diamond
+head over 45° shoulders), and one solid brand piece (diamond or right triangle) where it means something (the three
+Fridays, the keyhole of the open lock, the tag's hole). currentColor, so they work on every ground. **Every use has a
+visible text label next to it** (an icon alone never carries meaning); then the icon is decorative. `icons.css` sizes
+nothing — the `size` option does. A test checks the names, the titles and the geometry rules.
+
+**Share images** (`assets/og/<page>-<lang>.jpg` + `og.json`, drawn by `tools/og.mjs` with Playwright and Pillow — edit
+the lines there and run `node site/tools/og.mjs`): 1200×630 JPEG ≤ 250 KB, navy, the page's line (≤ 6 words) centred
+with its icon, 45° stripes top-left, the lockup bottom-right. `partials/head.mjs` sets `og:image`, its type and
+`og:image:alt` per page and language; a page with no entry (accessibility, 404) shares `assets/og-image.png`.
 
 ## Content model
 

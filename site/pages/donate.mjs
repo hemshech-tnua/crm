@@ -49,6 +49,7 @@ export function render(ctx) {
     <div class="give-hero__text">
       <h1 id="donate-h1" class="${C.display}">${t(k('hero.title'))}</h1>
       <p class="${`${C.lead} give-hero__lead`}">${t(k('hero.body'))}</p>
+      ${ctx.ui.stats([ctx.get(k('stat'))], { className: 'give-hero__stat' })}
       <p class="${`${C.actions} give-hero__actions`}">
         ${action(ctx, { href: '#ways', label: t(k('hero.cta')), className: C.btn })}
         <a class="${C.link}" href="${pageHref(ctx, 'partners', 'contact')}">${t(k('hero.partners'))}${ctx.brand.tri()}</a>

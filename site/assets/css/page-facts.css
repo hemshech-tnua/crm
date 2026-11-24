@@ -1,0 +1,29 @@
+/* Shared Friday blocks for the home, Friday and evenings pages (pages/_facts.mjs). Icons are always beside their words
+   (NN/g); they take the ground's ink (currentColor), so they read on navy and on beige alike. */
+@layer pages {
+  .icon { flex: none; display: block; }
+
+  /* the fact strip: "שישי · 09:00 · הולמס פלייס מודיעין · 25 ₪ · איתי מחכה בכניסה" (filled live from the next Friday) */
+  .facts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); padding: 0; list-style: none; font-weight: var(--wght-semibold); line-height: 1.3; }
+  .facts__item { display: inline-flex; align-items: center; gap: var(--space-2); min-block-size: 1.75rem; }
+  .facts__icon { inline-size: 1.375rem; block-size: 1.375rem; }
+
+  /* "שאלה לפני שבאים? כתבו לנו בוואטסאפ" beside a registration button (shown once the phone arrives) */
+  .ask { display: flex; align-items: center; gap: var(--space-2); }
+  .ask__icon { inline-size: 1.375rem; block-size: 1.375rem; }
+  .ask .link { min-block-size: var(--tap); display: inline-flex; align-items: center; }
+
+  /* labelled icon answers: the icon at the reading edge, a short heading, one line */
+  .icon-list { display: grid; gap: var(--space-6) var(--gutter); padding: 0; list-style: none; }
+  .icon-list__item { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+  .icon-list__mark { display: grid; place-items: center; inline-size: 2.5rem; block-size: 2.5rem; }
+  .icon-list__icon { inline-size: 2rem; block-size: 2rem; }
+  .icon-list__text { display: grid; gap: var(--space-1); }
+  .icon-list__title { font-size: var(--fs-lead); line-height: var(--lh-title); font-weight: var(--wght-bold); letter-spacing: 0; }
+  .icon-list__body { display: block; max-inline-size: 36ch; }
+  .icon-list__body .link { white-space: nowrap; }
+
+  /* the 15,000 figure on donate and partners (one stat, not a row) */
+  .give-hero__stat, .pt-why__stat { margin-block: var(--space-7) var(--space-2); }
+  .give-hero__stat, .pt-why__stat { grid-template-columns: none; }
+}

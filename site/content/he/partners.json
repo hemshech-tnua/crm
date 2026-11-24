@@ -72,5 +72,9 @@
     "person": "שם ותפקיד של איש או אשת הקשר לשותפויות (org.json: partnersContact)",
     "email": "כתובת מייל לשותפויות (org.json: partnersEmail או email)",
     "deck": "דף מידע לשותפים, PDF של עמוד או שניים (org.json: partnersDeck)"
+  },
+  "stat": {
+    "value": "כ־15,000",
+    "label": "לוחמות ולוחמים משתחררים בכל שנה משירות קרבי"
   }
 }

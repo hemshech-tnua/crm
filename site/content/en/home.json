@@ -1,19 +1,23 @@
 {
   "meta": {
-    "title": "המשך תנועה · A home for combat veterans after their service",
-    "description": "A home for combat veterans after their service. Three Friday mornings a month: a workout for every fitness level, coffee and a guest talk. No commitment."
+    "title": "המשך תנועה · For combat veterans, in the reserves and after service",
+    "description": "For combat veterans, in the reserves and after service. Three Friday mornings a month: a workout for every fitness level, coffee and a guest talk. No commitment, no talking circle."
   },
   "hero": {
-    "eyebrow": "For combat veterans, after their service",
+    "eyebrow": "For combat veterans, in the reserves and after service",
     "title": [
       "Service ends.",
       "The team doesn't have to."
     ],
-    "body": "המשך תנועה is a home for men and women who served in combat roles. Not a program that ends: we're here for good. We meet three Friday mornings a month to train, have coffee and hear a guest talk, and we're building a nationwide network of local community centers.",
-    "ctaPrimary": "Sign up for a meeting",
+    "body": "Three Friday mornings a month: a workout, coffee and a guest talk. Every fitness level, no commitment and no talking circle.",
+    "ctaPrimary": "Sign up for next Friday",
     "ctaPrimaryHref": "/en/calendar/",
     "ctaSecondary": "About Friday mornings",
-    "ctaSecondaryHref": "/en/friday/"
+    "ctaSecondaryHref": "/en/friday/",
+    "founders": "{names} founded the association.",
+    "foundersFact": "Both are active reservists.",
+    "foundersLink": "Our story",
+    "and": " and "
   },
   "next": {
     "title": "Next meeting",
@@ -28,12 +32,8 @@
     "title": "Here for good",
     "lead": "Many leave without a framework or a roadmap. We're not a program with a start and an end. We're a place that stays.",
     "body": [
-      "Come for the first time now, or come back after a break, however long it's been since your discharge."
-    ],
-    "stat": {
-      "value": "15,000",
-      "label": "young men and women complete combat service every year"
-    }
+      "Come for the first time now, or come back after a break, also after a round of reserve duty. There are three meetings a month, so there is always a Friday coming up."
+    ]
   },
   "what": {
     "eyebrow": "What we do",
@@ -171,10 +171,11 @@
     "title": "See you on Friday?",
     "cta": "Sign up for a meeting",
     "ctaHref": "/en/calendar/",
-    "shareText": "Send this to someone from your old team.",
+    "shareText": "Send them the link. Everyone signs up separately.",
     "shareWhatsapp": "Share on WhatsApp",
     "shareCopy": "Copy link",
-    "copied": "Link copied"
+    "copied": "Link copied",
+    "shareTitle": "Coming with a friend?"
   },
   "people": {
     "title": "About us",

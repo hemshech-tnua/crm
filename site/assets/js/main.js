@@ -2,15 +2,18 @@
 // Live-data modules are fetched only on pages that have a slot for them.
 import { initNav } from './nav.js';
 import { initScroll } from './scroll.js';
+import { initAttribution } from './attribution.js';
 
 const root = document.documentElement;
 root.classList.remove('no-js');
 root.classList.add('js');
 
+// first: the landing's ref/utm_* for every registration link of the visit (attribution.js)
+initAttribution();
 initNav();
 initScroll();
 
-if (document.querySelector('[data-events], [data-next]')) {
+if (document.querySelector('[data-events], [data-next], [data-next-link], [data-next-facts]')) {
   import('./events.js').then((m) => m.initEvents()).catch(() => {});
 }
 if (document.querySelector('[data-org-phone]')) {

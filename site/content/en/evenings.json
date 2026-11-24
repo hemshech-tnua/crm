@@ -11,9 +11,24 @@
   "women": {
     "name": "Women's evenings",
     "title": "Evenings for women combat veterans",
-    "slot": "Women's evenings: who they are for, what happens, how often and where (2–3 sentences)",
+    "slot": "Women's evenings: what happens, how often and in which area (2–3 sentences). Are they always for women only?",
     "details": "",
-    "note": "Every evening is posted here and on the calendar, with full details and registration."
+    "note": "Every evening is posted here and on the calendar, with full details and registration.",
+    "facts": [
+      {
+        "icon": "women",
+        "title": "For women",
+        "body": "Women's evenings are for women who served in combat."
+      },
+      {
+        "icon": "kettlebell",
+        "title": "And on Friday mornings",
+        "body": "Friday mornings are open to men and women.",
+        "page": "friday",
+        "link": "About Friday mornings"
+      }
+    ],
+    "factsLabel": "Women's evenings at a glance"
   },
   "bonfire": {
     "name": "Bonfire evenings",

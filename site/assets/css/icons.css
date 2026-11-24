@@ -1,0 +1,16 @@
+@layer components {
+  /* The icon set (lib/icons.mjs, ctx.icon): 24×24, currentColor, 2px squared strokes. Size comes from the width/height
+     attributes (ctx.icon(name, { size })); an icon always sits beside a visible text label. */
+  .icon {
+    flex: none;
+    display: inline-block;
+    vertical-align: middle;
+    overflow: visible;
+  }
+  /* icon + label on one line: ctx.iconText(name, label) */
+  .icon-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+}

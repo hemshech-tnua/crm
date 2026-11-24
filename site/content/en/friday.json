@@ -5,13 +5,14 @@
   },
   "hero": {
     "title": "Friday mornings",
-    "lead": "A workout, coffee and a talk, with people who have been there. Come alone or bring friends.",
+    "lead": "Three mornings a month. Coming alone? Itai meets you at the door.",
     "nextTitle": "Next meeting",
     "allDates": "All dates",
-    "quick": "Registration is in Hebrew and takes less than a minute.",
+    "quick": "Registration is in Hebrew and takes less than a minute. You pay at the end, on a secure page.",
     "cta": "Sign up",
     "nextTitleStatic": "Friday mornings, three times a month",
-    "nextBodyStatic": "A workout, coffee and a talk. Dates are on the calendar."
+    "nextBodyStatic": "A workout, coffee and a talk. Dates are on the calendar.",
+    "who": "Open to men and women who served in combat, in the reserves and after service."
   },
   "emphasis": {
     "title": "What to know about Friday mornings",
@@ -42,51 +43,59 @@
     "datesTitle": "The next three Friday mornings"
   },
   "program": {
-    "title": "How the morning goes",
+    "title": "Your first time, step by step",
     "items": [
       {
+        "icon": "map-pin",
+        "time": "Arrive",
+        "title": "Holmes Place, Modi'in",
+        "short": "Arrive",
+        "detail": "Each meeting's place and time are in its details."
+      },
+      {
+        "icon": "greeter",
+        "time": "At the door",
+        "title": "Itai welcomes you",
+        "short": "Itai",
+        "detail": "Itai from our team waits at the entrance and introduces first-timers to a few people."
+      },
+      {
+        "icon": "kettlebell",
         "time": "09:00",
         "title": "Workout",
-        "detail": "Yoga or functional training. For every fitness level."
+        "short": "Workout",
+        "detail": "Yoga or functional training, for every fitness level. Then you can shower and change."
+      },
+      {
+        "icon": "coffee",
+        "time": "After the workout",
+        "title": "Coffee and snacks",
+        "short": "Coffee",
+        "detail": "Sit together, no pressure. There is time to get to know people."
+      },
+      {
+        "icon": "lecture",
+        "time": "Until 11:30",
+        "title": "Guest talk",
+        "short": "Talk",
+        "detail": "The speaker and the topic are in each meeting's details."
+      }
+    ],
+    "glance": [
+      {
+        "time": "09:00",
+        "title": "Workout"
       },
       {
         "time": "After the workout",
-        "title": "Coffee and snacks",
-        "detail": "No pressure. Sit, talk, get to know people."
+        "title": "Coffee and snacks"
       },
       {
         "time": "Until 11:30",
-        "title": "Guest talk",
-        "detail": "The speaker and the topic are listed in each meeting's details."
+        "title": "Guest talk"
       }
     ],
-    "note": "Times are listed in each meeting's details."
-  },
-  "welcome": {
-    "title": "Coming alone? Itai meets you at the door.",
-    "lead": "Itai from our team waits at the entrance and will introduce you to a few people.",
-    "listTitle": "Before you come",
-    "items": [
-      {
-        "title": "What to bring",
-        "body": "Comfortable workout clothes and shoes, and a water bottle. We bring the coffee and snacks."
-      },
-      {
-        "title": "Showers",
-        "body": "You can change and shower in the Holmes Place locker rooms."
-      },
-      {
-        "title": "Just part of the morning",
-        "body": "You can come only for the workout or only for the talk. Coming for part of the morning is paid as well."
-      },
-      {
-        "title": "Reminder",
-        "body": "Everyone who registers gets a reminder two days before the meeting."
-      }
-    ],
-    "parkingTitle": "Parking and getting there",
-    "parkingSlot": "One sentence on parking and getting to the venue",
-    "parking": ""
+    "note": "You can leave after the workout, or come only for the talk. Coming for part of the morning is paid as well."
   },
   "forWhom": {
     "title": "This is for you if…",
@@ -118,7 +127,11 @@
         "items": [
           {
             "q": "Who are the meetings for?",
-            "a": "Combat veterans after their service, men and women, however long it's been since discharge. You don't need to know us or anyone else beforehand."
+            "a": "Men and women who served in combat, in the reserves and after service, however long it's been since discharge. You don't need to know the association or anyone there."
+          },
+          {
+            "q": "I'm in the reserves and can't always commit. Does that work?",
+            "a": "Yes. There is no commitment: come when it suits you, and come back after a break. There are three meetings a month, so there is always a Friday coming up."
           },
           {
             "q": "Can I come alone, without knowing anyone?",
@@ -135,6 +148,11 @@
           {
             "q": "Can I bring a friend?",
             "a": "Of course. Everyone registers separately, so send them the link to this page."
+          },
+          {
+            "q": "Can partners come?",
+            "a": null,
+            "slot": "Can partners come to Friday mornings (yes or no, and one line)"
           }
         ]
       },
@@ -143,7 +161,7 @@
         "items": [
           {
             "q": "Where is it?",
-            "a": "The place is listed in each meeting's details, under Upcoming dates above."
+            "a": "Friday mornings are at Holmes Place in Modi'in. Each meeting's place and time are in its details, in the upcoming dates above."
           },
           {
             "q": "What should I bring?",
@@ -154,8 +172,13 @@
             "a": "Yes. You can change and shower in the Holmes Place locker rooms."
           },
           {
-            "q": "Can I come for only part of the morning?",
-            "a": "Yes, you can come only for the workout or only for the talk. Coming for part of the morning is paid as well."
+            "q": "Can I leave after the workout?",
+            "a": "Yes. You can leave after the workout, or come only for the talk. Coming for part of the morning is paid as well."
+          },
+          {
+            "q": "Is there parking?",
+            "a": null,
+            "slot": "One sentence on parking and getting to Holmes Place, Modi'in"
           }
         ]
       },
@@ -189,8 +212,8 @@
   "closing": {
     "title": "See you on Friday?",
     "cta": "See upcoming dates",
-    "shareTitle": "Know someone this is for?",
-    "shareText": "Send the link to a friend you served with and miss.",
+    "shareTitle": "Coming with a friend?",
+    "shareText": "Send them the link to this page. Everyone signs up separately.",
     "shareCopy": "Copy link",
     "shareWhatsapp": "Share on WhatsApp",
     "copied": "Link copied",
@@ -198,5 +221,65 @@
   },
   "a11y": {
     "newWindow": "(WhatsApp, opens in a new window)"
+  },
+  "first": {
+    "title": "First time?",
+    "items": [
+      {
+        "icon": "alone",
+        "q": "Coming alone?",
+        "a": "Itai waits at the entrance and will introduce you to a few people."
+      },
+      {
+        "icon": "all-levels",
+        "q": "Out of shape?",
+        "a": "The workout suits every fitness level."
+      },
+      {
+        "icon": "no-circle",
+        "q": "Do I have to talk?",
+        "a": "No. It isn't a talking circle."
+      },
+      {
+        "icon": "kettlebell",
+        "q": "What to bring?",
+        "a": "Comfortable clothes and shoes, and a water bottle."
+      },
+      {
+        "icon": "shower",
+        "q": "Showers?",
+        "a": "Yes, in the Holmes Place locker rooms."
+      },
+      {
+        "icon": "women",
+        "q": "Women too?",
+        "a": "Yes. Friday is open to men and women."
+      }
+    ]
+  },
+  "after": {
+    "title": "After you sign up",
+    "items": [
+      {
+        "icon": "price",
+        "title": "Details and payment",
+        "body": "Fill in a few details and pay at the end, on a secure payment page. Under a minute."
+      },
+      {
+        "icon": "reminder",
+        "title": "A reminder two days before",
+        "body": "Everyone who registers gets a reminder two days before the meeting."
+      },
+      {
+        "icon": "greeter",
+        "title": "Itai at the door",
+        "body": "Come on Friday, and Itai is waiting at the entrance."
+      }
+    ]
+  },
+  "parking": {
+    "title": "Parking and getting there",
+    "slot": "One sentence on parking and getting to the venue",
+    "value": ""
   }
 }

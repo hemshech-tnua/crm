@@ -18,6 +18,7 @@
   .ev-kind__lead { margin-block-start: var(--headline-to-lead); }
   .ev-kind__text > .owner-slot { margin-block-start: var(--space-6); }
   .ev-women__live { margin-block-start: var(--space-7); }
+  .ev-women__facts { margin-block-start: var(--space-7); }
 
   /* ── women's evenings: text + the live list of women's evenings + a navy field with the brand's stripes and mark (never a photo of other people) ── */
   .ev-women__grid { display: grid; gap: var(--space-8); }

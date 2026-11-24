@@ -42,10 +42,13 @@
     "barTitle": "Upcoming meetings",
     "barTitleFriday": "Next Friday morning",
     "barAria": "Next meeting",
-    "aria": "Sign up for a meeting: upcoming meetings"
+    "aria": "Sign up for a meeting: upcoming meetings",
+    "header": "Join next Friday",
+    "headerShort": "Next Friday",
+    "headerAria": "Join next Friday: sign up for the next Friday morning"
   },
   "footer": {
-    "about": "המשך תנועה is a home for combat veterans after their service: regular meetings built on movement, community and direction — and, on the way, local community centers across Israel.",
+    "about": "המשך תנועה is a home for combat veterans, in the reserves and after service: regular meetings built on movement, community and direction — and, on the way, local community centers across Israel.",
     "slogan": "Keep moving with us",
     "contactTitle": "Contact",
     "whatsapp": "Message us on WhatsApp",
@@ -73,8 +76,7 @@
       "register": "Sign up",
       "registerAndPay": "Sign up and pay",
       "waitlist": "Join the waiting list",
-      "details": "Details",
-      "allDetails": "Full meeting details"
+      "details": "Details"
     },
     "status": {
       "cancelled": "Canceled",
@@ -82,15 +84,7 @@
       "fullWaitlist": "Full · waiting list open",
       "full": "Full",
       "oneLeft": "1 spot left",
-      "fewLeft": "{n} spots left",
-      "open": "Registration open"
-    },
-    "notes": {
-      "quick": "Signing up takes less than a minute.",
-      "quickCancel": "Signing up takes less than a minute. You can cancel with your personal link.",
-      "payAtEnd": "You pay at the end of sign-up, on a secure payment page.",
-      "waitlist": "If a spot opens up, we'll let you know in the order people signed up.",
-      "greeter": "Coming alone? Itai will meet you at the entrance."
+      "fewLeft": "{n} spots left"
     },
     "types": {
       "friday": "Friday morning",
@@ -106,7 +100,6 @@
     "count": "{n} upcoming meetings",
     "countOne": "1 upcoming meeting",
     "calendar": "See the calendar",
-    "titleNote": "Meeting titles are in Hebrew.",
     "filters": {
       "friday": "Friday mornings",
       "bonfire": "Bonfire evenings",
@@ -119,7 +112,8 @@
     "partner": "Hi, I'd like to talk about a partnership with המשך תנועה.",
     "donate": "Hi, I'd like to arrange a donation to המשך תנועה.",
     "sponsor": "Hi, I'd like to hear about funding a Friday morning.",
-    "share": "Thought of you. There's a Friday morning meetup for combat veterans: a workout, coffee and a guest talk. I think it's for you."
+    "share": "Thought of you. There's a Friday morning meetup for combat veterans: a workout, coffee and a guest talk. I think it's for you.",
+    "friday": "Hi, I have a question about the Friday morning."
   },
   "a11y": {
     "newWindow": "(opens in a new window)",
@@ -164,5 +158,14 @@
     "hills": "A dirt path winding down between olive trees toward rolling hills, in low sunlight.",
     "team-elazar": "Elazar Kaufman, co-founder and CEO.",
     "team-ariel": "Ariel Ben Haim, co-founder."
+  },
+  "facts": {
+    "label": "Friday morning at a glance",
+    "day": "Friday",
+    "time": "09:00",
+    "place": "Holmes Place, Modi'in",
+    "priceFallback": "Price in the meeting details",
+    "greeter": "Itai meets you at the door",
+    "ask": "A question first? Message us on WhatsApp"
   }
 }

@@ -95,5 +95,9 @@
     "team": "שמות ותפקידים של הצוות וההנהלה (org.json: team, board)",
     "registration": "שם העמותה כרשום ומספר ע״ר (org.json: registrationNumber)",
     "reports": "דוחות כספיים ומילוליים ואישור ניהול תקין (org.json: reports, properConduct)"
+  },
+  "stat": {
+    "value": "כ־15,000",
+    "label": "לוחמות ולוחמים משתחררים בכל שנה משירות קרבי"
   }
 }

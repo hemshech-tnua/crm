@@ -1,5 +1,5 @@
 // The site header (sticky, navy): the mark + typeset wordmark, four section buttons (≥1024px; config.mjs SECTIONS), the
-// language switch and the persistent "להרשמה למפגש ◀" button; below 1024px wordmark + CTA + "תפריט". Under it, the 4px
+// language switch and the persistent "לשישי הקרוב ◀" button (the next Friday's registration, live); below 1024px wordmark + CTA + "תפריט". Under it, the 4px
 // reading-progress stripe.
 // Each section button is a disclosure (aria-expanded/aria-controls) for a panel that lists "הכל על <section>" (the hub)
 // and the section's pages with a one-line description; nav.js opens it on click (Enter/Space), closes it on Esc (focus
@@ -7,7 +7,7 @@
 // The phone menu is a native <dialog> (modal, Esc, inert page; nav.js adds aria-expanded, the focus trap and return)
 // with the same four groups and the CTA pinned at its foot.
 import { html } from '../lib/html.mjs';
-import { CTA_PAGE } from '../config.mjs';
+import { HEADER_CTA } from '../config.mjs';
 import { sections } from '../lib/sections.mjs';
 
 const cur = (on) => (on ? html` aria-current="page"` : '');
@@ -22,8 +22,10 @@ export function brandLink(ctx) {
   return html`<a class="brand" href="${ctx.link('home')}" aria-label="${ctx.t('nav.homeLabel')}">${ctx.brand.logo({ variant: 'symbol' })}<span class="brand__name"${ctx.lang === 'he' ? '' : html` lang="he"`}>${ctx.t('site.name')}</span></a>`;
 }
 
+/** "לשישי הקרוב ◀": the Friday page's dates without data; events.js swaps in the next Friday's registration link. */
 export function ctaButton(ctx, cls = '') {
-  return html`<a class="btn ${cls}" href="${ctx.ctaHref}"${cur(ctx.page.id === CTA_PAGE)}><span class="cta-long">${ctx.t('cta.register')}</span><span class="cta-short" aria-hidden="true">${ctx.t('cta.registerShort')}</span>${ctx.brand.tri()}</a>`;
+  const href = ctx.pageExists(HEADER_CTA.page) ? `${ctx.link(HEADER_CTA.page)}#${HEADER_CTA.hash}` : ctx.ctaHref;
+  return html`<a class="btn ${cls}" href="${href}" data-next-link="${HEADER_CTA.type}" aria-label="${ctx.t('cta.headerAria')}"><span class="cta-long">${ctx.t('cta.header')}</span><span class="cta-short" aria-hidden="true">${ctx.t('cta.headerShort')}</span>${ctx.brand.tri()}</a>`;
 }
 
 /** The dropdown arrow: the brand's triangle, pointing down (up while open). */

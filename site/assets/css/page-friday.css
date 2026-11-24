@@ -7,6 +7,9 @@
   .fr-hero__lead { margin-block-start: var(--headline-to-lead); }
   .fr-hero__next { margin-block-start: var(--space-6); max-inline-size: 34rem; }
   .fr-hero__quick { margin-block-start: var(--space-3); }
+  .fr-hero__who { margin-block-start: var(--space-4); font-weight: var(--wght-semibold); max-inline-size: 40ch; }
+  .fr-hero__facts { margin-block-start: var(--space-5); }
+  .fr-hero__ask { margin-block-start: var(--space-1); }
   .fr-hero__media { position: relative; }
   .fr-hero__photo img { object-position: 50% 35%; }
   .fr-hero__stripes { inset-block-start: -1px; inset-inline-start: -1px; inline-size: 40%; block-size: 28%; color: var(--ground); z-index: 1; }
@@ -15,6 +18,15 @@
     .fr-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
     .fr-hero__text { grid-column: 1 / span 6; }
     .fr-hero__media { grid-column: 8 / -1; }
+  }
+
+  /* ── 1b. פעם ראשונה? (beige-light): six labelled icon answers, before the first scroll ── */
+  .fr-first__grid { display: grid; gap: var(--space-7); }
+  .fr-first__list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+  @media (min-width: 64rem) {
+    .fr-first__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
+    .fr-first__title { grid-column: 1 / span 3; }
+    .fr-first__list { grid-column: 4 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--space-8); }
   }
 
   /* ── 2. the three promises (navy tones): sticky panels, each slides over the last (≥1024; phone = stacked bands) ── */
@@ -50,7 +62,11 @@
 
   /* ── 3. ככה נראה הבוקר (beige): the shared timeline + (desktop) a sticky navy panel that follows the step at mid-screen ── */
   .fr-morning__grid { display: grid; gap: var(--space-8); margin-block-start: var(--space-8); }
-  .fr-morning__note { margin-block-start: var(--space-7); padding-inline-start: var(--space-7); }
+  .fr-morning__note { display: flex; gap: var(--space-3); align-items: start; margin-block-start: var(--space-8); font-size: var(--fs-lead); line-height: var(--lh-lead); font-weight: var(--wght-semibold); max-inline-size: 40ch; }
+  .fr-morning__noteIcon { margin-block-start: 0.2em; }
+  .fr-morning__parking { margin-block-start: var(--space-4); }
+  .fr-morning .timeline__time { display: flex; align-items: center; gap: var(--space-2); }
+  .fr-morning .timeline__icon { inline-size: 1.5rem; block-size: 1.5rem; }
   /* the panel: the step at mid-screen in large type (follow-the-middle in scroll.js); the first shows until then.
      Phones read the timeline alone (the panel would only repeat it under the list). */
   .fr-morning__media { display: none; }
@@ -68,6 +84,9 @@
     }
     .fr-morning__slide--2 { background: var(--navy-800); }
     .fr-morning__slide--3 { background: var(--navy-700); }
+    .fr-morning__slide--4 { background: var(--navy-800); }
+    .fr-morning__slide--5 { background: var(--navy-700); }
+    .fr-morning__icon { grid-row: 2; align-self: center; inline-size: clamp(5rem, 2rem + 5vw, 8rem); block-size: auto; aspect-ratio: 1; color: var(--beige); }
     .fr-morning__slide[data-active],
     .fr-morning__panel:not(:has(> [data-active])) > .fr-morning__slide--1 { opacity: 1; }
     .fr-morning__count { font-size: var(--fs-small); font-weight: var(--wght-semibold); letter-spacing: 0.08em; color: var(--beige-quiet); font-variant-numeric: tabular-nums; }
@@ -76,19 +95,6 @@
   }
   .fr-gallery { margin-block-start: var(--space-9); }
   .fr-gallery__list { display: grid; gap: var(--gutter); margin-block-start: var(--space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
-
-  /* ── 4. coming alone + before you come (beige-light): facts on tone-step cards beside a 4:5 photo ── */
-  .fr-welcome__grid { display: grid; gap: var(--space-7); }
-  .fr-welcome__lead { margin-block-start: var(--headline-to-lead); }
-  .fr-facts__title { margin-block: var(--space-8) var(--space-4); font-size: var(--fs-lead); line-height: var(--lh-title); }
-  .fr-facts { display: grid; gap: var(--space-2); }
-  @media (min-width: 48rem) { .fr-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 48rem) and (max-width: 63.99rem) { .fr-welcome__photo { aspect-ratio: 3 / 2; } }
-  @media (min-width: 64rem) {
-    .fr-welcome__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }
-    .fr-welcome__text { grid-column: 1 / span 7; }
-    .fr-welcome__photo { grid-column: 9 / -1; }
-  }
 
   /* ── 5. זה בשבילכם אם… (navy): four statements with ◀ + participant quotes when they exist ── */
   .fr-forwhom__list { gap: var(--space-6); margin-block-start: var(--space-8); }
@@ -100,15 +106,24 @@
     .fr-stories__list { grid-template-columns: repeat(3, 1fr); }
   }
 
-  /* ── 6. upcoming dates (beige): the live Friday cards ── */
+  /* ── 6. upcoming dates (beige): the live Friday cards beside "אחרי ההרשמה" (three steps on a navy panel) ── */
+  .fr-dates__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .fr-dates__ask { margin-block-start: var(--space-4); }
+  .fr-after { align-self: start; padding: var(--space-7) var(--space-6); border-radius: var(--radius-panel); }
+  .fr-after__list { display: grid; gap: var(--space-6); margin: var(--space-6) 0 0; padding: 0; list-style: none; }
+  .fr-after__step { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+  .fr-after__icon { inline-size: 2rem; block-size: 2rem; }
+  .fr-after__text { display: grid; gap: var(--space-1); }
+  .fr-after__text strong { font-size: var(--fs-lead); line-height: var(--lh-title); }
+  @media (min-width: 64rem) {
+    .fr-dates__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .fr-dates__main { grid-column: 1 / span 7; }
+    .fr-dates__events .events__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fr-after { grid-column: 9 / -1; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+  }
   .fr-dates__head { display: grid; gap: var(--space-4) var(--gutter); margin-block-end: var(--space-7); }
   .fr-dates__note { max-inline-size: 44ch; }
   .fr-dates__more { margin-block-start: var(--space-3); }
-  @media (min-width: 64rem) {
-    .fr-dates__head { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
-    .fr-dates__head > :first-child { grid-column: 1 / span 6; }
-    .fr-dates__head > :last-child { grid-column: 8 / -1; }
-  }
 
   /* ── 7. FAQ (beige-light): sticky heading column + the shared accordion ── */
   .fr-faq__grid { display: grid; gap: var(--space-7); }
@@ -124,6 +139,8 @@
   .fr-closing__grid { display: grid; gap: var(--space-8); }
   .fr-closing__ask { display: grid; gap: var(--space-6); justify-items: start; }
   .fr-share { display: grid; gap: var(--space-3); justify-items: start; background-color: var(--surface); border-radius: var(--radius-panel); padding: var(--space-6); }
+  .fr-share__icon { inline-size: 3rem; block-size: 3rem; }
+  .fr-closing__q { margin-block-start: calc(var(--space-6) * -1 + var(--space-2)); }
   .fr-share__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-block-start: var(--space-3); }
   @media (min-width: 64rem) {
     .fr-closing__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: end; }

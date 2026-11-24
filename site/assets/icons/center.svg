@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+<title>A centre</title>
+<path d="M3 21V12L12 3L21 12V21Z"/>
+<path d="M10 21V16H14V21"/>
+<path fill="currentColor" stroke="none" d="M12 9L14 11L12 13L10 11Z"/>
+</svg>

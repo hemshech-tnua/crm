@@ -1,15 +1,18 @@
 // Home: in ten seconds, what המשך תנועה is, what happens there, why it is different and where it is going; then each
 // audience is routed to its page. Chapters follow the CEO's order (DESIGN.md §8, Team A's home story):
-//   1 hero (navy)            the two-line promise, the lead (with "פה תמיד"), the live next FRIDAY, the group photo
-//                            (on phones it comes right after the lead, above the fold; the card follows)
+//   1 hero (navy)            "ללוחמים וללוחמות במילואים ואחרי השירות" · the two-line promise · the Friday facts with the
+//                            fact strip (שישי · 09:00 · הולמס פלייס מודיעין · price · איתי, live) · the next FRIDAY card
+//                            (its button on the first screen at 390) · the WhatsApp question · the founders' faces
+//                            ("שניהם משרתי מילואים פעילים") · the group photo (after the card on phones)
 //   2 the four verbs (beige)  לפגוש · לזוז · למצוא כיוון · להצליח — a sticky index follows the block at mid-screen
-//   3 פה תמיד (navy)          why (the association's own figure: ~15,000 released every year), the difference and the
-//                            direction (the centers, with the municipalities); the hills band opens from the reading edge
+//   3 פה תמיד (navy)          the difference (also between reserve rounds) and the direction (the centers, with the municipalities); the hills band opens from the reading edge
 //   4 Friday (beige-light)   the three promises beside the next live Fridays; the other meeting formats as tiles
 //   5 proof (navy)           numbers + participant quotes — owner content, omitted in production until it exists
 //   6 join (beige/navy-deep) one row per audience (veterans, companies, donors, volunteers) + the partner logo wall
-//   7 closing                "נתראה בשישי?" + share with someone from the old team
+//   7 closing                "נתראה בשישי?" + "באים עם חבר?" (share; everyone signs up separately)
+// The ~15,000 figure lives on donate and partners (R2: lead the veteran with belonging, not with a statistic).
 import { html } from '../lib/html.mjs';
+import { factStrip, askLine } from './_facts.mjs';
 
 export const slug = { he: '', en: '' };
 export const meta = (ctx) => ({ title: ctx.t('home.meta.title'), description: ctx.t('home.meta.description') });
@@ -22,6 +25,9 @@ const hrefOf = (ctx, href, fallback = null) => {
   return ctx.pageExists(id) ? ctx.link(id) : fallback;
 };
 
+/** One icon per Friday promise (home.friday.items, in order): no commitment · three a month · every fitness level. */
+const PROMISE_ICONS = ['no-commitment', 'calendar-3', 'all-levels'];
+
 export function render(ctx) {
   const { t, ui, org } = ctx;
   const get = (k) => ctx.get(`home.${k}`);
@@ -32,11 +38,23 @@ export function render(ctx) {
 
   // ── 1 · hero ──
   const title = ctx.list('home.hero.title');
+  // the founders, beside the action: both are active reservists (org.json team lines; the association's own site)
+  const pair = (org.team ?? []).filter((m) => m.photo).slice(0, 2);
+  const names = pair.map((m) => String(ctx.l(m.name)).split(' ')[0]).join(t('home.hero.and'));
+  const aboutUrl = ctx.pageExists('about') ? ctx.link('about') : null;
+  const founders = pair.length === 2 ? html`<div class="founders" data-load="4">
+      <ul class="founders__faces" role="list">${pair.map((m) => html`<li>${ctx.img(m.photo, { alt: '', sizes: '64px', className: 'founders__img' })}</li>`)}</ul>
+      <p class="founders__text"><strong>${t('home.hero.founders', { names })}</strong> ${t('home.hero.foundersFact')}${aboutUrl ? html` <a class="link" href="${aboutUrl}">${t('home.hero.foundersLink')}${ctx.brand.tri()}</a>` : ''}</p>
+    </div>` : '';
   const hero = html`
 <section class="chapter hero" data-ground="navy" aria-labelledby="home-title">
   <div class="wrap hero__grid">
+    <p class="hero__who" data-load="0">${t('home.hero.eyebrow')}</p>
     <h1 id="home-title" class="t-hero hero__title">${title.map((line, i) => html`<span data-load="${i}">${line}</span> `)}</h1>
-    <p class="t-lead hero__lead" data-load="2">${t('home.hero.body')}</p>
+    <div class="hero__lead" data-load="2">
+      <p class="t-lead">${t('home.hero.body')}</p>
+      ${factStrip(ctx, { className: 'hero__facts' })}
+    </div>
     <div class="hero__photo" data-load="wipe">
       ${ui.photo('training', { ratio: '4:5', focus: 40, bleed: true, eager: true, sizes: '(min-width: 64rem) 58vw, 100vw' })}
       ${ctx.brand.stripes({ width: 240, height: 140, unit: 22, dir: 'cut', count: 3, anchor: 'te', className: 'stripes stripes--beige hero__stripes' })}
@@ -51,6 +69,8 @@ export function render(ctx) {
         cta: t('home.hero.ctaPrimary'),
         more: { href: hrefOf(ctx, get('next.moreHref'), ctx.crm.home), label: t('home.next.moreLink') },
       })}</div>
+      ${askLine(ctx, { className: 'hero__ask' })}
+      ${founders}
       ${fridayUrl ? html`<p data-load="4">${ui.link(t('home.hero.ctaSecondary'), fridayUrl)}</p>` : ''}
     </div>
   </div>
@@ -98,7 +118,6 @@ export function render(ctx) {
   </div>
   ${ui.photo('hills', { ratio: '21:9', bleed: true, wipe: true, alt: '', sizes: '100vw', className: 'always__band' })}
   <div class="wrap always__head">
-    ${ui.stats([get('always.stat')], { className: 'always__stat' })}
     <div class="stack" data-reveal>
       <p class="t-title">${t('home.always.lead')}</p>
       ${ctx.list('home.always.body').map((p) => html`<p class="t-body quiet">${p}</p>`)}
@@ -124,7 +143,7 @@ export function render(ctx) {
       <div class="meetings__promise">
         <h2 id="friday-title" class="t-chapter" data-reveal="up">${t('home.friday.title')}</h2>
         <ul class="promises" role="list" data-reveal>
-          ${ctx.list('home.friday.items').map((p) => html`<li><h3 class="promises__title">${ctx.brand.tri()}<span>${p.title}</span></h3><p class="t-body">${p.body}</p></li>`)}
+          ${ctx.list('home.friday.items').map((p, i) => html`<li><h3 class="promises__title">${ctx.icon(PROMISE_ICONS[i], { size: 32, className: 'promises__icon' })}<span>${p.title}</span></h3><p class="t-body">${p.body}</p></li>`)}
         </ul>
         ${fridayUrl ? html`<div class="cluster" data-reveal="up">${ui.button(t('home.friday.cta'), fridayUrl)}</div>` : ''}
       </div>
@@ -136,9 +155,9 @@ export function render(ctx) {
     <div class="meetings__more">
       <h3 class="t-title" data-reveal="up">${t('home.evenings.title')}</h3>
       <ul class="types" role="list" data-reveal>
-        <li><a class="type" href="${eveningsUrl}"><span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
+        <li><a class="type" href="${eveningsUrl}">${ctx.icon('women', { size: 40, className: 'type__icon' })}<span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
         <li><a class="type" href="${eveningsUrl}">${ctx.img('bonfire', { alt: '', sizes: '(min-width: 48rem) 33vw, 100vw', className: 'focus-70' })}<span class="type__title">${evItems[1].title}</span><span class="type__body">${evItems[1].body}</span></a></li>
-        <li><a class="type type--deep" href="${ctx.ctaHref}"><span class="type__title">${evItems[2].title}</span><span class="type__body">${evItems[2].body}</span><span class="type__go">${t('events.calendar')}${ctx.brand.tri()}</span></a></li>
+        <li><a class="type type--deep" href="${ctx.ctaHref}">${ctx.icon('calendar-3', { size: 40, className: 'type__icon' })}<span class="type__title">${evItems[2].title}</span><span class="type__body">${evItems[2].body}</span><span class="type__go">${t('events.calendar')}${ctx.brand.tri()}</span></a></li>
       </ul>
     </div>
   </div>
@@ -175,8 +194,9 @@ export function render(ctx) {
 </section>`;
 
   // ── 7 · closing: see you on Friday, and bring someone ──
+  // the shared link says where it came from (ref=wa-share, a channel code the CRM can count once it exists there)
   const shareUrl = ctx.abs(fridayUrl ?? ctx.link('home'));
-  const waShare = `https://wa.me/?text=${encodeURIComponent(`${t('whatsapp.share')} ${shareUrl}`)}`;
+  const waShare = `https://wa.me/?text=${encodeURIComponent(`${t('whatsapp.share')} ${shareUrl}?ref=wa-share&utm_source=whatsapp&utm_medium=share`)}`;
   const closing = html`
 <section class="chapter closing" data-ground="${grounds.closing}" aria-labelledby="closing-title">
   <div class="wrap closing__grid">
@@ -185,15 +205,16 @@ export function render(ctx) {
         <h2 id="closing-title" class="t-display closing__title">${t('home.closing.title')}</h2>
         <div class="cluster">${ui.button(t('home.closing.cta'), ctx.ctaHref)}</div>
       </div>
-      <div class="closing__share" data-reveal>
-        <p class="t-lead">${t('home.closing.shareText')}</p>
-        <div class="cluster">
-          <a class="btn btn--ghost btn--sm" href="${waShare}" rel="noopener" target="_blank"><span>${t('home.closing.shareWhatsapp')}</span><span class="visually-hidden"> ${t('a11y.whatsappNewWindow')}</span></a>
-          <button class="btn btn--ghost btn--sm js-only" type="button" data-copy-link="${shareUrl}" data-copied="${t('home.closing.copied')}"><span data-copy-label aria-live="polite">${t('home.closing.shareCopy')}</span></button>
-        </div>
+    </div>
+    <div class="closing__share" data-ground="navy" data-reveal>
+      ${ctx.icon('friend', { size: 56, className: 'closing__icon' })}
+      <h3 class="t-title">${t('home.closing.shareTitle')}</h3>
+      <p class="t-lead">${t('home.closing.shareText')}</p>
+      <div class="cluster">
+        <a class="btn btn--sm" href="${waShare}" rel="noopener" target="_blank">${ctx.icon('whatsapp', { size: 20 })}<span>${t('home.closing.shareWhatsapp')}</span><span class="visually-hidden"> ${t('a11y.whatsappNewWindow')}</span></a>
+        <button class="btn btn--ghost btn--sm js-only" type="button" data-copy-link="${shareUrl}" data-copied="${t('home.closing.copied')}"><span data-copy-label aria-live="polite">${t('home.closing.shareCopy')}</span></button>
       </div>
     </div>
-    ${ui.photo('walk', { ratio: '4:5', focus: 30, alt: '', sizes: '(min-width: 64rem) 40vw, 100vw', className: 'closing__photo' })}
   </div>
 </section>`;
 

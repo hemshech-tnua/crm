@@ -55,6 +55,13 @@ export const LIVE_FIRST = ['calendar'];
 /** The page the persistent "להרשמה למפגש" button goes to; falls back to the CRM's public meetings list. */
 export const CTA_PAGE = 'calendar';
 
+/**
+ * The header's button (and the phone menu's): "לשישי הקרוב ◀". Without data it goes to the Friday page's dates
+ * (`page` + `hash`); events.js then points it straight at the registration of the next open meeting of `type`
+ * (with the visit's ref/utm_*, assets/js/attribution.js).
+ */
+export const HEADER_CTA = { page: 'friday', hash: 'dates', type: 'friday' };
+
 /** Links into the existing CRM (hash routes). */
 export const crmLinks = (crmUrl) => ({
   home: `${crmUrl}#/`,

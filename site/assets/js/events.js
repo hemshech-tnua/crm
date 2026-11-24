@@ -4,8 +4,12 @@
 //   [data-events="all|friday|bonfire|other|women"] data-events-limit data-events-filter data-events-heading
 //     data-events-empty-title / -body → .meet cards
 //   [data-next="friday|all|…"] (+ data-next-pay) → the next-meeting card and the phone CTA bar
+//   [data-next-link="friday|…"] → a link (the header button) pointed at the next open meeting's registration
+//   [data-next-facts="friday|…"] → the fact strip: [data-fact="day|time|place|price"] filled from the next meeting
+// Every registration link carries the visit's ref/utm_* (attribution.js decorate()).
 // "women" is not a CRM type: women's evenings are "other" meetings whose title or activity says so (isWomensEvening).
 import { rpc, rpcOnce, pageLang, strings, crmUrl } from './api.js';
+import { decorate } from './attribution.js';
 
 const TZ = 'Asia/Jerusalem';
 const TYPES = ['friday', 'bonfire', 'other'];
@@ -109,7 +113,8 @@ const kindLabel = (e, s) => (isWomensEvening(e) ? s.types.women : e.type === 'ot
 // (a women's evening keeps its own Hebrew title, which says more than the kind: "ערב נשים – ״לוחמות בתנועה״")
 const titleOf = (e, s) => { const k = kindLabel(e, s); return k && (pageLang() !== 'he' || !e.title || (e.title.includes(k) && !isWomensEvening(e))) ? k : e.title || k || s.types.other; };
 const countText = (n, s) => (n === 1 ? s.countOne : fill(s.count, { n }));
-const linkFor = (e) => (canRegister(e) ? `${crmUrl}#/r/${enc(e.code)}` : `${crmUrl}#/e/${enc(e.code)}`);
+const register = (e) => decorate(`${crmUrl}#/r/${enc(e.code)}`);
+const linkFor = (e) => (canRegister(e) ? register(e) : `${crmUrl}#/e/${enc(e.code)}`);
 
 function card(e, s, level) {
   const title = titleOf(e, s);
@@ -241,12 +246,26 @@ function renderNext(box, all, failed) {
   }
   if (cta) {
     if (canRegister(next)) {
-      cta.href = `${crmUrl}#/r/${enc(next.code)}`;
+      cta.href = register(next);
       if (!isBar) ctaText.textContent = ctaLabel(next, s, pay);
       else if (next.is_full) ctaText.textContent = s.cta.waitlist;
     }
   }
   box.setAttribute('data-filled', '');
+}
+
+/** The next open meeting of a scope (or null). */
+const nextOf = (all, scope) => all.filter((e) => inScope(e, scope)).find(canRegister);
+
+/** [data-next-facts]: the next meeting's day + date, start time, venue and price replace the static facts. */
+function renderFacts(box, all) {
+  const e = nextOf(all, box.dataset.nextFacts);
+  if (!e) return;
+  const put = (k, v) => { const n = box.querySelector(`[data-fact="${k}"]`); if (n && v) n.textContent = v; };
+  put('day', `${weekday(e.starts_at)} ${fmt(e.starts_at, { day: 'numeric', month: 'numeric' })}`);
+  put('time', time(e).split('–')[0]);
+  if (pageLang() === 'he') put('place', tidy(e.site_name || e.location));
+  if (e.price > 0) put('price', fill(S().price, { price: +e.price }));
 }
 
 const valid = (iso) => typeof iso === 'string' && Number.isFinite(Date.parse(iso));
@@ -269,6 +288,8 @@ function load(fresh = false, focusBox = null) {
       const all = clean(data);
       lists.forEach((b) => renderList(b, all));
       nexts.forEach((b) => renderNext(b, all));
+      document.querySelectorAll('[data-next-link]').forEach((a) => { const e = nextOf(all, a.dataset.nextLink); if (e) a.href = register(e); });
+      document.querySelectorAll('[data-next-facts]').forEach((b) => renderFacts(b, all));
       done();
     })
     .catch(() => {

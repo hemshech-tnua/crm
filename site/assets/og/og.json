@@ -1,0 +1,162 @@
+{
+  "home": {
+    "he": {
+      "image": "og/home-he.jpg",
+      "alt": "״השירות נגמר. הצוות לא חייב להיגמר.״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/home-en.jpg",
+      "alt": "“Service ends. The team doesn’t have to.” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "friday": {
+    "he": {
+      "image": "og/friday-he.jpg",
+      "alt": "״אימון, קפה והרצאה. נתראה בשישי?״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/friday-en.jpg",
+      "alt": "“Training, coffee, a talk. See you Friday?” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "calendar": {
+    "he": {
+      "image": "og/calendar-he.jpg",
+      "alt": "״המפגשים הקרובים״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/calendar-en.jpg",
+      "alt": "“Upcoming meetings” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "meetings": {
+    "he": {
+      "image": "og/meetings-he.jpg",
+      "alt": "״המפגשים של המשך תנועה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/meetings-en.jpg",
+      "alt": "“Our meetings” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "evenings": {
+    "he": {
+      "image": "og/evenings-he.jpg",
+      "alt": "״ערבי נשים ומפגשים נוספים״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/evenings-en.jpg",
+      "alt": "“Women’s evenings and more” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "about": {
+    "he": {
+      "image": "og/about-he.jpg",
+      "alt": "״הסיפור של המשך תנועה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/about-en.jpg",
+      "alt": "“The story of Hemshech Tnua” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "association": {
+    "he": {
+      "image": "og/association-he.jpg",
+      "alt": "״העמותה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/association-en.jpg",
+      "alt": "“The association” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "team": {
+    "he": {
+      "image": "og/team-he.jpg",
+      "alt": "״מי עומדים מאחורי העמותה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/team-en.jpg",
+      "alt": "“The people behind it” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "faq": {
+    "he": {
+      "image": "og/faq-he.jpg",
+      "alt": "״מה שואלים לפני שבאים״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/faq-en.jpg",
+      "alt": "“What people ask before coming” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "involved": {
+    "he": {
+      "image": "og/involved-he.jpg",
+      "alt": "״להיות חלק״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/involved-en.jpg",
+      "alt": "“Get involved” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "volunteer": {
+    "he": {
+      "image": "og/volunteer-he.jpg",
+      "alt": "״צוות כניסה, הרצאה או אימון״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/volunteer-en.jpg",
+      "alt": "“Welcome team, a talk or training” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "membership": {
+    "he": {
+      "image": "og/membership-he.jpg",
+      "alt": "״הצטרפות לעמותה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/membership-en.jpg",
+      "alt": "“Join the association” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "support": {
+    "he": {
+      "image": "og/support-he.jpg",
+      "alt": "״לתמוך בהמשך תנועה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/support-en.jpg",
+      "alt": "“Support Hemshech Tnua” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "donate": {
+    "he": {
+      "image": "og/donate-he.jpg",
+      "alt": "״לתמוך בהמשך תנועה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/donate-en.jpg",
+      "alt": "“Support Hemshech Tnua” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "partners": {
+    "he": {
+      "image": "og/partners-he.jpg",
+      "alt": "״לחברות ולארגונים״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/partners-en.jpg",
+      "alt": "“For companies and organisations” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "contact": {
+    "he": {
+      "image": "og/contact-he.jpg",
+      "alt": "״שאלה? כתבו לנו״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/contact-en.jpg",
+      "alt": "“A question? Write to us” in beige on navy, with the המשך תנועה mark and name."
+    }
+  }
+}

@@ -1,5 +1,23 @@
 // <head>: meta, CSP, canonical + hreflang, Open Graph, fonts preload, the stylesheet and the one entry script.
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { html, raw, attrs } from '../lib/html.mjs';
+
+/**
+ * Per-page share images (assets/og/og.json, written by tools/og.mjs): { <page id>: { he|en: { image, alt } } }.
+ * A page without one (accessibility, 404) shares the default assets/og-image.png with copy site.ogImageAlt.
+ */
+const OG_JSON = fileURLToPath(new URL('../assets/og/og.json', import.meta.url));
+export const OG_IMAGES = existsSync(OG_JSON) ? JSON.parse(readFileSync(OG_JSON, 'utf8')) : {};
+
+/** The share image of a page: { url, alt, type } (absolute URL). */
+export function ogImage(ctx) {
+  const own = OG_IMAGES[ctx.page.id]?.[ctx.lang];
+  const base = ctx.site.origin + ctx.site.base + 'assets/';
+  return own
+    ? { url: base + own.image, alt: own.alt, type: 'image/jpeg' }
+    : { url: base + 'og-image.png', alt: ctx.t('site.ogImageAlt'), type: 'image/png' };
+}
 
 /** The Content-Security-Policy for every page: own files only, no inline script, network only to Supabase. */
 export function csp(supabaseOrigin) {
@@ -24,7 +42,7 @@ const jsonLd = (obj) => raw(`<script type="application/ld+json">${JSON.stringify
 export function head(ctx, { title, description, noindex, jsonld, live = false }) {
   const { page, site } = ctx;
   const fonts = ctx.lang === 'he' ? ['google-sans-hebrew-wght-normal.woff2', 'google-sans-latin-wght-normal.woff2'] : ['google-sans-latin-wght-normal.woff2'];
-  const ogImage = site.origin + site.base + 'assets/og-image.png';
+  const og = ogImage(ctx);
   const alt = page.alternates; // { he: absUrl, en: absUrl } (null for the 404)
   return html`<head>
 <meta charset="utf-8">
@@ -45,14 +63,15 @@ ${alt ? html`<link rel="canonical" href="${alt[ctx.lang]}">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 ${alt ? html`<meta property="og:url" content="${alt[ctx.lang]}">` : ''}
-<meta property="og:image" content="${ogImage}">
+<meta property="og:image" content="${og.url}">
+<meta property="og:image:type" content="${og.type}">
 <meta property="og:locale" content="${ctx.meta.locale}">
 <meta property="og:locale:alternate" content="${ctx.lang === 'he' ? 'en_US' : 'he_IL'}">
 <meta name="twitter:card" content="summary_large_image">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="${ctx.t('site.ogImageAlt')}">
-<meta name="twitter:image:alt" content="${ctx.t('site.ogImageAlt')}">
+<meta property="og:image:alt" content="${og.alt}">
+<meta name="twitter:image:alt" content="${og.alt}">
 <link rel="icon" href="${site.base}assets/favicon.svg" type="image/svg+xml">
 ${live && site.supabaseOrigin ? html`<link rel="preconnect" href="${site.supabaseOrigin}" crossorigin>
 ` : ''}${fonts.map((f) => html`<link rel="preload" href="${site.base}assets/fonts/${f}" as="font" type="font/woff2" crossorigin>

@@ -95,5 +95,9 @@
     "team": "names and roles of the team and board (org.json: team, board)",
     "registration": "legal name and amuta registration number (org.json: registrationNumber)",
     "reports": "financial and activity reports, proper-conduct certificate (org.json: reports, properConduct)"
+  },
+  "stat": {
+    "value": "15,000",
+    "label": "young men and women complete combat service every year"
   }
 }

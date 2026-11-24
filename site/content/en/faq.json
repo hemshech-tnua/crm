@@ -16,7 +16,12 @@
       "items": [
         {
           "q": "Who are the meetings for?",
-          "a": "Combat veterans after their service, men and women, however long it's been since discharge. You don't need to know us or anyone else beforehand."
+          "a": "Men and women who served in combat, in the reserves and after service, however long it's been since discharge. You don't need to know the association or anyone there."
+        },
+        {
+          "q": "I'm in the reserves and can't always commit. Does that work?",
+          "a": "Yes. There is no commitment: come when it suits you, and come back after a break. There are three meetings a month, so there is always a Friday coming up.",
+          "id": "reserve"
         },
         {
           "q": "Can I come alone, without knowing anyone?",
@@ -41,6 +46,12 @@
             "label": "Women's evenings",
             "page": "evenings"
           }
+        },
+        {
+          "q": "Can partners come?",
+          "a": null,
+          "slot": "Can partners come to Friday mornings (yes or no, and one line)",
+          "id": "partner"
         }
       ]
     },
@@ -65,8 +76,14 @@
           "a": "Yes. You can change and shower in the Holmes Place locker rooms."
         },
         {
-          "q": "Can I come for only part of the morning?",
-          "a": "Yes, you can come only for the workout or only for the talk. Coming for part of the morning is paid as well."
+          "q": "Can I leave after the workout?",
+          "a": "Yes. You can leave after the workout, or come only for the talk. Coming for part of the morning is paid as well."
+        },
+        {
+          "q": "Is there parking?",
+          "a": null,
+          "slot": "One sentence on parking and getting to Holmes Place, Modi'in",
+          "id": "parking"
         }
       ]
     },

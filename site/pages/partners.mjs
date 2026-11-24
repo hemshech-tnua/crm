@@ -46,6 +46,7 @@ export function render(ctx) {
   ${corner(ctx, 'te')}
   <div class="${C.wrap}">
     <h2 id="why-h2" class="${C.chapterTitle}" ${ctx.reveal('up')}>${t(k('why.title'))}</h2>
+    ${ctx.ui.stats([ctx.get(k('stat'))], { className: 'pt-why__stat' })}
     <div class="pt-why__track">
     <div class="pt-road" aria-hidden="true"><span class="pt-road__fill"></span></div>
     <ul class="pt-why__list" role="list" data-reveal-group>
