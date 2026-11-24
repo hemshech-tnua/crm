@@ -137,7 +137,7 @@ export function render(ctx) {
       <h3 class="t-title" data-reveal="up">${t('home.evenings.title')}</h3>
       <ul class="types" role="list" data-reveal>
         <li><a class="type" href="${eveningsUrl}"><span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
-        <li><a class="type type--mid" href="${eveningsUrl}"><span class="type__title">${evItems[1].title}</span><span class="type__body">${evItems[1].body}</span></a></li>
+        <li><a class="type" href="${eveningsUrl}">${ctx.img('bonfire', { alt: '', sizes: '(min-width: 48rem) 33vw, 100vw', className: 'focus-70' })}<span class="type__title">${evItems[1].title}</span><span class="type__body">${evItems[1].body}</span></a></li>
         <li><a class="type type--deep" href="${ctx.ctaHref}"><span class="type__title">${evItems[2].title}</span><span class="type__body">${evItems[2].body}</span><span class="type__go">${t('events.calendar')}${ctx.brand.tri()}</span></a></li>
       </ul>
     </div>

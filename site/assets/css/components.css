@@ -379,7 +379,7 @@
   }
   .type--deep { background: var(--navy-800); }
   .type > img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; z-index: -2; transition: transform var(--dur-slow) var(--ease-out); }
-  .type:has(> img)::after { content: ''; position: absolute; inset: 40% 0 0; background: var(--navy); opacity: 0.8; z-index: -1; }
+  .type:has(> img)::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--navy) 92%, transparent) 0%, color-mix(in srgb, var(--navy) 70%, transparent) 38%, transparent 72%); z-index: -1; }
   .type .stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: 55%; block-size: 50%; color: var(--navy-700); z-index: -1; }
   .type__title { font-size: var(--fs-title); font-weight: var(--wght-bold); line-height: 1.15; letter-spacing: var(--track-title); }
   .type__body { color: var(--beige); }
