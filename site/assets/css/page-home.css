@@ -42,6 +42,18 @@
   .verb__name { font-size: var(--fs-chapter); line-height: 1; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
   .verb__text { display: grid; gap: var(--space-2); }
   .verb__what { font-size: var(--fs-lead); font-weight: var(--wght-semibold); line-height: var(--lh-title); }
+  /* each verb's field: a navy panel with the moment in large type (the photos it once held looked staged) */
+  .verb__field {
+    display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-3); min-block-size: 15rem; padding: var(--space-6);
+    border-radius: var(--radius-panel); background: var(--navy); color: var(--beige);
+  }
+  .verb__field--2 { background: var(--navy-800); }
+  .verb__field--3 { background: var(--navy-700); }
+  .verb__num { font-size: var(--fs-small); font-weight: var(--wght-semibold); letter-spacing: 0.08em; color: var(--beige-quiet); font-variant-numeric: tabular-nums; }
+  .verb__field .verb__what {
+    align-self: end; font-size: var(--fs-chapter); line-height: 1.02; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); max-inline-size: 12ch;
+  }
+  .verb__body { color: var(--beige-quiet); max-inline-size: 38ch; }
   @media (min-width: 64rem) {
     .verbs__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
     .verbs__index {
@@ -57,6 +69,7 @@
     .verbs__index li[data-active] .tri { opacity: 1; transform: none; }
     .verbs__list { grid-column: 7 / -1; gap: var(--space-11); padding-block-start: var(--space-3); }
     .verb__name { font-size: var(--fs-title); line-height: var(--lh-title); }
+    .verb__field { aspect-ratio: 2 / 1; min-block-size: 0; padding: var(--space-7); }
   }
 
   /* ── 3 · פה תמיד ── */
@@ -92,6 +105,8 @@
   .types { display: grid; gap: var(--gutter); }
   .types > li { display: flex; }
   .types .type { inline-size: 100%; }
+  .types .type--mid { background: var(--navy-700); }
+  @media (max-width: 47.99rem) { .types .type { min-block-size: 10rem; } } /* text-only tiles: no tall empty fields on phones */
   @media (min-width: 48rem) { .types { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (min-width: 64rem) {
     .meetings__friday { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }

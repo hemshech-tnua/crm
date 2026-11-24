@@ -17,7 +17,7 @@ export function render(ctx) {
   const program = ctx.list('friday.program.items');
   const emphasis = ctx.list('friday.emphasis.items');
 
-  // one real fact beside each promise: the morning's structure · the next three Fridays (live) · a photo
+  // one real fact beside each promise: the morning's structure · the next three Fridays (live) · a photo (the path)
   const promiseFact = [
     html`<div class="fr-promise__fact fr-glance" data-reveal="up" data-reveal-delay="2">
       <h4 class="fr-promise__factTitle">${t('friday.emphasis.glanceTitle')}</h4>
@@ -27,7 +27,7 @@ export function render(ctx) {
       <h4 class="fr-promise__factTitle">${t('friday.emphasis.datesTitle')}</h4>
       ${ctx.events({ type: 'friday', limit: 3, heading: 5, id: 'fr-next3', stack: true, more: false, className: 'fr-next3__events' })}
     </div>`,
-    html`<figure class="photo fr-promise__photo" data-reveal="fade" data-reveal-delay="2">${ctx.img('training', { sizes: '(min-width: 64rem) 34vw, 100vw' })}</figure>`,
+    html`<figure class="photo fr-promise__photo" data-reveal="fade" data-reveal-delay="2">${ctx.img('hills', { sizes: '(min-width: 64rem) 34vw, 100vw' })}</figure>`,
   ];
 
   return html`
@@ -49,7 +49,7 @@ export function render(ctx) {
       <p class="t-small quiet fr-hero__quick" data-load="4">${t('friday.hero.quick')}</p>
     </div>
     <div class="fr-hero__media">
-      <figure class="photo r-45 fr-hero__photo" data-load="wipe">${ctx.img('running', { eager: true, alt: '', sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
+      <figure class="photo r-45 fr-hero__photo" data-load="wipe">${ctx.img('training', { eager: true, alt: '', sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
       ${ctx.brand.stripes({ width: 220, height: 150, unit: 20, dir: 'cut', count: 3, className: 'stripes fr-hero__stripes', anchor: 'ts' })}
     </div>
   </div>
@@ -90,11 +90,13 @@ export function render(ctx) {
         <p class="t-small quiet fr-morning__note">${t('friday.program.note')}</p>
       </div>
       <div class="fr-morning__media" aria-hidden="true">
-        <figure class="photo fr-morning__photo" data-follow=".fr-morning .timeline__step">
-          ${ctx.img('training', { alt: '', className: 'fr-morning__img fr-morning__img--1', 'data-step': '1', sizes: '(min-width: 64rem) 42vw, 100vw' })}
-          ${ctx.img('talk', { alt: '', className: 'fr-morning__img fr-morning__img--2', 'data-step': '2', sizes: '(min-width: 64rem) 42vw, 100vw' })}
-          ${ctx.img('talk', { alt: '', className: 'fr-morning__img fr-morning__img--3', 'data-step': '3', sizes: '(min-width: 64rem) 42vw, 100vw' })}
-        </figure>
+        <div class="fr-morning__panel" data-follow=".fr-morning .timeline__step">
+          ${program.map((s, i) => html`<div class="fr-morning__slide fr-morning__slide--${i + 1}" data-step="${i + 1}">
+            <span class="fr-morning__count">${String(i + 1).padStart(2, '0')}</span>
+            <span class="fr-morning__time">${s.time}</span>
+            <span class="fr-morning__big">${s.title}</span>
+          </div>`)}
+        </div>
       </div>
     </div>
     ${ctx.slot(org.photos, t('friday.photos.slot'), (items) => html`<div class="fr-gallery">

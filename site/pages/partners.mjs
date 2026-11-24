@@ -33,7 +33,7 @@ export function render(ctx) {
       </p>
     </div>
     <div class="pt-hero__media">
-      <figure class="${`${C.photo} pt-hero__photo`}">${ctx.img('talk', { eager: true, sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
+      <figure class="${`${C.photo} pt-hero__photo`}">${ctx.img('training', { eager: true, sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
       ${corner(ctx, 'tl', { accent: true })}
     </div>
   </div>

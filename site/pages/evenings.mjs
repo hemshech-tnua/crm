@@ -57,7 +57,7 @@ export function render(ctx) {
         <p class="t-title ev-kind__statement" data-reveal="up" data-reveal-delay="1">${t('evenings.bonfire.title')}</p>
         ${ctx.slot(t('evenings.bonfire.details'), t('evenings.bonfire.slot'), (v) => html`<p class="t-body ev-kind__body" data-reveal="up" data-reveal-delay="2">${v}</p>`)}
       </div>
-      <figure class="photo r-32 ev-bonfire__photo" data-reveal="fade">${ctx.img('bonfire', { sizes: '(min-width: 64rem) 58vw, 100vw' })}</figure>
+      <figure class="photo r-32 ev-bonfire__photo" data-reveal="fade">${ctx.img('hills', { sizes: '(min-width: 64rem) 58vw, 100vw' })}</figure>
     </div>
     <div class="ev-live" id="ev-bonfire-list">
       <h3 class="t-title" data-reveal="up">${t('evenings.upcoming.bonfire')}</h3>

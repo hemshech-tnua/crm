@@ -8,7 +8,7 @@
   .give-hero__lead { margin-block-start: var(--headline-to-lead); }
   .give-hero__actions { margin-block-start: var(--space-7); }
   .give-hero__photo { aspect-ratio: 4 / 3; }
-  .give-hero__photo img { object-position: 30% 70%; }
+  .give-hero__photo img { object-position: 50% 35%; }
   @media (min-width: 64rem) {
     .give-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
     .give-hero__text { grid-column: 1 / span 7; }

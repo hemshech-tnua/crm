@@ -54,7 +54,7 @@ export function render(ctx) {
         <a class="${C.link}" href="${pageHref(ctx, 'partners', 'contact')}">${t(k('hero.partners'))}${ctx.brand.tri()}</a>
       </p>
     </div>
-    <figure class="${`${C.photo} give-hero__photo`}">${ctx.img('bonfire', { eager: true, sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
+    <figure class="${`${C.photo} give-hero__photo`}">${ctx.img('walk', { eager: true, sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
   </div>
 </section>`;
 

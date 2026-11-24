@@ -58,8 +58,6 @@ export function render(ctx) {
 
   // ── 2 · the four verbs ──
   const verbs = ctx.list('home.what.items').map((it, i) => ({ step: i + 1, ...it }));
-  const photoOf = ['bonfire', 'running', 'talk'];
-  const focusOf = [70, 30, 40];
   const succeed = get('what.succeed') ?? {};
   const showSucceed = ctx.preview || ctx.has(succeed.body);
   const index = [...verbs.map((v) => v.label), ...(showSucceed ? [succeed.label] : [])];
@@ -75,13 +73,13 @@ export function render(ctx) {
         ${index.map((v, i) => html`<li data-step="${i + 1}"${i === 0 ? html` data-active` : ''}><span>${v}</span>${ctx.brand.tri()}</li>`)}
       </ol>
       <div class="verbs__list">
-        ${verbs.map((v, i) => html`<article class="verb" data-step="${v.step}" aria-labelledby="verb-${v.step}" data-reveal>
+        ${verbs.map((v) => html`<article class="verb" data-step="${v.step}" aria-labelledby="verb-${v.step}" data-reveal>
           <h3 id="verb-${v.step}" class="verb__name">${v.label}</h3>
-          <div class="verb__text">
+          <div class="verb__field verb__field--${v.step}">
+            <span class="verb__num" aria-hidden="true">${String(v.step).padStart(2, '0')}</span>
             <p class="verb__what">${v.title}</p>
-            <p class="t-body">${v.body}</p>
+            <p class="verb__body">${v.body}</p>
           </div>
-          ${ui.photo(photoOf[i], { ratio: '3:2', focus: focusOf[i], alt: '', sizes: '(min-width: 64rem) 46vw, 100vw' })}
         </article>`)}
         ${showSucceed ? html`<article class="verb" data-step="${verbs.length + 1}" aria-labelledby="verb-${verbs.length + 1}" data-reveal>
           <h3 id="verb-${verbs.length + 1}" class="verb__name">${succeed.label}</h3>
@@ -139,7 +137,7 @@ export function render(ctx) {
       <h3 class="t-title" data-reveal="up">${t('home.evenings.title')}</h3>
       <ul class="types" role="list" data-reveal>
         <li><a class="type" href="${eveningsUrl}"><span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
-        <li><a class="type" href="${eveningsUrl}">${ctx.img('bonfire', { alt: '', sizes: '(min-width: 48rem) 33vw, 100vw', className: 'focus-70' })}<span class="type__title">${evItems[1].title}</span><span class="type__body">${evItems[1].body}</span></a></li>
+        <li><a class="type type--mid" href="${eveningsUrl}"><span class="type__title">${evItems[1].title}</span><span class="type__body">${evItems[1].body}</span></a></li>
         <li><a class="type type--deep" href="${ctx.ctaHref}"><span class="type__title">${evItems[2].title}</span><span class="type__body">${evItems[2].body}</span><span class="type__go">${t('events.calendar')}${ctx.brand.tri()}</span></a></li>
       </ul>
     </div>

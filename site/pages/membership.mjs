@@ -44,8 +44,8 @@ export function render(ctx) {
         <p class="t-small quiet">${t('membership.how.privacy')}</p>
       </div>
     </div>
-    <figure class="photo r-45 focus-70 member-how__photo" ${ctx.reveal('fade')}>
-      ${ctx.img('bonfire', { alt: '', sizes: '(min-width: 64rem) 40vw, 100vw' })}
+    <figure class="photo r-45 member-how__photo" ${ctx.reveal('fade')}>
+      ${ctx.img('hills', { alt: '', sizes: '(min-width: 64rem) 40vw, 100vw' })}
     </figure>
   </div>
 </section>

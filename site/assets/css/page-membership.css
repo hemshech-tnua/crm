@@ -19,6 +19,7 @@
   .member-steps { margin-block-start: var(--space-7); }
   .member-steps .timeline__list { gap: var(--space-7); }
   .member-how__action { display: grid; justify-items: start; gap: var(--space-3); margin-block-start: var(--space-8); }
+  .member-how__photo img { object-position: 30% 60%; } /* the hills: the olive tree, the low sun and the path */
   @media (max-width: 63.99rem) { .member-how__photo { aspect-ratio: 3 / 2; } }
   @media (min-width: 64rem) {
     .member-how__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }

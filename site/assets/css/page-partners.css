@@ -10,7 +10,7 @@
   .pt-hero__text .cluster { margin-block-start: var(--space-5); }
   .pt-hero__media { position: relative; }
   .pt-hero__photo { aspect-ratio: 4 / 3; }
-  .pt-hero__photo img { object-position: 60% 50%; }
+  .pt-hero__photo img { object-position: 50% 18%; } /* sky above the heads: the corner stripes sit there */
   .pt-hero__media .corner { color: var(--ground); z-index: 1; inline-size: clamp(5rem, 3rem + 8vw, 11rem); block-size: clamp(3rem, 1.6rem + 4.6vw, 6.4rem); }
   @media (min-width: 64rem) {
     .pt-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }

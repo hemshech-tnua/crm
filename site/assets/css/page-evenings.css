@@ -1,6 +1,6 @@
 /* Women's evenings and other meetings (pages/evenings.mjs). Page compositions only: semantic tokens + shared classes.
    Rhythm: navy hero with an index of the three kinds → women (beige, a brand colour field: no stand-in photo) →
-   bonfire (navy, the bonfire photo + live dates) → other meetings (beige-light, live dates) → closing (navy). */
+   bonfire (navy, the hills photo + live dates) → other meetings (beige-light, live dates) → closing (navy). */
 @layer pages {
   /* ── hero: the title at the reading edge, the three kinds as large row links at the inline-end ── */
   .ev-hero { padding-block: clamp(3rem, 2rem + 5vw, 7rem) var(--chapter-pad); }
@@ -31,9 +31,9 @@
     .ev-women__field { grid-column: 8 / -1; aspect-ratio: 4 / 5; }
   }
 
-  /* ── bonfire evenings: the photo wide at the inline-end, then the live dates ── */
+  /* ── bonfire evenings: the hills at dusk wide at the inline-end, then the live dates ── */
   .ev-bonfire__grid { display: grid; gap: var(--space-8); }
-  .ev-bonfire__photo img { object-position: 50% 45%; }
+  .ev-bonfire__photo img { object-position: 50% 55%; }
   @media (min-width: 64rem) {
     .ev-bonfire__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: center; }
     .ev-bonfire__grid > .ev-kind__text { grid-column: 1 / span 5; }

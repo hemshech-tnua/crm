@@ -107,7 +107,7 @@ ${sections}
       <p class="team-volunteers__body" ${ctx.reveal('up', 1)}>${t('team.volunteers.body')}</p>
       <div class="cluster" ${ctx.reveal('up', 2)}>${action(ctx, { href: volunteerHref, label: t('team.volunteers.cta'), className: 'btn btn--ghost' })}</div>
     </div>
-    <figure class="photo r-32 focus-30 team-volunteers__photo" ${ctx.reveal('fade')}>${ctx.img('running', { alt: '', eager: !members.length && !board.length, sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
+    <figure class="photo r-32 focus-30 team-volunteers__photo" ${ctx.reveal('fade')}>${ctx.img('training', { alt: '', eager: !members.length && !board.length, sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
   </div>
 </section>
 <section class="chapter team-closing" data-ground="${closingGround}" aria-labelledby="team-closing">
