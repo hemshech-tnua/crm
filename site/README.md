@@ -277,6 +277,24 @@ from the meetings (with consent) go in `org.json` `photos`.
 **Stripes:** one accent per page, in its hero. `ctx.ui.corner()` (and the page helpers built on it) renders only with
 `accent: true`; other chapters are separated by the tone step alone.
 
+## Site editor (`site/editor` → `/crm/site-editor/`)
+
+A tool for the designer (and anyone who reviews the site): the real Hebrew pages in a frame; click a text and type, add
+headings, paragraphs, buttons or image slots, remove texts, leave a note on anything (images included), switch
+desktop / tablet / phone, before / after, undo, find & replace. "סיום ושליחה לחנוך" opens a ready email with every change,
+before and after. Work stays in that browser (localStorage) until it is sent; nothing reaches the site by itself.
+
+- `node site/editor/build.mjs` (CI runs it after the site) writes `dist/site-editor/`: the editor page, `editor.js`,
+  `frame-editor.css` (the marks inside the page), `data.js` (every Hebrew text: `tools/editor-data.mjs`) and `frame/`,
+  the editor's own copy of the pages (`site/build.mjs` with `SITE_EDITOR_FRAME=1`: noindex, and a CSP without
+  `require-trusted-types-for`, so the editor, same origin, can put an edited text back in place). The public site and
+  its CSP do not change.
+- The link to send: `https://hemshech-tnua.github.io/crm/site-editor/#to=<email>`: the address the email goes to comes
+  from the link and is never in the repository. `#page=friday` opens a page.
+- The report names each text by its id (`[#123]`); `data.js` maps it to its content keys (`paths`).
+- `ROUND` in `site/editor/build.mjs` starts a new, empty list for the person editing (earlier work stays in that
+  browser, in the full backup): change it after a round of fixes went live.
+
 ## Deploy
 
 `.github/workflows/deploy.yml` runs `node site/build.mjs` after the CRM's `npm run build` (same `SUPABASE_URL` /

@@ -48,6 +48,14 @@ jobs:
           # preview until the official launch: kept out of search engines (set the variable SITE_ROBOTS=allow to launch)
           SITE_ROBOTS: ${{ vars.SITE_ROBOTS || 'noindex' }}
         run: node site/build.mjs
+      # The site editor (site/editor) → /crm/site-editor/: the designer's tool for fixes and notes on the website. It holds
+      # its own copy of the pages (noindex; their CSP leaves out only require-trusted-types) and sends nothing anywhere:
+      # the work stays in the browser until it is emailed (the address comes from the link, never from the repository).
+      - name: Build the site editor
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://bvoubfasrgumpehyxbcg.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2b3ViZmFzcmd1bXBlaHl4YmNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQwNTMwMTEsImV4cCI6MjEwOTYyOTAxMX0.pNfgZOgR3Z0tdjGF6AvZV1G1xfVODEL39uV6UD9wtCM' }}
+        run: node site/editor/build.mjs
       # GitHub Pages serves only the repository-root 404.html (the CRM has none: it routes with #/), so the website's
       # Hebrew "not found" page becomes the root one. Its links are absolute, so it works at any missing URL.
       - name: Website 404 page at the root

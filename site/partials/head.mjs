@@ -19,8 +19,12 @@ export function ogImage(ctx) {
     : { url: base + 'og-image.png', alt: ctx.t('site.ogImageAlt'), type: 'image/png' };
 }
 
-/** The Content-Security-Policy for every page: own files only, no inline script, network only to Supabase. */
-export function csp(supabaseOrigin) {
+/**
+ * The Content-Security-Policy for every page: own files only, no inline script, network only to Supabase.
+ * { editorFrame: true } is the site editor's private copy of the pages (build.mjs SITE_EDITOR_FRAME): the same policy
+ * without require-trusted-types, so the editor page (same origin) can put an edited text back into the page.
+ */
+export function csp(supabaseOrigin, { editorFrame = false } = {}) {
   return [
     "default-src 'self'",
     "script-src 'self'",
@@ -33,7 +37,7 @@ export function csp(supabaseOrigin) {
     "form-action 'self'",
     "frame-src 'none'",
     "manifest-src 'self'",
-    "require-trusted-types-for 'script'",
+    ...(editorFrame ? [] : ["require-trusted-types-for 'script'"]),
   ].join('; ');
 }
 
@@ -47,7 +51,7 @@ export function head(ctx, { title, description, noindex, jsonld, live = false })
   return html`<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="${raw(csp(site.supabaseOrigin).replace(/"/g, ''))}">
+<meta http-equiv="Content-Security-Policy" content="${raw(csp(site.supabaseOrigin, { editorFrame: !!site.editorFrame }).replace(/"/g, ''))}">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>${title}</title>
 <meta name="description" content="${description}">

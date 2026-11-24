@@ -34,7 +34,11 @@ const opts = {
   crmUrl: env.SITE_CRM_URL || DEFAULTS.crmUrl,
   supabaseUrl: (env.SUPABASE_URL || env.VITE_SUPABASE_URL || DEFAULTS.supabaseUrl).replace(/\/+$/, ''),
   supabaseAnonKey: env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || DEFAULTS.supabaseAnonKey,
-  robots: env.SITE_ROBOTS === 'noindex' ? 'noindex' : DEFAULTS.robots,
+  robots: env.SITE_ROBOTS === 'noindex' || env.SITE_EDITOR_FRAME === '1' ? 'noindex' : DEFAULTS.robots,
+  // SITE_EDITOR_FRAME=1: the copy of the pages that the site editor (site/editor, /crm/site-editor/) shows in its frame.
+  // Same pages, always noindex, and its CSP leaves out require-trusted-types so the editor (same origin) can rewrite texts
+  // in place. The public site's CSP never changes. Built by site/editor/build.mjs into dist/site-editor/frame.
+  editorFrame: env.SITE_EDITOR_FRAME === '1',
 };
 
 function normBase(b) {
@@ -263,7 +267,7 @@ function makeCtx(page, lang) {
     year,
     org,
     crm,
-    site: { base: opts.base, origin: opts.origin, robots: opts.robots, supabaseOrigin },
+    site: { base: opts.base, origin: opts.origin, robots: opts.robots, supabaseOrigin, editorFrame: opts.editorFrame },
     page: {
       id: page.id,
       url: notFound ? null : pagePath(page.id, lang),

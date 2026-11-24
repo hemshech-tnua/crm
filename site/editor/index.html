@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>עריכת האתר | המשך תנועה</title>
+<link rel="icon" href="frame/assets/favicon.svg" type="image/svg+xml">
+<style>
+@font-face { font-family: "Google Sans"; src: url("frame/assets/fonts/google-sans-hebrew-wght-normal.woff2") format("woff2"); font-weight: 400 700; font-display: swap; unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: "Google Sans"; src: url("frame/assets/fonts/google-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 400 700; font-display: swap; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+:root {
+  --forest: #142837; --pine: #223B4F; --mint: #EBDCB9; --mint-2: #E6D5AC; --sage: #EFE4C7; --paper: #F5EEDC;
+  --ink: #0F202D; --ink-2: #3E4A50; --ink-3: #4B5659; --line: #D3BC88; --hi: #F2C14E; --hi-2: #F8E9BC; --danger: #A8322A;
+  --r: 0; --top: 60px;
+  font-family: "Google Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: #D3BC88; color: var(--ink); font-size: 16px; line-height: 1.5; overflow: hidden; }
+button, textarea, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--pine); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* top bar */
+.top { min-height: 60px; background: var(--forest); color: #EBDCB9; display: flex; align-items: center; gap: 10px; padding: 0 14px; position: relative; z-index: 30; }
+.brand { display: flex; align-items: center; gap: 10px; flex: none; }
+.brand .plate { color: #EBDCB9; display: flex; }
+.brand .logo { height: 30px; width: auto; display: block; }
+.dlg .plate { display: inline-flex; color: var(--forest); }
+.dlg .logo { height: 40px; width: auto; display: block; }
+.brand b { font-size: 1rem; white-space: nowrap; }
+.sep { width: 1px; height: 30px; background: rgba(255, 255, 255, .18); flex: none; }
+.pg { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pg label { font-size: .85rem; color: #CDBF9C; white-space: nowrap; }
+.pg select { background: #F5EEDC; color: var(--forest); border: 0; border-radius: 0; padding: 7px 10px; font-weight: 700; max-width: 230px; min-height: 38px; }
+.seg { display: inline-flex; background: rgba(255, 255, 255, .1); border-radius: 0; padding: 3px; gap: 2px; flex: none; }
+.seg button { background: none; border: 0; color: #CDBF9C; border-radius: 0; padding: 6px 11px; font-weight: 600; font-size: .92rem; min-height: 34px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--paper); color: var(--forest); }
+.seg button svg { width: 18px; height: 18px; }
+.ib { background: none; border: 0; color: #EBDCB9; border-radius: 0; width: 38px; height: 38px; display: inline-grid; place-items: center; flex: none; }
+.ib:hover:not(:disabled) { background: rgba(255, 255, 255, .12); }
+.ib:disabled { opacity: .35; cursor: default; }
+.ib svg { width: 20px; height: 20px; }
+.grow { flex: 1; }
+.saved { font-size: .85rem; color: var(--mint); opacity: 0; transition: opacity .3s; white-space: nowrap; }
+.saved.on { opacity: 1; }
+.cnt { background: rgba(255, 255, 255, .12); color: #EBDCB9; border: 0; border-radius: 0; padding: 7px 14px; font-weight: 700; white-space: nowrap; min-height: 38px; display: inline-flex; gap: 8px; align-items: center; }
+.cnt .n { background: var(--hi); color: var(--ink); border-radius: 0; min-width: 24px; height: 24px; padding: 0 7px; display: inline-grid; place-items: center; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.cnt[aria-expanded="true"] { background: var(--paper); color: var(--forest); }
+.send { background: var(--mint); color: var(--forest); border: 0; border-radius: 0; padding: 8px 18px; font-weight: 800; white-space: nowrap; min-height: 40px; }
+.send:hover { background: #F5EEDC; }
+
+/* stage */
+.main { position: absolute; inset: var(--top) 0 0 0; display: flex; }
+.stage { flex: 1; position: relative; overflow: auto; display: flex; justify-content: center; }
+.stage .dev { position: relative; width: 100%; height: 100%; background: var(--paper); transition: width .25s, height .25s; }
+.stage.tablet .dev, .stage.phone .dev { margin: 18px auto; border-radius: 22px; box-shadow: 0 0 0 10px #0B1822, 0 20px 50px rgba(0, 0, 0, .3); overflow: hidden; flex: none; }
+.stage.tablet .dev { width: 820px; height: calc(100% - 36px); }
+.stage.phone .dev { width: 390px; height: min(844px, calc(100% - 36px)); border-radius: 34px; }
+iframe { border: 0; width: 100%; height: 100%; display: block; background: var(--paper); }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .7); font-weight: 700; color: var(--forest); z-index: 2; }
+.mode-hint { position: absolute; bottom: 16px; inset-inline-start: 50%; transform: translateX(50%); background: var(--ink); color: #EBDCB9; border-radius: 0; padding: 8px 16px; font-size: .9rem; z-index: 3; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); pointer-events: none; white-space: nowrap; }
+.en-banner { position: absolute; top: 10px; inset-inline: 10px; z-index: 3; background: var(--hi-2); border: 1px solid var(--hi); border-radius: 0; padding: 10px 14px; font-size: .95rem; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.en-banner button { background: var(--forest); color: #EBDCB9; border: 0; border-radius: 0; padding: 6px 14px; font-weight: 700; white-space: nowrap; }
+
+/* side panel */
+.panel { position: absolute; inset: 0 auto 0 0; width: min(420px, 100%); z-index: 20; box-shadow: 0 0 40px rgba(0, 0, 0, .25); background: var(--paper); display: flex; flex-direction: column; min-height: 0; }
+.panel-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px 0; }
+.tabs { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
+.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 10px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: var(--forest); border-color: var(--pine); }
+.x { background: var(--sage); border: 0; border-radius: 0; width: 34px; height: 34px; flex: none; font-size: 1.1rem; }
+.panel-b { overflow: auto; padding: 14px 14px 30px; flex: 1; border-top: 1px solid var(--line); }
+.panel-b h3 { font-size: .95rem; margin: 18px 0 8px; color: var(--forest); }
+.panel-b h3:first-child { margin-top: 0; }
+.muted { color: var(--ink-3); font-size: .9rem; }
+.chg.todo.done { opacity: .78; }
+.chg.todo .wh { font-weight: 700; }
+.empty { background: var(--sage); border-radius: var(--r); padding: 16px; color: var(--ink-2); font-size: .95rem; }
+.chg { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; margin-bottom: 10px; background: var(--paper); }
+.chg .wh { display: flex; gap: 8px; align-items: center; font-size: .8rem; color: var(--ink-3); margin-bottom: 4px; }
+.chg .wh span { flex: 1; }
+.chg .go { background: none; border: 0; color: var(--pine); text-decoration: underline; padding: 2px; font-size: .82rem; }
+.chg .rm { background: none; border: 0; color: var(--danger); padding: 2px 4px; font-size: .82rem; }
+.chg .after { font-size: .95rem; }
+.chg .before { font-size: .85rem; color: var(--ink-3); margin-top: 4px; }
+.chg .tag { font-weight: 700; font-size: .78rem; margin-inline-end: 4px; }
+.chg .note { margin-top: 6px; background: var(--hi-2); border-radius: 0; padding: 6px 9px; font-size: .9rem; }
+ins { background: #F2D98B; text-decoration: none; border-radius: 0; padding: 0 1px; }
+del { color: var(--danger); text-decoration: line-through; }
+.fld { margin-bottom: 14px; }
+.fld label { display: block; font-size: .85rem; font-weight: 700; color: var(--ink-2); margin-bottom: 4px; }
+.fld .sub { font-weight: 400; color: var(--ink-3); }
+.fld textarea { background: var(--paper); width: 100%; border: 1.5px solid var(--line); border-radius: 0; padding: 8px 10px; min-height: 64px; resize: vertical; font-size: .95rem; line-height: 1.5; }
+.fld textarea:focus { border-color: var(--pine); outline: none; }
+.fld.ed textarea { background: var(--hi-2); border-color: var(--hi); }
+.fld .rv { background: none; border: 0; color: var(--pine); text-decoration: underline; font-size: .8rem; padding: 2px 0; }
+
+.find-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 10px; }
+.btn.sm, .find-top .btn { padding: 8px 14px; font-size: .9rem; min-height: 38px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.fld input { background: var(--paper); width: 100%; border: 1.5px solid var(--line); border-radius: 0; padding: 9px 10px; font-size: 1rem; }
+.fld input:focus { border-color: var(--pine); outline: none; }
+.hit { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: start; border: 1px solid var(--line); border-radius: var(--r); padding: 9px 10px; margin-bottom: 8px; cursor: pointer; background: var(--paper); }
+.hit input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--pine); }
+.hit .hw { display: block; font-size: .78rem; color: var(--ink-3); }
+.hit .ht { display: block; font-size: .93rem; }
+.hit .go { background: none; border: 0; color: var(--pine); text-decoration: underline; font-size: .82rem; padding: 2px; }
+mark { background: var(--hi); border-radius: 0; padding: 0 1px; }
+.conf { background: var(--hi-2); border: 1px solid var(--hi); border-radius: 0; padding: 12px; margin-bottom: 16px; }
+.conf .row { margin-top: 8px; }
+.deltag { display: inline-block; background: #F1D5CC; color: var(--danger); border-radius: 0; padding: 2px 10px; font-size: .82rem; font-weight: 700; margin-bottom: 4px; }
+.hit.auto { background: var(--sage); cursor: default; }
+.chg.add { border-color: var(--mint); background: var(--paper); }
+.cnt.warn .n { background: #F1A497; }
+.prop { position: absolute; bottom: 74px; left: 50%; transform: translateX(-50%); z-index: 4; width: min(560px, calc(100% - 24px)); background: var(--paper); border-radius: 0; padding: 14px 16px; box-shadow: 0 16px 44px rgba(0, 0, 0, .3); border-top: 5px solid var(--mint); }
+.prop p { margin: 0 0 10px; }
+.prop .btn { padding: 9px 16px; font-size: .95rem; min-height: 40px; }
+
+.go-all { background: none; border: 0; color: var(--pine); text-decoration: underline; text-underline-offset: 3px; padding: 4px 0; font-size: .95rem; }
+/* dialogs */
+.dlg { position: fixed; inset: 0; z-index: 50; background: rgba(15, 32, 45, .6); display: grid; place-items: center; padding: 16px; }
+.dlg .box { background: var(--paper); border-radius: 0; max-width: 640px; width: 100%; padding: 26px 26px 22px; max-height: calc(100vh - 32px); overflow: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, .25); }
+.dlg h2 { font-size: 1.7rem; margin: 10px 0 6px; color: var(--forest); line-height: 1.2; }
+.dlg .lead { color: var(--ink-2); margin: 0 0 16px; }
+.how { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 12px; }
+.how li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+.how .ic { width: 44px; height: 44px; border-radius: 0; background: var(--mint-2); color: var(--forest); display: grid; place-items: center; }
+.how .ic svg { width: 24px; height: 24px; }
+.how b { display: block; }
+.how span { color: var(--ink-2); font-size: .95rem; }
+.wnote { font-size: .88rem; color: var(--ink-2); background: var(--sage); border-radius: 0; padding: 10px 12px; margin-bottom: 18px; }
+.btn { background: var(--forest); color: #EBDCB9; border: 0; border-radius: 0; padding: 12px 26px; font-weight: 800; font-size: 1.05rem; min-height: 48px; }
+.btn.alt { background: none; color: var(--forest); border: 1.5px solid var(--forest); font-weight: 700; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 6px 0 16px; }
+.stat { background: var(--sage); border-radius: 0; padding: 10px; text-align: center; }
+.stat b { display: block; font-size: 1.5rem; color: var(--forest); line-height: 1.2; }
+.stat span { font-size: .8rem; color: var(--ink-2); }
+.sendbox label { display: block; font-weight: 700; margin: 6px 0 4px; }
+.sendbox textarea { background: var(--paper); width: 100%; border: 1.5px solid var(--line); border-radius: 0; padding: 10px 12px; min-height: 80px; }
+.smsg { margin-top: 14px; background: var(--mint-2); border-radius: 0; padding: 12px 14px; }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #EBDCB9; padding: 12px 20px; border-radius: 0; z-index: 60; font-size: .95rem; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); max-width: calc(100vw - 32px); text-align: center; }
+
+/* smaller screens */
+.only-s { display: none; }
+@media (max-width: 1560px) { .brand b, .pg label { display: none; } .dev-seg button { padding: 6px 8px; } }
+@media (max-width: 1380px) { .dev-seg { display: none; } }
+@media (max-width: 1180px) { .brand b, .pg label, .seg button .t { display: none; } .seg button { padding: 6px 9px; } }
+@media (max-width: 1000px) { .dev-seg, #b-redo, .send .hide-s, .cnt .t { display: none; } .pg select { max-width: 170px; } }
+@media (max-width: 760px) {
+  :root { --top: 104px; }
+  .top { flex-wrap: wrap; padding: 8px 10px; row-gap: 6px; }
+  .sep, .saved, .hide-s { display: none; }
+  .pg { order: 5; flex: 1 1 100%; }
+  .pg select { max-width: none; flex: 1; }
+  .send { padding: 8px 14px; }
+  .cnt { padding: 7px 10px; }
+  .cnt .t { display: none; }
+  .stage.tablet .dev, .stage.phone .dev { width: 100%; height: 100%; margin: 0; border-radius: 0; box-shadow: none; }
+  .panel { width: 100%; }
+  .stats { grid-template-columns: 1fr 1fr 1fr; }
+  .dlg .box { padding: 20px 16px; }
+  .dlg h2 { font-size: 1.45rem; }
+  .only-s { display: inline; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="plate">{{LOGO}}</span><b>עריכת האתר</b></div>
+  <span class="sep" aria-hidden="true"></span>
+  <div class="pg"><label for="page">עמוד:</label><select id="page"></select></div>
+  <div class="seg" role="group" aria-label="מצב">
+    <button type="button" id="m-edit" aria-pressed="true" title="לוחצים על טקסט ומקלידים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="t">עריכה</span></button>
+    <button type="button" id="m-add" aria-pressed="false" title="להוסיף כותרת, פסקה, שורה, כפתור או מקום לתמונה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="t">הוספה</span></button>
+    <button type="button" id="m-view" aria-pressed="false" title="גולשים באתר כרגיל, הקישורים עובדים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span class="t">גלישה</span></button>
+  </div>
+  <div class="seg dev-seg" role="group" aria-label="גודל מסך">
+    <button type="button" data-dev="desk" aria-pressed="true" title="מחשב"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="sr">מחשב</span></button>
+    <button type="button" data-dev="tablet" aria-pressed="false" title="טאבלט"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg><span class="sr">טאבלט</span></button>
+    <button type="button" data-dev="phone" aria-pressed="false" title="טלפון"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span class="sr">טלפון</span></button>
+  </div>
+  <button class="ib hide-s" type="button" id="b-orig" aria-pressed="false" title="להציג את האתר כמו שהוא היום, בלי השינויים שלך"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg><span class="sr">לפני ואחרי</span></button>
+  <button class="ib" type="button" id="b-undo" title="ביטול הפעולה האחרונה (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span class="sr">ביטול</span></button>
+  <button class="ib hide-s" type="button" id="b-redo" title="החזרה (Ctrl+Y)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg><span class="sr">החזרה</span></button>
+  <span class="grow"></span>
+  <span class="saved" id="saved" aria-live="polite">נשמר ✓</span>
+  <button class="ib" type="button" id="b-find" title="חיפוש והחלפה בכל האתר (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="sr">חיפוש והחלפה</span></button>
+  <button class="ib" type="button" id="b-help" title="איך זה עובד?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="sr">עזרה</span></button>
+  <button class="cnt" type="button" id="b-panel" aria-expanded="false" aria-controls="panel"><span class="t">השינויים שלי</span><span class="n" id="n">0</span></button>
+  <button class="send" type="button" id="b-send">סיום ושליחה<span class="hide-s"> לחנוך</span></button>
+</header>
+
+<div class="main">
+  <div class="stage" id="stage">
+    <div class="dev" id="dev">
+      <iframe id="frame" title="האתר, במצב עריכה"></iframe>
+      <div class="loading" id="loading">טוען את העמוד…</div>
+      <div class="en-banner" id="en" hidden><span>זה עמוד באנגלית. העריכה כאן היא לטקסטים בעברית.</span><button type="button" id="en-go">לעמוד בעברית</button></div>
+    </div>
+    <div class="mode-hint" id="hint" hidden></div>
+    <div class="prop" id="prop" role="status" hidden></div>
+  </div>
+  <aside class="panel" id="panel" hidden aria-label="השינויים והטקסטים הנוספים">
+    <div class="panel-h">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="t-chg" aria-selected="true">השינויים שלי</button>
+        <button type="button" role="tab" id="t-todo" aria-selected="false" hidden>מה נשאר</button>
+        <button type="button" role="tab" id="t-find" aria-selected="false">חיפוש והחלפה</button>
+        <button type="button" role="tab" id="t-more" aria-selected="false">עוד בעמוד הזה</button>
+      </div>
+      <button class="x" type="button" id="p-x" aria-label="סגירת החלונית">✕</button>
+    </div>
+    <div class="panel-b" id="pb" role="tabpanel"></div>
+  </aside>
+</div>
+
+<div class="dlg" id="welcome" role="dialog" aria-modal="true" aria-labelledby="w-h" hidden>
+  <div class="box">
+    <span class="plate">{{LOGO}}</span>
+    <h2 id="w-h">שלום אורי,</h2>
+    <p class="lead">זה האתר של המשך&nbsp;תנועה, כמו שהוא נראה עכשיו באוויר. אפשר לתקן בו כל טקסט ישירות על העמוד, להוסיף ולהוריד תוכן, ולהשאיר הערה על כל דבר: עיצוב, צבע, תמונה, מרווח או סדר.</p>
+    <ul class="how">
+      <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><div><b>לוחצים על טקסט ומקלידים</b><span>כל טקסט שאפשר לשנות מקבל מסגרת כתומה כשעוברים עליו. לוחצים, מתקנים, ולוחצים "סיום" או Enter. מה ששונה נצבע בצהוב.</span></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><div><b>מוסיפים כותרות ותוכן חדש</b><span>לוחצים "הוספה" למעלה, מצביעים על המקום (קו כתום מראה בדיוק איפה), ובוחרים: כותרת, כותרת משנה, פסקה, שורה ברשימה, כפתור, ציטוט או מקום לתמונה. אפשר גם מתוך כל טקסט: "＋ להוסיף אחרי".</span></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><div><b>משנים פעם אחת, מתעדכן בכל האתר</b><span>שינית ביטוי שחוזר באתר? מופיעה הצעה לעדכן אותו בכל שאר המקומות בלחיצה. ובזכוכית המגדלת אפשר לחפש כל מילה ולהחליף בכל המקומות.</span></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></span><div><b>מורידים מה שלא צריך</b><span>בתוך כל טקסט: "🗑 להוריד מהאתר". הטקסט נמחק בקו אדום, ולחיצה עליו מחזירה אותו.</span></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg></span><div><b>הערה על כל דבר</b><span>על עיצוב, צבע, תמונה, מרווח או משהו שצריך להוסיף או להוריד: לוחצים עליו ובוחרים "הערה". אפשר גם הערה כללית על כל עמוד, בלשונית "עוד בעמוד הזה".</span></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span><div><b>עוברים בין עמודים</b><span>מהרשימה "עמוד" למעלה, או במצב "גלישה", שבו הקישורים באתר עובדים כרגיל.</span></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span><div><b>שולחים לחנוך</b><span>בסוף לוחצים "סיום ושליחה". נפתח מייל מוכן עם כל השינויים, לפני ואחרי.</span></div></li>
+    </ul>
+    <p class="wnote"><b>קיצורים:</b> Enter לסיום · Esc לביטול · Ctrl+Z לביטול פעולה · Ctrl+Y להחזרה · Ctrl+F חיפוש בכל האתר.</p>
+    <p class="wnote">כשהאתר מתעדכן, העורך מתעדכן איתו לבד: תיקונים שכבר עלו לאתר יורדים מהרשימה, ואם טקסט השתנה באתר אחרי שתיקנת אותו, תופיע בחירה מה להשאיר.</p>
+    <p class="wnote">הכול נשמר לבד בדפדפן הזה. אפשר לעצור ולחזור מתי שרוצים, באותו מחשב. השינויים לא עולים לאתר עד שחנוך מכניס אותם.</p>
+    <button class="btn" type="button" id="start">מתחילים</button>
+  </div>
+</div>
+
+<div class="dlg" id="senddlg" role="dialog" aria-modal="true" aria-labelledby="s-h" hidden>
+  <div class="box sendbox">
+    <h2 id="s-h">סיום ושליחה לחנוך</h2>
+    <p class="lead">כל מה ששינית והערת, מוכן לשליחה.</p>
+    <div class="stats" id="stats"></div>
+    <label for="general">משהו נוסף שתרצי להגיד לחנוך? (לא חובה)</label>
+    <textarea id="general"></textarea>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" type="button" id="s-mail">✉ פתיחת מייל לחנוך</button>
+      <button class="btn alt" type="button" id="s-copy">העתקה</button>
+      <button class="btn alt" type="button" id="s-file">שמירה כקובץ</button>
+      <button class="btn alt" type="button" id="s-x">חזרה לעריכה</button>
+    </div>
+    <div class="smsg" id="smsg" role="status" hidden></div>
+    <p class="muted" style="margin-top:14px"><button class="go-all" type="button" id="s-all">שליחת כל העבודה מההתחלה, גם מה שכבר נשלח (גיבוי מלא)</button></p>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="data.js?v={{V}}"></script>
+<script src="editor.js?v={{V}}"></script>
+</body>
+</html>

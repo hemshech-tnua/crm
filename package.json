@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:site": "node site/build.mjs",
+    "build:editor": "node site/editor/build.mjs",
     "dev:site": "node site/build.mjs --preview && node site/serve.mjs --watch",
     "test:site": "node --test site/test",
     "smoke:site": "node site/test/smoke.cjs",
