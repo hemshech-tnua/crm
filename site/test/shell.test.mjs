@@ -135,7 +135,7 @@ test('JS sends the meeting strings for both languages and stays small', () => {
 });
 
 test('page CSS never redefines a shared component (selectors start with a page-scoped class)', () => {
-  const SHARED = /^(\.(btn|link|link-arrow|site-header|site-nav|site-menu|site-footer|cta-bar|brand|lang-switch|menu-toggle|photo|next|meet|events|event-card|chip|type|stats?|quote|logos|rows?|faq|timeline|cta-band|owner-slot|card|tri|stripes|corner|mark|wrap|container|chapter|section|cols|split|stack|cluster|head|t-[a-z]+)|\[data-ground)(?![\w-])/;
+  const SHARED = /^(\.(btn|link|link-arrow|site-header|site-nav|site-menu|site-footer|crumbs|cta-bar|brand|lang-switch|menu-toggle|photo|next|meet|events|event-card|chip|type|stats?|quote|logos|rows?|faq|timeline|cta-band|owner-slot|card|tri|stripes|corner|mark|wrap|container|chapter|section|cols|split|stack|cluster|head|t-[a-z]+)|\[data-ground)(?![\w-])/;
   const dir = join(SITE, 'assets/css');
   for (const f of readdirSync(dir).filter((x) => x.startsWith('page-'))) {
     const css = read(join(dir, f)).replace(/\/\*[\s\S]*?\*\//g, '').replace(/@keyframes[^{]+\{(?:[^{}]*\{[^}]*\})*[^}]*\}/g, '');

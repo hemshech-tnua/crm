@@ -4,6 +4,7 @@ import { ctaBar as bar } from '../lib/components.mjs';
 import { head } from './head.mjs';
 import { header } from './header.mjs';
 import { footer } from './footer.mjs';
+import { sectionOf, resolveSection } from '../lib/sections.mjs';
 
 /** Pages without the phone CTA bar unless they ask for it (DESIGN.md: hidden on donate and contact). */
 const NO_BAR = new Set(['donate', 'contact']);
@@ -14,6 +15,25 @@ const plain = (s) => String(s).replace(/[\s\u00a0\u202f]+/g, ' ').trim();
 /** "<page title> · המשך תנועה", unless the page title already carries the name (then it is used as is: never twice). */
 export function fullTitle(title, name, sep) {
   return plain(title).includes(plain(name)) ? title : `${title}${sep}${name}`;
+}
+
+/**
+ * The breadcrumb under the header on every page that belongs to a section (not its hub): "<section> ◀ <page>" (the
+ * brand's triangle as the separator: it follows the reading direction, a › glyph does not), the section linking to its
+ * hub. It sits on the ground of the page's first chapter, so it reads as that chapter's top line.
+ */
+export function crumbs(ctx, body) {
+  const s = sectionOf(ctx.page.id);
+  if (!s || s.hub === ctx.page.id) return '';
+  const sec = resolveSection(ctx, s);
+  const ground = String(body).match(/<section\b[^>]*\sdata-ground="([a-z-]+)"/)?.[1] ?? 'navy';
+  return html`<nav class="crumbs" data-ground="${ground}" aria-label="${ctx.t('sections.crumbsLabel')}">
+  <ol class="wrap crumbs__list" role="list">
+    <li>${sec.hub ? html`<a class="crumbs__link" href="${sec.hub.href}">${sec.label}</a>` : html`<span>${sec.label}</span>`}<span class="crumbs__sep" aria-hidden="true">${ctx.brand.tri()}</span></li>
+    <li><span class="crumbs__here" aria-current="page">${ctx.t(`nav.${ctx.page.id}`)}</span></li>
+  </ol>
+</nav>
+`;
 }
 
 export function layout(ctx, { title, description, body, noindex = false, jsonld = [], bodyClass, ctaBar }) {
@@ -31,7 +51,7 @@ ${head(ctx, { title: fullTitle(title, ctx.t('site.name'), ctx.t('site.titleSepar
 <a class="skip-link" href="#main">${ctx.t('skip')}</a>
 ${header(ctx)}
 <main id="main" tabindex="-1">
-${body}
+${crumbs(ctx, body)}${body}
 </main>
 ${footHtml}
 ${barHtml}

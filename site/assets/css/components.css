@@ -5,7 +5,7 @@
   Inventory (class → what):
     .skip-link · .tri (◀/▶ via ctx.brand.tri()) · .stripes + .corner--ts|te|bs|be (ctx.ui.corner()) · .mark (big symbol)
     .btn (filled for the ground) · .btn--ghost · .btn--sm · .btn--block · .link (underlined, 600) · .link-arrow
-    .site-header · .site-nav · .lang-switch · .menu-toggle · .scroll-progress · .site-menu (<dialog>) · .cta-bar
+    .site-header · .site-nav (section dropdowns) · .lang-switch · .menu-toggle · .scroll-progress · .crumbs · .site-menu (<dialog>) · .cta-bar
     .site-footer
     .photo (+ .r-45 .r-32 .r-43 .r-169 .r-219 .r-11, .photo--bleed, .focus-top|30|70|bottom) (ctx.ui.photo())
     .next (live next meeting) · .events / .meet (live meeting cards, ctx.events()) · .chip
@@ -84,15 +84,52 @@
     text-decoration: none; font-weight: var(--wght-bold); font-size: 1.25rem; letter-spacing: -0.01em; white-space: nowrap; color: inherit;
   }
   .brand svg { block-size: 2.25rem; inline-size: calc(2.25rem * 0.8151); }
+  /* the four sections: a disclosure button each (aria-expanded), its panel shown while expanded (nav.js toggles it;
+     without JS a focused button shows it). Panels sit on navy-800 with the float shadow (the only popover). */
   .site-nav { display: none; margin-inline-start: auto; }
-  .site-nav__list { display: flex; flex-wrap: wrap; gap: 0 var(--space-1); }
-  .site-nav__link {
-    display: inline-flex; align-items: center; min-block-size: var(--tap); padding-inline: var(--space-3); white-space: nowrap;
-    text-decoration: none; font-weight: var(--wght-medium); font-size: 1rem; border-radius: var(--radius-control);
+  .site-nav__list { display: flex; gap: 0 var(--space-1); }
+  .site-nav__item { position: relative; }
+  .site-nav__toggle {
+    display: inline-flex; align-items: center; gap: 0.55em; min-block-size: var(--tap); padding-inline: var(--space-3); white-space: nowrap;
+    font-weight: var(--wght-medium); font-size: 1rem; border-radius: var(--radius-control); color: inherit;
     transition: background-color var(--dur-fast) var(--ease-out);
   }
-  .site-nav__link[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.45em; }
-  @media (hover: hover) and (pointer: fine) { .site-nav__link:hover, .lang-switch:hover, .menu-toggle:hover { background: var(--navy-800); } }
+  .site-nav__toggle[aria-current] > span:first-child { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.45em; }
+  .site-nav__toggle[aria-expanded='true'] { background: var(--navy-800); }
+  .site-nav__caret {
+    flex: none; inline-size: 0.6em; block-size: 0.36em; background: currentColor; clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .site-nav__toggle[aria-expanded='true'] > .site-nav__caret { transform: rotate(180deg); }
+  .site-nav__panel {
+    display: none; position: absolute; inset-block-start: calc(100% + var(--space-2)); inset-inline-start: 0; z-index: 1;
+    inline-size: 26rem; max-inline-size: calc(100vw - 2 * var(--page-margin)); padding: var(--space-2);
+    background: var(--navy-800); color: var(--beige); border-radius: var(--radius-panel); box-shadow: var(--shadow-float);
+  }
+  .site-nav__toggle[aria-expanded='true'] + .site-nav__panel, .no-js .site-nav__item:focus-within > .site-nav__panel { display: block; }
+  /* the last section's panel opens back over the other sections (never past the header's end, beside the CTA) */
+  .site-nav__item:last-child > .site-nav__panel { inset-inline-start: auto; inset-inline-end: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .site-nav__toggle[aria-expanded='true'] + .site-nav__panel { animation: panel-in var(--dur-fast) var(--ease-out); }
+    @keyframes panel-in { from { opacity: 0; transform: translateY(-0.25rem); } }
+  }
+  .site-nav__menu { display: grid; gap: 2px; }
+  .site-nav__link {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-block-size: var(--tap);
+    padding: var(--space-3) var(--space-4); border-radius: var(--radius-control); text-decoration: none; color: inherit;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .site-nav__link--hub { background: var(--navy-900); margin-block-end: var(--space-1); }
+  .site-nav__text { display: grid; gap: 0.125rem; min-inline-size: 0; }
+  .site-nav__name { font-size: 1.0625rem; font-weight: var(--wght-semibold); line-height: 1.3; }
+  .site-nav__desc { font-size: var(--fs-small); line-height: 1.4; color: var(--beige-quiet); }
+  .site-nav__link .tri { font-size: 1rem; }
+  .site-nav__link[aria-current='page'] .site-nav__name { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.35em; }
+  @media (hover: hover) and (pointer: fine) {
+    .site-nav__toggle:hover, .lang-switch:hover, .menu-toggle:hover { background: var(--navy-800); }
+    .site-nav__link:hover { background: var(--navy-700); }
+    .site-nav__link:hover .tri { transform: translateX(calc(var(--dir) * 3px)); }
+  }
   .site-header__actions { display: flex; align-items: center; gap: var(--space-2); margin-inline-start: auto; }
   .lang-switch {
     display: inline-flex; align-items: center; justify-content: center; min-block-size: var(--tap); min-inline-size: var(--tap);
@@ -119,29 +156,20 @@
   @media (max-width: 22.49rem) {
     .brand__name { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   }
-  /* the full nav from 1024px in Hebrew (with the short "להרשמה" up to 1200px) and from 1200px in English, whose labels
-     are ~20% longer and do not fit beside the mark, the name and the CTA below that (measured: W/fix/fx1/navfit) */
+  /* the four section buttons from 1024px in both languages (four short labels fit beside the mark, the name, the
+     language switch and the CTA); below that, the phone menu */
   @media (min-width: 64rem) {
-    html:not([lang='en']) .site-nav { display: block; }
-    html:not([lang='en']) .site-header__actions { margin-inline-start: var(--space-3); }
-    html:not([lang='en']) .site-header__lang { display: inline-flex; }
-    html:not([lang='en']) .menu-toggle { display: none; }
-  }
-  @media (min-width: 64rem) and (max-width: 74.99rem) {
-    html:not([lang='en']) .site-header__cta .cta-long { display: none; }
-    html:not([lang='en']) .site-header__cta .cta-short { display: inline; }
-  }
-  @media (min-width: 75rem) {
     .site-nav { display: block; }
     .site-header__actions { margin-inline-start: var(--space-3); }
     .site-header__lang { display: inline-flex; }
     .menu-toggle { display: none; }
   }
-  @media (min-width: 75rem) and (max-width: 79.99rem) {
-    html[lang='en'] .site-header__cta .cta-long { display: none; }
+  /* English between 1024 and 1200px: the short "Sign up" shows; the full label stays the link's accessible name */
+  @media (min-width: 64rem) and (max-width: 74.99rem) {
+    html[lang='en'] .site-header__cta .cta-long { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     html[lang='en'] .site-header__cta .cta-short { display: inline; }
   }
-  @media (max-width: 89.99rem) { .site-nav__link { padding-inline: var(--space-2); } }
+  @media (max-width: 89.99rem) { .site-nav__toggle { padding-inline: var(--space-2); } }
   /* the reading-progress stripe: 4px inside the header's bottom edge, a beige fill with navy on every side, so it reads
      the same over beige and navy chapters (hanging below the header it vanished into beige chapters) */
   .scroll-progress {
@@ -152,6 +180,17 @@
     transform: scaleX(var(--progress, 0)); transform-origin: 100% 50%;
   }
   [dir='ltr'] .scroll-progress::after { transform-origin: 0 50%; }
+
+  /* ── breadcrumb: "<section> › <page>" at the top of <main>, on the first chapter's ground (layout.mjs) ── */
+  .crumbs { position: relative; z-index: 2; padding-block-start: var(--space-2); }
+  .crumbs__list { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.6em; font-size: var(--fs-small); line-height: var(--lh-small); }
+  .crumbs__list > li { display: inline-flex; align-items: center; gap: 0.6em; }
+  .crumbs__link { display: inline-flex; align-items: center; min-block-size: var(--tap); font-weight: var(--wght-semibold); color: var(--ink); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.3em; }
+  .crumbs__sep, .crumbs__here { color: var(--ink-quiet); }
+  .crumbs__sep { display: inline-flex; font-size: 0.75em; }
+  @media (hover: hover) and (pointer: fine) { .crumbs__link:hover { text-decoration-color: var(--ink-quiet); } }
+  /* the chapter under it starts closer: the breadcrumb already took the top of its padding */
+  .crumbs + :is(.chapter, .section) { padding-block-start: calc(var(--chapter-pad) * 0.6); }
 
   /* ── phone menu: a full-screen navy sheet (native <dialog>) ── */
   .site-menu {
@@ -169,15 +208,23 @@
   .menu-close__icon::before, .menu-close__icon::after { content: ''; position: absolute; inset-inline: 0; inset-block-start: calc(50% - 1.5px); block-size: 3px; background: currentColor; transform: rotate(45deg); }
   .menu-close__icon::after { transform: rotate(-45deg); }
   @media (hover: hover) and (pointer: fine) { .menu-close:hover { background: var(--navy-800); } .site-menu__link:hover { color: var(--beige-50); } }
-  .site-menu__nav { display: grid; gap: var(--space-6); padding-block: var(--space-5) var(--space-7); flex: 1 0 auto; align-content: start; }
+  .site-menu__tools { display: flex; align-items: center; gap: var(--space-1); }
+  /* four groups (the header's sections), compact so that every page is one tap away without scrolling on a 390×844
+     phone: the groups sit close, each group's title row separates them */
+  .site-menu__nav { display: grid; gap: var(--space-2); padding-block: 0 var(--space-3); flex: 1 0 auto; align-content: start; }
+  .site-menu__group { display: grid; }
+  .site-menu__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-block-size: var(--tap); }
+  .site-menu__title { font-size: var(--fs-small); font-weight: var(--wght-semibold); line-height: var(--lh-small); letter-spacing: 0; color: var(--beige-quiet); }
+  .site-menu__all { display: inline-flex; align-items: center; gap: 0.5em; min-block-size: var(--tap); font-size: var(--fs-small); font-weight: var(--wght-medium); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.3em; color: var(--beige-quiet); }
+  .site-menu__all[aria-current='page'] { color: var(--beige); }
   .site-menu__list { display: grid; }
-  .site-menu__link { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-block-size: var(--tap); text-decoration: none; }
-  .site-menu__list--primary .site-menu__link { font-size: 1.75rem; font-weight: var(--wght-bold); line-height: 1.15; min-block-size: 3.5rem; letter-spacing: -0.01em; }
-  .site-menu__list--primary .tri { font-size: 1.25rem; }
-  .site-menu__list--secondary .site-menu__link { font-size: 1.125rem; font-weight: var(--wght-medium); color: var(--beige-quiet); }
-  .site-menu__link[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.3em; color: var(--beige); }
-  .site-menu__extra { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); align-items: center; }
-  .site-menu__extra a { display: inline-flex; align-items: center; min-block-size: var(--tap); font-weight: var(--wght-medium); }
+  .site-menu__link {
+    display: flex; align-items: center; min-block-size: var(--tap); text-decoration: none;
+    font-size: 1.3125rem; font-weight: var(--wght-semibold); line-height: 1.2; letter-spacing: -0.005em;
+  }
+  .site-menu__link[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.3em; }
+  /* tablets: two columns of groups */
+  @media (min-width: 40rem) { .site-menu__nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--gutter); } }
   .site-menu__cta { position: sticky; inset-block-end: 0; background: var(--navy-800); padding-block: var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom)); flex: none; --action-bg-hover: var(--beige-50); }
   @media (prefers-reduced-motion: no-preference) {
     .site-menu[open] { animation: sheet-in var(--dur-slow) var(--ease-drawer); }
@@ -217,11 +264,19 @@
   .site-footer__intro p { color: var(--beige-quiet); }
   .site-footer__intro .site-footer__slogan { color: var(--beige); font-size: var(--fs-lead); font-weight: var(--wght-semibold); }
   .site-footer__nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-7) var(--gutter); margin-block-start: var(--space-8); }
-  .site-footer__title { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--beige-quiet); margin-block-end: var(--space-2); letter-spacing: 0; line-height: var(--lh-small); }
+  .site-footer__title { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--beige-quiet); margin-block-end: var(--space-1); letter-spacing: 0; line-height: var(--lh-small); }
+  .site-footer__title a { display: inline-flex; align-items: center; gap: 0.5em; min-block-size: var(--tap); text-decoration: none; font-size: 1.0625rem; color: var(--beige); }
   .site-footer__list { display: grid; }
+  .site-footer__reach { display: flex; flex-wrap: wrap; gap: 0 var(--space-6); align-items: center; margin-block-start: var(--space-7); }
+  .site-footer__reach a, .site-footer__reach .lang-switch { display: inline-flex; align-items: center; min-block-size: var(--tap); min-inline-size: var(--tap); padding: 0; font-size: 1rem; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.3em; font-weight: var(--wght-medium); }
+  .site-footer__reach p { padding-block: var(--space-3); color: var(--beige-quiet); font-size: var(--fs-small); }
   .site-footer__list a, .site-footer__list .lang-switch { display: inline-flex; align-items: center; min-block-size: var(--tap); min-inline-size: var(--tap); text-decoration: none; padding: 0; justify-content: flex-start; font-size: 1rem; font-weight: var(--wght-regular); }
   .site-footer__list p { padding-block: var(--space-3); color: var(--beige-quiet); font-size: var(--fs-small); }
-  @media (hover: hover) and (pointer: fine) { .site-footer__list a:hover, .site-footer__base a:hover { text-decoration: underline; background: none; } }
+  @media (hover: hover) and (pointer: fine) {
+    .site-footer__list a:hover, .site-footer__base a:hover, .site-footer__title a:hover { text-decoration: underline; background: none; }
+    .site-footer__title a:hover .tri { transform: translateX(calc(var(--dir) * 3px)); }
+    .site-footer__reach a:hover { text-decoration-color: var(--beige-quiet); background: none; }
+  }
   .site-footer__base {
     display: flex; flex-wrap: wrap; gap: 0 var(--space-6); align-items: center; margin-block-start: var(--space-8);
     color: var(--beige-quiet); font-size: var(--fs-small);

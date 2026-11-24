@@ -11,10 +11,6 @@
     "footerLabel": "קישורים באתר",
     "menuLabel": "תפריט",
     "menuOpen": "פתיחת התפריט",
-    "secondaryLabel": "עוד בעמותה",
-    "menuNames": {
-      "volunteer": "התנדבות והרצאות"
-    },
     "homeLabel": "המשך תנועה: לעמוד הבית",
     "switchTo": "English",
     "switchAria": "English version of this page",
@@ -32,11 +28,11 @@
     "evenings": "ערבי נשים ועוד",
     "about": "מי אנחנו",
     "partners": "שותפויות",
-    "volunteer": "התנדבות",
+    "volunteer": "התנדבות והרצאות",
     "donate": "תרומה",
     "calendar": "לוח מפגשים",
-    "team": "צוות והנהלה",
-    "faq": "שאלות ותשובות",
+    "team": "הצוות",
+    "faq": "שאלות נפוצות",
     "membership": "הצטרפות לעמותה",
     "contact": "יצירת קשר"
   },
@@ -51,71 +47,6 @@
   "footer": {
     "about": "המשך תנועה היא הבית ללוחמים וללוחמות אחרי השירות. מפגשים קבועים של תנועה, קהילה וכיוון, ובדרך: מרכזים קהילתיים בכל הארץ.",
     "slogan": "בואו להמשיך תנועה",
-    "columns": [
-      {
-        "title": "מפגשים",
-        "items": [
-          {
-            "page": "friday",
-            "label": "מפגשי שישי"
-          },
-          {
-            "page": "evenings",
-            "label": "ערבי נשים ומפגשים נוספים"
-          },
-          {
-            "page": "calendar",
-            "label": "לוח מפגשים"
-          },
-          {
-            "page": "faq",
-            "label": "שאלות ותשובות"
-          }
-        ]
-      },
-      {
-        "title": "העמותה",
-        "items": [
-          {
-            "page": "about",
-            "label": "מי אנחנו"
-          },
-          {
-            "page": "team",
-            "label": "צוות והנהלה"
-          },
-          {
-            "page": "membership",
-            "label": "הצטרפות לעמותה"
-          },
-          {
-            "page": "transparency",
-            "label": "שקיפות ודיווח"
-          }
-        ]
-      },
-      {
-        "title": "להיות חלק",
-        "items": [
-          {
-            "page": "donate",
-            "label": "תרומה"
-          },
-          {
-            "page": "partners",
-            "label": "שותפויות לחברות וארגונים"
-          },
-          {
-            "page": "volunteer",
-            "label": "התנדבות"
-          },
-          {
-            "crm": "propose",
-            "label": "הצעת הרצאה או הדרכה"
-          }
-        ]
-      }
-    ],
     "contactTitle": "קשר",
     "whatsapp": "כתבו לנו בוואטסאפ",
     "whatsappNoPhone": "אפשר לפנות לצוות העמותה.",

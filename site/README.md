@@ -7,11 +7,11 @@ A fast, static, bilingual site built by a **zero-dependency** Node 22 script. He
 site/
   build.mjs          the generator → dist/site/
   serve.mjs          local static server (http://127.0.0.1:4173/crm/site/)
-  config.mjs         base path, origin, nav order, pages that wait for owner content, CTA target, CRM links, CSS order
+  config.mjs         base path, origin, the four SECTIONS (navigation), pages that wait for owner content, CTA target, CRM links, CSS order
   content/           he.json, en.json (copy) · org.json (owner content) · optional he/<name>.json, en/<name>.json
-  pages/*.mjs        one module per page (home.mjs, 404.mjs …); files starting with _ are ignored
+  pages/*.mjs        one module per page (home.mjs, 404.mjs …); files starting with _ are ignored (_hub.mjs: the section hubs)
   partials/*.mjs     layout, head (meta/OG/hreflang/canonical/CSP), header + mobile menu, footer
-  lib/               html.mjs (templates), brand.mjs (logo/stripes/◀), images.mjs, components.mjs
+  lib/               html.mjs (templates), brand.mjs (logo/stripes/◀), images.mjs, components.mjs, sections.mjs (SECTIONS for a page)
   assets/css/        layered CSS, concatenated + fingerprinted into one file
   assets/js/         ES modules (main, nav, scroll, events, org, api), fingerprinted; config.js is generated
   assets/photos/     <name>-<width>.webp variants (480/720/960/≤1440, graded, WebP q68)
@@ -27,7 +27,7 @@ site/
 | `npm run build:site` | production build → `dist/site/` |
 | `npm run dev:site` | preview build + server on http://127.0.0.1:4173/crm/site/, rebuilds on every change in `site/` (reload the page) |
 | `npm run test:site` (`node --test site/test`) | build contract tests (both modes), CSS rules, copy rules, template helpers. CI runs it before every deploy. |
-| `npm run smoke:site` (`node site/test/smoke.cjs [--build] [--shots dir]`) | every page at 320/390/768/1440 in Chromium: console/CSP errors, overflow, white backgrounds, 44px targets, skip link, menu focus trap/Esc, live meetings states, reveals, reduced motion, axe WCAG 2.2 AA. Supabase is mocked. |
+| `npm run smoke:site` (`node site/test/smoke.cjs [--build] [--shots dir]`) | every page at 320/390/768/1440 in Chromium: console/CSP errors, overflow, white backgrounds, 44px targets, skip link, menu focus trap/Esc, section dropdowns (click/Esc/keyboard/click outside, in view), the header on one row at 1024px, live meetings states, reveals, reduced motion, axe WCAG 2.2 AA. Supabase is mocked. |
 
 Environment: `SITE_PREVIEW=1` (same as `--preview`), `SITE_BASE` (default `/crm/site/`), `SITE_ORIGIN`
 (`https://hemshech-tnua.github.io`), `SITE_OUT` (`dist/site`; it is emptied first, so it must be `dist/site`, a new or
@@ -65,9 +65,11 @@ export function render(ctx) {
 Also optional: `export const ctaBar = false | { type: 'all', label: '<copy key>', pay: false }` (the phone CTA bar;
 default on with `{ type: 'friday', pay: true }` — the next Friday morning, named in the bar — off for donate/contact;
 a page about the other meetings asks for `{ type: 'all' }`), `export const bodyClass = '…'`, `export function jsonld(ctx) { return {…} }` (structured data),
-`export const notFound = true` (only the 404). The page appears in the header/menu/footer once its id is in
-`config.mjs` `NAV` and it has a `nav.<id>` label in both languages (an optional longer label for the phone menu:
-`nav.menuNames.<id>`). Pages must exist in both languages.
+`export const notFound = true` (only the 404). The page appears in the header/menu/footer/its section's hub once its
+id is in one section's `pages` in `config.mjs` `SECTIONS` and it has a `nav.<id>` label and a one-line
+`sections.desc.<id>` (≤ 60 characters: the meta description, shortened) in both languages. Every page belongs to
+exactly one section, except `OUTSIDE_SECTIONS` (home, accessibility, 404); a test checks it. Pages must exist in both
+languages.
 
 **Pages that wait for owner content.** `config.mjs` `PAGE_WHEN` maps a page id to a test on `org.json` (today: `team`
 needs `team`, `board` or `advisors`). While the test is false, a **production** build does not write that page: it is
@@ -121,7 +123,7 @@ he/en copy have identical keys; no slashed/dotted gender forms (`לוחמים/ו
 ## Content model
 
 - `content/he.json`, `content/en.json` — copy. Keys the frame itself needs: `site.{name,description,titleSeparator}`,
-  `skip`, `nav.{label,footerLabel,menuLabel,menu,close,homeLabel,switchTo,<page ids>}`, `cta.register`, `footer.*`,
+  `skip`, `nav.{label,footerLabel,menuLabel,menu,close,homeLabel,switchTo,<page ids>}`, `sections.*` (content/<lang>/sections.json: section labels, leads, hub meta, page descriptions, `crumbsLabel`), `cta.register`, `footer.*`,
   `events.*` (also sent to the browser for the meetings list), `slots.*`, `notFound.*`, `photos.<name>` (alt texts).
   A page's copy goes under its id (`friday.hero.title`). Large page copy may live in `content/<lang>/<id>.json`, merged
   in under the key `<id>`.
@@ -153,6 +155,37 @@ he/en copy have identical keys; no slashed/dotted gender forms (`לוחמים/ו
 
 **Preview vs production:** `--preview` / `SITE_PREVIEW=1` shows every empty owner slot as a dashed box so the board sees
 the full layout; production omits those sections (and fails on missing copy). Deploys are production builds.
+
+## Navigation: four sections
+
+`config.mjs` `SECTIONS` is the one source for the header, the phone menu, the footer, the breadcrumb and the hubs:
+
+| section (`sections.<id>.label`) | hub page (slug) | pages |
+|---|---|---|
+| מפגשים / Meetings | `meetings` (meetings) | friday, evenings, calendar |
+| העמותה / About us | `association` (association) | about, team (only while org.json has a team), faq |
+| להיות חלק / Get involved | `involved` (get-involved) | volunteer, membership |
+| תמיכה / Support | `support` (support) | donate, partners, contact |
+
+- **Header (≥1024px, both languages):** the four section names are disclosure buttons (`aria-expanded`,
+  `aria-controls`); each opens a panel with "הכל על …" (the hub) first and then the section's pages, each with its
+  one-line description. Click / Enter / Space toggles, ↓ opens and focuses the first link, Esc closes and returns focus
+  to the button, a click outside or focus leaving the section closes it, one panel at a time; with a mouse, moving onto
+  another section while one is open switches to it (hover never opens the first one). The panel's visibility follows
+  `aria-expanded` in CSS (without JS, a focused button shows its panel). The current section's button has
+  `aria-current="true"` (underlined), the current page's link `aria-current="page"`. Then the language switch and the
+  CTA (English 1024–1199px: the short "Sign up", the full label stays the accessible name).
+- **Phone menu** (`<dialog>`): the same four groups (title + "הכל על …" link, then the pages), compact so that every
+  page is one tap away without scrolling at 390×844 (production); the language switch sits beside "סגירה"; the CTA is
+  pinned at the foot. Two columns of groups from 640px.
+- **Footer:** the four sections are the four columns (each title links to its hub), then a row with the WhatsApp line,
+  owner email/socials and the language switch, then the legal row (privacy, accessibility, staff login).
+- **Hubs** (`pages/_hub.mjs` via meetings/association/involved/support.mjs): h1 = section name, the lead
+  (`sections.<id>.lead`), the section's pages as `ctx.ui.rows` with their descriptions; Meetings adds the live next
+  Friday card, Support the "לא חייבים לתרום כדי להיות חלק" line (donate.closing) with the way to Get involved.
+- **Breadcrumb** (`partials/layout.mjs`): first in `<main>` on every page of a section (not on hubs, home,
+  accessibility, 404): `<nav aria-label="מיקום באתר">` "<section> ◀ <page>", the section linking to its hub, the page
+  `aria-current="page"`. It takes the ground of the page's first chapter.
 
 ## Live data (browser)
 
@@ -188,8 +221,7 @@ has no such type, so events.js `isWomensEvening()` takes the "other" meetings wh
 scroll timeline or JS fallback). Content is visible at rest and without JS; what is on screen at load never animates;
 `prefers-reduced-motion: reduce` disables all of it. Transform/opacity only. The full contract (bare `data-reveal` =
 stagger the children, `data-load`, `data-wipe`, `data-follow`, `data-count`) is at the top of `assets/css/motion.css`.
-The header never hides (MOTION.md); the full nav shows from 1024px in Hebrew (short "להרשמה" up to 1200px) and from
-1200px in English (longer labels); below, the menu. Under text spacing or zoom the header bar wraps instead of
+The header never hides (MOTION.md); the four section buttons show from 1024px in both languages; below, the menu. Under text spacing or zoom the header bar wraps instead of
 overflowing and nav.js keeps `--header-h` equal to its real height. The reading-progress stripe is the header's bottom
 4px (beige on navy, visible over any chapter). Below 1024px a phone CTA bar appears once the page's `[data-hero-cta]`
 has scrolled away (it fades instead of sliding under reduced motion), and the footer keeps its last row above it. The mobile menu is a native `<dialog>`

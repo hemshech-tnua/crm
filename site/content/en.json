@@ -11,10 +11,6 @@
     "footerLabel": "Site links",
     "menuLabel": "Menu",
     "menuOpen": "Open menu",
-    "secondaryLabel": "More",
-    "menuNames": {
-      "volunteer": "Volunteer & speak"
-    },
     "homeLabel": "המשך תנועה: home",
     "switchTo": "עברית",
     "switchAria": "לגרסה העברית של העמוד",
@@ -30,12 +26,12 @@
     "accessibility": "Accessibility statement",
     "friday": "Friday mornings",
     "evenings": "Women's evenings & more",
-    "about": "About",
-    "partners": "Partners",
-    "volunteer": "Volunteer",
+    "about": "Who we are",
+    "partners": "Partnerships",
+    "volunteer": "Volunteer & speak",
     "donate": "Donate",
     "calendar": "Calendar",
-    "team": "Team & board",
+    "team": "Team",
     "faq": "FAQ",
     "membership": "Membership",
     "contact": "Contact"
@@ -51,71 +47,6 @@
   "footer": {
     "about": "המשך תנועה is a home for combat veterans after their service: regular meetings built on movement, community and direction — and, on the way, local community centers across Israel.",
     "slogan": "Keep moving with us",
-    "columns": [
-      {
-        "title": "Meetings",
-        "items": [
-          {
-            "page": "friday",
-            "label": "Friday mornings"
-          },
-          {
-            "page": "evenings",
-            "label": "Women's evenings & more"
-          },
-          {
-            "page": "calendar",
-            "label": "Calendar"
-          },
-          {
-            "page": "faq",
-            "label": "FAQ"
-          }
-        ]
-      },
-      {
-        "title": "Who we are",
-        "items": [
-          {
-            "page": "about",
-            "label": "About"
-          },
-          {
-            "page": "team",
-            "label": "Team & board"
-          },
-          {
-            "page": "membership",
-            "label": "Membership"
-          },
-          {
-            "page": "transparency",
-            "label": "Transparency"
-          }
-        ]
-      },
-      {
-        "title": "Get involved",
-        "items": [
-          {
-            "page": "donate",
-            "label": "Donate"
-          },
-          {
-            "page": "partners",
-            "label": "Partner with us"
-          },
-          {
-            "page": "volunteer",
-            "label": "Volunteer"
-          },
-          {
-            "crm": "propose",
-            "label": "Offer a talk or a workout session"
-          }
-        ]
-      }
-    ],
     "contactTitle": "Contact",
     "whatsapp": "Message us on WhatsApp",
     "whatsappNoPhone": "Reach out to our team.",

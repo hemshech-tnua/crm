@@ -1,0 +1,53 @@
+{
+  "crumbsLabel": "Where you are",
+  "pagesTitle": "Pages in {section}",
+  "meetings": {
+    "label": "Meetings",
+    "all": "All about our meetings",
+    "lead": "Three Friday mornings a month, and more meetings in the evenings. No commitment, no talking circle.",
+    "meta": {
+      "title": "Meetings",
+      "description": "Friday mornings three times a month, women's evenings, bonfire evenings and other meetings, and the calendar of every upcoming meeting."
+    }
+  },
+  "association": {
+    "label": "About us",
+    "all": "All about us",
+    "lead": "We're an Israeli nonprofit that runs regular, structured activity so that men and women who served in combat roles have a place to meet, move, find direction and succeed in life.",
+    "meta": {
+      "title": "About us",
+      "description": "Who we are and answers to the questions we hear most: a home for combat veterans after their service, with regular meetings built on movement, community and direction."
+    }
+  },
+  "involved": {
+    "label": "Get involved",
+    "all": "All the ways to get involved",
+    "lead": "Our meetings happen because people give their time. There are a few ways to join in.",
+    "meta": {
+      "title": "Get involved",
+      "description": "Join the Friday welcome team, give a guest talk, lead a workout or become a member: all the ways to be part of our nonprofit."
+    }
+  },
+  "support": {
+    "label": "Support",
+    "all": "All the ways to support us",
+    "lead": "Gifts and partnerships keep regular meetings going for combat veterans after their service.",
+    "meta": {
+      "title": "Support",
+      "description": "Donations, partnerships for companies, organizations and foundations, and how to reach us: all the ways to support our regular meetings."
+    }
+  },
+  "desc": {
+    "friday": "Three a month: a workout, coffee and a guest talk",
+    "evenings": "Evenings for women, bonfire evenings and other meetings",
+    "calendar": "Every upcoming meeting by date, and sign-up",
+    "about": "A home for combat veterans after their service",
+    "team": "The team, board and volunteers behind the meetings",
+    "faq": "Who it's for, what it costs and how to cancel",
+    "volunteer": "The Friday welcome team, a guest talk or a workout",
+    "membership": "Leave your name and phone; our team gets back to you",
+    "donate": "Give once or monthly, fund a meeting, and more",
+    "partners": "For companies, organizations and foundations",
+    "contact": "WhatsApp for questions about meetings and sign-up"
+  }
+}

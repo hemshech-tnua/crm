@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { SITE, read } from './helpers.mjs';
-import { NAV } from '../config.mjs';
+import { SECTIONS } from '../config.mjs';
 
 const load = (lang) => {
   const d = JSON.parse(read(join(SITE, 'content', `${lang}.json`)));
@@ -33,10 +33,18 @@ test('no slashed or dotted gender forms in Hebrew copy (לוחמים/ות, לל�
   }
 });
 
-test('every nav id and every photo has a label in both languages', () => {
-  for (const id of [...NAV.primary, ...NAV.secondary, 'home']) {
-    assert.equal(typeof he.nav[id], 'string', `he nav.${id}`);
-    assert.equal(typeof en.nav[id], 'string', `en nav.${id}`);
+test('every section, section page and photo has a label in both languages', () => {
+  for (const [lang, d] of [['he', he], ['en', en]]) {
+    assert.equal(typeof d.nav.home, 'string', `${lang} nav.home`);
+    assert.equal(typeof d.sections?.crumbsLabel, 'string', `${lang} sections.crumbsLabel`);
+    for (const s of SECTIONS) {
+      for (const k of ['label', 'all', 'lead', 'meta.title', 'meta.description']) assert.equal(typeof k.split('.').reduce((o, x) => o?.[x], d.sections?.[s.id]), 'string', `${lang} sections.${s.id}.${k}`);
+      for (const id of s.pages) {
+        assert.equal(typeof d.nav[id], 'string', `${lang} nav.${id}`);
+        assert.equal(typeof d.sections.desc?.[id], 'string', `${lang} sections.desc.${id}`);
+        assert.ok(d.sections.desc[id].length <= 60, `${lang} sections.desc.${id} is one short line (≤ 60 characters)`);
+      }
+    }
   }
   const photos = new Set(readdirSync(join(SITE, 'assets/photos')).map((f) => f.replace(/-\d+\.\w+$/, '')));
   for (const p of photos) {

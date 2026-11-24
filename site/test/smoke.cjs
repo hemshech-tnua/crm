@@ -4,7 +4,8 @@
 // --out serves another build folder (default dist/site), e.g. a team's SITE_OUT=…/out-x/crm/site build.
 // Loads every page of the sitemap + both 404s at 390 and 1440 px and checks: no console errors / CSP violations, no
 // horizontal overflow, no white backgrounds, one h1, lang/dir, landmarks, skip link first in tab order, 44px targets,
-// the mobile menu (aria-expanded, focus trap, Esc, focus return), live meetings (filled / empty / error states, links
+// the mobile menu (aria-expanded, focus trap, Esc, focus return), the section dropdowns (click, Esc, keyboard, click
+// outside, inside the viewport) and the header fitting on one row at 1024px, live meetings (filled / empty / error states, links
 // into the CRM), the WhatsApp slot, reveal + reduced motion, and an axe-core WCAG 2.2 AA scan (@axe-core/playwright,
 // already a devDependency). The Supabase RPCs are mocked: the test never calls production.
 'use strict';
@@ -144,7 +145,7 @@ async function checkPage(browser, url, vp) {
       if (/^rgba?\(255, 255, 255(, 1)?\)$/.test(bg)) white.push(el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''));
     }
     const small = [];
-    const sel = '.btn, .chip, .menu-toggle, .menu-close, .site-nav__link, .lang-switch, .brand, .site-footer__list a, .site-footer__base a, .link, .link-arrow, .row, .meet, .faq summary, .chapters__nav a, .skip-link';
+    const sel = '.btn, .chip, .menu-toggle, .menu-close, .site-nav__toggle, .site-nav__link, .site-menu__link, .site-menu__all, .crumbs__link, .site-footer__title a, .site-footer__reach a, .lang-switch, .brand, .site-footer__list a, .site-footer__base a, .link, .link-arrow, .row, .meet, .faq summary, .chapters__nav a, .skip-link';
     for (const el of document.querySelectorAll(sel)) {
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
@@ -197,6 +198,36 @@ async function checkPage(browser, url, vp) {
   if (skip.cls !== 'skip-link' || !skip.visible) fail(where, `first Tab → ${skip.cls} (visible ${skip.visible})`);
   await page.keyboard.press('Enter');
   if ((await page.evaluate(() => document.activeElement.id)) !== 'main') fail(where, 'skip link did not move focus to main');
+
+  // the section dropdowns (desktop): click opens, Esc closes and returns focus, Enter opens from the keyboard and Tab
+  // goes into the panel, a click outside closes; every panel stays inside the viewport
+  if (vp.width >= 1024 && !is404) {
+    const st = () => page.evaluate(() => [...document.querySelectorAll('[data-nav-toggle]')].map((b) => {
+      const p = document.getElementById(b.getAttribute('aria-controls'));
+      const r = p.getBoundingClientRect();
+      return { exp: b.getAttribute('aria-expanded'), shown: getComputedStyle(p).display !== 'none', inView: r.left >= 0 && r.right <= innerWidth, focusIn: p.contains(document.activeElement), focusBtn: document.activeElement === b };
+    }));
+    const toggles = page.locator('[data-nav-toggle]');
+    const n = await toggles.count();
+    if (n !== 4) fail(where, `${n} section buttons in the header`);
+    for (let i = 0; i < n; i++) {
+      await toggles.nth(i).click();
+      const s = (await st())[i];
+      if (s.exp !== 'true' || !s.shown || !s.inView) fail(where, `dropdown ${i + 1} after click ${JSON.stringify(s)}`);
+      if ((await st()).filter((x) => x.exp === 'true').length !== 1) fail(where, 'more than one dropdown open');
+      if (SHOTS && vp.name === '1440' && /\/(en\/)?friday\/$/.test(url)) await shot(page, url, vp, `dropdown${i + 1}`, false);
+      await page.keyboard.press('Escape');
+      const c = (await st())[i];
+      if (c.exp !== 'false' || c.shown || !c.focusBtn) fail(where, `dropdown ${i + 1} after Esc ${JSON.stringify(c)}`);
+    }
+    await toggles.nth(0).focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Tab');
+    const k = (await st())[0];
+    if (k.exp !== 'true' || !k.focusIn) fail(where, `dropdown keyboard ${JSON.stringify(k)}`);
+    await page.locator('.site-footer__name').click(); // outside the header (the panel may cover the h1)
+    if ((await st())[0].exp !== 'false') fail(where, 'a click outside did not close the dropdown');
+  }
 
   // the menu: open, trap, Esc, return focus
   const toggle = page.locator('[data-menu-open]');
@@ -273,6 +304,24 @@ async function checkStates(browser) {
   await ctx.close();
 }
 
+/** The header at 1024px (the narrowest desktop): one row with the four sections, the language switch and the CTA. */
+async function checkHeaderFit(browser) {
+  for (const lang of ['', 'en/']) {
+    const ctx = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+    await mock(ctx);
+    const page = await ctx.newPage();
+    await page.goto(`${ORIGIN}${BASE}${lang}friday/`);
+    await settle(page);
+    const r = await page.evaluate(() => {
+      const bar = document.querySelector('.site-header__bar');
+      const tops = [...bar.children].filter((c) => c.offsetParent).map((c) => Math.round(c.getBoundingClientRect().top + c.getBoundingClientRect().height / 2));
+      return { rows: new Set(tops.map((t) => Math.round(t / 8))).size, nav: getComputedStyle(document.querySelector('.site-nav')).display, cta: !!document.querySelector('.site-header__cta').offsetParent, overflow: document.documentElement.scrollWidth - innerWidth };
+    });
+    if (r.rows !== 1 || r.nav === 'none' || !r.cta || r.overflow > 0) fail(`header @1024 ${lang || 'he'}`, JSON.stringify(r));
+    await ctx.close();
+  }
+}
+
 async function axeScan(browser, urls) {
   if (!AxeBuilder) return notes.push('axe: @axe-core/playwright not installed, skipped');
   // axe needs to inject a script: this context bypasses the page CSP (the CSP itself is checked in the other runs)
@@ -314,6 +363,7 @@ async function axeScan(browser, urls) {
     const urls = pagesFromSitemap();
     for (const vp of VIEWPORTS) for (const url of urls) { await checkPage(browser, url, vp); if (argv.includes('--verbose')) console.log(`  · ${url} @${vp.name}`); }
     await checkStates(browser);
+    await checkHeaderFit(browser);
     await axeScan(browser, urls);
     console.log(`checked ${urls.length} pages × ${VIEWPORTS.length} viewports`);
   } catch (e) {

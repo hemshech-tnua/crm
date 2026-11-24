@@ -20,15 +20,24 @@ export const LANG_META = {
 };
 
 /**
- * Navigation by page id. Labels come from content nav.<id>. A page id that has no module in pages/ yet is skipped
- * (so the menu only ever links to pages that exist). Order = order on screen.
+ * The site's sections: the header (one dropdown per section), the phone menu (one group per section), the footer (one
+ * column per section), the breadcrumb ("<section> › <page>") and the section's own hub page all read this one list.
+ *   id      the section (copy: sections.<id>.label / .lead / .all / .meta.*)
+ *   hub     the page id of the section's hub page (pages/<hub>.mjs, built from pages/_hub.mjs)
+ *   pages   the section's pages, in order on screen (copy: nav.<id> label, sections.desc.<id> one-line description)
+ * A page id that is not in this build (no module yet, or waiting for owner content: PAGE_WHEN) is skipped everywhere.
+ * Every page belongs to exactly one section; the home page, the accessibility statement (footer legal row) and the
+ * 404 belong to none.
  */
-export const NAV = {
-  // the header (desktop) and the first group of the mobile menu: keep it short — "easy navigation"
-  primary: ['friday', 'evenings', 'about', 'partners', 'volunteer', 'donate'],
-  // the rest of the mobile menu and the footer
-  secondary: ['calendar', 'team', 'faq', 'membership', 'contact', 'stories', 'gallery', 'news', 'transparency', 'accessibility'],
-};
+export const SECTIONS = [
+  { id: 'meetings', hub: 'meetings', pages: ['friday', 'evenings', 'calendar'] },
+  { id: 'association', hub: 'association', pages: ['about', 'team', 'faq'] },
+  { id: 'involved', hub: 'involved', pages: ['volunteer', 'membership'] },
+  { id: 'support', hub: 'support', pages: ['donate', 'partners', 'contact'] },
+];
+
+/** Pages outside the sections (the home page, the legal row, the 404). */
+export const OUTSIDE_SECTIONS = ['home', 'accessibility', '404'];
 
 /**
  * Pages that are built and listed only while their owner content exists (content/org.json). In a production build a
