@@ -34,7 +34,7 @@ export function render(ctx) {
     </div>
     <div class="vol-hero__media">
       <figure class="${`${C.photo} vol-hero__photo`}">${ctx.img('training', { eager: true, sizes: '(min-width: 64rem) 40vw, 100vw' })}</figure>
-      ${corner(ctx, 'tl')}
+      ${corner(ctx, 'tl', { accent: true })}
     </div>
   </div>
 </section>`;

@@ -105,8 +105,13 @@ export function ui(ctx) {
     photo(name, { ratio = '3:2', focus, bleed, sizes = '(min-width: 64rem) 50vw, 100vw', eager, alt, caption, className, wipe, load, stripes, attrs: extra = {} } = {}) {
       return html`<figure${attrs({ class: cx('photo', RATIO[ratio] ?? ratio, focus != null && FOCUS[focus], bleed && 'photo--bleed', className), 'data-wipe': wipe || null, 'data-load': load ?? null, ...extra })}>${ctx.img(name, { sizes, eager, alt })}${stripes ? ctx.brand.stripes({ count: 3, unit: 22, dir: 'rise', width: 240, height: 140, ...stripes, className: cx('stripes', stripes.className) }) : ''}${caption ? html`<figcaption>${caption}</figcaption>` : ''}</figure>`;
     },
-    /** Three stripes entering a chapter from a corner: pos 'ts'|'te'|'bs'|'be', tone 'soft'|'ink'|'beige'|'navy'|'beige-400'|'navy-700'|'navy-800'. */
-    corner({ pos = 'te', dir, tone = 'soft', unit = 20, count = 3 } = {}) {
+    /**
+     * Three stripes entering a chapter from a corner: pos 'ts'|'te'|'bs'|'be', tone 'soft'|'ink'|'beige'|'navy'|'beige-400'|'navy-700'|'navy-800'.
+     * Cleaner pages (24.11): the stripe is an accent once per page, in its hero. A corner renders only with
+     * `accent: true`; every other chapter divider is a tone step alone.
+     */
+    corner({ pos = 'te', dir, tone = 'soft', unit = 20, count = 3, accent = false } = {}) {
+      if (!accent) return '';
       const d = dir ?? (pos === 'ts' || pos === 'be' ? 'rise' : 'fall');
       return ctx.brand.stripes({ width: 260, height: 140, unit, dir: d, count, className: cx('stripes corner', `corner--${pos}`, tone !== 'soft' && `stripes--${tone}`) });
     },

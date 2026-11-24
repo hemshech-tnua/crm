@@ -25,11 +25,26 @@
   "direction": {
     "title": "Local community centers, nationwide",
     "body": [
-      "We're building a nationwide network of local community centers.",
-      "The goal: every combat veteran has a place close to home, with structured activity and people who have been there."
+      "Together with local municipalities, we're building a new nationwide network of centers, only for discharged combat veterans.",
+      "Our vision: that every combat veteran in Israel doesn't just return home, but rises."
     ],
-    "start": "Today's meetings are the beginning.",
-    "renderingCaption": "The first center"
+    "start": "Next: the first center, a pilot that will grow into a national network. Today's meetings are the beginning.",
+    "renderingCaption": "The first center",
+    "centersTitle": "Each center will include",
+    "centers": [
+      {
+        "title": "A veterans’ club",
+        "body": "A place for conversation, connection and a community of veterans."
+      },
+      {
+        "title": "Classes and workshops",
+        "body": "From yoga and CrossFit to ice baths: a healthy, energetic new start."
+      },
+      {
+        "title": "Life skills and leadership",
+        "body": "A 12-session group program with practical workshops and real-world tools for civilian life."
+      }
+    ]
   },
   "today": {
     "title": "What we do today",
@@ -82,7 +97,7 @@
   },
   "name": {
     "title": "About our name",
-    "body": "{org} means “keep moving”: in body, and in life. It's also our slogan: keep moving with us."
+    "body": "{org} means “keep moving”: in body, and in life. In English we go by Moving Forward. It’s also our slogan: keep moving with us."
   },
   "people": {
     "title": "The people behind it",

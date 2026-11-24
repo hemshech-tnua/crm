@@ -55,8 +55,8 @@ for (const [name, b] of [['production', prod], ['preview', preview]]) {
         if (s.id === 'support') assert.match(main, lang === 'he' ? /לא חייבים לתרום כדי להיות חלק/ : /You don(&#39;|')t have to give to be part of this/, `${lang}: "you don't have to give"`);
       }
     }
-    // the team page waits for owner content: out of the association hub in production, in it in preview
-    assert.equal(read(file(b.out, 'association', 'he')).includes('href="/crm/site/team/"'), name === 'preview');
+    // the team page waits for owner content (config PAGE_WHEN): in the association hub once org.json has people, always in preview
+    assert.equal(read(file(b.out, 'association', 'he')).includes('href="/crm/site/team/"'), name === 'preview' || exists(b.out, 'team', 'he'));
   });
 
   test(`${name}: header dropdowns, phone menu and footer show the same grouping on every page`, () => {

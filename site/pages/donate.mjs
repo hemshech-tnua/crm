@@ -44,7 +44,7 @@ export function render(ctx) {
 
   const hero = (g) => html`
 <section class="${`${C.chapter} give-hero`}" data-ground="${g}" aria-labelledby="donate-h1">
-  ${corner(ctx, 'bs', { dir: 'rise' })}
+  ${corner(ctx, 'bs', { dir: 'rise', accent: true })}
   <div class="${`${C.wrap} give-hero__grid`}">
     <div class="give-hero__text">
       <h1 id="donate-h1" class="${C.display}">${t(k('hero.title'))}</h1>

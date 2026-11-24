@@ -26,11 +26,14 @@
   "always": {
     "eyebrow": "What makes us different",
     "title": "Here for good",
-    "lead": "We're not a program with a start and an end. We're a place that stays.",
+    "lead": "Many leave without a framework or a roadmap. We're not a program with a start and an end. We're a place that stays.",
     "body": [
-      "Regular meetings, several times every month. Come for the first time now, or come back after a break.",
-      "However long it's been since your discharge."
-    ]
+      "Come for the first time now, or come back after a break, however long it's been since your discharge."
+    ],
+    "stat": {
+      "value": "15,000",
+      "label": "young men and women complete combat service every year"
+    }
   },
   "what": {
     "eyebrow": "What we do",
@@ -104,8 +107,8 @@
     "eyebrow": "Where we're going",
     "title": "Community centers across Israel",
     "body": [
-      "We're building a nationwide network of local community centers.",
-      "Each one with structured activity, and room for combat veterans to meet, move, find direction and build a good life.",
+      "Together with local municipalities, we're building a nationwide network of centers for discharged combat veterans.",
+      "Each center: a veterans’ club, classes and workshops, and life skills and leadership training.",
       "Today, Friday mornings take place at Holmes Place in Modi'in. That's where it starts."
     ],
     "rendering": null,

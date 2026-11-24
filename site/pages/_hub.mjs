@@ -36,7 +36,7 @@ export function hubPage(id) {
         : '';
       return html`
 <section class="chapter hub hub--${id}" data-ground="navy" aria-labelledby="${h1}">
-  ${id === 'meetings' ? '' : ctx.ui.corner({ pos: 'te', tone: 'navy-700' })}
+  ${id === 'meetings' ? '' : ctx.ui.corner({ pos: 'te', tone: 'navy-700', accent: true })}
   <div class="wrap hub__grid${next ? ' hub__grid--next' : ''}">
     <div class="hub__head">
       <h1 id="${h1}" class="${H1} hub__title" data-load>${s.label}</h1>

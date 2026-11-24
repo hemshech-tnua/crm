@@ -1,14 +1,51 @@
 {
   "_comment": "Owner content (from the association). Empty = the section is omitted in production and shown as a dashed 'תוכן מהעמותה' box in preview builds (SITE_PREVIEW=1). Bilingual text is { \"he\": \"…\", \"en\": \"…\" }. File paths are relative to site/assets/. See site/README.md for the full schema.",
-  "nameEn": null,
-  "donateUrl": null,
+  "_sources": "Filled 24.11 from the association's own site https://hemshechtnua.org.il (He + En): nameEn, donateUrl (its \"לתרומה\" button, JGive), socials (its Instagram link), team + story (its \"לוחמים בשביל לוחמים\" section; units left out per the voice rules), portraits /images/ariel.png and /images/elazar.png (graded into assets/photos/team-*). Elazar's CEO role: the site brief (the CEO's questionnaire). Inventory: scratchpad web/harvest/INVENTORY.md.",
+  "nameEn": "Moving Forward",
+  "donateUrl": "https://www.jgive.com/new/he/ils/donation-targets/156636",
   "section46": false,
   "bank": null,
   "email": null,
   "address": null,
-  "socials": [],
+  "socials": [
+    {
+      "network": "instagram",
+      "url": "https://www.instagram.com/hemshech_tnua"
+    }
+  ],
   "stats": [],
-  "team": [],
+  "team": [
+    {
+      "name": {
+        "he": "אלעזר קאופמן",
+        "en": "Elazar Kaufman"
+      },
+      "role": {
+        "he": "מייסד ומנכ״ל",
+        "en": "Co-founder and CEO"
+      },
+      "line": {
+        "he": "יזם ומנהל מוצר, לוחם לשעבר ומשרת מילואים פעיל.",
+        "en": "An entrepreneur and product leader, a former combat soldier and an active reservist."
+      },
+      "photo": "team-elazar"
+    },
+    {
+      "name": {
+        "he": "אריאל בן חיים",
+        "en": "Ariel Ben Haim"
+      },
+      "role": {
+        "he": "מייסד",
+        "en": "Co-founder"
+      },
+      "line": {
+        "he": "לוחם משוחרר ומשרת מילואים פעיל.",
+        "en": "A recently discharged combat veteran and an active reservist."
+      },
+      "photo": "team-ariel"
+    }
+  ],
   "board": [],
   "partners": [],
   "quotes": [],
@@ -25,5 +62,9 @@
   "partnersDeck": null,
   "pressEmail": null,
   "hours": null,
-  "properConduct": null
+  "properConduct": null,
+  "story": {
+    "he": "המשך תנועה הוקמה על ידי שני חברי ילדות, אלעזר קאופמן ואריאל בן חיים. שניהם לוחמים לשעבר ומשרתי מילואים פעילים.\nבשנים האחרונות הם ראו מקרוב את הקושי הגובר במעבר מהשירות הקרבי לחיים האזרחיים, והחליטו לעזוב הכול ולהקים את העמותה.\nיחד עם חברים, לוחמים נוספים ואנשי מקצוע, הם בונים רשת של מרכזים בפריסה ארצית.",
+    "en": "The association was founded by two childhood friends, Elazar Kaufman and Ariel Ben Haim. Both served as combat soldiers and are active reservists.\nIn recent years they saw up close how hard the move from combat service to civilian life has become, and decided to leave everything else to start the association.\nTogether with friends, fellow veterans and professionals, they are building a network of centers across Israel."
+  }
 }

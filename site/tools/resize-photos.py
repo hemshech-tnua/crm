@@ -4,48 +4,70 @@
     python3 site/tools/resize-photos.py [--grade] path/to/photo.webp [more…]
 
 For each source it writes <name>-<width>.webp at 480, 720, 960 and the largest size (the source width, at most 1440),
-WebP quality 68 (method 6) after a 0.5px denoise (the grain costs bytes, not detail): a phone gets the 480/720 file, a desktop column the 960, a full-width hero the largest.
---grade first applies the site's navy/beige documentary grade (duotone navy → dust → beige through a soft S-curve,
-18% of the original colour kept), so the variants come from one lossless graded image, not from an earlier WebP.
+WebP quality 70 (method 6) after a 0.5px denoise (the grain costs bytes, not detail): a phone gets the 480/720 file, a desktop column the 960, a full-width hero the largest.
+--grade first applies the site's bright, natural grade (exposure and shadows lifted per image toward one target, a 5%
+warm wash toward brand beige, no duotone), so the variants come from one graded image, not from an earlier WebP.
+--name <name> sets the output name (default: the source file name); a transparent source is flattened on beige.
 The build (site/build.mjs) finds the variants by file name and reads their sizes from the files, so nothing else
 needs updating: use ctx.img('<name>', …) in a page. Needs Pillow. The generated files are committed; CI never runs this.
 """
 import glob
+import math
 import os
 import sys
 
-from PIL import Image, ImageFilter, ImageOps
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps, ImageStat
 
 WIDTHS = (480, 720, 960)
 MAX_WIDTH = 1440
-QUALITY = 68
+QUALITY = 70
 DENOISE = 0.5  # px Gaussian at the output size: the illustrative photos carry grain WebP spends ~25% of its bytes on
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'photos')
 
-NAVY, MID, BEIGE = (0x0B, 0x18, 0x22), (0x80, 0x82, 0x78), (0xF5, 0xEE, 0xDC)
-KEEP = 0.18
+# The site grade: "bright and fresh" (replaced the navy/beige duotone on 24.11, owner: "תבהיר את התמונות").
+#   exposure: a per-image gamma that brings the mean luminance toward TARGET, bounded so night scenes stay evening
+#   shadows: a soft toe opens the lower tones and the black point lifts a little; a soft shoulder protects highlights
+#   colour: natural (saturation ~0.97, a touch of contrast back) and a 5% warm wash toward brand beige in light tones
+TARGET = 0.56
+GAMMA_MIN, GAMMA_MAX = 0.62, 1.0
+LIFT = 0.04
+SAT = 0.97
+CONTRAST = 1.05
+WARM, WARM_MIX = (0xEB, 0xDC, 0xB9), 0.05
 
 
-def _lut():
-    out = []
+def _curve(gamma):
+    lut = []
     for i in range(256):
-        t = i / 255
-        t = t * t * (3 - 2 * t) * 0.35 + t * 0.65  # gentle S
-        a, b, u = (NAVY, MID, t / 0.5) if t < 0.5 else (MID, BEIGE, (t - 0.5) / 0.5)
-        out.append(tuple(round(a[k] + (b[k] - a[k]) * u) for k in range(3)))
-    return out
+        x = i / 255
+        y = x ** gamma + 0.18 * x * (1 - x) ** 3
+        if y > 0.75:
+            y = 1 - (1 - y) ** 1.08
+        y = LIFT + y * (1 - LIFT)
+        lut.append(max(0, min(255, round(y * 255))))
+    return lut
 
 
 def grade(im):
-    lut = _lut()
-    g = ImageOps.autocontrast(ImageOps.grayscale(im), cutoff=0.5)
-    duo = Image.merge('RGB', [g.point([c[k] for c in lut]) for k in range(3)])
-    return Image.blend(duo, im, KEEP)
+    im = im.convert('RGB')
+    mean = ImageStat.Stat(ImageOps.grayscale(im)).mean[0] / 255
+    gamma = math.log(TARGET) / math.log(max(1e-3, min(0.99, mean)))
+    out = im.point(_curve(max(GAMMA_MIN, min(GAMMA_MAX, gamma))) * 3)
+    out = ImageEnhance.Contrast(out).enhance(CONTRAST)
+    out = ImageEnhance.Color(out).enhance(SAT)
+    mask = ImageOps.grayscale(out).point(lambda v: round(255 * WARM_MIX * (v / 255) ** 1.5))
+    return Image.composite(Image.new('RGB', out.size, WARM), out, mask)
 
 
-def variants(src, graded=False):
-    name = os.path.splitext(os.path.basename(src))[0].lower()
-    im = Image.open(src).convert('RGB')
+def variants(src, graded=False, name=None):
+    name = (name or os.path.splitext(os.path.basename(src))[0]).lower()
+    im = Image.open(src)
+    if im.mode in ('RGBA', 'LA', 'P'):
+        im = im.convert('RGBA')
+        bg = Image.new('RGBA', im.size, WARM + (255,))
+        bg.alpha_composite(im)
+        im = bg
+    im = im.convert('RGB')
     if graded:
         im = grade(im)
     w, h = im.size
@@ -63,8 +85,9 @@ def variants(src, graded=False):
 if __name__ == '__main__':
     args = sys.argv[1:]
     graded = '--grade' in args
-    files = [a for a in args if a != '--grade']
-    if not files:
+    name = args[args.index('--name') + 1] if '--name' in args else None
+    files = [a for i, a in enumerate(args) if a not in ('--grade', '--name') and (i == 0 or args[i - 1] != '--name')]
+    if not files or (name and len(files) > 1):
         sys.exit(__doc__)
     for path in files:
-        variants(path, graded)
+        variants(path, graded, name)

@@ -92,7 +92,7 @@ export function render(ctx) {
   const volunteerHref = pageHref(ctx, 'volunteer');
   return html`
 <section class="chapter team-hero" data-ground="navy" aria-labelledby="team-h1">
-  ${corner(ctx, { pos: 'be', dir: 'rise' })}
+  ${corner(ctx, { pos: 'be', dir: 'rise', accent: true })}
   <div class="wrap team-hero__grid">
     <h1 id="team-h1" class="${H1} team-hero__title" data-load>${tx(ctx, 'team.hero.title')}</h1>
     <p class="t-lead" data-load="1">${t('team.hero.body')}</p>

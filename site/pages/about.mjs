@@ -47,9 +47,6 @@ export function render(ctx) {
     <div class="about-why__body" data-reveal-group>
       ${ctx.list('about.why.body').map((p) => html`<p class="t-lead" data-reveal="up">${txs(ctx, p)}</p>`)}
     </div>
-    <ul class="about-verbs" role="list" aria-label="${t('about.why.verbsLabel')}" data-reveal-group>
-      ${ctx.list('about.why.verbs').map((v) => html`<li data-reveal="up">${ctx.brand.tri()}<span>${v}</span></li>`)}
-    </ul>
     <div class="about-name" ${ctx.reveal('up')}>
       <h3 class="t-title">${t('about.name.title')}</h3>
       <p class="t-body">${tx(ctx, 'about.name.body')}</p>
@@ -59,12 +56,17 @@ export function render(ctx) {
 
   const direction = html`
 <section class="chapter about-direction" data-ground="navy" aria-labelledby="about-direction">
-  ${ctx.ui.mark({ className: 'about-direction__mark' })}
   <div class="wrap about-direction__grid">
     <h2 id="about-direction" class="t-chapter about-direction__title" ${ctx.reveal('up')}>${t('about.direction.title')}</h2>
     <div class="stack about-direction__body" data-reveal-group>
       ${ctx.list('about.direction.body').map((p) => html`<p class="t-lead" data-reveal="up">${p}</p>`)}
-      <p class="t-title about-direction__start" data-reveal="up">${t('about.direction.start')}</p>
+    </div>
+    <div class="about-centers">
+      <h3 class="t-title about-centers__title" ${ctx.reveal('up')}>${t('about.direction.centersTitle')}</h3>
+      <ol class="about-centers__list" role="list" data-reveal-group>
+        ${ctx.list('about.direction.centers').map((c) => html`<li data-reveal="up"><h4 class="about-centers__name">${c.title}</h4><p class="t-body quiet">${c.body}</p></li>`)}
+      </ol>
+      <p class="t-lead about-direction__start" ${ctx.reveal('up')}>${t('about.direction.start')}</p>
     </div>
     ${ctx.slot(
       org.firstCenter?.image,
@@ -111,7 +113,6 @@ export function render(ctx) {
         (p) => html`<div class="about-principle" data-reveal="up"><dt>${p.title}</dt><dd>${p.body}</dd></div>`,
       )}
     </dl>
-    <figure class="photo r-219 focus-30 about-principles__photo" ${ctx.reveal('fade')}>${ctx.img('running', { alt: '', sizes: '(min-width: 82.5rem) 1320px, 100vw' })}</figure>
   </div>
 </section>`;
 
@@ -176,7 +177,6 @@ export function render(ctx) {
     <h2 id="about-closing" class="cta-band__title" ${ctx.reveal('up')}>${t('about.closing.title')}</h2>
     <div class="cluster cta-band__actions" ${ctx.reveal('up', 1)}>
       ${action(ctx, { href: ctx.ctaHref, label: t('cta.register') })}
-      ${action(ctx, { href: pageHref(ctx, 'partners'), label: t('about.closing.secondary'), className: 'btn btn--ghost' })}
     </div>
   </div>
 </section>`;

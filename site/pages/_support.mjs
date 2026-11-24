@@ -72,7 +72,8 @@ export function chapters(sections, pattern = ['navy', 'beige', 'navy', 'beige-li
  * quiet corner is fixed). The run is anchored to that corner by the shared stripes helper (lib/brand.mjs), so it stays
  * in the corner whatever the box's shape, in either reading direction.
  */
-export function corner(ctx, pos = 'te', { unit = 22, tone } = {}) {
+export function corner(ctx, pos = 'te', { unit = 22, tone, accent = false } = {}) {
+  if (!accent) return ''; // cleaner pages (24.11): one stripe accent per page, in its hero (ctx.ui.corner)
   const rtl = ctx.dir === 'rtl';
   const logical = pos[1] === 's' || pos[1] === 'e' ? pos : pos[0] + ((pos[1] === 'r') === rtl ? 's' : 'e');
   const physical = /^[tb][lr]$/.test(pos) ? pos : pos[0] + ((pos[1] === 's') === rtl ? 'r' : 'l');

@@ -8,8 +8,7 @@ export function render(ctx) {
   const { t, ui } = ctx;
   return html`
 <section class="chapter nf" data-ground="navy" aria-labelledby="nf-title">
-  ${ui.corner({ pos: 'te', tone: 'beige', unit: 24 })}
-  ${ui.mark({ className: 'nf__mark', parallax: false })}
+  ${ui.corner({ pos: 'te', tone: 'beige', unit: 24, accent: true })}
   <div class="wrap nf__in">
     <p class="nf__code" aria-hidden="true" data-load="0">404</p>
     <h1 id="nf-title" class="t-display nf__title" data-load="1">${t('notFound.title')}</h1>

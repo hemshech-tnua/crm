@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { build, walk, read, SITE } from './helpers.mjs';
+import { PAGE_WHEN } from '../config.mjs';
 
 const prod = build();
 const preview = build({ preview: true });
@@ -100,13 +101,19 @@ test('titles: the name exactly once in <title>, og:title and every JSON-LD name'
   }
 });
 
-test('pages waiting for owner content (config PAGE_WHEN): out of production, in preview', () => {
-  // org.json has no team yet: production has no team page and no link to it; preview builds and lists it
-  assert.ok(!exists(prod.out, 'team') && !exists(prod.out, 'team', 'en'), 'production: no team page');
-  for (const { rel, html } of pages(prod.out)) assert.doesNotMatch(html, /href="\/crm\/site\/(en\/)?team\//, `${rel}: links to the hidden team page`);
-  assert.doesNotMatch(read(join(prod.out, 'sitemap.xml')), /\/team\//, 'sitemap');
-  assert.ok(exists(preview.out, 'team'), 'preview: team page built');
-  assert.match(read(join(preview.out, 'index.html')), /href="\/crm\/site\/team\/"/, 'preview: listed');
+test('pages waiting for owner content (config PAGE_WHEN): in production only once the content exists, always in preview', () => {
+  // follows content/org.json: while PAGE_WHEN[id](org) is false, production has no page and no link to it
+  const org = JSON.parse(read(join(SITE, 'content/org.json')));
+  for (const [id, when] of Object.entries(PAGE_WHEN)) {
+    const shown = when(org);
+    const href = new RegExp(`href="/crm/site/(en/)?${id}/"`);
+    assert.equal(exists(prod.out, id) && exists(prod.out, id, 'en'), shown, `production: ${id} page ${shown ? 'built' : 'not built'}`);
+    if (!shown) for (const { rel, html } of pages(prod.out)) assert.doesNotMatch(html, href, `${rel}: links to the hidden ${id} page`);
+    assert.equal(new RegExp(`/${id}/`).test(read(join(prod.out, 'sitemap.xml'))), shown, `sitemap: ${id}`);
+    if (shown) assert.match(read(join(prod.out, 'index.html')), href, `production: ${id} listed`);
+    assert.ok(exists(preview.out, id), `preview: ${id} page built`);
+    assert.match(read(join(preview.out, 'index.html')), href, `preview: ${id} listed`);
+  }
 });
 
 test('the phone CTA bar: the next Friday by default, every live page preconnects to Supabase', () => {

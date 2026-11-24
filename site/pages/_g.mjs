@@ -51,7 +51,7 @@ export function waAction(ctx, { label, text, className = 'btn' } = {}) {
 }
 
 /** Corner stripes: the chapter divider (DESIGN §3.1), via the shared ctx.ui.corner(). pos: ts | te | bs | be. */
-export const corner = (ctx, { pos = 'te', dir, tone } = {}) => ctx.ui.corner({ pos, dir, tone });
+export const corner = (ctx, { pos = 'te', dir, tone, accent } = {}) => ctx.ui.corner({ pos, dir, tone, accent });
 
 /**
  * A picture named in org.json: either the name of a responsive photo set in assets/photos (<name>-<w>.webp) or a path

@@ -20,7 +20,6 @@ export function render(ctx) {
 
   return html`
 <section class="chapter ev-hero" data-ground="navy" aria-labelledby="ev-title">
-  ${ctx.brand.stripes({ width: 260, height: 140, unit: 20, dir: 'cut', count: 3, className: 'stripes stripes--beige corner corner--te' })}
   <div class="wrap ev-hero__grid">
     <div class="ev-hero__text">
       <h1 id="ev-title" class="t-display ev-hero__title" data-load="1">${t('evenings.hero.title')}</h1>
@@ -44,7 +43,7 @@ export function render(ctx) {
       </div>
     </div>
     <div class="ev-women__field" data-reveal="fade">
-      ${ctx.ui.corner({ pos: 'te', tone: 'beige', unit: 24 })}
+      ${ctx.ui.corner({ pos: 'te', tone: 'beige', unit: 24, accent: true })}
       <p class="ev-women__statement">${t('evenings.women.title')}</p>
     </div>
   </div>
@@ -89,7 +88,6 @@ export function render(ctx) {
 </section>
 
 <section class="chapter ev-closing" data-ground="navy" aria-labelledby="ev-closing-title">
-  ${ctx.brand.stripes({ width: 260, height: 140, unit: 20, dir: 'cut', count: 3, className: 'stripes stripes--beige corner corner--ts' })}
   <div class="wrap ev-closing__grid">
     <div>
       <h2 id="ev-closing-title" class="t-chapter" data-reveal="up">${t('evenings.closing.title')}</h2>

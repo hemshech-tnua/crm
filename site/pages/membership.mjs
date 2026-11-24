@@ -12,7 +12,7 @@ export function render(ctx) {
 
   return html`
 <section class="chapter member-hero" data-ground="beige" aria-labelledby="member-h1">
-  ${corner(ctx, { pos: 'te' })}
+  ${corner(ctx, { pos: 'te', accent: true })}
   <div class="wrap member-hero__grid">
     <div class="member-hero__text">
       <h1 id="member-h1" class="${H1} member-hero__title" data-load>${t('membership.hero.title')}</h1>

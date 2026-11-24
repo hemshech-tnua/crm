@@ -74,6 +74,9 @@
     color: inherit; transition: text-decoration-color var(--dur-fast) var(--ease-out);
   }
   @media (hover: hover) and (pointer: fine) { .link:hover, .link-arrow:hover { text-decoration-color: var(--ink-quiet); } }
+  /* one clear action per block (24.11): a link that follows a button is the quiet second choice */
+  .btn ~ .link { font-weight: var(--wght-medium); color: var(--ink-quiet); text-decoration-thickness: 1px; }
+  @media (hover: hover) and (pointer: fine) { .btn ~ .link:hover { color: var(--ink); } }
 
   /* ── header ── */
   .site-header { position: sticky; inset-block-start: 0; z-index: var(--z-header); background: var(--navy); color: var(--beige); }
@@ -257,7 +260,7 @@
   .site-footer { position: relative; overflow: clip; padding-block: var(--space-9) var(--space-7); background: var(--navy-950); color: var(--beige); }
   .site-footer .wrap { position: relative; z-index: 1; }
   .site-footer__name {
-    font-size: calc((min(100vw, var(--page-max) + 2 * var(--page-margin)) - 2 * var(--page-margin)) / 5.6); line-height: 0.95; font-weight: var(--wght-bold); letter-spacing: -0.03em;
+    font-size: calc((min(100vw, var(--page-max) + 2 * var(--page-margin)) - 2 * var(--page-margin)) / 8.5); /* a signature, not a wall: about 2/3 of the frame (24.11) */ line-height: 0.95; font-weight: var(--wght-bold); letter-spacing: -0.03em;
     white-space: nowrap; margin-inline-start: -0.04em;
   }
   .site-footer__intro { display: grid; gap: var(--space-4) var(--gutter); margin-block-start: var(--space-7); max-inline-size: 46rem; }

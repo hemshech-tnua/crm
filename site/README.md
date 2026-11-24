@@ -14,7 +14,7 @@ site/
   lib/               html.mjs (templates), brand.mjs (logo/stripes/◀), images.mjs, components.mjs, sections.mjs (SECTIONS for a page)
   assets/css/        layered CSS, concatenated + fingerprinted into one file
   assets/js/         ES modules (main, nav, scroll, events, org, api), fingerprinted; config.js is generated
-  assets/photos/     <name>-<width>.webp variants (480/720/960/≤1440, graded, WebP q68)
+  assets/photos/     <name>-<width>.webp variants (480/720/960/≤1440, bright grade, WebP q70)
   assets/img/        logo-square.png (the JSON-LD logo)
   tools/             resize-photos.py, logo-square.mjs (one-off helpers; not part of the build)
   test/              node --test suites + smoke.cjs (Playwright)
@@ -236,11 +236,17 @@ placeholder that the design system replaces; `components.css` is neutral tempora
 
 ## Photos
 
-`python3 site/tools/resize-photos.py --grade <file>…` writes `assets/photos/<name>-{480,720,960,≤1440}.webp` (Pillow,
-run once, commit the results): `--grade` applies the site's navy/beige grade to the raw photo first, then each width is
-denoised lightly and saved at WebP q68 (≈30% smaller than q78; the grain costs bytes, not detail). Stripes on a photo
-sit in a corner with no faces. Add `photos.<name>` alt text in both languages. The current six photos are illustrative: never
-caption them as specific people or events.
+`python3 site/tools/resize-photos.py --grade [--name <name>] <file>…` writes `assets/photos/<name>-{480,720,960,≤1440}.webp`
+(Pillow, run once, commit the results): `--grade` applies the site's **bright, natural grade** first (24.11, owner:
+"תבהיר את התמונות": exposure and shadows lifted per image toward one target brightness, highlights protected, natural
+colour with a 5% warm touch toward brand beige, no duotone), then each width is denoised lightly and saved at WebP q70.
+Run every photo through it, so the set stays consistent. Stripes on a photo sit in a corner with no faces. Add
+`photos.<name>` alt text in both languages. `training`, `running`, `talk`, `bonfire`, `walk` and `hills` are
+illustrative: never caption them as specific people or events. `team-elazar` and `team-ariel` are the founders'
+portraits from the association's own site (hemshechtnua.org.il), used through `org.json` `team[].photo`.
+
+**Stripes:** one accent per page, in its hero. `ctx.ui.corner()` (and the page helpers built on it) renders only with
+`accent: true`; other chapters are separated by the tone step alone.
 
 ## Deploy
 

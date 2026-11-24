@@ -61,13 +61,15 @@
 
   /* ── 3 · פה תמיד ── */
   .always { padding-block-end: var(--chapter-pad); }
-  .always__mark { inset-block-start: -3rem; inset-inline-end: -6rem; color: var(--navy-800); }
   .always__head { margin-block-end: var(--space-9); }
   .always__head, .always__direction { display: grid; gap: var(--space-6) var(--gutter); position: relative; z-index: 1; }
   .always__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); }
   .always__band { aspect-ratio: 4 / 3; margin-block: var(--space-7) var(--space-8); position: relative; z-index: 1; }
   .always__band img { object-position: 50% 60%; }
   .always__subtitle { max-inline-size: 14ch; }
+  /* the association's own figure (their site): one stat, at the full width of its column */
+  .always__stat.stats { grid-template-columns: minmax(0, 1fr); }
+  .always__stat .stat__label { max-inline-size: 22ch; }
   @media (min-width: 48rem) { .always__band { aspect-ratio: 16 / 9; } }
   @media (min-width: 64rem) {
     .always__head, .always__direction { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
@@ -132,5 +134,4 @@
   .nf__in { display: grid; gap: var(--space-5); justify-items: start; }
   .nf__code { font-size: var(--fs-stat); font-weight: var(--wght-bold); line-height: 0.9; letter-spacing: -0.03em; color: var(--beige-quiet); font-variant-numeric: tabular-nums; }
   .nf__title { max-inline-size: 13ch; }
-  .nf__mark { inset-block-end: -6rem; inset-inline-end: -4rem; color: var(--navy-800); }
 }

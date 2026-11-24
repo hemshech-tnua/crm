@@ -3,7 +3,8 @@
 //   1 hero (navy)            the two-line promise, the lead (with "פה תמיד"), the live next FRIDAY, the group photo
 //                            (on phones it comes right after the lead, above the fold; the card follows)
 //   2 the four verbs (beige)  לפגוש · לזוז · למצוא כיוון · להצליח — a sticky index follows the block at mid-screen
-//   3 פה תמיד (navy)          the difference and the direction; SIGNATURE: the hills band opens from the reading edge
+//   3 פה תמיד (navy)          why (the association's own figure: ~15,000 released every year), the difference and the
+//                            direction (the centers, with the municipalities); the hills band opens from the reading edge
 //   4 Friday (beige-light)   the three promises beside the next live Fridays; the other meeting formats as tiles
 //   5 proof (navy)           numbers + participant quotes — owner content, omitted in production until it exists
 //   6 join (beige/navy-deep) one row per audience (veterans, companies, donors, volunteers) + the partner logo wall
@@ -94,14 +95,14 @@ export function render(ctx) {
   // ── 3 · פה תמיד: the difference and the direction (signature: the hills band) ──
   const always = html`
 <section class="chapter always" data-ground="navy" aria-labelledby="always-title">
-  ${ui.mark({ className: 'always__mark' })}
   <div class="wrap">
     <h2 id="always-title" class="t-chapter always__title" data-reveal="up">${t('home.always.title')}</h2>
   </div>
   ${ui.photo('hills', { ratio: '21:9', bleed: true, wipe: true, alt: '', sizes: '100vw', className: 'always__band' })}
   <div class="wrap always__head">
-    <p class="t-title" data-reveal="up">${t('home.always.lead')}</p>
+    ${ui.stats([get('always.stat')], { className: 'always__stat' })}
     <div class="stack" data-reveal>
+      <p class="t-title">${t('home.always.lead')}</p>
       ${ctx.list('home.always.body').map((p) => html`<p class="t-body quiet">${p}</p>`)}
     </div>
   </div>
@@ -137,11 +138,10 @@ export function render(ctx) {
     <div class="meetings__more">
       <h3 class="t-title" data-reveal="up">${t('home.evenings.title')}</h3>
       <ul class="types" role="list" data-reveal>
-        <li><a class="type" href="${eveningsUrl}">${ctx.brand.stripes({ width: 200, height: 140, unit: 26, dir: 'cut', count: 3, anchor: 'te', className: 'stripes' })}<span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
+        <li><a class="type" href="${eveningsUrl}"><span class="type__title">${evItems[0].title}</span><span class="type__body">${evItems[0].body}</span></a></li>
         <li><a class="type" href="${eveningsUrl}">${ctx.img('bonfire', { alt: '', sizes: '(min-width: 48rem) 33vw, 100vw', className: 'focus-70' })}<span class="type__title">${evItems[1].title}</span><span class="type__body">${evItems[1].body}</span></a></li>
         <li><a class="type type--deep" href="${ctx.ctaHref}"><span class="type__title">${evItems[2].title}</span><span class="type__body">${evItems[2].body}</span><span class="type__go">${t('events.calendar')}${ctx.brand.tri()}</span></a></li>
       </ul>
-      ${ctx.pageExists('evenings') ? html`<p class="meetings__link">${ui.link(t('home.evenings.cta'), eveningsUrl)}</p>` : ''}
     </div>
   </div>
 </section>`;
@@ -185,7 +185,7 @@ export function render(ctx) {
     <div class="closing__text">
       <div class="stack" data-reveal>
         <h2 id="closing-title" class="t-display closing__title">${t('home.closing.title')}</h2>
-        <div class="cluster">${ui.button(t('home.closing.cta'), ctx.ctaHref)}${ctx.pageExists('about') ? ui.link(t('home.people.cta'), ctx.link('about')) : ''}</div>
+        <div class="cluster">${ui.button(t('home.closing.cta'), ctx.ctaHref)}</div>
       </div>
       <div class="closing__share" data-reveal>
         <p class="t-lead">${t('home.closing.shareText')}</p>

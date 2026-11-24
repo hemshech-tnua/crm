@@ -17,7 +17,7 @@ export function render(ctx) {
 
   const hero = (g) => html`
 <section class="${`${C.chapter} ct-hero`}" data-ground="${g}" aria-labelledby="contact-h1">
-  ${corner(ctx, 'be', { dir: 'rise' })}
+  ${corner(ctx, 'be', { dir: 'rise', accent: true })}
   <div class="${`${C.wrap} ct-hero__grid`}">
     <div>
       <h1 id="contact-h1" class="${C.display}">${t(k('hero.title'))}</h1>
