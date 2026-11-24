@@ -49,7 +49,9 @@ export type CheckinOutcome =
   | 'need_details'
   | 'window_not_open'
   | 'window_closed'
-  | 'window_unavailable';
+  | 'window_unavailable'
+  /** a meeting with a fee, not paid yet: not checked in (the payment link, or cash to the team at the entrance) */
+  | 'payment_required';
 export type CheckinResult = {
   result: CheckinOutcome;
   first_name?: string | null;
@@ -63,6 +65,8 @@ export type CheckinResult = {
   invite_code?: string | null;
   opens_at?: string;
   can_undo?: boolean;
+  /** with 'payment_required': the meeting's payment link can pay this registration */
+  can_pay_online?: boolean;
   event?: PublicEvent;
 };
 

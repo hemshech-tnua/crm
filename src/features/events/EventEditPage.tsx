@@ -178,7 +178,8 @@ export function EventEditPage() {
   );
 }
 
-function validate(f: Form): { errors: Errors; starts?: string; ends?: string; closes?: string | null } {
+/** `before`: the meeting as saved (null for a new one): the payment-link rule is checked only when it changes. */
+function validate(f: Form, before: Pick<EventRow, 'status' | 'price' | 'payment_url'> | null = null): { errors: Errors; starts?: string; ends?: string; closes?: string | null } {
   const errors: Errors = {};
   const title = f.title.trim();
   if (title.length < 2 || title.length > 120) errors.title = 'צריך כותרת (2 עד 120 תווים).';
@@ -202,6 +203,12 @@ function validate(f: Form): { errors: Errors; starts?: string; ends?: string; cl
   }
   if (f.payment_url.trim() && !isPaymentUrl(withHttps(f.payment_url))) errors.payment_url = 'הקישור צריך להתחיל ב־https:// (עד 500 תווים).';
   if (f.payment_url.trim() && !price && !errors.price) errors.price = 'יש קישור לתשלום: צריך גם סכום.';
+  // a meeting with a fee opens for registration only with a payment link (the database refuses it too)
+  const linkRuleTouched = !before || before.status !== f.status || Number(before.price ?? 0) !== (price ?? 0)
+    || (before.payment_url ?? '') !== f.payment_url.trim();
+  if (price && !f.payment_url.trim() && f.status === 'open' && linkRuleTouched && !errors.payment_url) {
+    errors.payment_url = 'מפגש בתשלום נפתח להרשמה רק עם קישור לתשלום. אפשר להוסיף קישור, או לבחור סטטוס טיוטה או הרשמה סגורה.';
+  }
   if (f.payment_note.length > 200) errors.payment_note = 'עד 200 תווים.';
   if (errors.date || errors.start || errors.end) return { errors };
 
@@ -338,7 +345,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
     if (inFlight.current) return;
     const url = withHttps(f.payment_url);
     if (url !== f.payment_url) setF((p) => ({ ...p, payment_url: url }));
-    const v = validate({ ...f, payment_url: url });
+    const v = validate({ ...f, payment_url: url }, event ?? null);
     setErrors(v.errors);
     if (Object.keys(v.errors).length || !v.starts || !v.ends) {
       requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"], [role="alert"]')?.focus?.());
@@ -574,7 +581,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
               error={errors.payment_url}
               maxLength={500}
               placeholder="https://"
-              hint="קישור לדף התשלום של ספק הסליקה, Bit או PayBox (https:// נוסף לבד). בלי קישור, משלמים בכניסה."
+              hint="קישור לדף התשלום של ספק הסליקה (https:// נוסף לבד). מפגש בתשלום נפתח להרשמה רק עם קישור, והמקום נשמר רק אחרי התשלום."
             />
           </div>
           <Input
@@ -587,7 +594,7 @@ function EventForm({ event, initial, sites, speakers }: { event?: EventRow; init
             hint="מוצג בעמוד ההרשמה, ליד המחיר"
           />
           {event && !Number(event.price) && parseAmount(f.price) ? (
-            <Notice tone="light" icon="alert">הנרשמים הקיימים יסומנו "לא שולם".</Notice>
+            <Notice tone="light" icon="alert">אם כבר יש במפגש הרשמות מאושרות, אי אפשר להוסיף לו דמי השתתפות: הן נרשמו בלי תשלום.</Notice>
           ) : null}
         </div>
       </Panel>

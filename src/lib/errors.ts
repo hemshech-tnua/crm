@@ -61,6 +61,15 @@ const MESSAGES: Record<string, string> = {
   not_paid: 'אפשר לסמן החזר רק אחרי שסומן תשלום.',
   not_priced: 'במפגש הזה אין דמי השתתפות.',
   payment_not_pending: 'התשלום הזה כבר לא מחכה לאישור. אפשר לעדכן אותו בעמוד המפגש.',
+  payment_required: 'המפגש בתשלום: ההרשמה מאושרת, וההגעה נרשמת, רק אחרי שהתשלום נרשם.',
+  payment_link_required: 'מפגש בתשלום נפתח להרשמה רק עם קישור לתשלום. אפשר להוסיף קישור, או לשמור כטיוטה או כהרשמה סגורה.',
+  price_has_registrations: 'כבר יש במפגש הרשמות מאושרות בלי תשלום, ולכן אי אפשר להוסיף לו דמי השתתפות.',
+  reason_required: 'פטור מתשלום נרשם רק עם סיבה.',
+  cancel_first: 'אפשר להחזיר תשלום של מקום מאושר רק אחרי ביטול ההרשמה.',
+  already_attended: 'ההגעה כבר נרשמה, ולכן אי אפשר לסמן שלא שולם. אפשר לסמן החזר.',
+  not_pending: 'ההרשמה הזו כבר לא ממתינה לתשלום.',
+  already_paid: 'התשלום של ההרשמה הזו כבר נרשם.',
+  registration_cancelled: 'ההרשמה הזו בוטלה.',
 };
 
 export type AppError = { message?: string; code?: string; details?: string | null; status?: number } | null | undefined;

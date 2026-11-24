@@ -85,9 +85,11 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
         </Notice>
       )}
 
-      {/* before leaving for the provider's page: the way back here (an in-app browser may not return to this tab) */}
-      {showLink && token && <PendingLink token={token} scarce={scarce(e)} />}
-
+      {!e.payment_url ? (
+        <Notice icon="card">
+          למפגש הזה אין תשלום באתר. צוות העמותה ייצור קשר לתיאום התשלום, והמקום יישמר אחריו.
+        </Notice>
+      ) : (
       <section aria-label="תשלום" className="rounded-[var(--radius-panel)] border-2 border-ink bg-paper p-4 sm:p-5">
         {/* on a phone the button says it all, and it has to be on the first screen: the heading is for screen readers there */}
         <h2 className="text-heading font-bold max-sm:sr-only">תשלום בכרטיס אשראי</h2>
@@ -121,6 +123,10 @@ export function PayStep({ event: e, payer, token, firstName, expired, onCheck, s
           )}
         </div>
       </section>
+      )}
+
+      {/* the way back here, after the pay button (nothing stands between the form and the payment) */}
+      {showLink && token && <PendingLink token={token} scarce={scarce(e)} />}
 
       {/* the amount is on the button above: the ticket says when and where */}
       <EventTicket event={e} showStatus={false} showPrice={false} />

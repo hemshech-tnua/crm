@@ -130,8 +130,10 @@ export function DoorPage() {
 
   const setAttendance = useMutation({
     mutationKey: ['door', id],
-    mutationFn: async (v: { row: CheckinRow; attendance: 'attended' | 'unknown'; quiet?: boolean }) => {
-      const { error } = await supabase.rpc('staff_set_attendance', { p_registration_id: v.row.registration_id, p_attendance: v.attendance });
+    // cash: the fee taken at the entrance, recorded in the same call as the arrival (at a meeting with a fee the database
+    // records an unpaid arrival only together with it)
+    mutationFn: async (v: { row: CheckinRow; attendance: 'attended' | 'unknown'; quiet?: boolean; cash?: boolean }) => {
+      const { error } = await supabase.rpc('staff_set_attendance', { p_registration_id: v.row.registration_id, p_attendance: v.attendance, p_cash: !!v.cash });
       if (error) throw error;
       return v;
     },
@@ -143,7 +145,8 @@ export function DoorPage() {
           r.registration_id !== v.row.registration_id
             ? r
             : v.attendance === 'attended'
-              ? { ...r, attendance: 'attended', status: 'registered', checked_in_at: r.checked_in_at ?? new Date().toISOString(), checkin_method: r.checkin_method ?? 'staff' }
+              ? { ...r, attendance: 'attended', status: 'registered', checked_in_at: r.checked_in_at ?? new Date().toISOString(), checkin_method: r.checkin_method ?? 'staff',
+                  ...(v.cash ? { payment_status: 'paid' as const, cash_just_marked: true } : {}) }
               : { ...r, attendance: 'unknown', checked_in_at: null, checkin_method: null },
         ),
       );
@@ -159,9 +162,11 @@ export function DoorPage() {
     onSuccess: (v) => {
       clearFailed(v.row.registration_id);
       if (v.quiet) return;
-      if (v.attendance === 'attended') {
-        const unpaid = owes(v.row) ? ' · לא שולם' : '';
-        toast.undo(`ההגעה של ${v.row.display_name} סומנה${unpaid}`, () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }));
+      if (v.attendance === 'attended' && v.cash) {
+        // a wrong tap: the undo takes back the payment and the arrival together
+        toast.undo(`ההגעה והתשלום של ${v.row.display_name} סומנו`, () => doorPay.mutate({ row: v.row, paid: false }));
+      } else if (v.attendance === 'attended') {
+        toast.undo(`ההגעה של ${v.row.display_name} סומנה`, () => setAttendance.mutate({ row: v.row, attendance: 'unknown' }));
       } else {
         toast.undo(`הסימון של ${v.row.display_name} הוסר`, () => setAttendance.mutate({ row: v.row, attendance: 'attended' }));
       }
@@ -176,7 +181,7 @@ export function DoorPage() {
   // "paid at the entrance": one tap, cash, at the meeting's price (undo from the toast or the row menu)
   const doorPay = useMutation({
     mutationKey: ['door', id],
-    mutationFn: async (v: { row: CheckinRow; paid: boolean; arrived?: boolean }) => {
+    mutationFn: async (v: { row: CheckinRow; paid: boolean }) => {
       const { error } = await supabase.rpc('staff_door_payment', { p_registration_id: v.row.registration_id, p_paid: v.paid });
       if (error) throw error;
       return v;
@@ -185,7 +190,9 @@ export function DoorPage() {
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<CheckinRow[]>(key);
       qc.setQueryData<CheckinRow[]>(key, (rows) =>
-        rows?.map((r) => (r.registration_id !== v.row.registration_id ? r : { ...r, payment_status: v.paid ? 'paid' : 'pending', cash_just_marked: v.paid })),
+        // undoing the cash takes back the arrival and the place too (nobody stays in without paying)
+        v.paid ? rows?.map((r) => (r.registration_id !== v.row.registration_id ? r : { ...r, payment_status: 'paid', cash_just_marked: true }))
+          : rows?.filter((r) => r.registration_id !== v.row.registration_id || r.status !== 'registered'),
       );
       return { prev };
     },
@@ -195,12 +202,8 @@ export function DoorPage() {
     },
     onSuccess: (v) => {
       if (v.paid) {
-        toast.undo(v.arrived ? `ההגעה והתשלום של ${v.row.display_name} סומנו` : `התשלום של ${v.row.display_name} סומן · שולם במקום`, () => {
-          doorPay.mutate({ row: v.row, paid: false });
-          // the arrival was marked together with the cash: a mistaken tap takes both back
-          if (v.arrived) setAttendance.mutate({ row: v.row, attendance: 'unknown', quiet: true });
-        });
-      } else toast.success(`הסימון "שולם במקום" של ${v.row.display_name} הוסר`);
+        toast.undo(`התשלום של ${v.row.display_name} סומן · שולם במקום`, () => doorPay.mutate({ row: v.row, paid: false }));
+      } else toast.success(`הסימון "שולם במקום" של ${v.row.display_name} הוסר. ההרשמה ממתינה לתשלום`);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
@@ -240,8 +243,10 @@ export function DoorPage() {
   const price = isPriced(e?.price) ? Number(e!.price) : null;
   // a priced meeting: who still owes the fee (a registered place, or a walk-in); a waitlisted place pays once it is in
   function owes(r: CheckinRow) {
-    return price != null && r.status === 'registered' && r.payment_status === 'pending';
+    return price != null && r.status === 'registered' && r.payment_status !== 'paid' && r.payment_status !== 'waived';
   }
+  /** At a meeting with a fee the arrival of someone without a recorded payment is marked only with the cash. */
+  const needsCash = (r: CheckinRow) => price != null && r.attendance !== 'attended' && r.payment_status !== 'paid' && r.payment_status !== 'waived';
 
   // each new search starts at the top, so the best match sits right under the search box (and above the keyboard)
   const firstTerm = useRef(true);
@@ -273,8 +278,19 @@ export function DoorPage() {
   const filtering = !!term || onlyOwing || onlyFirst;
 
   // tap the box: arrived (or back). From a search, the search is cleared and the keyboard stays up for the next person.
-  const toggle = (r: CheckinRow) => {
+  const toggle = async (r: CheckinRow) => {
     const attend = r.attendance !== 'attended';
+    if (attend && needsCash(r)) {
+      // no arrival without the payment: the box asks for the cash, in the same tap's flow
+      const ok = await confirm({
+        title: 'הגעה ותשלום במקום',
+        body: <>למפגש יש דמי השתתפות, ול<b>{r.display_name}</b> עוד אין תשלום רשום. ההגעה נרשמת רק יחד עם התשלום במקום: <span className="num">{fmtMoney(price!)}</span> במזומן.</>,
+        confirm: `התקבל מזומן · ${fmtMoney(price!)}`,
+        cancel: DISMISS,
+      });
+      if (ok) payCash(r);
+      return;
+    }
     const fromSearch = !!term;
     remember(r.registration_id, fromSearch, attend && owes(r) ? STAY_OWES_MS : STAY_MS);
     // from a search the row itself, highlighted on top under "סומנו עכשיו", is the confirmation (and its box the undo):
@@ -287,10 +303,10 @@ export function DoorPage() {
   };
   // "שולם במקום" also marks the arrival: whoever pays at the entrance is here
   const payCash = (r: CheckinRow) => {
-    const arrive = r.attendance !== 'attended';
     remember(r.registration_id, !!term || pinned(r));
-    if (arrive) setAttendance.mutate({ row: r, attendance: 'attended', quiet: true });
-    doorPay.mutate({ row: r, paid: true, arrived: arrive });
+    // one call: the cash and the arrival together (already in: the cash only)
+    if (r.attendance !== 'attended') setAttendance.mutate({ row: r, attendance: 'attended', cash: true });
+    else doorPay.mutate({ row: r, paid: true });
     if (term) setSearch('');
   };
   const openWalkin = () => {
@@ -305,7 +321,7 @@ export function DoorPage() {
     owes: owes(r),
     // the cash button where money changes hands: once in (or just marked), and in the "לא שילמו" view;
     // the rest of the list keeps one row height, with only the "לא שולם" tag
-    payHere: owes(r) && (r.attendance === 'attended' || pinned(r) || onlyOwing),
+    payHere: owes(r),
     price,
     onToggle: () => toggle(r),
     onPaid: () => payCash(r),
@@ -314,10 +330,10 @@ export function DoorPage() {
       const want = failed[r.registration_id];
       if (!want) return;
       remember(r.registration_id, pinned(r), STAY_OWES_MS);
-      setAttendance.mutate({ row: r, attendance: want });
+      setAttendance.mutate({ row: r, attendance: want, cash: want === 'attended' && needsCash(r) });
     },
     menu: [
-      ...(owes(r) && price != null && r.attendance !== 'attended' ? [{ label: `הגעה ושולם במקום · ${fmtMoney(price)}`, icon: 'check' as const, onClick: () => payCash(r) }] : []),
+      ...(needsCash(r) && r.status !== 'registered' ? [{ label: `הגעה ושולם במקום · ${fmtMoney(price!)}`, icon: 'check' as const, onClick: () => payCash(r) }] : []),
       ...(price && r.payment_status === 'paid' && r.cash_just_marked ? [{ label: 'הסרת "שולם במקום"', icon: 'undo' as const, onClick: () => doorPay.mutate({ row: r, paid: false }) }] : []),
       ...(r.status !== 'cancelled' && r.attendance !== 'attended' ? [{ label: 'סימון ביטול', icon: 'close' as const, danger: true, onClick: () => askCancel(r) }] : []),
     ],
@@ -687,13 +703,13 @@ function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
   const dirty = name !== initial.name || phone !== initial.phone || !!city || !!age || !!source || paid;
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
 
-  /** After the arrival is saved: record the cash, if it was taken. Returns a note for the toast. */
-  const recordCash = async (registrationId: string): Promise<string> => {
-    if (!paid || price == null) return price != null ? ' · לא שולם' : '';
-    const { data, error } = await supabase.rpc('staff_door_payment', { p_registration_id: registrationId, p_paid: true });
-    if (error) return ` · התשלום לא נשמר (${errorMessage(error)})`;
-    // already paid (online, before the meeting): nothing to take at the door
-    return (data as { already?: boolean } | null)?.already ? ' · כבר שולם, אין לגבות' : ' · שולם במקום';
+  /** The note for the toast: the cash was recorded with the arrival, or it had been paid before (nothing to take). */
+  const cashNote = (recorded: boolean | undefined) => (price == null ? '' : recorded ? ' · שולם במקום' : ' · כבר שולם, אין לגבות');
+  /** At a meeting with a fee the arrival is saved only together with the cash taken here (the database insists too). */
+  const needPaid = () => {
+    if (price == null || paid) return false;
+    setErrors({ form: `למפגש יש דמי השתתפות: ההגעה נרשמת רק יחד עם התשלום במקום (${fmtMoney(price)}).` });
+    return true;
   };
 
   // S3: someone we already know, typed by name: suggest the existing card instead of creating a duplicate
@@ -710,10 +726,10 @@ function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
   });
   const pick = useMutation({
     mutationFn: async (p: { participant_id: string; full_name: string }) => {
-      const { data, error } = await supabase.rpc('staff_checkin_existing', { p_event_id: eventId, p_participant_id: p.participant_id });
+      const { data, error } = await supabase.rpc('staff_checkin_existing', { p_event_id: eventId, p_participant_id: p.participant_id, p_cash: price != null && paid });
       if (error) throw error;
-      const rid = (data as { registration_id?: string } | null)?.registration_id ?? null;
-      return { ...p, rid, cash: rid ? await recordCash(rid) : '' };
+      const d = data as { registration_id?: string; cash_recorded?: boolean } | null;
+      return { ...p, rid: d?.registration_id ?? null, cash: cashNote(d?.cash_recorded) };
     },
     onSuccess: async (p) => {
       await invalidate(eventId);
@@ -729,10 +745,11 @@ function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
       const { data, error } = await supabase.rpc('staff_add_walkin', {
         p_event_id: eventId,
         p: { full_name: name.trim(), phone: phone.trim(), city: city.trim() || null, age: age.trim() || null, source: source || null },
+        p_cash: price != null && paid,
       });
       if (error) throw error;
-      const r = data as { registration_id: string; participant_is_new: boolean; already_registered: boolean; card_name?: string | null };
-      return { ...r, cash: await recordCash(r.registration_id) };
+      const r = data as { registration_id: string; participant_is_new: boolean; already_registered: boolean; card_name?: string | null; cash_recorded?: boolean };
+      return { ...r, cash: cashNote(r.cash_recorded) };
     },
     onSuccess: async (r) => {
       await invalidate(eventId);
@@ -762,7 +779,7 @@ function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
     if (!normalizePhone(phone)) errs.phone = `צריך מספר טלפון נייד, למשל ${PHONE_EXAMPLE}.`;
     if (age.trim() && !(Number(age) >= 16 && Number(age) <= 99)) errs.age = 'הגיל צריך להיות בין 16 ל־99. אפשר גם להשאיר ריק.';
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (Object.keys(errs).length || needPaid()) return;
     add.mutate();
   };
 
@@ -775,7 +792,7 @@ function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
           <ul className="flex flex-col gap-1.5">
             {suggestions.data!.map((p) => (
               <li key={p.participant_id}>
-                <button type="button" disabled={pick.isPending} onClick={() => pick.mutate(p)}
+                <button type="button" disabled={pick.isPending} onClick={() => { if (!needPaid()) pick.mutate(p); }}
                   className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[var(--radius-control)] bg-paper px-3 text-right hover:ring-2 hover:ring-tide/40">
                   <span className="font-semibold">{p.full_name}{p.city ? <span className="font-normal text-muted"> · {p.city}</span> : null}</span>
                   {p.phone_last4 && <span className="num text-small text-muted">••{p.phone_last4}</span>}
@@ -803,7 +820,7 @@ function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
           type="button"
           role="switch"
           aria-checked={paid}
-          onClick={() => setPaid((v) => !v)}
+          onClick={() => { setPaid((v) => !v); setErrors((x) => ({ ...x, form: undefined })); }}
           className={cx(
             'flex min-h-14 items-center gap-3 rounded-[var(--radius-control)] border-2 px-3 text-right transition-colors',
             paid ? 'border-ink bg-ink/[0.06] text-ink' : 'border-control-line bg-paper text-ink hover:border-ink',
@@ -814,7 +831,7 @@ function WalkinForm({ initial, onClose, eventId, price, onDone, onDirty }: {
           </span>
           <span className="flex-1">
             <span className="block font-semibold">שולם במקום · <span className="num">{fmtMoney(price)}</span></span>
-            <span className="block text-small text-muted">{paid ? 'התשלום במזומן יירשם עם ההגעה' : 'אם לא שולם עכשיו, השורה תסומן "לא שולם"'}</span>
+            <span className="block text-small text-muted">{paid ? 'התשלום במזומן יירשם עם ההגעה' : 'חובה במפגש בתשלום: ההגעה נרשמת רק יחד עם התשלום'}</span>
           </span>
         </button>
       )}

@@ -114,14 +114,14 @@ describe('a meeting with a fee and a payment link', () => {
     expect(after.status).toBe('already_registered');
   });
 
-  it('free meetings and priced meetings without a link keep today\'s flow', async () => {
+  it('free meetings keep today\'s flow; a meeting with a fee opens for registration only with a payment link', async () => {
     const free = await makeEvent();
     expect((await register(free.public_code)).res.status).toBe('registered');
-    const noLink = await makeEvent({ price: 20 });
-    const { res } = await register(noLink.public_code);
-    expect(res.status).toBe('registered');
-    expect((await info(res.token)).payment_status).toBe('pending');
-    expect((await info(res.token)).full_name).toBeNull();
+    // since 20261106002800_pay_guarantee.sql: nobody could pay before coming, so it stays a draft or "registration closed"
+    await expect(makeEvent({ price: 20 })).rejects.toMatchObject({ message: 'payment_link_required' });
+    const closed = await makeEvent({ price: 20, status: 'closed' });
+    const { error } = await visitor().rpc('public_register', { p: registration(closed.public_code) });
+    expect(error?.message).toBe('registration_closed');
     // a full pay-first meeting: the waitlist as today (nobody pays to wait)
     const full = await makeEvent({ price: 20, payment_url: PAY_URL, capacity: 1 });
     const first = await register(full.public_code);
@@ -191,12 +191,14 @@ describe('the יש חשבונית webhook', () => {
   });
 
   it('a receipt never marks a place paid at a meeting without a payment link (fee at the entrance)', async () => {
-    const ev = await makeEvent({ price: 20 });
-    const { reg } = await register(ev.public_code);
-    expect((await regOf(ev.id, reg.phone))).toMatchObject({ status: 'registered', payment_status: 'pending' });
+    const ev = await makeEvent({ price: 20, status: 'closed' });
+    const coord = await staff('coord');
+    const reg = registration(ev.public_code);
+    const { data: p } = await coord.from('participants').insert({ full_name: reg.full_name, phone: reg.phone }).select('id').single();
+    expect((await coord.rpc('staff_register', { p_event_id: ev.id, p_participant_id: p!.id })).data.status).toBe('pending_payment');
     const out = await hook({ docNumber: docNo(), price: 300, customerName: 'Ploni', customerPhone: reg.phone, date: '2026-11-19 17:35' });
     expect(out.body.result).not.toBe('matched');
-    expect((await regOf(ev.id, reg.phone))).toMatchObject({ status: 'registered', payment_status: 'pending', payment_ref: null });
+    expect((await regOf(ev.id, reg.phone))).toMatchObject({ status: 'pending_payment', payment_status: 'pending', payment_ref: null });
   });
 
   it('no document number, no positive amount, Success false: ignored, nothing stored', async () => {
@@ -243,16 +245,19 @@ describe('staff', () => {
     expect(list).toHaveLength(1);
   });
 
-  it('a pending person who turns up is checked in as a walk-in (and pays at the door)', async () => {
+  it('a pending person who turns up is let in only together with the cash taken at the door', async () => {
     const ev = await makeEvent({ price: 20, payment_url: PAY_URL, startsInMinutes: 30 });
     const { reg } = await register(ev.public_code);
     const r = await regOf(ev.id, reg.phone);
     const coord = await staff('coord');
+    const door = await staff('door');
     const { data: pid } = await coord.from('registrations').select('participant_id').eq('id', r.id).single();
-    expect((await coord.rpc('staff_checkin_existing', { p_event_id: ev.id, p_participant_id: pid!.participant_id })).error).toBeNull();
-    const { data: row } = await coord.from('registrations').select('status, attendance, is_walk_in, payment_status').eq('id', r.id).single();
-    expect(row).toEqual({ status: 'registered', attendance: 'attended', is_walk_in: true, payment_status: 'pending' });
-    expect((await (await staff('door')).rpc('staff_door_payment', { p_registration_id: r.id })).data).toMatchObject({ payment_status: 'paid', payment_method: 'cash' });
+    expect((await door.rpc('staff_checkin_existing', { p_event_id: ev.id, p_participant_id: pid!.participant_id })).error?.message).toBe('payment_required');
+    const { data, error } = await door.rpc('staff_checkin_existing', { p_event_id: ev.id, p_participant_id: pid!.participant_id, p_cash: true });
+    expect(error).toBeNull();
+    expect(data).toMatchObject({ registration_id: r.id, cash_recorded: true });
+    const { data: row } = await coord.from('registrations').select('status, attendance, is_walk_in, payment_status, payment_method, paid_amount').eq('id', r.id).single();
+    expect(row).toEqual({ status: 'registered', attendance: 'attended', is_walk_in: true, payment_status: 'paid', payment_method: 'cash', paid_amount: 20 });
   });
 
   it('the unmatched payments table: admin and coordinator read it, nobody writes it directly', async () => {

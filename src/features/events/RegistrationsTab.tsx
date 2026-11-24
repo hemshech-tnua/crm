@@ -30,6 +30,7 @@ type Filter = 'all' | 'registered' | 'waitlisted' | 'unpaid' | 'attended' | 'no_
 const owes = (r: RegRow) => r.status === 'registered' && r.payment_status === 'pending' && r.attendance !== 'no_show';
 /** Started a pay-first registration and did not pay: no place, not counted; the team may remind them. */
 const startedUnpaid = (r: RegRow) => r.status === 'pending_payment';
+const settled = (r: RegRow) => r.payment_status === 'paid' || r.payment_status === 'waived';
 /** A registration made before the meeting (an active registration); a walk-in is counted apart ("בלי הרשמה"). */
 const isRegistered = (r: RegRow) => r.status === 'registered' && !r.is_walk_in;
 const FILTERS: { value: Filter; label: string; test: (r: RegRow) => boolean }[] = [
@@ -101,13 +102,20 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   // ── mutations ──
   const promote = useMutation({
     mutationFn: async (r: RegRow) => {
-      const { error } = await supabase.rpc('staff_promote', { p_registration_id: r.id });
+      const { data, error } = await supabase.rpc('staff_promote', { p_registration_id: r.id });
       if (error) throw error;
-      return r;
+      return { r, status: (data as { status: RegStatus }).status };
     },
-    onSuccess: async (r) => {
+    onSuccess: async ({ r, status }) => {
       await invalidate(e.id);
-      toast.success(`ההרשמה של ${r.participant?.full_name ?? ''} עברה לרשומים`);
+      const who = r.participant?.full_name ?? '';
+      if (status === 'pending_payment') {
+        // a meeting with a fee: the place is kept only once it is paid; the personal link goes with the message
+        toast.success(`ההרשמה של ${who} ממתינה לתשלום. המקום יישמר אחרי התשלום`);
+        if (r.participant?.phone) setComposer({ reg: { ...r, status: 'pending_payment' }, keys: ['payment_due'], defaultKey: 'payment_due' });
+        return;
+      }
+      toast.success(`ההרשמה של ${who} עברה לרשומים`);
       if (r.participant?.phone) setComposer({ reg: { ...r, status: 'registered' }, keys: ['waitlist_promoted'], defaultKey: 'waitlist_promoted' });
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -134,7 +142,9 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
     },
     onSuccess: async ({ r, status }) => {
       await invalidate(e.id);
-      toast.success(status === 'waitlisted' ? `המפגש מלא: ${r.participant?.full_name ?? ''} ברשימת ההמתנה` : `ההרשמה של ${r.participant?.full_name ?? ''} חודשה`);
+      toast.success(status === 'waitlisted' ? `המפגש מלא: ${r.participant?.full_name ?? ''} ברשימת ההמתנה`
+        : status === 'pending_payment' ? `ההרשמה של ${r.participant?.full_name ?? ''} ממתינה לתשלום. המקום יישמר אחרי התשלום`
+          : `ההרשמה של ${r.participant?.full_name ?? ''} חודשה`);
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -197,9 +207,13 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
   const menuFor = (r: RegRow): MenuItem[] => {
     const items: MenuItem[] = [];
     if (r.participant && !r.participant.anonymized_at) items.push({ label: 'פתיחת הכרטיס', icon: 'people', onClick: () => navigate(`/app/participants/${r.participant_id}`) });
-    if (started && r.status === 'registered' && r.attendance !== 'attended') items.push({ label: 'סימון הגעה', icon: 'check', onClick: () => attendance.mutate({ r, attendance: 'attended' }) });
+    // at a meeting with a fee the arrival is marked only once the payment is recorded (the database refuses it otherwise)
+    if (started && r.status === 'registered' && r.attendance !== 'attended' && (!priced || settled(r))) items.push({ label: 'סימון הגעה', icon: 'check', onClick: () => attendance.mutate({ r, attendance: 'attended' }) });
     if (started && r.status === 'registered' && r.attendance !== 'no_show') items.push({ label: 'סימון אי־הגעה', icon: 'close', onClick: () => attendance.mutate({ r, attendance: 'no_show' }) });
-    if (r.status === 'pending_payment') items.push({ label: 'אישור תשלום', icon: 'check', onClick: () => confirmFor(r) });
+    if (r.status === 'pending_payment') {
+      items.push({ label: 'אישור תשלום', icon: 'check', onClick: () => confirmFor(r) });
+      items.push({ label: 'תשלום אחר או פטור', icon: 'check', onClick: () => payFor(r) });
+    }
     else if ((priced && r.status !== 'cancelled') || r.payment_status === 'paid' || r.payment_status === 'refunded' || r.payment_status === 'waived') {
       items.push({ label: owes(r) ? 'סימון תשלום' : 'עדכון תשלום', icon: 'check', onClick: () => payFor(r) });
     }
@@ -370,7 +384,7 @@ export function RegistrationsTab({ event: e, people, initialFilter }: { event: E
         e={e}
         regs={rows}
         free={free}
-        onRegistered={(r) => r && setComposer({ reg: r, defaultKey: 'confirmation' })}
+        onRegistered={(r, key) => r && setComposer(key ? { reg: r, keys: [key], defaultKey: key } : { reg: r, defaultKey: 'confirmation' })}
       />
     </div>
   );
@@ -450,7 +464,7 @@ function SourceCell({ r, className = '' }: { r: RegRow; className?: string }) {
 type Found = { id: string; full_name: string | null; phone: string | null; city: string | null };
 
 function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
-  open: boolean; onClose: () => void; e: EventWithStats; regs: RegRow[]; free: number | null; onRegistered: (r: RegRow | null) => void;
+  open: boolean; onClose: () => void; e: EventWithStats; regs: RegRow[]; free: number | null; onRegistered: (r: RegRow | null, templateKey?: string) => void;
 }) {
   // typing starts in the search right away (the dialog would otherwise focus its close button first)
   const searchRef = useRef<HTMLInputElement>(null);
@@ -505,6 +519,12 @@ function AddRegistrantDialog({ open, onClose, e, regs, free, onRegistered }: {
       id: regId, participant_id: p.id, status, participant: { id: p.id, full_name: p.full_name, phone: p.phone, city: p.city, consent_updates: false, photo_opt_out: false, anonymized_at: null },
     } as RegRow);
     if (status === 'waitlisted') toast.success(`המפגש מלא: ${p.full_name} ברשימת ההמתנה`);
+    else if (status === 'pending_payment') {
+      // a meeting with a fee: no place before the payment; the personal link to pay goes by WhatsApp
+      toast.success(`ההרשמה של ${p.full_name} ממתינה לתשלום. המקום יישמר אחרי התשלום`, p.phone ? { label: 'שליחת קישור לתשלום', run: () => onRegistered({
+        id: regId, participant_id: p.id, status, participant: { id: p.id, full_name: p.full_name, phone: p.phone, city: p.city, consent_updates: false, photo_opt_out: false, anonymized_at: null },
+      } as RegRow, 'payment_due') } : undefined);
+    }
     else toast.success(`ההרשמה של ${p.full_name} נשמרה`, p.phone ? { label: 'שליחת אישור', run: send } : undefined);
     onClose();
   };
