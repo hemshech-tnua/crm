@@ -43,8 +43,10 @@ BEIGE = (0xEB, 0xDC, 0xB9)
 #   crisp: DENOISE (px Gaussian on the master: the grain costs bytes, not detail), then an unsharp mask at each output
 #          size (SHARPEN = radius, percent, threshold; the threshold leaves the grain alone) — crisper than before at
 #          about the same file size
-GRADE = dict(TARGET=0.64, GAMMA_MIN=0.55, GAMMA_MAX=1.0, SHADOWS=0.20, MIDS=0.05, LIFT=0.025,
-             SAT=1.32, VIBRANCE=0.35, CONTRAST=1.10, HUES=((80, 32, 0.22), (150, 24, 0.22)), DENOISE=0.8)
+# 26.11, owner: "התמונות עדיין לא צבעוניות, הן אפורות ומשעממות" — no black-point lift (it greyed the image), more contrast,
+# much stronger saturation and vibrance, greens and blues pushed further.
+GRADE = dict(TARGET=0.58, GAMMA_MIN=0.55, GAMMA_MAX=1.0, SHADOWS=0.10, MIDS=0.02, LIFT=0.0,
+             SAT=1.65, VIBRANCE=0.65, CONTRAST=1.24, HUES=((80, 32, 0.35), (150, 24, 0.35)), DENOISE=0.8)
 # PORTRAIT — faces stay natural: a little exposure and shadow lift, a touch of local contrast (clarity), no colour push.
 PORTRAIT = dict(TARGET=0.64, GAMMA_MIN=0.80, GAMMA_MAX=1.0, SHADOWS=0.14, MIDS=0.03, LIFT=0.015,
                 SAT=1.04, VIBRANCE=0.0, CONTRAST=1.0, CLARITY=(24, 14, 2), DENOISE=0.4)
