@@ -78,6 +78,7 @@ function PaymentForm({ target: t, event, onClose, onDirty }: { target: PaymentTa
   const toast = useToast();
   const invalidate = useInvalidateEvent();
   const wasPaid = t.payment_status === 'paid' || t.payment_status === 'refunded';
+  const wasSettled = t.payment_status === 'paid' || t.payment_status === 'waived';
   const [status, setStatus] = useState<PaymentStatus>(t.payment_status === 'pending' || t.payment_status === 'none' ? 'paid' : t.payment_status);
   const [amount, setAmount] = useState(String(t.paid_amount ?? (isPriced(event.price) ? Number(event.price) : '')));
   const [method, setMethod] = useState<PaymentMethod>(t.payment_method ?? 'cash');
@@ -124,6 +125,10 @@ function PaymentForm({ target: t, event, onClose, onDirty }: { target: PaymentTa
 
   const submit = (ev: FormEvent) => {
     ev.preventDefault();
+    if (status === 'waived' && !ref.trim()) {
+      setErrors({ form: 'פטור מתשלום נרשם רק עם סיבה.' });
+      return;
+    }
     if (status === 'paid' || status === 'refunded') {
       const v = parseAmount(amount);
       if (v == null || Number.isNaN(v) || v <= 0 || v > 100000) {
@@ -157,12 +162,16 @@ function PaymentForm({ target: t, event, onClose, onDirty }: { target: PaymentTa
       )}
       {status !== 'pending' && (
         <Input
-          label={status === 'waived' ? 'סיבה (לא חובה)' : 'אסמכתה (לא חובה)'}
+          label={status === 'waived' ? 'סיבת הפטור' : 'אסמכתה (לא חובה)'}
+          required={status === 'waived'}
           value={ref}
           onChange={(x) => setRef(x.target.value)}
           maxLength={100}
           hint={status === 'paid' ? 'מספר עסקה מחברת התשלום, או הערה קצרה' : undefined}
         />
+      )}
+      {status === 'pending' && wasSettled && isPriced(event.price) && (
+        <p className="text-small text-ink-soft">בלי תשלום ההרשמה חוזרת להמתנה לתשלום, והמקום לא נשמר עד שהתשלום נרשם.</p>
       )}
       {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -196,15 +205,16 @@ function ConfirmForm({ target: t, event, onClose, onDirty }: { target: ConfirmTa
   const invalidate = useInvalidateEvent();
   const [amount, setAmount] = useState(isPriced(event.price) ? String(Number(event.price)) : '');
   const [ref, setRef] = useState('');
+  const [method, setMethod] = useState<PaymentMethod>('card');
   const [errors, setErrors] = useState<{ amount?: string; form?: string }>({});
   const [firstAmount] = useState(amount);
-  const dirty = !!ref.trim() || amount !== firstAmount;
+  const dirty = !!ref.trim() || amount !== firstAmount || method !== 'card';
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
 
   const save = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc('staff_confirm_payment', {
-        p_registration_id: t.id, p_amount: parseAmount(amount), p_ref: ref.trim() || null, p_method: 'card',
+        p_registration_id: t.id, p_amount: parseAmount(amount), p_ref: ref.trim() || null, p_method: method,
       });
       if (error) throw error;
       return (data as { status: RegStatus }).status;
@@ -233,8 +243,11 @@ function ConfirmForm({ target: t, event, onClose, onDirty }: { target: ConfirmTa
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
       <p className="text-body text-ink-soft">
-        לאשר רק אחרי שרואים את התשלום ב"יש חשבונית". ההרשמה תושלם מיד, ואם המפגש התמלא בינתיים היא תיכנס לרשימת ההמתנה.
+        מאשרים רק אחרי שהתשלום התקבל בפועל (קבלה ב"יש חשבונית", Bit, העברה או מזומן). ההרשמה תושלם מיד, ואם המפגש התמלא בינתיים היא תיכנס לרשימת ההמתנה.
       </p>
+      <Select label="אמצעי תשלום" value={method} onChange={(x) => setMethod(x.target.value as PaymentMethod)}>
+        {METHODS.map((m) => <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>)}
+      </Select>
       <Input
         label="סכום ששולם (₪)"
         inputMode="decimal"
@@ -250,7 +263,7 @@ function ConfirmForm({ target: t, event, onClose, onDirty }: { target: ConfirmTa
         value={ref}
         onChange={(x) => setRef(x.target.value)}
         maxLength={100}
-        hint={`מספר הקבלה ב"יש חשבונית"`}
+        hint={`מספר הקבלה ב"יש חשבונית", או מספר העסקה`}
       />
       {errors.form && <p className="text-small font-medium text-bad" role="alert">{errors.form}</p>}
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -281,7 +294,7 @@ export function FinancePanel({ e, onUnpaid, onStarted, onExpenses }: {
   return (
     <Panel
       title="כספים"
-      description={priced ? <>דמי השתתפות <span className="num">{fmtMoney(f.price)}</span>{f.has_payment_link ? ' · עם קישור לתשלום' : ' · בלי קישור לתשלום (משלמים בכניסה)'}</> : 'מפגש בלי דמי השתתפות'}
+      description={priced ? <>דמי השתתפות <span className="num">{fmtMoney(f.price)}</span>{f.has_payment_link ? ' · עם קישור לתשלום' : ' · בלי קישור לתשלום'}</> : 'מפגש בלי דמי השתתפות'}
       actions={
         <>
           {priced && i.pending_count > 0 && onUnpaid && <Button size="sm" variant="ghost" icon="filter" onClick={onUnpaid}>מי לא שילמו</Button>}

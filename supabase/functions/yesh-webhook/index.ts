@@ -22,6 +22,9 @@
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SECRET_KEY')!;
 const WEBHOOK_KEY = Deno.env.get('YESH_WEBHOOK_KEY') ?? '';
+// When the YESH_WEBHOOK_KEY secret is not set, the key is checked against this SHA-256 of it instead (the key itself is
+// not in the code). Setting the secret takes precedence; rotating the key = setting the secret to a new value.
+const WEBHOOK_KEY_SHA256 = 'c4fdacd8770f8666e67075319a2ffb9e49ae53cd70114caa9f582e68e41f14a6';
 const MAX_BODY = 32 * 1024;
 
 function reply(status: number, body: unknown): Response {
@@ -38,9 +41,11 @@ async function sha256(text: string): Promise<Uint8Array> {
 
 // Constant time: both sides are hashed to 32 bytes first, so neither the length nor the first differing character of
 // the configured key shows in the timing. An unset (or too short) key accepts nothing.
+const hexBytes = (h: string) => new Uint8Array(h.match(/../g)!.map((x) => parseInt(x, 16)));
 async function keyMatches(given: string): Promise<boolean> {
-  if (WEBHOOK_KEY.length < 32 || !given || given.length > 256) return false;
-  const [a, b] = await Promise.all([sha256(given), sha256(WEBHOOK_KEY)]);
+  if (!given || given.length < 32 || given.length > 256) return false;
+  if (WEBHOOK_KEY && WEBHOOK_KEY.length < 32) return false;
+  const [a, b] = await Promise.all([sha256(given), WEBHOOK_KEY ? sha256(WEBHOOK_KEY) : Promise.resolve(hexBytes(WEBHOOK_KEY_SHA256))]);
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
   return diff === 0;

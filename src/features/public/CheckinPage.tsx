@@ -112,6 +112,12 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
         rememberPerson(res.device, res.first_name);
         onWelcome(res);
         return;
+      case 'payment_required':
+        // not in yet: the registration is kept on this phone, so "שילמתי" checks again with it
+        saveToken(res.event?.code ?? event.code, res.token, res.first_name);
+        rememberPerson(res.device, res.first_name);
+        setPay(res);
+        return;
       case 'not_registered':
         go('walkin');
         return;
@@ -132,6 +138,7 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
   };
 
   const [last, setLast] = useState<{ token?: string; device?: string } | null>(null);
+  const [pay, setPay] = useState<CheckinResult | null>(null);
   const run = async (p: { token?: string; device?: string; phone?: string }) => {
     setError(null);
     setLast(p);
@@ -159,6 +166,19 @@ function CheckinFlow({ code, event, undone, announce, onWelcome, onWindowChanged
     }
     void run({ phone: phone.trim() });
   };
+
+  if (pay) {
+    const again = pay.token ? { token: pay.token } : pay.device ? { device: pay.device } : null;
+    return (
+      <PaymentRequired
+        result={pay}
+        event={pay.event ?? event}
+        busy={busy}
+        error={error}
+        onAgain={again ? () => { setPay(null); void run(again); } : null}
+      />
+    );
+  }
 
   if (mode === 'walkin') {
     return (
@@ -553,6 +573,38 @@ function NoCheckin({ info }: { info: CheckinInfo }) {
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+/**
+ * A meeting with a fee and no recorded payment: the check-in waits for it. The place is kept only after the payment, so
+ * nothing here says "נרשמת". Paying by the meeting's link confirms it (the provider tells us), then "שילמתי" checks in;
+ * otherwise the team takes cash at the entrance.
+ */
+function PaymentRequired({ result: r, event, busy, error, onAgain }: {
+  result: CheckinResult; event: PublicEvent; busy: boolean; error: string | null; onAgain: (() => void) | null;
+}) {
+  const online = !!r.can_pay_online && !!event.payment_url;
+  return (
+    <div className="flex flex-col gap-4 pt-4" data-testid="checkin-payment-required">
+      <CheckinTitle event={event} focus />
+      <ResultTitle size="step">{r.first_name ? `${r.first_name}, עוד צעד אחד: תשלום` : 'עוד צעד אחד: תשלום'}</ResultTitle>
+      <p className="text-heading text-ink-soft">
+        למפגש יש דמי השתתפות של <span className="num whitespace-nowrap">{fmtMoney(event.price)}</span>, והתשלום עוד לא התקבל. הצ׳ק־אין נקלט אחרי&nbsp;התשלום.
+      </p>
+      {online && (
+        <ExternalButton href={payUrl(event.payment_url!)} variant="primary" size="lg" cta className="w-full">
+          לתשלום <span className="num">{fmtMoney(event.price)}</span>
+        </ExternalButton>
+      )}
+      <Notice icon="card">
+        {online ? 'אפשר גם לשלם במזומן לצוות בכניסה. הצוות יסמן את ההגעה יחד עם התשלום.' : 'התשלום במזומן אצל הצוות בכניסה. הצוות יסמן את ההגעה יחד עם התשלום.'}
+      </Notice>
+      {error && <ErrorBox error={error} />}
+      {online && onAgain && (
+        <Button variant="secondary" size="lg" busy={busy} onClick={onAgain} className="w-full">שילמתי, לצ׳ק־אין</Button>
+      )}
     </div>
   );
 }

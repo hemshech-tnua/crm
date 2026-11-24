@@ -13,10 +13,10 @@ import { EventTicket } from './EventTicket';
 import { DetailsButton, MeetingSheet, useDetailsSheet } from './MeetingDetails';
 import { trackingQuery } from './tracking';
 import { ConsentFields, PersonFields, usePersonForm } from './PersonForm';
-import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, type Payer, ResultTitle, SuccessMark, WaitMark, inviteMessage, usePageTitle } from './shared';
+import { BeforeYouCome, CalendarButtons, ContactLine, InviteBlock, PayBlock, PersonalLink, type Payer, ResultTitle, SuccessMark, WaitMark, inviteMessage, payUrl, usePageTitle } from './shared';
 import { FRIDAY_FACTS } from './friday/facts';
 import { fmtDayLong, fmtTime } from '@/lib/dates';
-import { isPriced } from '@/lib/money';
+import { fmtMoney, isPriced } from '@/lib/money';
 import { PayStep, paysFirst, useWatchExpired } from './PayStep';
 
 const UTM_KEYS = ['source', 'medium', 'campaign'] as const;
@@ -184,7 +184,7 @@ function SavedHere({ code }: { code: string }) {
     setSaved([]);
     focusFirstField();
   };
-  const where = (r: SavedRow) => (r.status === 'pending_payment' ? 'התשלום עוד לא\u00a0הושלם.' : r.status === 'waitlisted' ? 'ההרשמה ברשימת\u00a0ההמתנה.' : null);
+  const where = (r: SavedRow) => (r.status === 'pending_payment' ? 'המקום נשמר רק אחרי\u00a0התשלום.' : r.status === 'waitlisted' ? 'ההרשמה ברשימת\u00a0ההמתנה.' : null);
   const link = 'inline-flex min-h-11 items-center gap-1.5 font-semibold text-tide underline underline-offset-4';
   const quiet = 'inline-flex min-h-11 items-center font-semibold text-ink-soft underline underline-offset-4';
   const one = rows.length === 1 ? rows[0] : null;
@@ -194,11 +194,11 @@ function SavedHere({ code }: { code: string }) {
         {one ? (
           <>
             <p className="text-body-sm">
-              נרשמת מהטלפון הזה{one.name ? <>: <span className="font-semibold">{one.name}</span></> : null}.{where(one) && <> {where(one)}</>}
+              {one.status === 'pending_payment' ? 'התחלת הרשמה מהטלפון הזה' : 'נרשמת מהטלפון הזה'}{one.name ? <>: <span className="font-semibold">{one.name}</span></> : null}.{where(one) && <> {where(one)}</>}
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-x-5">
               <Link to={`/m/${one.token}`} className={link}>
-                לעמוד ההרשמה שלי
+                {one.status === 'pending_payment' ? 'להשלמת התשלום' : 'לעמוד ההרשמה שלי'}
                 <Tri className="text-tide" />
               </Link>
               <button type="button" onClick={() => notMine(one.token)} className={quiet}>זו לא ההרשמה שלי</button>
@@ -315,7 +315,17 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       }
       saveToken(res.event?.code ?? event.code, res.token, res.first_name);
       void qc.invalidateQueries({ queryKey: ['pub', 'events'] });
-      onDone(res, { name: person.full_name, phone: person.phone });
+      const who = { name: person.full_name, phone: person.phone };
+      const link = res.event?.payment_url ?? event.payment_url;
+      if (res.status === 'pending_payment' && link) {
+        // the submit button is the pay button: straight on to the provider's page, in this tab. The personal link is
+        // already saved on this phone (the form shows it on the way back). If the page did not move on (a blocked
+        // navigation), the pay step with one big pay button is shown instead.
+        goToPayment(payUrl(link, who));
+        window.setTimeout(() => onDone(res, who), 2500);
+        return;
+      }
+      onDone(res, who);
     } catch (err) {
       setBusy(false);
       if (form.serverError(err)) return;
@@ -338,7 +348,11 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
           {/* the ticket above already shows the price and the team's note: here only how paying works */}
           <span className="font-bold">תשלום</span>
           <span className="text-small text-ink-soft">
-            {waitlist ? 'משלמים רק אם מתפנה מקום.' : event.payment_url ? 'משלמים בכרטיס אשראי, מיד אחרי מילוי הפרטים.' : 'משלמים בכניסה למפגש.'}
+            {waitlist
+              ? 'משלמים רק אם מתפנה מקום.'
+              : event.payment_url
+                ? 'המקום נשמר רק אחרי התשלום. הכפתור בסוף הטופס פותח את דף התשלום המאובטח, ומשלמים בכרטיס אשראי.'
+                : 'המקום נשמר רק אחרי התשלום, בתיאום עם צוות העמותה.'}
           </span>
         </p>
       )}
@@ -347,17 +361,22 @@ function RegisterForm({ event, sources, refCode, utm, onDone }: {
       <ConsentFields form={form} />
       {error && <ErrorBox error={error} />}
       <Button type="submit" size="lg" cta busy={busy} className="w-full">
-        {waitlist ? 'להרשמה לרשימת ההמתנה' : paysFirst(event) ? 'להרשמה ולתשלום' : 'להרשמה'}
+        {waitlist ? 'להרשמה לרשימת ההמתנה' : paysFirst(event) ? <>לתשלום <span className="num">{fmtMoney(event.price)}</span></> : 'להרשמה'}
       </Button>
       {!waitlist && (
         <p className="-mt-2 text-center text-small text-balance text-muted">
-          {paysFirst(event)
+          {isPriced(event.price)
             ? 'המקום נשמר רק אחרי התשלום.'
             : 'אחרי ההרשמה יופיע כאן קישור אישי. דרכו אפשר לבטל אם משהו משתנה.'}
         </p>
       )}
     </form>
   );
+}
+
+/** Leaves for the provider's payment page in this tab. */
+function goToPayment(url: string) {
+  window.location.assign(url);
 }
 
 function ownSaved(code: string, firstName: string | null | undefined): string | null {

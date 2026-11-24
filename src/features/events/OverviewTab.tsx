@@ -104,7 +104,7 @@ function Facts({ e, people }: { e: EventWithStats; people: EventPeople }) {
           ['מחיר', isPriced(e.price) ? (
             <span key="pr"><span className="num">{fmtMoney(e.price)}</span>{e.payment_url
               ? <> · <a href={e.payment_url} target="_blank" rel="noopener noreferrer" className="text-tide hover:underline">קישור לתשלום</a></>
-              : <span className="text-muted"> · משלמים בכניסה</span>}{e.payment_note ? <span className="text-muted"> · {e.payment_note}</span> : null}</span>
+              : <span className="text-muted"> · בלי קישור לתשלום</span>}{e.payment_note ? <span className="text-muted"> · {e.payment_note}</span> : null}</span>
           ) : 'בלי תשלום'],
           ['סגירת הרשמה', e.registration_closes_at ? <span key="r" className="num">{fmtDateTime(e.registration_closes_at)}</span> : 'כשהמפגש מתחיל'],
           ['תיאור', e.description ? <span key="d" className="whitespace-pre-line">{e.description}</span> : null],

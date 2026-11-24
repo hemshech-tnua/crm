@@ -386,8 +386,8 @@ export function Faq({ event }: { event: PublicEvent | null }) {
                 <p className="mt-1.5">
                   {event?.payment_url
                     // the team's payment note says how to pay; without one, the payment page takes a credit card
-                    ? `משלמים בסוף ההרשמה${note ? '' : ', בכרטיס אשראי'}. ההרשמה מאושרת מיד אחרי התשלום.`
-                    : 'משלמים בכניסה למפגש.'}
+                    ? `המקום נשמר רק אחרי התשלום. משלמים בסוף ההרשמה${note ? '' : ', בכרטיס אשראי'}, וההרשמה מאושרת מיד אחרי התשלום.`
+                    : 'המקום נשמר רק אחרי התשלום.'}
                   {note && <> {endSentence(note)}</>}
                 </p>
               </>

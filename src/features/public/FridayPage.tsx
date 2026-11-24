@@ -100,7 +100,8 @@ function StickyCta({ event: e, query }: { event: PublicEvent; query: string }) {
  */
 function heroNote(e: PublicEvent): string {
   if (e.is_full) return 'אם יתפנה מקום, נעדכן אתכם לפי סדר ההרשמה.';
-  if (paysFirst(e)) return 'משלמים בסוף ההרשמה, בדף התשלום המאובטח.';
+  if (paysFirst(e)) return 'המקום נשמר רק אחרי התשלום, בדף התשלום המאובטח.';
+  if (Number(e.price ?? 0) > 0) return 'המקום נשמר רק אחרי התשלום.';
   return 'ההרשמה לוקחת פחות מדקה. אפשר לבטל בקישור\u00a0האישי.';
 }
 

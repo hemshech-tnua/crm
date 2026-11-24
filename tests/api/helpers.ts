@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHmac, randomInt, randomUUID } from 'node:crypto';
-import { ANON_KEY, API_URL } from './env';
+import { execSync } from 'node:child_process';
+import { ANON_KEY, API_URL, DB_URL } from './env';
 
 export const PASSWORD = 'Local-Test-2026';
 export const SITE_ID = '00000000-0000-4000-8000-000000000001';
@@ -119,3 +120,15 @@ export function totp(secretBase32: string, at = Date.now()): string {
   const o = h[h.length - 1] & 0xf;
   return String(((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000)).padStart(6, '0');
 }
+
+/**
+ * A registered place at a meeting with a fee that was never paid, as rows from before pay-first are (the triggers that
+ * now refuse it are bypassed for this fixture only). Returns its id.
+ */
+export function legacyUnpaid(eventId: string, fullName = 'ותיק לפני התשלום', localPhone = phone()): string {
+  return execSync(`psql "${DB_URL}" -q -v ON_ERROR_STOP=1 -Atc "set session_replication_role = replica;
+    with p as (insert into public.participants (full_name, phone, created_via) values ('${fullName}', '${e164(localPhone)}', 'registration') returning id)
+    insert into public.registrations (event_id, participant_id, status, payment_status, created_via)
+    select '${eventId}', p.id, 'registered', 'pending', 'public_form' from p returning id;"`, { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim().split('\n').pop()!;
+}
+

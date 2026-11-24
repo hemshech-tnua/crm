@@ -3,7 +3,7 @@
 // (tests/api/pay-first.test.ts); the "registered and owes the fee" flow below is a priced meeting without a link.
 import { describe, expect, it } from 'vitest';
 import { execSync } from 'node:child_process';
-import { makeEvent, registration, staff, visitor } from './helpers';
+import { legacyUnpaid, makeEvent, registration, staff, visitor } from './helpers';
 import { DB_URL } from './env';
 
 const PAY_URL = 'https://pay.example.org/p/friday-20?x=1';
@@ -44,20 +44,22 @@ describe('a priced meeting', () => {
   });
 
   it('a waitlisted registration also starts pending, but is not counted as owed', async () => {
-    const ev = await makeEvent({ price: 20, capacity: 1 });
+    const ev = await makeEvent({ price: 20, capacity: 1, payment_url: PAY_URL });
     await register(ev.public_code);
+    const coord = await staff('coord');
+    expect((await coord.rpc('staff_confirm_payment', { p_registration_id: await regId(ev.id), p_method: 'bit' })).data.status).toBe('registered');
     const w = await register(ev.public_code);
     expect(w.status).toBe('waitlisted');
     const { data: mine } = await visitor().rpc('public_registration', { p_token: w.token });
     expect(mine.payment_status).toBe('pending');
-    const { data: f } = await (await staff('coord')).rpc('staff_event_finance', { p_event_id: ev.id });
-    expect(f.income.pending_count).toBe(1);
+    const { data: f } = await coord.rpc('staff_event_finance', { p_event_id: ev.id });
+    expect(f.income.pending_count).toBe(0);
     expect(f.income.expected).toBe(20);
   });
 
   it('staff mark payment; the finance snapshot adds up with the supplier payments', async () => {
     const coord = await staff('coord');
-    const ev = await makeEvent({ price: 20 });
+    const ev = await makeEvent({ price: 20, payment_url: PAY_URL });
     const a = await register(ev.public_code);
     const idA = await regId(ev.id);
     await register(ev.public_code);
@@ -68,6 +70,8 @@ describe('a priced meeting', () => {
     await coord.from('registrations').update({ payment_status: 'paid', paid_amount: 999 }).eq('id', idA);
     const { data: still } = await coord.from('registrations').select('payment_status, paid_amount').eq('id', idA).single();
     expect(still).toEqual({ payment_status: 'pending', paid_amount: null });
+    // and a pending registration is not made a place directly either (20261106002800_pay_guarantee.sql)
+    expect((await coord.from('registrations').update({ status: 'registered' }).eq('id', idA)).error?.message).toBe('payment_required');
 
     const { data: paid, error } = await coord.rpc('staff_set_payment', { p_registration_id: idA, p_status: 'paid', p_method: 'bit', p_ref: 'BIT-1234' });
     expect(error).toBeNull();
@@ -78,7 +82,9 @@ describe('a priced meeting', () => {
     const { data: mine } = await visitor().rpc('public_registration', { p_token: a.token });
     expect(mine.payment_status).toBe('paid');
 
-    expect((await coord.rpc('staff_set_payment', { p_registration_id: idC, p_status: 'waived', p_ref: 'אורח של המרצה' })).error).toBeNull();
+    // a waiver needs its reason
+    expect((await coord.rpc('staff_set_payment', { p_registration_id: idC, p_status: 'waived' })).error?.message).toBe('reason_required');
+    expect((await coord.rpc('staff_set_payment', { p_registration_id: idC, p_status: 'waived', p_ref: 'אורח של המרצה' })).data.status).toBe('registered');
     // validation
     expect((await coord.rpc('staff_set_payment', { p_registration_id: idC, p_status: 'maybe' })).error?.message).toBe('invalid_payment_status');
     expect((await coord.rpc('staff_set_payment', { p_registration_id: idC, p_status: 'paid', p_amount: -5 })).error?.message).toBe('invalid_amount');
@@ -95,25 +101,29 @@ describe('a priced meeting', () => {
     const { data: f, error: e2 } = await coord.rpc('staff_event_finance', { p_event_id: ev.id });
     expect(e2).toBeNull();
     expect(f.price).toBe(20);
-    expect(f.has_payment_link).toBe(false);
-    expect(f.registered).toBe(3);
+    expect(f.has_payment_link).toBe(true);
+    // the one who did not pay holds no place and owes nothing: it is a started, unpaid registration
+    expect(f.registered).toBe(2);
+    expect(f.started_unpaid).toBe(1);
     expect(f.income).toEqual({
-      expected: 40, collected: 20, paid_count: 1, pending_count: 1, pending_amount: 20, waived_count: 1, refunded_count: 0, refunded_amount: 0,
+      expected: 20, collected: 20, paid_count: 1, pending_count: 0, pending_amount: 0, waived_count: 1, refunded_count: 0, refunded_amount: 0,
     });
     expect(f.expenses).toEqual({ count: 2, total: 450, paid: 300, unpaid: 150 });
     expect(f.net).toBe(20 - 300);
-    expect(f.projected_net).toBe(40 - 450);
+    expect(f.projected_net).toBe(20 - 450);
 
     // the period report has the meeting and its totals
     const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date(ev.starts_at));
     const { data: sum, error: e3 } = await coord.rpc('staff_finance_summary', { p_from: day, p_to: day });
     expect(e3).toBeNull();
     const row = sum.rows.find((x: { event_id: string }) => x.event_id === ev.id);
-    expect(row).toMatchObject({ registered: 3, paid_count: 1, collected: 20, expenses: 450, net: -280, type: 'friday' });
+    expect(row).toMatchObject({ registered: 2, paid_count: 1, collected: 20, expenses: 450, net: -280, type: 'friday' });
     expect(sum.totals.events).toBe(sum.rows.length);
     expect(sum.totals.collected).toBeGreaterThanOrEqual(20);
 
-    // refund keeps the amount; the audit log has every change with its amount and method
+    // refund keeps the amount; a confirmed place is cancelled first; the audit log has every change with its amount and method
+    expect((await coord.rpc('staff_set_payment', { p_registration_id: idA, p_status: 'refunded' })).error?.message).toBe('cancel_first');
+    expect((await coord.rpc('staff_cancel_registration', { p_registration_id: idA })).error).toBeNull();
     const { data: ref } = await coord.rpc('staff_set_payment', { p_registration_id: idA, p_status: 'refunded' });
     expect(ref).toMatchObject({ payment_status: 'refunded', paid_amount: 20 });
     const admin = await staff('admin');
@@ -148,8 +158,13 @@ describe('a priced meeting', () => {
     expect(f0.price).toBeNull();
     expect(f0.income.expected).toBe(0);
 
-    await coord.from('events').update({ price: 20 }).eq('id', ev.id);
-    expect((await visitor().rpc('public_registration', { p_token: r.token })).data.payment_status).toBe('pending');
+    // a price is not added under people who already hold a free place (20261106002800_pay_guarantee.sql)
+    const { error: priced } = await coord.from('events').update({ price: 20, payment_url: PAY_URL }).eq('id', ev.id);
+    expect(priced?.message).toBe('price_has_registrations');
+    expect((await visitor().rpc('public_registration', { p_token: r.token })).data.payment_status).toBe('none');
+    // with only a waitlisted (or cancelled) registration it can be: the waitlisted one starts to owe the fee
+    expect((await visitor().rpc('public_cancel', { p_token: r.token })).error).toBeNull();
+    expect((await coord.from('events').update({ price: 20, payment_url: PAY_URL }).eq('id', ev.id)).error).toBeNull();
     await coord.from('events').update({ price: 0 }).eq('id', ev.id);
     expect((await visitor().rpc('public_registration', { p_token: r.token })).data.payment_status).toBe('none');
   });
@@ -175,9 +190,9 @@ describe('who may mark payment', () => {
 
   it('the door team marks cash at the entrance (and can undo a wrong tap), on the meeting day only', async () => {
     const door = await staff('door');
-    const ev = await makeEvent({ price: 20, startsInMinutes: 30 });
-    await register(ev.public_code);
-    const id = await regId(ev.id);
+    const ev = await makeEvent({ price: 20, startsInMinutes: 30, payment_url: PAY_URL });
+    // a registered place that still owes the fee exists only from before 20261106002800_pay_guarantee.sql
+    const id = legacyUnpaid(ev.id);
 
     const { data: list } = await door.rpc('staff_checkin_list', { p_event_id: ev.id });
     expect(list[0].payment_status).toBe('pending');
@@ -188,10 +203,11 @@ describe('who may mark payment', () => {
     expect((await door.rpc('staff_door_payment', { p_registration_id: id })).data.already).toBe(true);
     const { data: list2 } = await door.rpc('staff_checkin_list', { p_event_id: ev.id });
     expect(list2[0]).toMatchObject({ payment_status: 'paid', cash_just_marked: true });
-    expect((await door.rpc('staff_door_payment', { p_registration_id: id, p_paid: false })).data.payment_status).toBe('pending');
+    // the undo takes the place back with the payment: nobody stays registered without paying
+    expect((await door.rpc('staff_door_payment', { p_registration_id: id, p_paid: false })).data).toMatchObject({ payment_status: 'pending', status: 'pending_payment' });
 
     // a meeting on another day: no access
-    const later = await makeEvent({ price: 20, startsInMinutes: 5 * 24 * 60 });
+    const later = await makeEvent({ price: 20, startsInMinutes: 5 * 24 * 60, payment_url: PAY_URL });
     await register(later.public_code);
     const id2 = await regId(later.id);
     expect((await door.rpc('staff_door_payment', { p_registration_id: id2 })).error?.message).toBe('forbidden');
