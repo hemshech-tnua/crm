@@ -235,7 +235,7 @@
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-block-size: calc(var(--tap) + var(--space-3)); text-decoration: none;
     font-size: 1.3125rem; font-weight: var(--wght-semibold); line-height: 1.2; letter-spacing: -0.005em;
   }
-  .site-menu__link[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.3em; }
+  .site-menu__link[aria-current] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.3em; }
   /* tablets: two columns of groups */
   
   .site-menu__cta { position: sticky; inset-block-end: 0; background: var(--navy-800); padding-block: var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom)); flex: none; --action-bg-hover: var(--beige-50); }
