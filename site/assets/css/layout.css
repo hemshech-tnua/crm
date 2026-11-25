@@ -89,15 +89,8 @@
   .field { position: absolute; z-index: -1; inset-block: 0; inset-inline-end: 0; inline-size: 38%; block-size: 100%; color: var(--navy-800); pointer-events: none; }
   @media (max-width: 63.99rem) { .field { inline-size: 55%; block-size: 42%; inset-block: auto 0; } }
 
-  /* duotone: atmosphere pictures in the brand's two colours (shadows navy, highlights beige); hero and portraits stay in colour */
-  .duo { position: relative; isolation: isolate; }
-  .duo img { filter: grayscale(1) contrast(1.12); }
-  .duo:not(.type)::before, .duo:not(.type)::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-  .duo:not(.type)::after { background: var(--beige); mix-blend-mode: multiply; }
-  .duo:not(.type)::before { background: var(--navy); mix-blend-mode: lighten; z-index: 2; }
-  /* a tile keeps its own navy shade for the text: the picture goes monochrome under it */
-  .type.duo > img { filter: grayscale(1) contrast(1.15) brightness(0.92); }
-  @media (forced-colors: active) { .duo::before, .duo::after { display: none; } .duo img { filter: none; } }
+  /* photos stay in full colour everywhere (owner, 25.11: no black-and-white / duotone treatment) */
+  .duo { position: relative; }
 
   /* chapter headings open with a short brand line (drawn in with the scroll where supported, motion.css) */
   .chapter h2.t-chapter::before { content: ''; display: block; inline-size: 3rem; block-size: 0.3rem; margin-block-end: var(--space-5); background: currentColor; transform-origin: var(--line-origin, right); }
