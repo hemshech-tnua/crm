@@ -107,7 +107,10 @@ export function MessagesTab({ event: e, people, initialGroup }: { event: EventWi
   const payment = group === 'unpaid';
   const forGroup = list.filter((t) => AUDIENCE_GROUP[t.audience] === group);
   const others = list.filter((t) => AUDIENCE_GROUP[t.audience] !== group);
-  const firstKey = (forGroup.find((t) => t.key === PREFERRED[group] && !(group === 'registered' && started)) ?? forGroup[0] ?? list[0])?.key ?? '';
+  // on the day of the meeting the registered start from the same-day reminder (when it exists)
+  const meetingDay = new Date(e.starts_at).toDateString() === new Date().toDateString();
+  const preferred = group === 'registered' && meetingDay && forGroup.some((t) => t.key === 'reminder_today') ? 'reminder_today' : PREFERRED[group];
+  const firstKey = (forGroup.find((t) => t.key === preferred && !(group === 'registered' && started)) ?? forGroup[0] ?? list[0])?.key ?? '';
   const key = pickedKey && list.some((t) => t.key === pickedKey) ? pickedKey : firstKey;
   const tpl = list.find((t) => t.key === key);
   const pickGroup = (g: Group) => { setGroup(g); setPickedKey(null); };
