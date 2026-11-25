@@ -37,10 +37,10 @@ export function crumbs(ctx, body) {
 }
 
 /**
- * One calm ground (owner, 25.11: "the background is not clean enough"): the page opens on its own first chapter (the
- * hero, navy or beige as the page sets it) and every later chapter sits on beige, so the page no longer switches between
- * navy and beige bands as it scrolls. Navy stays where it carries something: the hero, cards and panels inside a
- * chapter (their own data-ground), and the footer.
+ * The ground system (R3 "Ground, Anchor, Stripe Field"): the page opens on its own first chapter (the opener, navy as the
+ * page sets it). Every later chapter alternates between beige and beige-100, a quiet tone step that is felt rather than
+ * seen (no navy/beige zebra). One chapter per page may carry data-anchor: it keeps its navy, full bleed, the page's one
+ * strong moment (on home the "first time?" band). Panels and cards inside a chapter keep their own data-ground.
  */
 export function calmGrounds(body) {
   let first = true;
@@ -48,9 +48,9 @@ export function calmGrounds(body) {
   return String(body).replace(/<section\b([^>]*)>/g, (tag, attrs) => {
     if (first) { first = false; return tag; }
     if (!/\sdata-ground="/.test(attrs)) return tag;
-    // the life on the calm ground (25.11: "a bit more life"): warm light and the brand's stripes, from alternating sides
+    if (/\sdata-anchor[\s=>]/.test(` ${attrs} `)) return tag.replace(/\sdata-ground="[a-z-]+"/, ' data-ground="navy"');
     n += 1;
-    return tag.replace(/\sdata-ground="[a-z-]+"/, ` data-ground="beige" data-glow="${n % 2 ? 'a' : 'b'}"`);
+    return tag.replace(/\sdata-ground="[a-z-]+"/, ` data-ground="${n % 2 ? 'beige' : 'beige-100'}"`);
   });
 }
 

@@ -149,6 +149,8 @@
   }
   .site-header__lang { display: none; }
   .site-header__cta { white-space: nowrap; }
+  /* phone: one registration button on screen at a time: the header's steps aside while the CTA bar is up */
+  @media (max-width: 63.99rem) { html:has(.cta-bar[data-shown]) .site-header__cta { visibility: hidden; } }
   .cta-short { display: none; }
   .menu-toggle {
     display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-block-size: var(--tap); min-inline-size: var(--tap);
@@ -280,6 +282,11 @@
   .site-footer__title { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--beige-quiet); margin-block-end: var(--space-1); letter-spacing: 0; line-height: var(--lh-small); }
   .site-footer__title a { display: inline-flex; align-items: center; gap: 0.5em; min-block-size: var(--tap); text-decoration: none; font-size: 1.0625rem; color: var(--beige); }
   .site-footer__list { display: grid; }
+  /* R3 institutional facts: registration, section 46 status, the founders (owner content where it exists) */
+  .site-footer__inst { display: flex; flex-wrap: wrap; gap: var(--space-5) var(--space-9); margin: var(--space-8) 0 0; padding-block-start: var(--space-6); border-block-start: 1px solid var(--navy-800); }
+  .site-footer__inst dt { font-size: var(--fs-small); color: var(--beige-quiet); }
+  .site-footer__inst dd { margin: var(--space-1) 0 0; font-weight: var(--wght-semibold); }
+  .site-footer__inst a { text-decoration: underline; text-underline-offset: 0.25em; }
   .site-footer__reach { display: flex; flex-wrap: wrap; gap: 0 var(--space-6); align-items: center; margin-block-start: var(--space-7); }
   .site-footer__reach a, .site-footer__reach .lang-switch { display: inline-flex; align-items: center; min-block-size: var(--tap); min-inline-size: var(--tap); padding: 0; font-size: 1rem; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.3em; font-weight: var(--wght-medium); }
   .site-footer__reach p { padding-block: var(--space-3); color: var(--beige-quiet); font-size: var(--fs-small); }
@@ -418,21 +425,22 @@
   @media (min-width: 64rem) { .logos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
   /* ── big row links (ways to give, audiences, "for you if") ── */
-  .rows { display: grid; gap: var(--space-2); list-style: none; padding: 0; margin: 0; }
-  .rows > li { display: flex; }
+  .rows { display: grid; gap: 0; list-style: none; padding: 0; margin: 0; border-block-start: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); }
+  .rows > li { display: flex; border-block-end: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); }
+  /* R3: rows are typographic (no boxes): a large title, a line, the action and ◀ at the far end; hover fills the row */
   .row {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); inline-size: 100%; min-block-size: 4.5rem;
-    padding: var(--space-5); border-radius: var(--radius-panel); background: var(--surface); color: var(--ink); text-decoration: none;
+    padding-block: 1.75rem; padding-inline: var(--space-4); border-radius: 0; background: transparent; color: var(--ink); text-decoration: none;
     transition: background-color var(--dur-fast) var(--ease-out);
   }
   .row__text { display: grid; gap: var(--space-1); }
-  .row__title { font-size: var(--fs-title); font-weight: var(--wght-semibold); line-height: 1.2; letter-spacing: var(--track-title); }
-  .row__body { color: var(--ink-quiet); }
+  .row__title { font-size: var(--fs-title); font-weight: var(--wght-bold); line-height: 1.15; letter-spacing: var(--track-title); }
+  .row__body { color: var(--ink); font-size: 1.125rem; }
   .row__note { font-size: var(--fs-small); font-weight: var(--wght-semibold); color: var(--ink); }
   .row--static { justify-content: flex-start; }
   .row__go { display: inline-flex; align-items: center; gap: 0.5em; flex: none; font-weight: var(--wght-semibold); }
   .row > .tri, .row__go .tri { font-size: 1.5rem; }
-  @media (hover: hover) and (pointer: fine) { a.row:hover { background: var(--surface-hover); } a.row:hover .tri { transform: translateX(calc(var(--dir) * 4px)); } }
+  @media (hover: hover) and (pointer: fine) { a.row:hover { background: var(--surface); } a.row:hover .tri { transform: translateX(calc(var(--dir) * 4px)); } }
   /* phones: a row with an action label puts it under the text; a bare ◀ stays at the end of the row */
   @media (max-width: 29.99rem) { .row:not(.row--bare) { flex-direction: column; align-items: flex-start; gap: var(--space-3); } .row__go .tri { font-size: 1rem; } }
 

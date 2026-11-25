@@ -62,15 +62,15 @@ export function render(ctx) {
   </div>
 </section>
 
-${gallery ? html`<section class="chapter chapter--tight mt-gallery" data-ground="beige" aria-labelledby="mt-gallery">
-  <div class="wrap">
-    <div class="mt-gallery__card" data-ground="navy" data-reveal="up">
-      <div class="mt-gallery__text">
-        <h2 id="mt-gallery" class="t-title">${t('meetings.gallery.title')}</h2>
-        <p class="mt-gallery__lead">${t('meetings.gallery.lead')}</p>
-      </div>
+${gallery ? html`<section class="chapter mt-gallery" data-ground="navy" data-anchor aria-labelledby="mt-gallery">
+  ${ui.field()}
+  <div class="wrap mt-gallery__grid">
+    <div class="mt-gallery__text" data-reveal>
+      <h2 id="mt-gallery" class="t-chapter">${t('meetings.gallery.title')}</h2>
+      <p class="t-lead mt-gallery__lead">${t('meetings.gallery.lead')}</p>
       <p>${ui.button(t('meetings.gallery.cta'), gallery)}</p>
     </div>
+    ${ui.photo('bonfire', { ratio: '4:3', duo: true, wipe: true, className: 'mt-gallery__photo', sizes: '(min-width: 64rem) 45vw, 100vw' })}
   </div>
 </section>` : ''}
 

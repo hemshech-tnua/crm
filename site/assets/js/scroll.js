@@ -37,7 +37,7 @@ function initReveal(root) {
     for (const e of entries) {
       if (e.isIntersecting) { e.target.classList.add('is-revealed'); io.unobserve(e.target); }
     }
-  }, { rootMargin: '0px 0px -12% 0px', threshold: 0 });
+  }, { rootMargin: '0px 0px -6% 0px', threshold: 0 });
   els.filter((el) => !el.classList.contains('is-in')).forEach((el) => io.observe(el));
   const showAll = () => { els.forEach((el) => el.classList.add('is-in')); io.disconnect(); };
   reduce.addEventListener?.('change', () => reduce.matches && showAll());
@@ -79,8 +79,9 @@ function initChapters() {
 
 /** [data-count]: the printed number counts up once (900 ms) when half visible; screen readers get the final value. */
 function initCount() {
-  const els = document.querySelectorAll('[data-count]');
+  const els = [...document.querySelectorAll('[data-count]')];
   if (!els.length || reduce.matches || !hasIO) return;
+  const vh = window.innerHeight;
   const io = new IntersectionObserver((es) => es.forEach((e) => {
     if (!e.isIntersecting) return;
     io.unobserve(e.target);
@@ -88,6 +89,7 @@ function initCount() {
     const to = Number(el.dataset.count);
     const text = el.textContent;
     el.setAttribute('aria-label', text);
+    el.style.minInlineSize = `${text.length}ch`; // the width never jitters while the digits change
     const t0 = performance.now();
     const step = (t) => {
       const p = Math.min(1, (t - t0) / 900);
@@ -95,8 +97,9 @@ function initCount() {
       if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-  }), { threshold: 0.5 });
-  els.forEach((el) => io.observe(el));
+  }), { threshold: 0.6 });
+  // a number already on screen at load is simply shown (counting it would flash)
+  els.filter((el) => { const r = el.getBoundingClientRect(); return !(r.top < vh && r.bottom > 0); }).forEach((el) => io.observe(el));
 }
 
 function progressFallback() {

@@ -4,13 +4,17 @@
   .mt-hero { padding-block: clamp(3rem, 2rem + 4vw, 6rem) clamp(3.5rem, 2.5rem + 4vw, 7rem); }
   .mt-hero__grid { display: grid; gap: var(--space-7) var(--gutter); }
   .mt-hero__head h1 { max-inline-size: 14ch; }
+  .mt-hero__next .next { min-block-size: 20.375rem; } /* the static card's height: filling it live never moves the page (CLS) */
   .mt-hero__lead { margin-block-start: var(--headline-to-lead); max-inline-size: 40ch; }
   .mt-kinds__title { margin-block-end: var(--space-7); }
   .mt-dates__grid { display: grid; gap: var(--space-7) var(--gutter); }
   .mt-dates__head { display: grid; gap: var(--space-4); align-content: start; }
   .mt-dates__head .t-lead { max-inline-size: 34ch; }
-  .mt-gallery__card { display: grid; gap: var(--space-5); justify-items: start; padding: var(--space-7) var(--space-6); border-radius: var(--radius-panel); }
-  .mt-gallery__lead { color: var(--ink-quiet); margin-block-start: var(--space-2); }
+  /* R3: the page's navy anchor (full bleed): the gallery invitation with a duotone picture and the stripe field */
+  .mt-gallery__grid { display: grid; gap: var(--space-7) var(--gutter); align-items: center; }
+  .mt-gallery__text { display: grid; gap: var(--space-5); justify-items: start; }
+  .mt-gallery__text h2 { max-inline-size: 14ch; }
+  .mt-gallery__lead { max-inline-size: 40ch; }
   .mt-ask__in { display: grid; gap: var(--space-3); }
   .mt-ask__in .cluster { gap: var(--space-3) var(--space-6); }
   @media (min-width: 64rem) {
@@ -20,7 +24,9 @@
     .mt-dates__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
     .mt-dates__head { grid-column: 1 / span 4; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
     .mt-dates__list { grid-column: 6 / -1; }
-    .mt-gallery__card { grid-template-columns: 1fr auto; align-items: center; padding: var(--space-8) var(--space-9); }
+    .mt-gallery__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .mt-gallery__text { grid-column: 1 / span 6; }
+    .mt-gallery__photo { grid-column: 7 / -1; }
   }
 
   /* ── gallery ── */

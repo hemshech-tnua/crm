@@ -183,8 +183,8 @@ export function render(ctx) {
 </section>`;
 
   const closing = (g) => html`
-<section class="${`${C.chapter} give-close`}" data-ground="${g}" aria-labelledby="close-h2">
-  ${corner(ctx, 'te')}
+<section class="${`${C.chapter} give-close`}" data-ground="navy" data-anchor aria-labelledby="close-h2">
+  ${ctx.ui.field()}
   <div class="${`${C.wrap} cta-band`}">
     <h2 id="close-h2" class="cta-band__title" ${ctx.reveal('up')}>${t(k('closing.title'))}</h2>
     <div class="stack" ${ctx.reveal('up', 1)}>

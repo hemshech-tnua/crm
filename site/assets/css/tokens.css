@@ -3,7 +3,7 @@
   Brand: navy #142837, beige #EBDCB9, Google Sans, squared corners, 45° stripes, ◀. No white anywhere: the lightest
   ground is beige-50 (#F5EEDC). Components read ONLY the semantic tokens (§2), so they work on every ground.
 
-  Grounds: put data-ground="navy | navy-deep | beige | beige-light" on a chapter <section>; it sets the background, the
+  Grounds: put data-ground="navy | navy-deep | beige | beige-100 | beige-light" on a chapter <section>; it sets the background, the
   text colour and every semantic token for what is inside it.
 
   Page CSS: use the semantic tokens and the shared classes (components.css). The legacy names at the end (§11) are
@@ -57,7 +57,7 @@
     --wght-semibold: 600;
     --wght-bold: 700;
 
-    --fs-hero:      clamp(2.75rem, 1.6rem + 4.9vw, 6rem);         /* 44 → 96   home h1 (≥ 44px on phones) */
+    --fs-hero:      clamp(2.75rem, 0.8rem + 8.6vw, 8.25rem);      /* 44 → 132  home h1, one line on desktop (≥ 44px on phones) */
     --fs-display:   clamp(2.75rem, 1.43rem + 5.42vw, 7rem);      /* 44 → 112  EVERY inner page h1: class .t-display */
     --fs-chapter:   clamp(2.125rem, 1.38rem + 3.05vw, 4.5rem);   /* 34 → 72   h2 */
     --fs-title:     clamp(1.5rem, 1.27rem + 0.95vw, 2.25rem);    /* 24 → 36   h3, statements */
@@ -66,15 +66,15 @@
     --fs-small:     0.9375rem;                                    /* 15 */
     --fs-stat:      clamp(3.5rem, 2.3rem + 4.9vw, 7.5rem);        /* 56 → 120 */
 
-    --lh-display: 1.0;
-    --lh-chapter: 1.05;
+    --lh-display: 0.92;
+    --lh-chapter: 1.0;
     --lh-title: 1.2;
     --lh-lead: 1.45;
     --lh-body: 1.6;
     --lh-small: 1.5;
 
     --track-display: -0.02em;
-    --track-chapter: -0.015em;
+    --track-chapter: -0.025em;
     --track-title: -0.01em;
 
     --measure: 62ch;
@@ -94,7 +94,7 @@
     --space-11: 10rem;
     --space-12: 14rem;
 
-    --chapter-pad: clamp(5rem, 3.2rem + 7.4vw, 11rem);   /* 80 → 160 */
+    --chapter-pad: clamp(4.5rem, 2.6rem + 5.6vw, 8.5rem); /* 72 → 136 (R3: less dead space) */
     --stack-gap: clamp(1.5rem, 1.2rem + 1.2vw, 2.5rem);  /* 24 → 40 */
     --headline-to-lead: clamp(1rem, 0.8rem + 0.8vw, 2rem);
 
@@ -108,8 +108,8 @@
     --tap: 2.75rem;
 
     /* ───────────── 6. Shape ───────────── */
-    --radius-control: 3px;
-    --radius-panel: 4px;
+    --radius-control: 0;      /* R3: squared corners for real (the brand) */
+    --radius-panel: 0;
     --radius-none: 0;
     --edge: 2px;
     --focus-ring: 3px;
@@ -124,13 +124,13 @@
     --dur-fast: 160ms;
     --dur-base: 240ms;
     --dur-slow: 420ms;
-    --dur-reveal: 700ms;
+    --dur-reveal: 560ms;
     --dur-hero: 1000ms;
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
     --stagger: 70ms;
-    --rise: 24px;
+    --rise: 14px;
     --rise-sm: 12px;
     --parallax: 8vh;
     --press-scale: 0.97;
@@ -174,6 +174,8 @@
   }
   [data-ground='navy-deep'] { --ground: var(--navy-950); --surface: var(--navy-900); --surface-hover: var(--navy-800); --stripe-soft: var(--navy-800); }
   [data-ground='beige-light'] { --ground: var(--beige-50); --surface: var(--beige-100); --surface-hover: var(--beige); }
+  /* R3 tonal rhythm: chapters after the opener alternate beige / beige-100 (layout.mjs calmGrounds) */
+  [data-ground='beige-100'] { --ground: var(--beige-100); --surface: var(--beige-50); --surface-hover: var(--beige-300); }
   [data-ground], .section--navy { background-color: var(--ground); color: var(--ink); }
 
   /* Reduced motion: travel to zero, durations shrink; colour/opacity feedback stays. */

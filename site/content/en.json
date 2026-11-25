@@ -62,6 +62,14 @@
       "privacy": "Privacy policy (Hebrew)",
       "accessibility": "Accessibility statement",
       "staff": "Staff login"
+    },
+    "inst": {
+      "label": "The association",
+      "registered": "Registered nonprofit (amuta)",
+      "s46": "Section 46 (Israeli tax credit)",
+      "s46Pending": "application in progress",
+      "s46Approved": "recognised",
+      "founders": "Founders"
     }
   },
   "events": {

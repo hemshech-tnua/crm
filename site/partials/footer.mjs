@@ -25,6 +25,11 @@ export function footer(ctx) {
         <ul class="site-footer__list" role="list" aria-labelledby="footer-${s.id}">${s.items.map((it) => html`<li><a href="${it.href}"${cur(it.current)}>${it.label}</a></li>`)}</ul>
       </div>`)}
     </nav>
+    <dl class="site-footer__inst" aria-label="${ctx.t('footer.inst.label')}">
+      ${ctx.slot(org.registrationNumber, ctx.t('slots.registration'), (n) => html`<div><dt>${ctx.t('footer.inst.registered')}</dt><dd>${legal('registration', { registrationNumber: n })}</dd></div>`)}
+      <div><dt>${ctx.t('footer.inst.s46')}</dt><dd>${ctx.t(org.section46 ? 'footer.inst.s46Approved' : 'footer.inst.s46Pending')}</dd></div>
+      ${(org.team ?? []).length ? html`<div><dt>${ctx.t('footer.inst.founders')}</dt><dd>${ctx.pageExists('team') ? html`<a href="${ctx.link('team')}">${org.team.map((m) => ctx.l(m.name)).join(ctx.lang === 'he' ? ' ו' : ' and ')}</a>` : org.team.map((m) => ctx.l(m.name)).join(', ')}</dd></div>` : ''}
+    </dl>
     <ul class="site-footer__reach" role="list" aria-label="${ctx.t('footer.contactTitle')}">
       <li data-org-phone-item hidden><a href="${ctx.crm.home}" data-org-phone="whatsapp" data-org-text="${ctx.t('whatsapp.general')}" rel="noopener">${ctx.t('footer.whatsapp')}</a></li>
       <li data-org-phone-fallback><p>${ctx.t('footer.whatsappNoPhone')}</p></li>
@@ -34,7 +39,6 @@ export function footer(ctx) {
     </ul>
     <div class="site-footer__base">
       <p>${legal('copyright', { year: ctx.year })}</p>
-      ${ctx.slot(org.registrationNumber, ctx.t('slots.registration'), (n) => html`<p>${legal('registration', { registrationNumber: n })}</p>`, { tag: 'span' })}
       <a href="${ctx.crm.privacy}">${legal('privacy')}</a>
       ${ctx.pageExists('accessibility') ? html`<a href="${ctx.link('accessibility')}"${ctx.page.id === 'accessibility' ? html` aria-current="page"` : ''}>${legal('accessibility')}</a>` : ''}
       <a href="${ctx.crm.login}">${legal('staff')}</a>

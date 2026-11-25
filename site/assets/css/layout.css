@@ -81,33 +81,30 @@
   .h-lead { margin-block-start: var(--headline-to-lead); }
   :lang(en) .t-hero, :lang(en) .t-display { letter-spacing: -0.03em; }
 
-  /* ── Life on the calm ground (owner, 25.11: "a bit more life") ──────────────────────────────────────────────────────
-     Every chapter after the opening sits on beige (layout.mjs calmGrounds) and carries data-glow a|b, alternating.
-     Warm light: a soft lighter pool and a deeper warm pool at opposite corners, so the beige has depth instead of a flat
-     fill. The brand's 45° stripes, tone on tone, enter from one top corner and fade out. a and b mirror each other, so
-     the page sways side to side as it scrolls. Tone on tone only (beige-50/300/400): text contrast is unchanged. */
-  [data-glow] { position: relative; isolation: isolate; }
-  /* the pools sit mid-height on the sides and fade out before the top and bottom edges: no seam between chapters */
-  [data-glow='a'] {
-    background-image:
-      radial-gradient(ellipse 55% 42% at 100% 35%, color-mix(in srgb, var(--beige-50) 90%, transparent), transparent 75%),
-      radial-gradient(ellipse 50% 40% at 0% 65%, color-mix(in srgb, var(--beige-300) 75%, transparent), transparent 75%);
-  }
-  [data-glow='b'] {
-    background-image:
-      radial-gradient(ellipse 55% 42% at 0% 35%, color-mix(in srgb, var(--beige-50) 90%, transparent), transparent 75%),
-      radial-gradient(ellipse 50% 40% at 100% 65%, color-mix(in srgb, var(--beige-300) 75%, transparent), transparent 75%);
-  }
-  /* the stripes live in the chapter's bottom padding (empty by design), never under a heading or a card */
-  [data-glow]::before {
-    --u: clamp(12px, 0.6vw + 8px, 18px);
-    content: ''; position: absolute; z-index: -1; pointer-events: none; inset-block-end: 0;
-    inline-size: clamp(9rem, 4rem + 16vw, 22rem); block-size: min(var(--chapter-pad, 6rem), clamp(4rem, 2rem + 6vw, 8rem));
-    background-image: repeating-linear-gradient(45deg, var(--beige-400) 0 var(--u), transparent 0 calc(2 * var(--u)));
-    opacity: 0.5;
-  }
-  [data-glow='a']::before { inset-inline-end: 0; mask-image: linear-gradient(to top right, #000 0%, transparent 70%); }
-  [data-glow='b']::before { inset-inline-start: 0; mask-image: linear-gradient(to top left, #000 0%, transparent 70%);
-    background-image: repeating-linear-gradient(-45deg, var(--beige-400) 0 var(--u), transparent 0 calc(2 * var(--u))); }
-  @media (forced-colors: active) { [data-glow] { background-image: none; } [data-glow]::before { display: none; } }
+  /* ── R3: the anchor chapter and the stripe field ──────────────────────────────────────────────────────────────────
+     One navy chapter per page carries data-anchor (layout.mjs keeps its navy): full bleed, the page's strong moment.
+     Its stripe field is the brand's 45° stripes at full strength, hard-edged, bled off the inline-end edge: never faded,
+     never on beige, at most one per screen (ui.field()). */
+  [data-anchor]:has(.photo) { min-block-size: min(80svh, 52rem); display: grid; align-items: center; }
+  .field { position: absolute; z-index: -1; inset-block: 0; inset-inline-end: 0; inline-size: 38%; block-size: 100%; color: var(--navy-800); pointer-events: none; }
+  @media (max-width: 63.99rem) { .field { inline-size: 55%; block-size: 42%; inset-block: auto 0; } }
+
+  /* duotone: atmosphere pictures in the brand's two colours (shadows navy, highlights beige); hero and portraits stay in colour */
+  .duo { position: relative; isolation: isolate; }
+  .duo img { filter: grayscale(1) contrast(1.12); }
+  .duo:not(.type)::before, .duo:not(.type)::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .duo:not(.type)::after { background: var(--beige); mix-blend-mode: multiply; }
+  .duo:not(.type)::before { background: var(--navy); mix-blend-mode: lighten; z-index: 2; }
+  /* a tile keeps its own navy shade for the text: the picture goes monochrome under it */
+  .type.duo > img { filter: grayscale(1) contrast(1.15) brightness(0.92); }
+  @media (forced-colors: active) { .duo::before, .duo::after { display: none; } .duo img { filter: none; } }
+
+  /* chapter headings open with a short brand line (drawn in with the scroll where supported, motion.css) */
+  .chapter h2.t-chapter::before { content: ''; display: block; inline-size: 3rem; block-size: 0.3rem; margin-block-end: var(--space-5); background: currentColor; transform-origin: var(--line-origin, right); }
+  [dir='ltr'] { --line-origin: left; }
+
+  /* links to a chapter land with its heading just under the header, not on its padding */
+  .chapter[id] { scroll-margin-block-start: calc(var(--chapter-pad) * -1); } /* + base.css scroll-padding (header + 16px) */
+  .chapter--tight[id] { scroll-margin-block-start: calc(var(--chapter-pad) * -0.6); }
+
 }

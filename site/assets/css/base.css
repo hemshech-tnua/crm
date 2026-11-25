@@ -72,4 +72,12 @@
   input, textarea { caret-color: var(--ink); }
   hr { border: 0; block-size: var(--space-6); }
   html { scrollbar-color: var(--navy-700) var(--navy-950); }
+
+  /* R3: smooth in-page jumps and a calm cross-fade between pages, the header standing still (no scroll-jacking) */
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+    @view-transition { navigation: auto; }
+    .site-header { view-transition-name: site-header; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 200ms; }
+  }
 }

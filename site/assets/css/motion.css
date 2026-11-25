@@ -28,6 +28,10 @@
   @keyframes drift { from { transform: translateY(var(--parallax)); } to { transform: translateY(calc(var(--parallax) * -1)); } }
   @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   @keyframes fill-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes load-up { from { transform: translateY(var(--rise)); } }   /* text in the load sequence: no fade, so it paints at once (LCP) */
+  @keyframes settle { from { transform: scale(1.08); } }               /* a picture's zoom settling as its wipe opens */
+  @keyframes hero-out { to { transform: scale(1.06) translateY(4%); } } /* the hero picture recedes as the page scrolls away */
+  @keyframes line-in { from { transform: scaleX(0); } }
 
   @media (prefers-reduced-motion: no-preference) {
     /* ── A. reveals (IntersectionObserver adds .is-revealed; what was on screen at load gets .is-in and never moves) ── */
@@ -51,7 +55,7 @@
     [data-reveal-delay='6'] { --reveal-i: 6; }
 
     /* ── the load sequence (once per page; CSS only, so it never depends on the script) ── */
-    [data-load] { animation: reveal-up var(--dur-reveal) var(--ease-out) backwards; }
+    [data-load] { animation: load-up var(--dur-reveal) var(--ease-out) backwards; }
     [data-load='1'] { animation-delay: 90ms; }
     [data-load='2'] { animation-delay: 200ms; }
     [data-load='3'] { animation-delay: 260ms; }
@@ -63,8 +67,15 @@
       .sda [data-wipe] { animation: wipe linear both; animation-timeline: view(); animation-range: entry 0% cover 45%; }
       .sda [data-parallax] { animation: drift linear both; animation-timeline: view(); animation-range: cover; }
       .sda .timeline__fill { animation: fill-y linear both; animation-timeline: view(); animation-range: cover 10% cover 70%; }
+      /* R3: the photo signature: the picture opens from the reading edge and its zoom settles as it does */
+      .sda [data-wipe] > img { animation: settle linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
+      .sda .hero__img { animation: hero-out linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+      .sda .chapter h2.t-chapter::before { animation: line-in linear both; animation-timeline: view(); animation-range: entry 20% entry 80%; }
     }
     [data-count] { font-variant-numeric: tabular-nums; }
+    /* the phone menu closes with the same motion it opens with */
+    .site-menu { transition: opacity var(--dur-base) var(--ease-out), translate var(--dur-base) var(--ease-out), overlay var(--dur-base) allow-discrete, display var(--dur-base) allow-discrete; }
+    .site-menu:not([open]) { opacity: 0; translate: 0 1.5rem; }
   }
 
   /* the reading progress is scroll-linked state, not ambient motion: it stays under reduced motion */

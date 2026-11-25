@@ -37,7 +37,7 @@ export function render(ctx) {
   ];
 
   return html`
-<section class="chapter fr-hero" data-ground="beige" aria-labelledby="fr-title">
+<section class="chapter fr-hero" data-ground="navy" aria-labelledby="fr-title">
   <div class="wrap fr-hero__grid">
     <div class="fr-hero__text">
       <h1 id="fr-title" class="t-display" data-load="1">${t('friday.hero.title')}</h1>
@@ -125,7 +125,8 @@ export function render(ctx) {
   </div>
 </section>
 
-<section class="chapter fr-forwhom" data-ground="navy" aria-labelledby="fr-forwhom-title">
+<section class="chapter fr-forwhom" data-ground="navy" data-anchor aria-labelledby="fr-forwhom-title">
+  ${ctx.ui.field()}
   <div class="wrap">
     <h2 id="fr-forwhom-title" class="t-chapter" data-reveal="up">${t('friday.forWhom.title')}</h2>
     <ul class="tri-list fr-forwhom__list" role="list" data-reveal="group">

@@ -230,8 +230,13 @@ async function checkPage(browser, url, vp) {
     if (top !== 'hidden') fail(where, 'CTA bar visible at the top of the page');
     await page.evaluate(() => window.scrollTo({ top: Math.max(innerHeight * 2, document.querySelector('[data-hero-cta]')?.getBoundingClientRect().bottom + scrollY + innerHeight || 0), behavior: 'instant' }));
     await page.waitForTimeout(450);
-    const bar = await page.evaluate(() => { const b = document.querySelector('[data-cta-bar]'); const r = b.getBoundingClientRect(); return { shown: b.hasAttribute('data-shown'), vis: getComputedStyle(b).visibility, inView: r.bottom <= innerHeight + 1 && r.top < innerHeight, href: b.querySelector('a').href }; });
-    if (!bar.shown || bar.vis !== 'visible' || !bar.inView) fail(where, `CTA bar did not appear after scrolling ${JSON.stringify(bar)}`);
+    // R3: the bar steps aside while a registration link of the page is on screen (it never covers a card's own link)
+    const bar = await page.evaluate(() => {
+      const b = document.querySelector('[data-cta-bar]'); const r = b.getBoundingClientRect();
+      const regInView = [...document.querySelectorAll('main [data-events] a[href], main [data-events] .chip, main [data-next-link], main [data-next-cta]')].some((a) => { if (a.closest('[data-hero-cta]')) return false; const q = a.getBoundingClientRect(); return q.height > 0 && q.bottom > 0 && q.top < innerHeight; });
+      return { shown: b.hasAttribute('data-shown'), vis: getComputedStyle(b).visibility, inView: r.bottom <= innerHeight + 1 && r.top < innerHeight, regInView, href: b.querySelector('a').href };
+    });
+    if (bar.regInView ? bar.shown : (!bar.shown || bar.vis !== 'visible' || !bar.inView)) fail(where, `CTA bar ${bar.regInView ? 'covers a registration link in view' : 'did not appear after scrolling'} ${JSON.stringify(bar)}`);
     if (SHOTS && vp.name === '390') await shot(page, url, vp, 'ctabar', false);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }

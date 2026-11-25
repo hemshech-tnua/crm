@@ -16,7 +16,8 @@
     "founders": "{names} founded the association.",
     "foundersFact": "Both are active reservists.",
     "foundersLink": "Our story",
-    "and": " and "
+    "and": " and ",
+    "note": "No commitment · every fitness level · Itai meets you at the door"
   },
   "next": {
     "title": "Next meeting",
@@ -162,9 +163,8 @@
     ]
   },
   "partners": {
-    "title": "Our partners",
-    "logos": null,
-    "slot": "partner logos, with written permission"
+    "title": "In partnership with",
+    "slot": "Partner local authorities, companies and organisations: name and logo, with their written consent"
   },
   "closing": {
     "title": "See you on Friday?",
@@ -204,11 +204,20 @@
   "kinds": {
     "title": "Our meetings",
     "lead": "Three Friday mornings a month, and more meetings in the evenings. Every meeting is posted on the calendar.",
-    "cta": "All meetings and dates"
+    "cta": "All meetings and dates",
+    "womenNext": "Next women's evening"
   },
   "sponsors": {
     "title": "Thank you to our donors and partners",
     "lead": "Our meetings happen because of them.",
     "slot": "Donors, sponsors and partners: name, logo and link, with their written consent"
+  },
+  "proof": {
+    "label": "Friday mornings at a glance",
+    "monthlyValue": "3",
+    "monthly": "Friday mornings every month",
+    "next": "Next meeting",
+    "at": "Start time",
+    "statsSlot": "The association's numbers (owner, dated): meetings held, participants, cities"
   }
 }

@@ -266,6 +266,7 @@ function renderFacts(box, all) {
   put('time', time(e).split('–')[0]);
   if (pageLang() === 'he') put('place', tidy(e.site_name || e.location));
   if (e.price > 0) put('price', fill(S().price, { price: +e.price }));
+  if (box.hasAttribute('data-next-show')) box.hidden = false; // a line that only makes sense with a real date
 }
 
 const valid = (iso) => typeof iso === 'string' && Number.isFinite(Date.parse(iso));
@@ -290,6 +291,7 @@ function load(fresh = false, focusBox = null) {
       nexts.forEach((b) => renderNext(b, all));
       document.querySelectorAll('[data-next-link]').forEach((a) => { const e = nextOf(all, a.dataset.nextLink); if (e) a.href = register(e); });
       document.querySelectorAll('[data-next-facts]').forEach((b) => renderFacts(b, all));
+      document.dispatchEvent(new Event('events:rendered')); // the phone CTA bar watches the new registration links
       done();
     })
     .catch(() => {

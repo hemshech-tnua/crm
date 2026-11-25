@@ -54,16 +54,19 @@ for (const [name, b] of [['production', prod], ['preview', preview]]) {
     }
   });
 
-  test(`${name}: chapters set a ground, one calm ground after the opening, headings never skip a level`, () => {
-    const GROUNDS = new Set(['navy', 'navy-deep', 'beige', 'beige-light']);
+  test(`${name}: chapters set a ground, beige / beige-100 after the opener with one navy anchor at most, headings never skip a level`, () => {
+    const GROUNDS = new Set(['navy', 'navy-deep', 'beige', 'beige-100', 'beige-light']);
     for (const { rel, html } of pages(b.out)) {
       const main = mainOf(html);
       const grounds = [...main.matchAll(/<section[^>]*\sdata-ground="([^"]+)"/g)].map((m) => m[1]);
       assert.ok(grounds.length >= 1, `${rel}: no chapter with data-ground`);
       for (const g of grounds) assert.ok(GROUNDS.has(g), `${rel}: unknown ground "${g}"`);
-      // owner, 25.11: one clean background: the first chapter sets the page's opening, every later chapter is beige
-      const chapters = [...main.matchAll(/<section\b[^>]*\sdata-ground="([^"]+)"/g)].map((m) => m[1]);
-      chapters.forEach((g, i) => i && assert.equal(g, 'beige', `${rel}: chapter ${i + 1} is on "${g}", not the page's one ground`));
+      // R3 ground system: after the opener every chapter is beige or beige-100, except at most one navy data-anchor chapter
+      const secs = [...main.matchAll(/<section\b([^>]*)\sdata-ground="([^"]+)"([^>]*)>/g)].map((m) => ({ g: m[2], anchor: /\sdata-anchor\b/.test(` ${m[1]} ${m[3]} `) }));
+      const anchors = secs.slice(1).filter((x) => x.anchor);
+      assert.ok(anchors.length <= 1, `${rel}: ${anchors.length} anchor chapters (one at most)`);
+      for (const a of anchors) assert.equal(a.g, 'navy', `${rel}: the anchor chapter is navy`);
+      secs.slice(1).filter((x) => !x.anchor).forEach((x, i) => assert.ok(['beige', 'beige-100'].includes(x.g), `${rel}: chapter ${i + 2} is on "${x.g}", not beige / beige-100`));
       const levels = [...main.matchAll(/<h([1-6])[\s>]/g)].map((m) => Number(m[1]));
       assert.equal(levels[0], 1, `${rel}: the first heading in <main> is the h1`);
       levels.forEach((l, i) => i && assert.ok(l <= levels[i - 1] + 1, `${rel}: heading h${levels[i - 1]} → h${l} skips a level`));

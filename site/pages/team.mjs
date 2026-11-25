@@ -87,7 +87,6 @@ export function render(ctx) {
     group('board', board, { portrait: boardPortraits, preview: 2, extra: advisorsBlock }),
   ];
 
-  const volunteersGround = ground();
   const closingGround = ground();
   const volunteerHref = pageHref(ctx, 'volunteer');
   return html`
@@ -99,15 +98,15 @@ export function render(ctx) {
   </div>
 </section>
 ${sections}
-<section class="chapter team-volunteers" data-ground="${volunteersGround}" aria-labelledby="team-volunteers">
-  ${corner(ctx, { pos: 'te' })}
+<section class="chapter team-volunteers" data-ground="navy" data-anchor aria-labelledby="team-volunteers">
+  ${ctx.ui.field()}
   <div class="wrap team-volunteers__grid">
     <div class="stack team-volunteers__text">
       <h2 id="team-volunteers" class="t-chapter" ${ctx.reveal('up')}>${t('team.volunteers.title')}</h2>
       <p class="team-volunteers__body" ${ctx.reveal('up', 1)}>${t('team.volunteers.body')}</p>
       <div class="cluster" ${ctx.reveal('up', 2)}>${action(ctx, { href: volunteerHref, label: t('team.volunteers.cta'), className: 'btn btn--ghost' })}</div>
     </div>
-    <figure class="photo r-32 focus-30 team-volunteers__photo" ${ctx.reveal('fade')}>${ctx.img('training', { alt: '', eager: !members.length && !board.length, sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
+    <figure class="photo r-32 focus-30 duo team-volunteers__photo" data-wipe>${ctx.img('training', { alt: '', eager: !members.length && !board.length, sizes: '(min-width: 64rem) 45vw, 100vw' })}</figure>
   </div>
 </section>
 <section class="chapter team-closing" data-ground="${closingGround}" aria-labelledby="team-closing">

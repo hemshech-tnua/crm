@@ -55,7 +55,8 @@ export function render(ctx) {
 </section>`;
 
   const direction = html`
-<section class="chapter about-direction" data-ground="navy" aria-labelledby="about-direction">
+<section class="chapter about-direction" data-ground="navy" data-anchor aria-labelledby="about-direction">
+  ${ctx.ui.field()}
   <div class="wrap about-direction__grid">
     <h2 id="about-direction" class="t-chapter about-direction__title" ${ctx.reveal('up')}>${t('about.direction.title')}</h2>
     <div class="stack about-direction__body" data-reveal-group>

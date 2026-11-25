@@ -102,8 +102,8 @@ export function ui(ctx) {
      *   stripes: { width, height, unit, dir, anchor, className } three stripes in one corner of the frame: anchor
  *     'ts'|'te'|'bs'|'be' (or a corner--xx class) pins them there; pick the corner with no faces in the photo
      */
-    photo(name, { ratio = '3:2', focus, bleed, sizes = '(min-width: 64rem) 50vw, 100vw', eager, alt, caption, className, wipe, load, stripes, attrs: extra = {} } = {}) {
-      return html`<figure${attrs({ class: cx('photo', RATIO[ratio] ?? ratio, focus != null && FOCUS[focus], bleed && 'photo--bleed', className), 'data-wipe': wipe || null, 'data-load': load ?? null, ...extra })}>${ctx.img(name, { sizes, eager, alt })}${stripes ? ctx.brand.stripes({ count: 3, unit: 22, dir: 'rise', width: 240, height: 140, ...stripes, className: cx('stripes', stripes.className) }) : ''}${caption ? html`<figcaption>${caption}</figcaption>` : ''}</figure>`;
+    photo(name, { ratio = '3:2', focus, bleed, sizes = '(min-width: 64rem) 50vw, 100vw', eager, alt, caption, className, wipe, load, stripes, duo, attrs: extra = {} } = {}) {
+      return html`<figure${attrs({ class: cx('photo', RATIO[ratio] ?? ratio, focus != null && FOCUS[focus], bleed && 'photo--bleed', duo && 'duo', className), 'data-wipe': wipe || null, 'data-load': load ?? null, ...extra })}>${ctx.img(name, { sizes, eager, alt })}${stripes ? ctx.brand.stripes({ count: 3, unit: 22, dir: 'rise', width: 240, height: 140, ...stripes, className: cx('stripes', stripes.className) }) : ''}${caption ? html`<figcaption>${caption}</figcaption>` : ''}</figure>`;
     },
     /**
      * Three stripes entering a chapter from a corner: pos 'ts'|'te'|'bs'|'be', tone 'soft'|'ink'|'beige'|'navy'|'beige-400'|'navy-700'|'navy-800'.
@@ -114,6 +114,13 @@ export function ui(ctx) {
       if (!accent) return '';
       const d = dir ?? (pos === 'ts' || pos === 'be' ? 'rise' : 'fall');
       return ctx.brand.stripes({ width: 260, height: 140, unit, dir: d, count, className: cx('stripes corner', `corner--${pos}`, tone !== 'soft' && `stripes--${tone}`) });
+    },
+    /**
+     * The stripe field (R3): the brand's 45° stripes at full strength, hard-edged, filling the inline-end of a navy
+     * anchor chapter and bleeding off its edge. Navy grounds only, one per page. Decorative.
+     */
+    field({ unit = 40, count = 9 } = {}) {
+      return ctx.brand.stripes({ width: 560, height: 900, unit, count, dir: 'rise', anchor: 'be', className: 'field' });
     },
     /** The large cropped brand mark (decorative; once per page at most). Position it with a page class. */
     mark({ className, parallax = true } = {}) {

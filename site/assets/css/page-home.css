@@ -2,23 +2,41 @@
 @layer pages {
   .page-home { --edge-out: calc(var(--page-margin) + max(0px, (100vw - var(--page-max) - 2 * var(--page-margin)) / 2)); }
 
-  /* ── 1 · hero: a headline, one photo and one action (25.11: "a headline, a photo and a CTA, that's it")
-     phone: the photo on top, the headline and the button under it on navy. desktop: the headline and the button on
-     navy at the reading edge, the photo filling the rest of the screen out to the far edge, no text over any face. */
+  /* ── 1 · hero (R3, monumental): the photo full-bleed on top, then a navy bar with the headline at full size and the
+     action at the far end on the same baseline, then the proof strip. Phone: a shorter photo (16/10) lifts the button. */
   .hero { padding-block: 0; overflow: clip; }
-  .hero__layout { display: grid; }
-  .hero__media { aspect-ratio: 4 / 3.4; margin-inline: calc(var(--page-margin) * -1); }
-  .hero__img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: 52% 28%; }
-  .hero__content { display: grid; gap: var(--space-6); justify-items: start; align-content: center; padding-block: var(--space-7) var(--space-9); }
-  .hero__title { max-inline-size: 13ch; text-wrap: balance; }
+  .hero__media { aspect-ratio: 16 / 10; overflow: clip; }
+  .hero__img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: 50% 32%; }
+  .hero__bar { display: grid; gap: var(--space-5); justify-items: start; padding-block: var(--space-6) var(--space-7); }
+  .hero__title { text-wrap: balance; line-height: 0.92; letter-spacing: -0.035em; }
   .hero__title > span { display: block; }
+  .hero__act { display: grid; gap: var(--space-3); justify-items: start; }
   .hero__btn { min-block-size: 3.5rem; padding-inline: var(--space-6); font-size: 1.125rem; }
+  .hero__note { font-size: var(--fs-small); color: var(--ink-quiet); }
+  .hero__btn { white-space: nowrap; }
   @media (min-width: 64rem) {
-    .hero__layout { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); min-block-size: min(calc(100svh - var(--header-h)), 52rem); }
-    .hero__content { grid-column: 1 / span 6; grid-row: 1; padding-block: var(--space-9); }
-    .hero__title { max-inline-size: none; font-size: clamp(3rem, 1rem + 4.2vw, 5.75rem); }
-    .hero__media { grid-column: 7 / -1; grid-row: 1; aspect-ratio: auto; margin-inline: var(--space-4) calc(var(--edge-out) * -1); }
-    .hero__img { object-position: 64% 30%; }
+    .hero__media { aspect-ratio: auto; block-size: min(58svh, 40rem); }
+    .hero__img { object-position: 50% 30%; }
+    .hero__bar { grid-template-columns: minmax(0, 1fr) minmax(min-content, 22rem); align-items: end; column-gap: var(--space-8); padding-block: var(--space-7) var(--space-8); }
+    /* one line, as large as the row allows beside the action (≈ 8.6 × the font size wide), never past 132px */
+    .hero__title { white-space: nowrap; font-size: clamp(3rem, calc((min(100vw, var(--page-max) + 2 * var(--page-margin)) - 2 * var(--page-margin) - 22rem) / 8.6), 8.25rem); }
+    :lang(en) .hero__title { font-size: clamp(3rem, calc((min(100vw, var(--page-max) + 2 * var(--page-margin)) - 2 * var(--page-margin) - 22rem) / 11.8), 8.25rem); } /* Latin runs wider */
+    .hero__act { justify-items: end; text-align: end; padding-block-end: 0.6rem; }
+    .hero__note { max-inline-size: 22rem; text-wrap: balance; }
+  }
+
+  /* ── 1b · proof strip: the Friday facts at stat size (navy-950), owner numbers beside them once they exist ── */
+  .proof { padding-block: var(--space-7); }
+  .proof__list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--gutter); margin: 0; }
+  .proof__item { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: var(--space-2); }
+  .proof__value { margin: 0; font-size: clamp(2.25rem, 1.5rem + 3vw, 4.5rem); line-height: 1; font-weight: var(--wght-bold); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .proof__value { white-space: nowrap; min-block-size: 1lh; }
+  .proof__value--text { white-space: normal; font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2.25rem); line-height: 1.1; }
+  .proof__label { font-size: var(--fs-small); color: var(--ink-quiet); }
+  .proof__stats { margin-block-start: var(--space-7); }
+  @media (min-width: 64rem) {
+    .proof__list { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1.5fr); align-items: end; }
+    .proof__item + .proof__item { border-inline-start: 1px solid var(--navy-800); padding-inline-start: var(--gutter); }
   }
 
   /* ── 2 · the movement and our story ── */
@@ -31,12 +49,17 @@
     .story__text { grid-column: 7 / -1; padding-block-start: var(--space-3); }
   }
 
-  /* ── 3 · one action: a navy band ── */
-  .band__box { display: grid; gap: var(--space-5); justify-items: start; padding: var(--space-7) var(--space-6); border-radius: var(--radius-panel); }
-  .band__title { max-inline-size: 24ch; }
-  .band__body { color: var(--ink-quiet); max-inline-size: 48ch; margin-block-start: var(--space-2); }
+  /* ── 3 · the anchor: full-bleed navy, the text at the reading edge, a duotone picture at the far side, the stripe field ── */
+  .band__grid { display: grid; gap: var(--space-7) var(--gutter); align-items: center; }
+  .band__text { display: grid; gap: var(--space-5); justify-items: start; }
+  .band__title { max-inline-size: 14ch; }
+  .band__body { max-inline-size: 40ch; }
+  .band__act { margin-block-start: var(--space-3); }
+  .band__photo { max-inline-size: 28rem; }
   @media (min-width: 64rem) {
-    .band__box { grid-template-columns: 1fr auto; align-items: center; gap: var(--space-8); padding: var(--space-8) var(--space-9); }
+    .band__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .band__text { grid-column: 1 / span 6; }
+    .band__photo { grid-column: 8 / -1; max-inline-size: none; }
   }
 
   /* ── 4 · the founders, briefly ── */
@@ -48,25 +71,36 @@
   .person { display: grid; gap: var(--space-1); align-content: start; }
   .person__photo { margin-block-end: var(--space-3); }
   .person__name { font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--wght-bold); }
+  .person__line { margin-block-start: var(--space-2); max-inline-size: 30ch; }
   @media (min-width: 64rem) {
     .founders-ch__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
     .founders-ch__head { grid-column: 1 / span 5; }
-    .founders-ch__people { grid-column: 7 / -1; }
+    .founders-ch__people { grid-column: 6 / -1; gap: var(--space-6); }
   }
 
-  /* ── 5 · our meetings ── */
+  /* ── 5 · our meetings: an asymmetric composition (Friday large; the women's and bonfire evenings stacked beside it) ── */
   .kinds__head { display: grid; gap: var(--space-4); margin-block-end: var(--space-8); }
   .kinds__head h2 { max-inline-size: 14ch; }
   .kinds__head p { max-inline-size: 44ch; }
   .kinds__act { margin-block-start: var(--space-8); }
-  .types { display: grid; gap: var(--gutter); }
-  .types > li { display: flex; }
-  .types .type { inline-size: 100%; }
-  .types .type--mid { background: var(--navy-700); }
-  .type__icon { inline-size: 2.5rem; block-size: 2.5rem; margin-block-end: var(--space-2); }
-  @media (max-width: 47.99rem) { .types .type { min-block-size: 10rem; } } /* text-only tiles: no tall empty fields on phones */
-  @media (min-width: 48rem) { .types { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (min-width: 64rem) { .types .type { min-block-size: 22rem; } }
+  .kinds__list { display: grid; gap: var(--gutter); margin: 0; padding: 0; list-style: none; }
+  .kinds__list > li { display: flex; }
+  .kinds__list .type { inline-size: 100%; min-block-size: 16rem; }
+  .kinds__friday .type { min-block-size: 24rem; }
+  .kinds__women .type { background: var(--navy); }
+  .type__field { position: absolute; inset-block-start: 0; inset-inline-end: 0; inline-size: 70%; block-size: 75%; color: var(--navy-800); z-index: -1; }
+  .type__body { font-size: var(--fs-body); }
+  .type__next { display: grid; gap: var(--space-1); margin-block-end: var(--space-3); }
+  .type__next-label { font-size: var(--fs-small); color: var(--beige-quiet); }
+  .type__next-date { font-size: clamp(2rem, 1.4rem + 2.2vw, 3.25rem); font-weight: var(--wght-bold); line-height: 1; }
+  @media (min-width: 64rem) {
+    .kinds__list { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto auto; }
+    .kinds__friday { grid-column: 1 / span 7; grid-row: 1 / span 2; }
+    .kinds__women, .kinds__bonfire { grid-column: 8 / -1; }
+    .kinds__friday .type { min-block-size: 40rem; }
+    .kinds__women .type, .kinds__bonfire .type { min-block-size: 19.5rem; }
+    .kinds__friday .type__title { font-size: var(--fs-chapter); line-height: 1; }
+  }
 
   /* ── 6 · join ── */
   .join__grid { display: grid; gap: var(--space-7) var(--gutter); }
@@ -80,6 +114,7 @@
   /* ── 7 · donors and sponsors ── */
   .sponsors__in { display: grid; gap: var(--space-6); }
   .sponsors__head { display: grid; gap: var(--space-2); }
+  .sponsors__sub { font-size: var(--fs-small); font-weight: var(--wght-semibold); letter-spacing: 0.04em; margin-block-start: var(--space-5); }
 
   /* ── 8 · closing ── */
   .closing__grid { display: grid; gap: var(--space-8) var(--gutter); }
