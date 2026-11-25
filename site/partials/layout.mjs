@@ -1,5 +1,5 @@
 // The page document: <html lang dir>, head, skip link, header, <main>, footer, and the phone CTA bar.
-import { html } from '../lib/html.mjs';
+import { html, raw } from '../lib/html.mjs';
 import { ctaBar as bar } from '../lib/components.mjs';
 import { head } from './head.mjs';
 import { header } from './header.mjs';
@@ -36,6 +36,20 @@ export function crumbs(ctx, body) {
 `;
 }
 
+/**
+ * One calm ground (owner, 25.11: "the background is not clean enough"): the page opens on its own first chapter (the
+ * hero, navy or beige as the page sets it) and every later chapter sits on beige, so the page no longer switches between
+ * navy and beige bands as it scrolls. Navy stays where it carries something: the hero, cards and panels inside a
+ * chapter (their own data-ground), and the footer.
+ */
+export function calmGrounds(body) {
+  let first = true;
+  return String(body).replace(/<section\b([^>]*)>/g, (tag, attrs) => {
+    if (first) { first = false; return tag; }
+    return /\sdata-ground="/.test(attrs) ? tag.replace(/\sdata-ground="[a-z-]+"/, ' data-ground="beige"') : tag;
+  });
+}
+
 export function layout(ctx, { title, description, body, noindex = false, jsonld = [], bodyClass, ctaBar }) {
   const optOut = NO_BAR.has(ctx.page.id) || /(^|\s)no-cta-bar(\s|$)/.test(bodyClass ?? '');
   // default bar: the next Friday morning (registration + payment); a page asks for another kind with ctaBar { type }
@@ -51,7 +65,7 @@ ${head(ctx, { title: fullTitle(title, ctx.t('site.name'), ctx.t('site.titleSepar
 <a class="skip-link" href="#main">${ctx.t('skip')}</a>
 ${header(ctx)}
 <main id="main" tabindex="-1">
-${crumbs(ctx, body)}${body}
+${crumbs(ctx, body)}${raw(calmGrounds(body))}
 </main>
 ${footHtml}
 ${barHtml}

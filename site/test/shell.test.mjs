@@ -54,14 +54,16 @@ for (const [name, b] of [['production', prod], ['preview', preview]]) {
     }
   });
 
-  test(`${name}: chapters set a ground, neighbours differ, headings never skip a level`, () => {
+  test(`${name}: chapters set a ground, one calm ground after the opening, headings never skip a level`, () => {
     const GROUNDS = new Set(['navy', 'navy-deep', 'beige', 'beige-light']);
     for (const { rel, html } of pages(b.out)) {
       const main = mainOf(html);
       const grounds = [...main.matchAll(/<section[^>]*\sdata-ground="([^"]+)"/g)].map((m) => m[1]);
       assert.ok(grounds.length >= 1, `${rel}: no chapter with data-ground`);
       for (const g of grounds) assert.ok(GROUNDS.has(g), `${rel}: unknown ground "${g}"`);
-      grounds.forEach((g, i) => i && assert.notEqual(g, grounds[i - 1], `${rel}: chapters ${i} and ${i + 1} share the ground "${g}"`));
+      // owner, 25.11: one clean background: the first chapter sets the page's opening, every later chapter is beige
+      const chapters = [...main.matchAll(/<section\b[^>]*\sdata-ground="([^"]+)"/g)].map((m) => m[1]);
+      chapters.forEach((g, i) => i && assert.equal(g, 'beige', `${rel}: chapter ${i + 1} is on "${g}", not the page's one ground`));
       const levels = [...main.matchAll(/<h([1-6])[\s>]/g)].map((m) => Number(m[1]));
       assert.equal(levels[0], 1, `${rel}: the first heading in <main> is the h1`);
       levels.forEach((l, i) => i && assert.ok(l <= levels[i - 1] + 1, `${rel}: heading h${levels[i - 1]} → h${l} skips a level`));

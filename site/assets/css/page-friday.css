@@ -35,9 +35,9 @@
 
   /* ── 2. the three promises (navy tones): sticky panels, each slides over the last (≥1024; phone = stacked bands) ── */
   .fr-promises { position: relative; }
-  .fr-promise { position: relative; display: grid; align-content: center; padding-block: var(--space-9); overflow: clip; isolation: isolate; background-color: var(--navy); }
-  .fr-promise--2 { background-color: var(--navy-800); }
-  .fr-promise--3 { background-color: var(--navy-700); }
+  .fr-promise { position: relative; display: grid; align-content: center; padding-block: var(--space-9); overflow: clip; isolation: isolate; background-color: var(--ground); }
+  /* one calm ground (25.11): the three panels share the page's beige; a hairline marks where the next one slides in */
+  .fr-promise + .fr-promise { border-block-start: 1px solid var(--line); }
   .fr-promise__in { display: grid; gap: var(--space-7); position: relative; z-index: 1; }
   .fr-promise__title { font-size: clamp(2.25rem, 1.2rem + 4.3vw, 6rem); line-height: 1.02; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
   .fr-promise__title span { display: block; }
