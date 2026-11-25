@@ -139,7 +139,7 @@ test('with no open Friday meeting, a calm empty state and a way to reach the tea
 
 test('the home hero has a real button to the Friday page, carrying the referral', async ({ page }) => {
   await page.goto('#/?ref=ig');
-  await expect(page.getByRole('heading', { level: 1, name: 'השירות נגמר. הצוות לא חייב להיגמר.' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'בואו להמשיך תנועה' })).toBeVisible();
   const button = page.getByTestId('home-friday');
   await expect(button).toHaveText('על מפגשי שישי');
   await expect(button).toHaveAttribute('href', '#/friday?ref=ig');

@@ -50,12 +50,8 @@ export function PublicHome() {
       <Hero
         photo={HILLS}
         position="50% 62%"
-        kicker={<Slogan />}
-        titleSize="sentence"
-        title={<>
-          <span className="block">השירות נגמר.</span>
-          <span className="block">הצוות לא חייב להיגמר.</span>
-        </>}
+        titleSize="slogan"
+        title={<Slogan />}
       >
         <p>
           <span className="whitespace-nowrap">המשך תנועה</span> היא הבית ללוחמים וללוחמות אחרי&nbsp;השירות. בשישי&nbsp;בבוקר: אימון,
