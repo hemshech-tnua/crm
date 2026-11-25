@@ -54,7 +54,7 @@ export function calmGrounds(body) {
   });
 }
 
-export function layout(ctx, { title, description, body, noindex = false, jsonld = [], bodyClass, ctaBar }) {
+export function layout(ctx, { title, description, body, noindex = false, redirect = null, jsonld = [], bodyClass, ctaBar }) {
   const optOut = NO_BAR.has(ctx.page.id) || /(^|\s)no-cta-bar(\s|$)/.test(bodyClass ?? '');
   // default bar: the next Friday morning (registration + payment); a page asks for another kind with ctaBar { type }
   const barOpts = ctaBar === undefined ? (optOut ? false : {}) : ctaBar;
@@ -64,7 +64,7 @@ export function layout(ctx, { title, description, body, noindex = false, jsonld 
   const live = /\sdata-(events|next|org-phone)[=\s>]/.test(`${body}${barHtml}${footHtml}`);
   return html`<!doctype html>
 <html lang="${ctx.lang}" dir="${ctx.dir}" class="no-js">
-${head(ctx, { title: fullTitle(title, ctx.t('site.name'), ctx.t('site.titleSeparator')), description, noindex, jsonld, live })}
+${head(ctx, { title: fullTitle(title, ctx.t('site.name'), ctx.t('site.titleSeparator')), description, noindex, redirect, jsonld, live })}
 <body class="${['page-' + ctx.page.id, bodyClass].filter(Boolean).join(' ')}"${ctx.preview ? html` data-preview` : ''}>
 <a class="skip-link" href="#main">${ctx.t('skip')}</a>
 ${header(ctx)}

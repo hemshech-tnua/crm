@@ -99,5 +99,10 @@
   "stat": {
     "value": "15,000",
     "label": "young men and women complete combat service every year"
+  },
+  "volunteer": {
+    "title": "Volunteer with us",
+    "lead": "Our meetings happen because people give their time: on the Friday welcome team, with a talk or by leading a workout.",
+    "more": "All about volunteering"
   }
 }

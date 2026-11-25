@@ -97,6 +97,15 @@
     font-weight: var(--wght-medium); font-size: 1rem; border-radius: var(--radius-control); color: inherit;
     transition: background-color var(--dur-fast) var(--ease-out);
   }
+  /* the six pages (config NAV), flat links (25.11: the designer's menu). The page you are on, or one of its sub-pages
+     (Friday → מפגשים), is underlined. */
+  .site-nav__top {
+    display: inline-flex; align-items: center; min-block-size: var(--tap); padding-inline: var(--space-3); white-space: nowrap;
+    font-weight: var(--wght-medium); font-size: 1rem; border-radius: var(--radius-control); color: inherit; text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .site-nav__top[aria-current] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.45em; }
+  @media (hover: hover) and (pointer: fine) { .site-nav__top:hover { background: var(--navy-800); } }
   .site-nav__toggle[aria-current] > span:first-child { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.45em; }
   .site-nav__toggle[aria-expanded='true'] { background: var(--navy-800); }
   .site-nav__caret {
@@ -159,9 +168,9 @@
   @media (max-width: 22.49rem) {
     .brand__name { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   }
-  /* the four section buttons from 1024px in both languages (four short labels fit beside the mark, the name, the
-     language switch and the CTA); below that, the phone menu */
-  @media (min-width: 64rem) {
+  /* the six menu links from 1120px in both languages (they fit beside the mark, the name, the language switch and the
+     CTA); below that, the phone menu */
+  @media (min-width: 70rem) {
     .site-nav { display: block; }
     .site-header__actions { margin-inline-start: var(--space-3); }
     .site-header__lang { display: inline-flex; }
@@ -172,7 +181,7 @@
     html[lang='en'] .site-header__cta .cta-long { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     html[lang='en'] .site-header__cta .cta-short { display: inline; }
   }
-  @media (max-width: 89.99rem) { .site-nav__toggle { padding-inline: var(--space-2); } }
+  @media (max-width: 89.99rem) { .site-nav__toggle, .site-nav__top { padding-inline: var(--space-2); } }
   /* the reading-progress stripe: 4px inside the header's bottom edge, a beige fill with navy on every side, so it reads
      the same over beige and navy chapters (hanging below the header it vanished into beige chapters) */
   .scroll-progress {
@@ -221,13 +230,14 @@
   .site-menu__all { display: inline-flex; align-items: center; gap: 0.5em; min-block-size: var(--tap); font-size: var(--fs-small); font-weight: var(--wght-medium); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.3em; color: var(--beige-quiet); }
   .site-menu__all[aria-current='page'] { color: var(--beige); }
   .site-menu__list { display: grid; }
+  .site-menu__list > li + li { border-block-start: 1px solid var(--navy-700); }
   .site-menu__link {
-    display: flex; align-items: center; min-block-size: var(--tap); text-decoration: none;
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-block-size: calc(var(--tap) + var(--space-3)); text-decoration: none;
     font-size: 1.3125rem; font-weight: var(--wght-semibold); line-height: 1.2; letter-spacing: -0.005em;
   }
   .site-menu__link[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.3em; }
   /* tablets: two columns of groups */
-  @media (min-width: 40rem) { .site-menu__nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--gutter); } }
+  
   .site-menu__cta { position: sticky; inset-block-end: 0; background: var(--navy-800); padding-block: var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom)); flex: none; --action-bg-hover: var(--beige-50); }
   @media (prefers-reduced-motion: no-preference) {
     .site-menu[open] { animation: sheet-in var(--dur-slow) var(--ease-drawer); }

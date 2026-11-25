@@ -2,7 +2,7 @@
 // footer columns, the breadcrumb and the hub pages show. Pages that are not in this build are skipped, so every list
 // only ever links to pages that exist. Labels: sections.<id>.label (the section), nav.<page> (a page), one-line
 // descriptions: sections.desc.<page> (the page's meta description, shortened).
-import { SECTIONS } from '../config.mjs';
+import { SECTIONS, NAV } from '../config.mjs';
 
 /** The section a page belongs to (as its hub or as one of its pages), or null (home, accessibility, 404). */
 export function sectionOf(pageId) {
@@ -30,4 +30,18 @@ export function resolveSection(ctx, s) {
 /** Every section that has at least one page in this build, in config order. */
 export function sections(ctx) {
   return SECTIONS.map((s) => resolveSection(ctx, s)).filter((s) => s.items.length);
+}
+
+/** The header and phone menu: the six NAV pages that are in this build, { id, href, label, current }. A page counts as
+ * current also when the visitor is on one of its section's sub-pages (e.g. Friday → מפגשים). */
+export function topNav(ctx) {
+  const here = ctx.page.id;
+  const sec = sectionOf(here);
+  return NAV.filter((id) => ctx.pageExists(id)).map((id) => ({
+    id,
+    href: ctx.link(id),
+    label: ctx.t(`top.${id}`),
+    current: here === id,
+    within: here !== id && !!sec && sec.hub === id && !NAV.includes(here),
+  }));
 }

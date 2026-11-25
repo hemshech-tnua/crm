@@ -114,7 +114,7 @@ test('sitemap and robots', () => {
   assert.match(sm, /<loc>https:\/\/hemshech-tnua\.github\.io\/crm\/site\/<\/loc>/);
   assert.match(sm, /<loc>https:\/\/hemshech-tnua\.github\.io\/crm\/site\/en\/<\/loc>/);
   assert.doesNotMatch(sm, /404/);
-  const pages = pagesOf(prod.out).filter((p) => !p.is404).length;
+  const pages = pagesOf(prod.out).filter((p) => !p.is404 && !/http-equiv="refresh"/.test(p.html)).length;
   assert.equal((sm.match(/<url>/g) ?? []).length, pages, 'one <url> per page');
   assert.match(read(join(prod.out, 'robots.txt')), /Sitemap: https:\/\/hemshech-tnua\.github\.io\/crm\/site\/sitemap\.xml/);
 });

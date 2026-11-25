@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "title": "Our meetings",
+    "description": "Friday mornings three times a month, women's evenings, bonfire evenings and other meetings: the upcoming dates and how to sign up."
+  },
+  "hero": {
+    "title": "Our meetings",
+    "lead": "Three Friday mornings a month, and more meetings in the evenings. No commitment, no talking circle."
+  },
+  "kinds": {
+    "title": "What we hold"
+  },
+  "dates": {
+    "title": "Upcoming dates",
+    "lead": "Pick a meeting and sign up. For Friday mornings, payment is part of signing up.",
+    "all": "The full calendar"
+  },
+  "gallery": {
+    "title": "Photos from our meetings and events",
+    "lead": "What it looks like from the inside.",
+    "cta": "See the photos"
+  },
+  "ask": {
+    "title": "A question before you sign up?",
+    "faq": "FAQ"
+  }
+}

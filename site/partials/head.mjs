@@ -16,7 +16,9 @@ export function ogImage(ctx) {
   const base = ctx.site.origin + ctx.site.base + 'assets/';
   return own
     ? { url: base + own.image, alt: own.alt, type: 'image/jpeg' }
-    : { url: base + 'og-image.png', alt: ctx.t('site.ogImageAlt'), type: 'image/png' };
+    : OG_IMAGES.home?.[ctx.lang]
+      ? { url: base + OG_IMAGES.home[ctx.lang].image, alt: OG_IMAGES.home[ctx.lang].alt, type: 'image/jpeg' }
+      : { url: base + 'og-image.png', alt: ctx.t('site.ogImageAlt'), type: 'image/png' };
 }
 
 /**
@@ -43,7 +45,7 @@ export function csp(supabaseOrigin, { editorFrame = false } = {}) {
 
 const jsonLd = (obj) => raw(`<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`);
 
-export function head(ctx, { title, description, noindex, jsonld, live = false }) {
+export function head(ctx, { title, description, noindex, redirect = null, jsonld, live = false }) {
   const { page, site } = ctx;
   const fonts = ctx.lang === 'he' ? ['google-sans-hebrew-wght-normal.woff2', 'google-sans-latin-wght-normal.woff2'] : ['google-sans-latin-wght-normal.woff2'];
   const og = ogImage(ctx);
@@ -56,7 +58,8 @@ export function head(ctx, { title, description, noindex, jsonld, live = false })
 <title>${title}</title>
 <meta name="description" content="${description}">
 ${noindex || site.robots === 'noindex' ? html`<meta name="robots" content="noindex">` : ''}
-${alt ? html`<link rel="canonical" href="${alt[ctx.lang]}">
+${redirect ? html`<meta http-equiv="refresh" content="0; url=${redirect}">` : ''}
+${alt ? html`<link rel="canonical" href="${redirect ? ctx.abs(redirect) : alt[ctx.lang]}">
 <link rel="alternate" hreflang="he" href="${alt.he}">
 <link rel="alternate" hreflang="en" href="${alt.en}">
 <link rel="alternate" hreflang="x-default" href="${alt.he}">` : ''}

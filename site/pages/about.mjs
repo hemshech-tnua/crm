@@ -177,6 +177,7 @@ export function render(ctx) {
     <h2 id="about-closing" class="cta-band__title" ${ctx.reveal('up')}>${t('about.closing.title')}</h2>
     <div class="cluster cta-band__actions" ${ctx.reveal('up', 1)}>
       ${action(ctx, { href: ctx.ctaHref, label: t('cta.register') })}
+      ${ctx.pageExists('donate') ? action(ctx, { href: ctx.link('donate'), label: t('about.closing.donate'), className: 'btn btn--ghost' }) : ''}
     </div>
   </div>
 </section>`;

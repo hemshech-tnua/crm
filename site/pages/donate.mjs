@@ -160,6 +160,28 @@ export function render(ctx) {
   </div>
 </section>`;
 
+  // ── volunteering, on the same page (the menu's "תרומה והתנדבות", 25.11): the three real roles as rows, and the
+  // volunteer page for the details. Anchor #volunteer (the former get-involved hub forwards here).
+  const vItems = ctx.list('volunteer.ways.items');
+  const vMessage = t('volunteer.ways.message');
+  const vToCrm = t('volunteer.ways.toCrm');
+  const vRoles = [
+    waRow(ctx, { title: vItems[0]?.title, body: vItems[0]?.body, label: vItems[0]?.cta, text: vMessage, hint: t(k('ways.waHint')) }),
+    linkRow(ctx, { title: vItems[1]?.title, body: vItems[1]?.body, label: vItems[1]?.cta, href: ctx.crm.join, hint: vToCrm, external: true }),
+    linkRow(ctx, { title: vItems[2]?.title, body: vItems[2]?.body, label: vItems[2]?.cta, href: ctx.crm.join, hint: vToCrm, external: true }),
+  ];
+  const volunteer = (g) => html`
+<section class="${`${C.chapter} give-volunteer`}" data-ground="${g}" id="volunteer" aria-labelledby="volunteer-h2">
+  <div class="${`${C.wrap} give-volunteer__grid`}">
+    <div class="give-volunteer__head" ${ctx.reveal('up')}>
+      <h2 id="volunteer-h2" class="${C.chapterTitle}">${t(k('volunteer.title'))}</h2>
+      <p class="${C.lead}">${t(k('volunteer.lead'))}</p>
+      ${ctx.pageExists('volunteer') ? html`<p><a class="${C.link}" href="${ctx.link('volunteer')}">${t(k('volunteer.more'))}${ctx.brand.tri()}</a></p>` : ''}
+    </div>
+    ${ctx.ui.rows(vRoles, { level: 3, className: 'vol-roles' })}
+  </div>
+</section>`;
+
   const closing = (g) => html`
 <section class="${`${C.chapter} give-close`}" data-ground="${g}" aria-labelledby="close-h2">
   ${corner(ctx, 'te')}
@@ -181,8 +203,9 @@ export function render(ctx) {
       { render: ways },
       { when: proofExists, render: proof },
       { render: trust },
+      { render: volunteer },
       { render: closing },
     ],
-    ['navy', 'beige', 'navy', 'beige-light', 'navy'],
+    ['navy', 'beige', 'navy', 'beige-light', 'beige', 'navy'],
   )}`;
 }

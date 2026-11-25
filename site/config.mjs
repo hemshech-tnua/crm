@@ -20,24 +20,36 @@ export const LANG_META = {
 };
 
 /**
- * The site's sections: the header (one dropdown per section), the phone menu (one group per section), the footer (one
- * column per section), the breadcrumb ("<section> › <page>") and the section's own hub page all read this one list.
- *   id      the section (copy: sections.<id>.label / .lead / .all / .meta.*)
- *   hub     the page id of the section's hub page (pages/<hub>.mjs, built from pages/_hub.mjs)
- *   pages   the section's pages, in order on screen (copy: nav.<id> label, sections.desc.<id> one-line description)
- * A page id that is not in this build (no module yet, or waiting for owner content: PAGE_WHEN) is skipped everywhere.
- * Every page belongs to exactly one section; the home page, the accessibility statement (footer legal row) and the
- * 404 belong to none.
+ * The header menu (and the phone menu): six pages, flat, in this order (the designer's IA, 25.11). Labels: top.<id>.
+ * A page that is not in this build is skipped.
+ */
+export const NAV = ['meetings', 'about', 'team', 'faq', 'donate', 'contact'];
+
+/**
+ * The site's sections: the footer (one column per section), the breadcrumb ("<section> ◀ <page>") and every page's
+ * place. Each section's hub is a real page (its first, fuller page); the others are its sub-pages.
+ *   id      the section (copy: sections.<id>.label)
+ *   hub     the page id of the section's main page
+ *   pages   the section's other pages, in order on screen (copy: nav.<id> label)
+ * A page id that is not in this build (waiting for owner content: PAGE_WHEN) is skipped everywhere.
+ * Every page belongs to exactly one section; the home page, the accessibility statement (footer legal row), the 404
+ * and the old addresses that now forward (REDIRECTS) belong to none.
  */
 export const SECTIONS = [
-  { id: 'meetings', hub: 'meetings', pages: ['friday', 'evenings', 'calendar'] },
-  { id: 'association', hub: 'association', pages: ['about', 'team', 'faq'] },
-  { id: 'involved', hub: 'involved', pages: ['volunteer', 'membership'] },
-  { id: 'support', hub: 'support', pages: ['donate', 'partners', 'contact'] },
+  { id: 'meetings', hub: 'meetings', pages: ['friday', 'evenings', 'calendar', 'gallery'] },
+  { id: 'association', hub: 'about', pages: ['team', 'faq', 'contact'] },
+  { id: 'involved', hub: 'donate', pages: ['volunteer', 'membership', 'partners'] },
 ];
 
-/** Pages outside the sections (the home page, the legal row, the 404). */
-export const OUTSIDE_SECTIONS = ['home', 'accessibility', '404'];
+/** Old addresses (the former section hubs) that forward to the page that now holds their content. */
+export const REDIRECTS = {
+  association: { page: 'about' },
+  involved: { page: 'donate', hash: 'volunteer' },
+  support: { page: 'donate' },
+};
+
+/** Pages outside the sections (the home page, the legal row, the 404, the forwarding addresses). */
+export const OUTSIDE_SECTIONS = ['home', 'accessibility', '404', ...Object.keys(REDIRECTS)];
 
 /**
  * Pages that are built and listed only while their owner content exists (content/org.json). In a production build a

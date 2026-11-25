@@ -358,7 +358,7 @@ function orgJsonLd(ctx) {
     ...(org.nameEn ? { alternateName: org.nameEn } : {}),
     url: ctx.abs(pagePath('home', DEFAULT_LANG)),
     logo: ctx.abs(opts.base + 'assets/img/logo-square.png'),
-    image: ctx.abs(opts.base + 'assets/og-image.png'),
+    image: ctx.abs(opts.base + 'assets/og/home-he.jpg'),
     description: ctx.t('site.description'),
     ...(sameAs.length ? { sameAs } : {}),
   };
@@ -376,7 +376,8 @@ for (const page of pages.filter((p) => byId.has(p.id))) {
       const title = m.title ?? ctx.t(page.mod.notFound ? 'notFound.metaTitle' : `${page.id}.meta.title`);
       const description = m.description ?? ctx.t(page.mod.notFound ? 'notFound.metaDescription' : `${page.id}.meta.description`);
       const jsonld = [...(page.id === 'home' ? [orgJsonLd(ctx)] : []), ...(page.mod.jsonld ? [page.mod.jsonld(ctx)].flat() : [])];
-      doc = layout(ctx, { title, description, body, noindex: !!page.mod.notFound, jsonld, bodyClass: page.mod.bodyClass, ctaBar: page.mod.notFound ? false : page.mod.ctaBar });
+      const redirect = page.mod.redirect ? page.mod.redirect(ctx) : null;
+      doc = layout(ctx, { title, description, body, noindex: !!page.mod.notFound || !!redirect, redirect, jsonld, bodyClass: page.mod.bodyClass, ctaBar: page.mod.notFound ? false : page.mod.ctaBar });
     } catch (e) {
       fail(`pages/${page.file} (${lang}): ${e.message}`);
     }
@@ -384,7 +385,7 @@ for (const page of pages.filter((p) => byId.has(p.id))) {
       ? LANG_META[lang].prefix + '404.html'
       : LANG_META[lang].prefix + (page.mod.slug[lang] ? page.mod.slug[lang] + '/' : '') + 'index.html';
     write(file, keepNames(doc.toString()));
-    rendered.push({ id: page.id, lang, file, notFound: !!page.mod.notFound, url: ctx.page.url, alternates: ctx.page.alternates });
+    rendered.push({ id: page.id, lang, file, notFound: !!page.mod.notFound, redirect: !!page.mod.redirect, url: ctx.page.url, alternates: ctx.page.alternates });
   }
 }
 
@@ -400,7 +401,7 @@ const indexable = rendered.filter((r) => !r.notFound && r.lang === DEFAULT_LANG)
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${rendered
-  .filter((r) => !r.notFound)
+  .filter((r) => !r.notFound && !r.redirect)
   .map(
     (r) => `  <url>
     <loc>${esc(r.alternates[r.lang])}</loc>

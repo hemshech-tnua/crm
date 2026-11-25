@@ -6,12 +6,12 @@
   "hero": {
     "title": "A home for combat veterans after their service",
     "body": "We're an Israeli nonprofit that runs regular, structured activity so that men and women who served in combat roles have a place to meet, move, find direction and succeed in life.",
-    "secondary": "Meet the team"
+    "secondary": "Meet the founders"
   },
   "why": {
     "title": "Here for good",
     "body": [
-      "Military service ends on a set date. The need for a team, for movement and for direction doesn't end with it.",
+      "The need for a team, for movement and for direction doesn't end when your military service does.",
       "So we didn't build a program with an end date. We're a place that stays: come at any point, and come back whenever you like."
     ],
     "verbs": [
@@ -102,12 +102,13 @@
   "people": {
     "title": "The people behind it",
     "body": "A team, a board and volunteers who make the meetings happen.",
-    "cta": "Meet the team",
+    "cta": "Meet the founders",
     "volunteer": "Join our volunteers"
   },
   "closing": {
     "title": "The best way to get to know us: come",
-    "secondary": "Partner with us"
+    "secondary": "Partner with us",
+    "donate": "Support us"
   },
   "slots": {
     "story": "The founding story: when, who founded it and why, 3–5 sentences",

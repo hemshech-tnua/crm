@@ -2,118 +2,63 @@
 @layer pages {
   .page-home { --edge-out: calc(var(--page-margin) + max(0px, (100vw - var(--page-max) - 2 * var(--page-margin)) / 2)); }
 
-  /* ── 1 · hero ──
-     phone + tablet: who · h1 · lead + the fact strip · the next Friday card (its button on the first screen at 390) ·
-     the WhatsApp question · the founders · the photo      desktop: who + h1 across; lead, facts and card at the reading
-     edge, the photo bleeding out */
-  .hero { padding-block: clamp(1.5rem, 0.5rem + 4vw, 5rem) 0; }
-  .hero__grid { display: grid; gap: var(--space-4) var(--gutter); grid-template-areas: 'who' 'title' 'lead' 'act' 'photo'; }
-  .hero__who { grid-area: who; font-size: var(--fs-lead); line-height: var(--lh-title); font-weight: var(--wght-semibold); color: var(--beige-quiet); max-inline-size: 30ch; }
-  .hero__facts { margin-block-start: var(--space-4); font-size: 0.9375rem; }
-  .hero__ask { margin-block-start: calc(var(--space-2) * -1); }
-  .founders { display: flex; align-items: center; gap: var(--space-4); }
-  .founders__faces { display: flex; flex: none; margin: 0; padding: 0; list-style: none; }
-  .founders__faces > li + li { margin-inline-start: -0.625rem; }
-  .founders__img { display: block; inline-size: 3.5rem; block-size: 3.5rem; object-fit: cover; object-position: 50% 20%; border-radius: var(--radius-sm); outline: 3px solid var(--ground); }
-  .founders__text { max-inline-size: 36ch; }
-  .hero__title { grid-area: title; max-inline-size: 15ch; }
+  /* ── 1 · hero: a headline, one photo and one action (25.11: "a headline, a photo and a CTA, that's it")
+     phone: the photo on top, the headline and the button under it on navy. desktop: the headline and the button on
+     navy at the reading edge, the photo filling the rest of the screen out to the far edge, no text over any face. */
+  .hero { padding-block: 0; overflow: clip; }
+  .hero__layout { display: grid; }
+  .hero__media { aspect-ratio: 4 / 3.4; margin-inline: calc(var(--page-margin) * -1); }
+  .hero__img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: 52% 28%; }
+  .hero__content { display: grid; gap: var(--space-6); justify-items: start; align-content: center; padding-block: var(--space-7) var(--space-9); }
+  .hero__title { max-inline-size: 13ch; text-wrap: balance; }
   .hero__title > span { display: block; }
-  .hero__lead { grid-area: lead; color: var(--ink); max-inline-size: 34ch; }
-  .hero__act { grid-area: act; display: grid; gap: var(--space-5); align-content: start; padding-block-end: var(--space-6); }
-  .hero__photo { grid-area: photo; position: relative; margin-inline: calc(var(--page-margin) * -1); }
-  .hero__photo .photo { aspect-ratio: 16 / 9; }
-  .hero__photo .photo > img { object-position: 50% 10%; } /* the 16:9 band keeps sky above the heads for the stripes */
-  /* three beige stripes cut the photo's outer top corner: sky and hills there, never a face */
-  .hero__stripes { inset-block-start: 0; inset-inline-end: 0; inline-size: 30%; block-size: 22%; z-index: 1; }
-  @media (min-width: 48rem) and (max-width: 63.99rem) {
-    .hero__act { max-inline-size: 36rem; padding-block-end: 0; }
-  }
+  .hero__btn { min-block-size: 3.5rem; padding-inline: var(--space-6); font-size: 1.125rem; }
   @media (min-width: 64rem) {
-    .hero__grid {
-      grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto auto auto 1fr; row-gap: var(--space-5);
-      grid-template-areas: none;
-    }
-    .hero { padding-block-start: clamp(1.5rem, 0.5rem + 2vw, 3rem); }
-    .hero__who { grid-column: 1 / -1; grid-row: 1; max-inline-size: none; margin-block-end: calc(var(--space-5) * -0.5); }
-    .hero__title { grid-column: 1 / -1; grid-row: 2; max-inline-size: none; }
-    .hero__lead { grid-column: 1 / span 5; grid-row: 3; padding-block-start: var(--space-2); }
-    .hero__act { grid-column: 1 / span 5; grid-row: 4; padding-block: 0 var(--space-9); }
-    .hero__photo { grid-column: 6 / -1; grid-row: 3 / span 2; margin-inline: var(--space-6) calc(var(--edge-out) * -1); }
-    .hero__photo .photo { aspect-ratio: auto; block-size: 100%; min-block-size: 34rem; }
-    .hero__photo .photo > img { object-position: 54% 40%; } /* both faces of the high-five in the tall column */
+    .hero__layout { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); min-block-size: min(calc(100svh - var(--header-h)), 52rem); }
+    .hero__content { grid-column: 1 / span 6; grid-row: 1; padding-block: var(--space-9); }
+    .hero__title { max-inline-size: none; font-size: clamp(3rem, 1rem + 4.2vw, 5.75rem); }
+    .hero__media { grid-column: 7 / -1; grid-row: 1; aspect-ratio: auto; margin-inline: var(--space-4) calc(var(--edge-out) * -1); }
+    .hero__img { object-position: 64% 30%; }
   }
 
-  /* ── 2 · the four verbs ── */
-  .verbs__head > h2 { max-inline-size: 16ch; }
-  .verbs__head p { max-inline-size: 30ch; }
-  .verbs__index { display: none; }
-  .verbs__list { display: grid; gap: var(--space-9); }
-  .verb { display: grid; gap: var(--space-5); }
-  .verb__name { font-size: var(--fs-chapter); line-height: 1; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); }
-  .verb__text { display: grid; gap: var(--space-2); }
-  .verb__what { font-size: var(--fs-lead); font-weight: var(--wght-semibold); line-height: var(--lh-title); }
-  /* each verb's field: a navy panel with the moment in large type (the photos it once held looked staged) */
-  .verb__field {
-    display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-3); min-block-size: 15rem; padding: var(--space-6);
-    border-radius: var(--radius-panel); background: var(--navy); color: var(--beige);
-  }
-  .verb__field--2 { background: var(--navy-800); }
-  .verb__field--3 { background: var(--navy-700); }
-  .verb__num { font-size: var(--fs-small); font-weight: var(--wght-semibold); letter-spacing: 0.08em; color: var(--beige-quiet); font-variant-numeric: tabular-nums; }
-  .verb__field .verb__what {
-    align-self: end; font-size: var(--fs-chapter); line-height: 1.02; letter-spacing: var(--track-chapter); font-weight: var(--wght-bold); max-inline-size: 12ch;
-  }
-  .verb__body { color: var(--beige-quiet); max-inline-size: 38ch; }
-  .verb__photo > img { object-position: 50% 30%; }
+  /* ── 2 · the movement and our story ── */
+  .story__grid { display: grid; gap: var(--space-6) var(--gutter); }
+  .story__head h2 { max-inline-size: 14ch; }
+  .story__text { max-inline-size: 40rem; }
   @media (min-width: 64rem) {
-    .verbs__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); align-items: start; }
-    .verbs__index {
-      display: grid; gap: var(--space-2); grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-8));
-    }
-    .verbs__index li {
-      display: flex; align-items: center; gap: 0.3em; color: color-mix(in srgb, var(--dust) 82%, var(--navy)); /* ≈3.6:1 on beige: AA for large text (beige-400 failed) */
-      font-size: var(--fs-chapter); line-height: 1.12; font-weight: var(--wght-bold); letter-spacing: var(--track-chapter);
-      transition: color var(--dur-base) var(--ease-out);
-    }
-    .verbs__index .tri { font-size: 0.6em; opacity: 0; transform: translateX(calc(var(--dir) * -8px)); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
-    .verbs__index li[data-active] { color: var(--navy); }
-    .verbs__index li[data-active] .tri { opacity: 1; transform: none; }
-    .verbs__list { grid-column: 7 / -1; gap: var(--space-11); padding-block-start: var(--space-3); }
-    .verb__name { font-size: var(--fs-title); line-height: var(--lh-title); }
-    .verb__field { aspect-ratio: 2 / 1; min-block-size: 0; padding: var(--space-7); }
+    .story__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .story__head { grid-column: 1 / span 5; }
+    .story__text { grid-column: 7 / -1; padding-block-start: var(--space-3); }
   }
 
-  /* ── 3 · פה תמיד ── */
-  .always { padding-block-end: var(--chapter-pad); }
-  .always__head { margin-block-end: var(--space-9); }
-  .always__head, .always__direction { display: grid; gap: var(--space-6) var(--gutter); position: relative; z-index: 1; }
-  .always__title { font-size: var(--fs-display); line-height: var(--lh-display); letter-spacing: var(--track-display); }
-  .always__band { aspect-ratio: 4 / 3; margin-block: var(--space-7) var(--space-8); position: relative; z-index: 1; }
-  .always__band img { object-position: 50% 60%; }
-  .always__subtitle { max-inline-size: 14ch; }
-  /* the association's own figure (their site): one stat, at the full width of its column */
-  .always__stat.stats { grid-template-columns: minmax(0, 1fr); }
-  .always__stat .stat__label { max-inline-size: 22ch; }
-  @media (min-width: 48rem) { .always__band { aspect-ratio: 16 / 9; } }
+  /* ── 3 · one action: a navy band ── */
+  .band__box { display: grid; gap: var(--space-5); justify-items: start; padding: var(--space-7) var(--space-6); border-radius: var(--radius-panel); }
+  .band__title { max-inline-size: 24ch; }
+  .band__body { color: var(--ink-quiet); max-inline-size: 48ch; margin-block-start: var(--space-2); }
   @media (min-width: 64rem) {
-    .always__head, .always__direction { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
-    .always__head > :first-child, .always__direction > :first-child { grid-column: 1 / span 5; }
-    .always__head > :last-child, .always__direction > :last-child { grid-column: 7 / -1; }
-    .always__band { aspect-ratio: 21 / 9; margin-block: var(--space-8) var(--space-9); }
+    .band__box { grid-template-columns: 1fr auto; align-items: center; gap: var(--space-8); padding: var(--space-8) var(--space-9); }
   }
 
-  /* ── 4 · Friday and the other meetings ── */
-  .meetings__friday { display: grid; gap: var(--space-9) var(--gutter); }
-  .meetings__promise { display: grid; gap: var(--space-7); align-content: start; }
-  .meetings__promise h2 { max-inline-size: 14ch; }
-  .promises { display: grid; gap: var(--space-6); }
-  .promises li { display: grid; gap: var(--space-2); }
-  .promises__title { display: flex; gap: 0.45em; align-items: baseline; font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--wght-bold); }
-  .promises__title { align-items: center; gap: var(--space-3); }
-  .promises__icon { inline-size: 2rem; block-size: 2rem; }
-  .promises p { padding-inline-start: calc(2rem + var(--space-3)); color: var(--ink); }
-  .meetings__dates { display: grid; gap: var(--space-5); align-content: start; }
-  .meetings__more { margin-block-start: var(--space-10); display: grid; gap: var(--space-6); }
+  /* ── 4 · the founders, briefly ── */
+  .founders-ch__grid { display: grid; gap: var(--space-8) var(--gutter); }
+  .founders-ch__head { display: grid; gap: var(--space-4); align-content: start; justify-items: start; }
+  .founders-ch__head h2 { max-inline-size: 14ch; }
+  .founders-ch__act { margin-block-start: var(--space-3); }
+  .founders-ch__people { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gutter); margin: 0; padding: 0; list-style: none; }
+  .person { display: grid; gap: var(--space-1); align-content: start; }
+  .person__photo { margin-block-end: var(--space-3); }
+  .person__name { font-size: var(--fs-title); line-height: var(--lh-title); font-weight: var(--wght-bold); }
+  @media (min-width: 64rem) {
+    .founders-ch__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
+    .founders-ch__head { grid-column: 1 / span 5; }
+    .founders-ch__people { grid-column: 7 / -1; }
+  }
+
+  /* ── 5 · our meetings ── */
+  .kinds__head { display: grid; gap: var(--space-4); margin-block-end: var(--space-8); }
+  .kinds__head h2 { max-inline-size: 14ch; }
+  .kinds__head p { max-inline-size: 44ch; }
+  .kinds__act { margin-block-start: var(--space-8); }
   .types { display: grid; gap: var(--gutter); }
   .types > li { display: flex; }
   .types .type { inline-size: 100%; }
@@ -121,30 +66,22 @@
   .type__icon { inline-size: 2.5rem; block-size: 2.5rem; margin-block-end: var(--space-2); }
   @media (max-width: 47.99rem) { .types .type { min-block-size: 10rem; } } /* text-only tiles: no tall empty fields on phones */
   @media (min-width: 48rem) { .types { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (min-width: 64rem) {
-    .meetings__friday { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
-    .meetings__promise { grid-column: 1 / span 6; }
-    .meetings__dates { grid-column: 8 / -1; padding-block-start: var(--space-4); position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
-    .types .type { min-block-size: 22rem; }
-  }
-
-  /* ── 5 · proof ── */
-  .proof__stats { margin-block-start: var(--space-8); }
-  .proof__stories { display: grid; gap: var(--space-6); margin-block-start: var(--space-9); }
-  .proof__quotes { display: grid; gap: var(--space-8) var(--gutter); }
-  @media (min-width: 64rem) { .proof__quotes { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 64rem) { .types .type { min-block-size: 22rem; } }
 
   /* ── 6 · join ── */
   .join__grid { display: grid; gap: var(--space-7) var(--gutter); }
   .join__title { max-inline-size: 12ch; }
-  .join__partners { display: grid; gap: var(--space-5); margin-block-start: var(--space-9); }
   @media (min-width: 64rem) {
     .join__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
     .join__title { grid-column: 1 / span 5; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
     .join__grid > .rows { grid-column: 6 / -1; }
   }
 
-  /* ── 7 · closing ── */
+  /* ── 7 · donors and sponsors ── */
+  .sponsors__in { display: grid; gap: var(--space-6); }
+  .sponsors__head { display: grid; gap: var(--space-2); }
+
+  /* ── 8 · closing ── */
   .closing__grid { display: grid; gap: var(--space-8) var(--gutter); }
   .closing__text { display: grid; gap: var(--space-9); align-content: space-between; }
   .closing__title { max-inline-size: 10ch; }

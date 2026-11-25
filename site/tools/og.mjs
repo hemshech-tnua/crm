@@ -26,20 +26,21 @@ const MAX_BYTES = 250 * 1024;
 
 /** page id → icon + the line on the image (≤ 6 words), per language. Hebrew name stays whole (NBSP added below). */
 export const OG = {
-  home: { icon: null, he: 'השירות נגמר.\nהצוות לא חייב להיגמר.', en: 'Service ends.\nThe team doesn’t have to.' },
+  home: { icon: null, he: 'בואו להמשיך תנועה', en: 'Come keep moving\nwith us' },
   friday: { icon: 'coffee', he: 'אימון, קפה והרצאה.\nנתראה בשישי?', en: 'Training, coffee, a talk.\nSee you Friday?' },
   calendar: { icon: 'calendar-3', he: 'המפגשים הקרובים', en: 'Upcoming meetings' },
   meetings: { icon: 'kettlebell', he: 'המפגשים של\nהמשך תנועה', en: 'Our meetings' },
   evenings: { icon: 'bonfire', he: 'ערבי נשים\nומפגשים נוספים', en: 'Women’s evenings\nand more' },
   about: { icon: 'route', he: 'הסיפור של\nהמשך תנועה', en: 'The story of\nHemshech Tnua' },
   association: { icon: 'center', he: 'העמותה', en: 'The association' },
-  team: { icon: 'friend', he: 'מי עומדים\nמאחורי העמותה', en: 'The people\nbehind it' },
+  team: { icon: 'friend', he: 'המייסדים ומי\nשמוביל את התנועה', en: 'The founders\nand who leads us' },
+  gallery: { icon: 'bonfire', he: 'תמונות ממפגשים\nואירועים', en: 'Photos from\nour meetings' },
   faq: { icon: 'alone', he: 'מה שואלים\nלפני שבאים', en: 'What people ask\nbefore coming' },
   involved: { icon: 'volunteer', he: 'להיות חלק', en: 'Get involved' },
   volunteer: { icon: 'greeter', he: 'צוות כניסה,\nהרצאה או אימון', en: 'Welcome team,\na talk or training' },
   membership: { icon: 'calendar-add', he: 'הצטרפות לעמותה', en: 'Join the association' },
   support: { icon: 'heart-hand', he: 'לתמוך\nבהמשך תנועה', en: 'Support\nHemshech Tnua' },
-  donate: { icon: 'heart-hand', he: 'לתמוך\nבהמשך תנועה', en: 'Support\nHemshech Tnua' },
+  donate: { icon: 'heart-hand', he: 'תרומה\nוהתנדבות', en: 'Give and\nvolunteer' },
   partners: { icon: 'partner', he: 'לחברות\nולארגונים', en: 'For companies\nand organisations' },
   contact: { icon: 'whatsapp', he: 'שאלה?\nכתבו לנו', en: 'A question?\nWrite to us' },
 };

@@ -3,7 +3,7 @@
     "name": "המשך תנועה",
     "description": "המשך תנועה is an Israeli nonprofit building a nationwide network of local community centers, with regular activities for combat veterans after their service: room to meet, move, find direction and build a good life.",
     "titleSeparator": " · ",
-    "ogImageAlt": "The המשך תנועה mark and name above the Hebrew line “Service ends. The team doesn’t have to.”, beige on navy."
+    "ogImageAlt": "“Come keep moving with us” in beige on navy, with the המשך תנועה mark and name."
   },
   "skip": "Skip to content",
   "nav": {
@@ -20,21 +20,22 @@
     "switchShort": "עברית",
     "home": "Home",
     "stories": "Stories",
-    "gallery": "Photos & videos",
+    "gallery": "Photos from our meetings",
     "news": "News",
     "transparency": "Transparency",
     "accessibility": "Accessibility statement",
     "friday": "Friday mornings",
     "evenings": "Women's evenings & more",
-    "about": "Who we are",
+    "about": "Our story",
     "partners": "Partnerships",
     "volunteer": "Volunteer & speak",
     "donate": "Donate",
     "calendar": "Calendar",
-    "team": "Team",
+    "team": "Founders",
     "faq": "FAQ",
     "membership": "Membership",
-    "contact": "Contact"
+    "contact": "Contact",
+    "meetings": "Meetings"
   },
   "cta": {
     "register": "Sign up for a meeting",
@@ -170,5 +171,13 @@
     "priceFallback": "Price in the meeting details",
     "greeter": "Itai meets you at the door",
     "ask": "A question first? Message us on WhatsApp"
+  },
+  "top": {
+    "meetings": "Meetings",
+    "about": "Our story",
+    "team": "Founders",
+    "faq": "FAQ",
+    "donate": "Give & volunteer",
+    "contact": "Contact"
   }
 }

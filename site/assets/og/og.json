@@ -2,11 +2,11 @@
   "home": {
     "he": {
       "image": "og/home-he.jpg",
-      "alt": "״השירות נגמר. הצוות לא חייב להיגמר.״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+      "alt": "״בואו להמשיך תנועה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
     },
     "en": {
       "image": "og/home-en.jpg",
-      "alt": "“Service ends. The team doesn’t have to.” in beige on navy, with the המשך תנועה mark and name."
+      "alt": "“Come keep moving with us” in beige on navy, with the המשך תנועה mark and name."
     }
   },
   "friday": {
@@ -72,11 +72,21 @@
   "team": {
     "he": {
       "image": "og/team-he.jpg",
-      "alt": "״מי עומדים מאחורי העמותה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+      "alt": "״המייסדים ומי שמוביל את התנועה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
     },
     "en": {
       "image": "og/team-en.jpg",
-      "alt": "“The people behind it” in beige on navy, with the המשך תנועה mark and name."
+      "alt": "“The founders and who leads us” in beige on navy, with the המשך תנועה mark and name."
+    }
+  },
+  "gallery": {
+    "he": {
+      "image": "og/gallery-he.jpg",
+      "alt": "״תמונות ממפגשים ואירועים״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+    },
+    "en": {
+      "image": "og/gallery-en.jpg",
+      "alt": "“Photos from our meetings” in beige on navy, with the המשך תנועה mark and name."
     }
   },
   "faq": {
@@ -132,11 +142,11 @@
   "donate": {
     "he": {
       "image": "og/donate-he.jpg",
-      "alt": "״לתמוך בהמשך תנועה״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
+      "alt": "״תרומה והתנדבות״ בבז׳ על רקע כחול כהה, עם הסמל והשם המשך תנועה."
     },
     "en": {
       "image": "og/donate-en.jpg",
-      "alt": "“Support Hemshech Tnua” in beige on navy, with the המשך תנועה mark and name."
+      "alt": "“Give and volunteer” in beige on navy, with the המשך תנועה mark and name."
     }
   },
   "partners": {

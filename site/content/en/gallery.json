@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "title": "Photos from our meetings and events",
+    "description": "Photos from Friday mornings, bonfire evenings and other events of our nonprofit."
+  },
+  "hero": {
+    "title": "Photos from our meetings and events",
+    "lead": "Photos from our meetings, shared with the consent of the people in them."
+  },
+  "empty": {
+    "title": "Photos from our meetings are coming here soon",
+    "body": "Meanwhile, photos from recent meetings are posted on our Instagram.",
+    "instagram": "Our Instagram"
+  },
+  "slot": "Real photos from meetings and events, with consent (file, short description, date)",
+  "back": "All meetings"
+}

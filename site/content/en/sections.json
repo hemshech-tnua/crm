@@ -20,7 +20,7 @@
     }
   },
   "involved": {
-    "label": "Get involved",
+    "label": "Give & volunteer",
     "all": "All the ways to get involved",
     "lead": "Our meetings happen because people give their time. There are a few ways to join in.",
     "meta": {
@@ -48,6 +48,11 @@
     "membership": "Leave your name and phone; our team gets back to you",
     "donate": "Give once or monthly, fund a meeting, and more",
     "partners": "For companies, organizations and foundations",
-    "contact": "WhatsApp for questions about meetings and sign-up"
+    "contact": "WhatsApp for questions about meetings and sign-up",
+    "gallery": "Photos from our meetings and events"
+  },
+  "moved": {
+    "title": "This page has moved",
+    "body": "What was here is now on this page:"
   }
 }

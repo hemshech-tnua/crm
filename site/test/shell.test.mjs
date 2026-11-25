@@ -48,7 +48,7 @@ for (const [name, b] of [['production', prod], ['preview', preview]]) {
 
   test(`${name}: the phone CTA bar is on every page except donate, contact and the 404`, () => {
     for (const { rel, html, is404 } of pages(b.out)) {
-      const none = is404 || /(^|\/)(donate|contact)\//.test(rel);
+      const none = is404 || /(^|\/)(donate|contact)\//.test(rel) || /http-equiv="refresh"/.test(html);
       const bar = /<div class="cta-bar" data-ground="navy" data-cta-bar data-next="[a-z]+"[^>]* role="region" aria-label="[^"]+">/.test(html);
       assert.equal(bar, !none, `${rel}: CTA bar ${none ? 'should be absent' : 'missing'}`);
     }
@@ -71,23 +71,22 @@ for (const [name, b] of [['production', prod], ['preview', preview]]) {
   });
 }
 
-test('home: the live next-meeting card, the signature wipe, the CEO\'s chapter order', () => {
+test('home: the designer\'s order, a clean hero (headline, photo, one action)', () => {
   for (const lang of ['he', 'en']) {
     const html = read(join(prod.out, lang === 'en' ? 'en/index.html' : 'index.html'));
     const main = mainOf(html);
-    assert.match(main, /<div class="next" data-next="friday" data-next-pay aria-busy="true" aria-live="polite">/, `${lang}: next card = the next Friday (registration + payment)`);
-    const order = [...main.matchAll(/class="[^"]*\bhero__(title|lead|photo|act)\b/g)].map((m) => m[1]);
-    assert.deepEqual(order, ['title', 'lead', 'photo', 'act'], `${lang}: hero source order (phones: the photo right after the lead)`);
-    assert.match(main, /<a class="btn" href="[^"]+" data-next-cta data-hero-cta>/, `${lang}: hero CTA marks where the phone bar starts`);
-    assert.equal((main.match(/data-wipe/g) ?? []).length, 1, `${lang}: exactly one signature wipe`);
-    assert.match(main, /fetchpriority="high"/, `${lang}: hero photo is the eager LCP image`);
-    const ids = [...main.matchAll(/<section class="chapter ([a-z]+)"/g)].map((m) => m[1]);
-    assert.deepEqual(ids, ['hero', 'verbs', 'always', 'meetings', 'join', 'closing'], `${lang}: chapter order (no proof without owner content)`);
-    assert.match(main, /data-events="friday"/, `${lang}: live list of the next Fridays`);
+    const hero = main.slice(0, main.indexOf('</section>'));
+    assert.equal((hero.match(/<a\b/g) ?? []).length, 1, `${lang}: one action in the hero`);
+    assert.match(hero, /<a class="btn hero__btn" href="[^"]+" data-next-link="friday">/, `${lang}: the hero action is the next Friday`);
+    assert.match(hero, /data-hero-cta/, `${lang}: the hero action marks where the phone bar starts`);
+    assert.doesNotMatch(hero, /class="t-lead|data-next=|hero__facts|founders/, `${lang}: nothing else in the hero`);
+    assert.match(hero, /fetchpriority="high"/, `${lang}: hero photo is the eager LCP image`);
+    const ids = [...main.matchAll(/<section class="chapter (?:chapter--tight )?([a-z-]+)"/g)].map((m) => m[1]);
+    assert.deepEqual(ids, ['hero', 'story', 'band', 'founders-ch', 'kinds', 'join', 'closing'], `${lang}: chapter order (no sponsors without owner content)`);
   }
   const pv = mainOf(read(join(preview.out, 'index.html')));
-  assert.deepEqual([...pv.matchAll(/<section class="chapter ([a-z]+)"/g)].map((m) => m[1]), ['hero', 'verbs', 'always', 'meetings', 'proof', 'join', 'closing'], 'preview shows the proof chapter');
-  assert.ok((pv.match(/data-owner-slot/g) ?? []).length >= 4, 'preview marks the owner slots on home');
+  assert.deepEqual([...pv.matchAll(/<section class="chapter (?:chapter--tight )?([a-z-]+)"/g)].map((m) => m[1]), ['hero', 'story', 'band', 'founders-ch', 'kinds', 'join', 'sponsors', 'closing'], 'preview shows the sponsors chapter');
+  assert.ok((pv.match(/data-owner-slot/g) ?? []).length >= 1, 'preview marks the owner slots on home');
 });
 
 test('titles: the name exactly once in <title>, og:title and every JSON-LD name', () => {

@@ -1,7 +1,9 @@
-// The "involved" section's hub page (pages/_hub.mjs; its pages: config.mjs SECTIONS).
-import { hubPage } from './_hub.mjs';
+// The former "involved" hub: now forwards (config.mjs REDIRECTS, pages/_redirect.mjs).
+import { redirectPage } from './_redirect.mjs';
 
 export const slug = { he: 'get-involved', en: 'get-involved' };
-const hub = hubPage('involved');
-export const meta = hub.meta;
-export const render = hub.render;
+const page = redirectPage('involved');
+export const meta = page.meta;
+export const render = page.render;
+export const redirect = page.redirect;
+export const ctaBar = page.ctaBar;

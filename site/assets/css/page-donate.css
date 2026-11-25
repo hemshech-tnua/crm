@@ -64,3 +64,16 @@
     .give-trust__grid--solo .give-trust__who { grid-column: 1 / span 8; }
   }
 }
+
+/* volunteering on the donate page (#volunteer, 25.11) */
+@layer pages {
+  .give-volunteer__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .give-volunteer__head { display: grid; gap: var(--space-4); align-content: start; }
+  .give-volunteer__head h2 { max-inline-size: 14ch; }
+  .give-volunteer__head .t-lead { max-inline-size: 38ch; }
+  @media (min-width: 64rem) {
+    .give-volunteer__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .give-volunteer__head { grid-column: 1 / span 5; }
+    .give-volunteer__grid > .rows { grid-column: 7 / -1; }
+  }
+}

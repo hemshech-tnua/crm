@@ -1,14 +1,14 @@
 {
   "meta": {
-    "title": "Team & board · המשך תנועה",
+    "title": "Founders & team · המשך תנועה",
     "description": "The people behind our work: the team, board and volunteers who run meetings for combat veterans after their service."
   },
   "hero": {
-    "title": "The people behind {org}",
+    "title": "The founders and the people who lead us",
     "body": "A team, a board and volunteers who make the meetings happen."
   },
   "members": {
-    "title": "Team"
+    "title": "Founders"
   },
   "board": {
     "title": "Board",

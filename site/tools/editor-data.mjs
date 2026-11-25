@@ -102,15 +102,16 @@ export async function editorTexts({ siteDir, frameDir, round }) {
   const he = loadCopy(siteDir, 'he');
   const en = loadCopy(siteDir, 'en');
   const org = readJson(join(siteDir, 'content', 'org.json'));
-  const { SECTIONS, OUTSIDE_SECTIONS } = await import(pathToFileURL(join(siteDir, 'config.mjs')).href);
+  const { SECTIONS, OUTSIDE_SECTIONS, NAV } = await import(pathToFileURL(join(siteDir, 'config.mjs')).href);
 
   // ── the pages (groups): the order of the menus, only pages this build wrote ──
   const mods = {};
   for (const f of readdirSync(join(siteDir, 'pages')).filter((f) => f.endsWith('.mjs') && !f.startsWith('_'))) {
     const m = await import(pathToFileURL(join(siteDir, 'pages', f)).href);
-    if (!m.notFound && m.slug) mods[m.id ?? basename(f, '.mjs')] = m.slug.he;
+    if (!m.notFound && !m.redirect && m.slug) mods[m.id ?? basename(f, '.mjs')] = m.slug.he; // forwarding addresses have no texts
   }
-  const order = ['home', ...SECTIONS.flatMap((s) => [s.hub, ...s.pages]), ...OUTSIDE_SECTIONS.filter((p) => p !== 'home' && p !== '404')];
+  // the menu's six pages first, in its order, then each section's other pages
+  const order = ['home', ...(NAV ?? []), ...SECTIONS.flatMap((s) => [s.hub, ...s.pages]), ...OUTSIDE_SECTIONS.filter((p) => p !== 'home' && p !== '404')];
   const pages = [];
   for (const id of order) {
     if (!(id in mods) || pages.some((p) => p.page === id)) continue;

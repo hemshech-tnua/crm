@@ -85,7 +85,7 @@ export function initNav() {
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       });
       // a desktop-width window never needs the sheet: close it if the viewport grows past the phone layout
-      matchMedia('(min-width: 64rem)').addEventListener?.('change', (q) => q.matches && close());
+      matchMedia('(min-width: 70rem)').addEventListener?.('change', (q) => q.matches && close());
     }
   }
 

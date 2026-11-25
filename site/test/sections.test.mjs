@@ -1,12 +1,11 @@
-// The site's sections (config.mjs SECTIONS): every page in exactly one section, every hub lists exactly its existing
-// pages, the header dropdowns, the phone menu and the footer show the same grouping, the dropdowns are accessible
-// disclosures, and every page of a section carries the "<section> ◀ <page>" breadcrumb.
+// The site's places (config.mjs): the six-page menu (NAV) in the header and the phone menu, the sections (SECTIONS) as
+// the footer columns and the breadcrumb "<section> ◀ <page>", and the old hub addresses that now forward (REDIRECTS).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { build, walk, read, SITE } from './helpers.mjs';
-import { SECTIONS, OUTSIDE_SECTIONS } from '../config.mjs';
+import { SECTIONS, OUTSIDE_SECTIONS, NAV, REDIRECTS } from '../config.mjs';
 
 const prod = build();
 const preview = build({ preview: true });
@@ -19,7 +18,7 @@ const hrefs = (s) => [...s.matchAll(/<a\b[^>]*\shref="([^"]+)"/g)].map((m) => m[
 const pages = (out) => walk(out, '.html').map((f) => ({ rel: relative(out, f), html: read(f), lang: relative(out, f).startsWith('en/') ? 'en' : 'he' }));
 const LABELS = { he: { crumbs: 'מיקום באתר' }, en: { crumbs: 'Where you are' } };
 
-/** What a section should list in this build: [hub, ...existing pages]. */
+/** What a section's footer column should list in this build: [hub, ...existing pages]. */
 const expected = (out, s, lang) => [url(s.hub, lang), ...s.pages.filter((id) => exists(out, id, lang)).map((id) => url(id, lang))];
 
 test('builds succeed', () => {
@@ -27,7 +26,7 @@ test('builds succeed', () => {
   assert.equal(preview.status, 0, preview.stderr);
 });
 
-test('every page belongs to exactly one section (home, accessibility and the 404 to none)', () => {
+test('every page belongs to exactly one section (home, accessibility, the 404 and the forwarding addresses to none)', () => {
   const ids = readdirSync(join(SITE, 'pages')).filter((f) => f.endsWith('.mjs') && !f.startsWith('_')).map((f) => f.replace(/\.mjs$/, ''));
   const hubs = SECTIONS.map((s) => s.hub);
   for (const id of ids) {
@@ -36,77 +35,70 @@ test('every page belongs to exactly one section (home, accessibility and the 404
     else assert.equal(n, 1, `${id} belongs to ${n} sections`);
   }
   for (const s of SECTIONS) {
-    assert.ok(ids.includes(s.hub), `section ${s.id}: hub page pages/${s.hub}.mjs`);
-    for (const id of s.pages) assert.ok(!hubs.includes(id), `${id} is a hub, not a section page`);
+    assert.ok(ids.includes(s.hub), `section ${s.id}: main page pages/${s.hub}.mjs`);
+    for (const id of s.pages) assert.ok(!hubs.includes(id), `${id} is a section's main page, not one of its pages`);
   }
-  assert.deepEqual(SECTIONS.map((s) => s.id), ['meetings', 'association', 'involved', 'support'], 'section order');
+  assert.deepEqual(SECTIONS.map((s) => s.id), ['meetings', 'association', 'involved'], 'section order');
+  assert.deepEqual(NAV, ['meetings', 'about', 'team', 'faq', 'donate', 'contact'], 'the six menu pages, in order');
+  for (const id of NAV) assert.ok(ids.includes(id), `menu page pages/${id}.mjs`);
 });
 
 for (const [name, b] of [['production', prod], ['preview', preview]]) {
-  test(`${name}: every hub lists exactly its existing pages, in order`, () => {
-    for (const lang of ['he', 'en']) {
-      for (const s of SECTIONS) {
-        const html = read(file(b.out, s.hub, lang));
-        const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
-        assert.equal((main.match(/<h1[\s>]/g) ?? []).length, 1, `${lang} ${s.hub}: one h1`);
-        const rows = [...main.matchAll(/<a class="row[^"]*" href="([^"]+)"/g)].map((m) => m[1]);
-        assert.deepEqual(rows, expected(b.out, s, lang).slice(1), `${lang} ${s.hub}: rows`);
-        if (s.id === 'meetings') assert.match(main, /<div class="next" data-next="friday" data-next-pay/, `${lang}: the live next Friday`);
-        if (s.id === 'support') assert.match(main, lang === 'he' ? /לא חייבים לתרום כדי להיות חלק/ : /You don(&#39;|')t have to give to be part of this/, `${lang}: "you don't have to give"`);
-      }
-    }
-    // the team page waits for owner content (config PAGE_WHEN): in the association hub once org.json has people, always in preview
-    assert.equal(read(file(b.out, 'association', 'he')).includes('href="/crm/site/team/"'), name === 'preview' || exists(b.out, 'team', 'he'));
-  });
-
-  test(`${name}: header dropdowns, phone menu and footer show the same grouping on every page`, () => {
+  test(`${name}: the header and the phone menu list the six pages; the footer lists every section`, () => {
     for (const { rel, html, lang } of pages(b.out)) {
+      if (/http-equiv="refresh"/.test(html)) continue;
       const at = (m) => `${rel}: ${m}`;
       const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
       const menu = html.slice(html.indexOf('<dialog'), html.indexOf('</dialog>'));
       const foot = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
-      const block = (src, open, id) => {
-        const i = src.indexOf(open);
-        assert.ok(i >= 0, at(`${open} missing`));
-        return src.slice(i, src.indexOf('</ul>', i));
-      };
-      const ids = [...header.matchAll(/aria-controls="nav-([a-z]+)"/g)].map((m) => m[1]);
-      assert.deepEqual(ids, SECTIONS.map((s) => s.id), at('four sections in the header, in order'));
+      const want = NAV.filter((id) => exists(b.out, id, lang)).map((id) => url(id, lang));
+      const nav = header.slice(header.indexOf('<nav class="site-nav"'), header.indexOf('</nav>'));
+      assert.deepEqual(hrefs(nav), want, at('header menu'));
+      assert.doesNotMatch(header, /site-nav__toggle|data-nav-panel/, at('no dropdowns'));
+      const list = menu.slice(menu.indexOf('<nav class="wrap site-menu__nav"'), menu.indexOf('</nav>', menu.indexOf('<nav class="wrap site-menu__nav"')));
+      assert.deepEqual(hrefs(list), want, at('phone menu'));
       for (const s of SECTIONS) {
-        const want = expected(b.out, s, lang);
-        assert.deepEqual(hrefs(block(header, `id="nav-${s.id}"`)), want, at(`header ${s.id}`));
-        assert.deepEqual(hrefs(block(menu, `data-menu-section="${s.id}"`)), want, at(`menu ${s.id}`));
-        assert.deepEqual(hrefs(block(foot, `data-footer-section="${s.id}"`)), want, at(`footer ${s.id}`));
+        const i = foot.indexOf(`data-footer-section="${s.id}"`);
+        assert.ok(i >= 0, at(`footer column ${s.id}`));
+        assert.deepEqual(hrefs(foot.slice(i, foot.indexOf('</ul>', i))), expected(b.out, s, lang), at(`footer ${s.id}`));
       }
       assert.match(menu, /<div class="site-menu__cta"><div class="wrap"><a class="btn btn--block" href="[^"]+"/, at('CTA at the foot of the menu'));
       assert.match(header, /<a class="btn btn--sm site-header__cta" href="[^"]+"/, at('persistent CTA'));
     }
   });
 
-  test(`${name}: the dropdowns are accessible disclosures; the current page and section are marked`, () => {
+  test(`${name}: the menu marks the current page, or the menu page whose section it belongs to`, () => {
     for (const { rel, html, lang } of pages(b.out)) {
+      if (/http-equiv="refresh"/.test(html) || rel.endsWith('404.html')) continue;
       const at = (m) => `${rel}: ${m}`;
       const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
-      const toggles = [...header.matchAll(/<button class="site-nav__toggle"[^>]*>/g)].map((m) => m[0]);
-      assert.equal(toggles.length, SECTIONS.length, at('one button per section'));
-      for (const t of toggles) {
-        const id = t.match(/aria-controls="([^"]+)"/)?.[1];
-        assert.match(t, /type="button" aria-expanded="false" aria-controls="nav-[a-z]+"/, at(`button attributes ${t}`));
-        assert.match(header, new RegExp(`${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?</button>\\s*<div class="site-nav__panel" id="${id}" data-nav-panel>`), at(`panel ${id} right after its button`));
-      }
-      const pageUrl = rel.endsWith('404.html') ? null : `/${'crm/site/' + rel.replace(/index\.html$/, '')}`;
-      const sec = SECTIONS.find((s) => pageUrl && [s.hub, ...s.pages].some((id) => url(id, lang) === pageUrl));
-      const marked = toggles.filter((t) => /aria-current="true"/.test(t)).map((t) => t.match(/aria-controls="nav-([a-z]+)"/)[1]);
-      assert.deepEqual(marked, sec ? [sec.id] : [], at('aria-current on the current section only'));
-      const current = [...header.matchAll(/<a class="site-nav__link[^"]*" href="([^"]+)" aria-current="page"/g)].map((m) => m[1]);
-      assert.deepEqual(current, sec ? [pageUrl] : [], at('aria-current="page" on the current page in its dropdown'));
-      // every panel item has a one-line description, the hub item first
-      for (const s of SECTIONS) {
-        const panel = header.slice(header.indexOf(`id="nav-${s.id}"`), header.indexOf('</ul>', header.indexOf(`id="nav-${s.id}"`)));
-        assert.match(panel, /<ul class="site-nav__menu" role="list">\s*<li><a class="site-nav__link site-nav__link--hub"/, at(`${s.id}: hub first`));
-        assert.equal((panel.match(/class="site-nav__desc">[^<]{8,}</g) ?? []).length, expected(b.out, s, lang).length - 1, at(`${s.id}: a description per page`));
+      const pageUrl = `/${'crm/site/' + rel.replace(/index\.html$/, '')}`;
+      const here = [...NAV, ...SECTIONS.flatMap((s) => s.pages), 'home', 'accessibility'].find((id) => url(id, lang) === pageUrl);
+      const page = [...header.matchAll(/<a class="site-nav__top" href="([^"]+)" aria-current="page"/g)].map((m) => m[1]);
+      const within = [...header.matchAll(/<a class="site-nav__top" href="([^"]+)" aria-current="true"/g)].map((m) => m[1]);
+      if (NAV.includes(here)) {
+        assert.deepEqual(page, [pageUrl], at('aria-current="page" on itself'));
+        assert.deepEqual(within, [], at('nothing else marked'));
+      } else {
+        assert.deepEqual(page, [], at('not a menu page'));
+        const sec = SECTIONS.find((s) => s.pages.includes(here));
+        assert.deepEqual(within, sec && NAV.includes(sec.hub) ? [url(sec.hub, lang)] : [], at('its section marked'));
       }
     }
+  });
+
+  test(`${name}: the old hub addresses forward to the page that holds their content`, () => {
+    for (const lang of ['he', 'en']) {
+      for (const [id, to] of Object.entries(REDIRECTS)) {
+        const html = read(file(b.out, id, lang));
+        const target = url(to.page, lang) + (to.hash ? `#${to.hash}` : '');
+        assert.match(html, new RegExp(`<meta http-equiv="refresh" content="0; url=${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}">`), `${lang} ${id}: refresh`);
+        assert.match(html, /<meta name="robots" content="noindex">/, `${lang} ${id}: noindex`);
+        assert.ok(hrefs(html.slice(html.indexOf('<main'))).includes(target), `${lang} ${id}: a plain link too`);
+      }
+    }
+    const sm = read(join(b.out, 'sitemap.xml'));
+    for (const id of Object.keys(REDIRECTS)) assert.doesNotMatch(sm, new RegExp(`/${slugOf(id)}/<`), `sitemap: ${id}`);
   });
 
   test(`${name}: the breadcrumb "<section> ◀ <page>" on every page of a section, linking to its hub`, () => {

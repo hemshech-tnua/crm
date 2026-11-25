@@ -6,8 +6,7 @@
   "hero": {
     "eyebrow": "For combat veterans, in the reserves and after service",
     "title": [
-      "Service ends.",
-      "The team doesn't have to."
+      "Come keep moving with us"
     ],
     "body": "Three Friday mornings a month: a workout, coffee and a guest talk. Every fitness level, no commitment and no talking circle.",
     "ctaPrimary": "Sign up for next Friday",
@@ -180,5 +179,36 @@
   "people": {
     "title": "About us",
     "cta": "About us"
+  },
+  "story": {
+    "eyebrow": "The movement",
+    "title": "A home for combat veterans after their service",
+    "lead": "The need for a team, for movement and for direction doesn't end when your military service does.",
+    "body": [
+      "We're not a program with an end date but a place that stays: come at any point, and come back whenever you like, also after a reserve round.",
+      "Together with local municipalities, we're building a nationwide network of centers for discharged combat veterans."
+    ],
+    "cta": "Our story"
+  },
+  "band": {
+    "title": "First time? Itai is waiting at the door.",
+    "body": "Three Friday mornings a month: a workout, coffee and snacks, and a guest talk. Every fitness level, no commitment.",
+    "cta": "Sign up for next Friday"
+  },
+  "founders": {
+    "eyebrow": "The founders",
+    "title": "Started by two childhood friends",
+    "fact": "Both are former combat soldiers and active reservists.",
+    "cta": "Meet the founders"
+  },
+  "kinds": {
+    "title": "Our meetings",
+    "lead": "Three Friday mornings a month, and more meetings in the evenings. Every meeting is posted on the calendar.",
+    "cta": "All meetings and dates"
+  },
+  "sponsors": {
+    "title": "Thank you to our donors and partners",
+    "lead": "Our meetings happen because of them.",
+    "slot": "Donors, sponsors and partners: name, logo and link, with their written consent"
   }
 }

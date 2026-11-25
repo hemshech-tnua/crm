@@ -5,7 +5,7 @@
 // Loads every page of the sitemap + both 404s at 390 and 1440 px and checks: no console errors / CSP violations, no
 // horizontal overflow, no white backgrounds, one h1, lang/dir, landmarks, skip link first in tab order, 44px targets,
 // the mobile menu (aria-expanded, focus trap, Esc, focus return), the section dropdowns (click, Esc, keyboard, click
-// outside, inside the viewport) and the header fitting on one row at 1024px, live meetings (filled / empty / error states, links
+// outside, inside the viewport) and the header fitting on one row at 1120px, live meetings (filled / empty / error states, links
 // into the CRM), the WhatsApp slot, reveal + reduced motion, and an axe-core WCAG 2.2 AA scan (@axe-core/playwright,
 // already a devDependency). The Supabase RPCs are mocked: the test never calls production.
 'use strict';
@@ -145,7 +145,7 @@ async function checkPage(browser, url, vp) {
       if (/^rgba?\(255, 255, 255(, 1)?\)$/.test(bg)) white.push(el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''));
     }
     const small = [];
-    const sel = '.btn, .chip, .menu-toggle, .menu-close, .site-nav__toggle, .site-nav__link, .site-menu__link, .site-menu__all, .crumbs__link, .site-footer__title a, .site-footer__reach a, .lang-switch, .brand, .site-footer__list a, .site-footer__base a, .link, .link-arrow, .row, .meet, .faq summary, .chapters__nav a, .skip-link';
+    const sel = '.btn, .chip, .menu-toggle, .menu-close, .site-nav__top, .site-menu__link, .site-menu__all, .crumbs__link, .site-footer__title a, .site-footer__reach a, .lang-switch, .brand, .site-footer__list a, .site-footer__base a, .link, .link-arrow, .row, .meet, .faq summary, .chapters__nav a, .skip-link';
     for (const el of document.querySelectorAll(sel)) {
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
@@ -199,34 +199,14 @@ async function checkPage(browser, url, vp) {
   await page.keyboard.press('Enter');
   if ((await page.evaluate(() => document.activeElement.id)) !== 'main') fail(where, 'skip link did not move focus to main');
 
-  // the section dropdowns (desktop): click opens, Esc closes and returns focus, Enter opens from the keyboard and Tab
-  // goes into the panel, a click outside closes; every panel stays inside the viewport
-  if (vp.width >= 1024 && !is404) {
-    const st = () => page.evaluate(() => [...document.querySelectorAll('[data-nav-toggle]')].map((b) => {
-      const p = document.getElementById(b.getAttribute('aria-controls'));
-      const r = p.getBoundingClientRect();
-      return { exp: b.getAttribute('aria-expanded'), shown: getComputedStyle(p).display !== 'none', inView: r.left >= 0 && r.right <= innerWidth, focusIn: p.contains(document.activeElement), focusBtn: document.activeElement === b };
+  // the six-page menu (desktop, from 1120px): every link visible, inside the viewport, the current one marked
+  if (vp.width >= 1120 && !is404) {
+    const links = await page.evaluate(() => [...document.querySelectorAll('.site-nav__top')].map((a) => {
+      const r = a.getBoundingClientRect();
+      return { shown: !!a.offsetParent, inView: r.left >= 0 && r.right <= innerWidth };
     }));
-    const toggles = page.locator('[data-nav-toggle]');
-    const n = await toggles.count();
-    if (n !== 4) fail(where, `${n} section buttons in the header`);
-    for (let i = 0; i < n; i++) {
-      await toggles.nth(i).click();
-      const s = (await st())[i];
-      if (s.exp !== 'true' || !s.shown || !s.inView) fail(where, `dropdown ${i + 1} after click ${JSON.stringify(s)}`);
-      if ((await st()).filter((x) => x.exp === 'true').length !== 1) fail(where, 'more than one dropdown open');
-      if (SHOTS && vp.name === '1440' && /\/(en\/)?friday\/$/.test(url)) await shot(page, url, vp, `dropdown${i + 1}`, false);
-      await page.keyboard.press('Escape');
-      const c = (await st())[i];
-      if (c.exp !== 'false' || c.shown || !c.focusBtn) fail(where, `dropdown ${i + 1} after Esc ${JSON.stringify(c)}`);
-    }
-    await toggles.nth(0).focus();
-    await page.keyboard.press('Enter');
-    await page.keyboard.press('Tab');
-    const k = (await st())[0];
-    if (k.exp !== 'true' || !k.focusIn) fail(where, `dropdown keyboard ${JSON.stringify(k)}`);
-    await page.locator('.site-footer__name').click(); // outside the header (the panel may cover the h1)
-    if ((await st())[0].exp !== 'false') fail(where, 'a click outside did not close the dropdown');
+    if (links.length !== 6) fail(where, `${links.length} menu links in the header`);
+    if (links.some((l) => !l.shown || !l.inView)) fail(where, `menu links ${JSON.stringify(links)}`);
   }
 
   // the menu: open, trap, Esc, return focus
@@ -242,7 +222,7 @@ async function checkPage(browser, url, vp) {
     await page.waitForFunction(() => document.querySelector('[data-menu-open]').getAttribute('aria-expanded') === 'false', null, { timeout: 2000 }).catch(() => {});
     const closed = await page.evaluate(() => ({ open: document.querySelector('[data-menu]').open, exp: document.querySelector('[data-menu-open]').getAttribute('aria-expanded'), back: document.activeElement.hasAttribute('data-menu-open') }));
     if (closed.open || closed.exp !== 'false' || !closed.back) fail(where, `menu close state ${JSON.stringify(closed)}`);
-  } else if (vp.width < 1024) fail(where, 'menu button not visible on a phone');
+  } else if (vp.width < 1120) fail(where, 'menu button not visible below 1120px');
 
   // phone CTA bar: hidden at the top, slides in once the page's CTA has scrolled away, never over the open menu
   if (vp.width < 1024 && (await page.locator('[data-cta-bar]').count())) {
@@ -277,7 +257,7 @@ async function checkStates(browser) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     await mock(ctx, mode);
     const page = await ctx.newPage();
-    await page.goto(`${ORIGIN}${BASE}`);
+    await page.goto(`${ORIGIN}${BASE}meetings/`); // the next Friday's card and the list of dates live on Meetings now
     await settle(page);
     await page.waitForSelector('.events__message', { timeout: 8000 }).catch(() => {});
     const st = await page.evaluate(() => ({ msg: document.querySelector('.events__message')?.textContent ?? '', retry: !!document.querySelector('.events__message button'), fallback: !!document.querySelector('.events__more a[href*="/crm/#/"]'), next: document.querySelector('.next [data-next-when]')?.textContent ?? '', nextHref: document.querySelector('.next [data-next-cta]')?.href ?? '' }));
@@ -304,10 +284,10 @@ async function checkStates(browser) {
   await ctx.close();
 }
 
-/** The header at 1024px (the narrowest desktop): one row with the four sections, the language switch and the CTA. */
+/** The header at 1120px (the narrowest width with the full menu): one row with the six links, the language switch and the CTA. */
 async function checkHeaderFit(browser) {
   for (const lang of ['', 'en/']) {
-    const ctx = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+    const ctx = await browser.newContext({ viewport: { width: 1120, height: 768 } });
     await mock(ctx);
     const page = await ctx.newPage();
     await page.goto(`${ORIGIN}${BASE}${lang}friday/`);
@@ -317,7 +297,7 @@ async function checkHeaderFit(browser) {
       const tops = [...bar.children].filter((c) => c.offsetParent).map((c) => Math.round(c.getBoundingClientRect().top + c.getBoundingClientRect().height / 2));
       return { rows: new Set(tops.map((t) => Math.round(t / 8))).size, nav: getComputedStyle(document.querySelector('.site-nav')).display, cta: !!document.querySelector('.site-header__cta').offsetParent, overflow: document.documentElement.scrollWidth - innerWidth };
     });
-    if (r.rows !== 1 || r.nav === 'none' || !r.cta || r.overflow > 0) fail(`header @1024 ${lang || 'he'}`, JSON.stringify(r));
+    if (r.rows !== 1 || r.nav === 'none' || !r.cta || r.overflow > 0) fail(`header @1120 ${lang || 'he'}`, JSON.stringify(r));
     await ctx.close();
   }
 }

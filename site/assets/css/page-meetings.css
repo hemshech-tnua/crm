@@ -1,0 +1,40 @@
+/* Meetings (pages/meetings.mjs), the gallery (pages/gallery.mjs) and the forwarding pages (pages/_redirect.mjs). */
+@layer pages {
+  /* ── meetings ── */
+  .mt-hero { padding-block: clamp(3rem, 2rem + 4vw, 6rem) clamp(3.5rem, 2.5rem + 4vw, 7rem); }
+  .mt-hero__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .mt-hero__head h1 { max-inline-size: 14ch; }
+  .mt-hero__lead { margin-block-start: var(--headline-to-lead); max-inline-size: 40ch; }
+  .mt-kinds__title { margin-block-end: var(--space-7); }
+  .mt-dates__grid { display: grid; gap: var(--space-7) var(--gutter); }
+  .mt-dates__head { display: grid; gap: var(--space-4); align-content: start; }
+  .mt-dates__head .t-lead { max-inline-size: 34ch; }
+  .mt-gallery__card { display: grid; gap: var(--space-5); justify-items: start; padding: var(--space-7) var(--space-6); border-radius: var(--radius-panel); }
+  .mt-gallery__lead { color: var(--ink-quiet); margin-block-start: var(--space-2); }
+  .mt-ask__in { display: grid; gap: var(--space-3); }
+  .mt-ask__in .cluster { gap: var(--space-3) var(--space-6); }
+  @media (min-width: 64rem) {
+    .mt-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; }
+    .mt-hero__head { grid-column: 1 / span 7; }
+    .mt-hero__next { grid-column: 8 / -1; }
+    .mt-dates__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+    .mt-dates__head { grid-column: 1 / span 4; position: sticky; inset-block-start: calc(var(--header-h) + var(--space-6)); }
+    .mt-dates__list { grid-column: 6 / -1; }
+    .mt-gallery__card { grid-template-columns: 1fr auto; align-items: center; padding: var(--space-8) var(--space-9); }
+  }
+
+  /* ── gallery ── */
+  .gl-hero { padding-block: clamp(3rem, 2rem + 4vw, 6rem); }
+  .gl-hero h1 { max-inline-size: 16ch; }
+  .gl-hero__lead { margin-block-start: var(--headline-to-lead); max-inline-size: 44ch; }
+  .gallery { display: grid; gap: var(--gutter); margin: 0; padding: 0; list-style: none; }
+  .gallery__item { aspect-ratio: 4 / 3; }
+  .gallery__item figcaption { margin-block-start: var(--space-2); }
+  @media (min-width: 40rem) { .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 64rem) { .gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .gallery-empty { display: grid; gap: var(--space-4); justify-items: start; padding: var(--space-8) var(--space-7); border-radius: var(--radius-panel); max-inline-size: 48rem; }
+  .gallery-empty p:not(:last-child) { color: var(--ink-quiet); max-inline-size: 44ch; }
+
+  /* ── a forwarding page (visible only for a moment, or to a browser that does not follow meta refresh) ── */
+  .moved { min-block-size: 50svh; display: grid; align-items: center; }
+}
