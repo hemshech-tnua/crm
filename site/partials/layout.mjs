@@ -44,9 +44,13 @@ export function crumbs(ctx, body) {
  */
 export function calmGrounds(body) {
   let first = true;
+  let n = 0;
   return String(body).replace(/<section\b([^>]*)>/g, (tag, attrs) => {
     if (first) { first = false; return tag; }
-    return /\sdata-ground="/.test(attrs) ? tag.replace(/\sdata-ground="[a-z-]+"/, ' data-ground="beige"') : tag;
+    if (!/\sdata-ground="/.test(attrs)) return tag;
+    // the life on the calm ground (25.11: "a bit more life"): warm light and the brand's stripes, from alternating sides
+    n += 1;
+    return tag.replace(/\sdata-ground="[a-z-]+"/, ` data-ground="beige" data-glow="${n % 2 ? 'a' : 'b'}"`);
   });
 }
 

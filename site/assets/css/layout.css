@@ -80,4 +80,34 @@
   .quiet { color: var(--ink-quiet); }
   .h-lead { margin-block-start: var(--headline-to-lead); }
   :lang(en) .t-hero, :lang(en) .t-display { letter-spacing: -0.03em; }
+
+  /* ── Life on the calm ground (owner, 25.11: "a bit more life") ──────────────────────────────────────────────────────
+     Every chapter after the opening sits on beige (layout.mjs calmGrounds) and carries data-glow a|b, alternating.
+     Warm light: a soft lighter pool and a deeper warm pool at opposite corners, so the beige has depth instead of a flat
+     fill. The brand's 45° stripes, tone on tone, enter from one top corner and fade out. a and b mirror each other, so
+     the page sways side to side as it scrolls. Tone on tone only (beige-50/300/400): text contrast is unchanged. */
+  [data-glow] { position: relative; isolation: isolate; }
+  /* the pools sit mid-height on the sides and fade out before the top and bottom edges: no seam between chapters */
+  [data-glow='a'] {
+    background-image:
+      radial-gradient(ellipse 55% 42% at 100% 35%, color-mix(in srgb, var(--beige-50) 90%, transparent), transparent 75%),
+      radial-gradient(ellipse 50% 40% at 0% 65%, color-mix(in srgb, var(--beige-300) 75%, transparent), transparent 75%);
+  }
+  [data-glow='b'] {
+    background-image:
+      radial-gradient(ellipse 55% 42% at 0% 35%, color-mix(in srgb, var(--beige-50) 90%, transparent), transparent 75%),
+      radial-gradient(ellipse 50% 40% at 100% 65%, color-mix(in srgb, var(--beige-300) 75%, transparent), transparent 75%);
+  }
+  /* the stripes live in the chapter's bottom padding (empty by design), never under a heading or a card */
+  [data-glow]::before {
+    --u: clamp(12px, 0.6vw + 8px, 18px);
+    content: ''; position: absolute; z-index: -1; pointer-events: none; inset-block-end: 0;
+    inline-size: clamp(9rem, 4rem + 16vw, 22rem); block-size: min(var(--chapter-pad, 6rem), clamp(4rem, 2rem + 6vw, 8rem));
+    background-image: repeating-linear-gradient(45deg, var(--beige-400) 0 var(--u), transparent 0 calc(2 * var(--u)));
+    opacity: 0.5;
+  }
+  [data-glow='a']::before { inset-inline-end: 0; mask-image: linear-gradient(to top right, #000 0%, transparent 70%); }
+  [data-glow='b']::before { inset-inline-start: 0; mask-image: linear-gradient(to top left, #000 0%, transparent 70%);
+    background-image: repeating-linear-gradient(-45deg, var(--beige-400) 0 var(--u), transparent 0 calc(2 * var(--u))); }
+  @media (forced-colors: active) { [data-glow] { background-image: none; } [data-glow]::before { display: none; } }
 }
