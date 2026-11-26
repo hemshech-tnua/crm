@@ -6,8 +6,10 @@
 //   POST https://<project>.supabase.co/functions/v1/yesh-webhook?key=<YESH_WEBHOOK_KEY>
 //
 // Accepted body: JSON, or form-encoded (fields at the top level, or a ReturnValue / data field holding JSON), up to
-// 32 KB. Only these fields are read, case-insensitively, from ReturnValue (or the top level): docNumber, docType, price
-// (a number or a string; the total), customerPhone, customerName, date. Everything else in the body is ignored, and the
+// 32 KB. Two shapes are read, case-insensitively, from ReturnValue (or the top level) — see paymentOf():
+//   payment page: RequestID, Price, CustomerName, DateEvent, customer { phone, phone2, name }
+//   document:     docNumber, docType, price, customerPhone, customerName, date
+// Everything else in the body is ignored, and the
 // database validates the fields again (public.service_yesh_payment → private.yesh_payment, migration
 // 20261106002700_pay_before_register.sql), matches the phone to a pending registration, and is idempotent on the
 // document number.
@@ -142,6 +144,52 @@ function documentOf(body: Obj): Obj | null {
   return body;
 }
 
+/** A nested object by name, any letter case. */
+function objField(o: Obj, name: string): Obj | null {
+  const want = name.toLowerCase();
+  for (const [k, v] of Object.entries(o)) if (k.toLowerCase() === want && isObj(v)) return v;
+  return null;
+}
+
+/**
+ * What the database needs, from either of the two calls the provider makes for one payment:
+ *  - the payment-page call ("תשלום הצליח"): RequestID, Price, CustomerName, DateEvent and a customer object with the
+ *    phone (customer.phone, else customer.phone2). This is the one that can be matched to a registration.
+ *  - the document call (the receipt): docNumber, price, customerName, date, and usually no phone. It is still
+ *    recorded (unmatched when it has no phone), so no payment is lost if the payment-page call never arrives; the
+ *    shape of each call is logged (names only, no values) to confirm the provider sends both.
+ * null = nothing to record.
+ */
+export function paymentOf(doc: Obj): Record<string, unknown> | null {
+  const customer = objField(doc, 'customer');
+  const requestId = field(doc, 'RequestID');
+  if (customer || requestId) {
+    if (!requestId) return null;
+    return {
+      doc_number: requestId,
+      doc_type: 'req',
+      amount: amountOf(field(doc, 'Price') ?? field(doc, 'price')),
+      phone: (customer && (field(customer, 'phone') ?? field(customer, 'phone2'))) ?? field(doc, 'customerPhone'),
+      customer_name: field(doc, 'CustomerName') ?? (customer && field(customer, 'name')),
+      doc_date: field(doc, 'DateEvent') ?? field(doc, 'date'),
+    };
+  }
+  const phone = field(doc, 'customerPhone');
+  let amount = amountOf(field(doc, 'price'));
+  if (amount == null && Array.isArray(doc.payments)) {
+    // no total on the document: the sum of its payments
+    amount = (doc.payments as unknown[]).reduce<number>((s, p) => s + (isObj(p) ? amountOf(field(p, 'price')) ?? 0 : 0), 0) || null;
+  }
+  return {
+    doc_number: field(doc, 'docNumber'),
+    doc_type: field(doc, 'docType'),
+    amount,
+    phone,
+    customer_name: field(doc, 'customerName'),
+    doc_date: field(doc, 'date'),
+  };
+}
+
 function clientIp(req: Request): string {
   return req.headers.get('cf-connecting-ip')?.trim()
     || req.headers.get('x-real-ip')?.trim()
@@ -166,21 +214,10 @@ Deno.serve(async (req) => {
   const doc = body ? documentOf(body) : null;
   if (!doc) return reply(200, { ok: true, result: 'ignored' });
 
-  let amount = amountOf(field(doc, 'price'));
-  if (amount == null && Array.isArray(doc.payments)) {
-    // no total on the document: the sum of its payments
-    amount = (doc.payments as unknown[]).reduce<number>((s, p) => s + (isObj(p) ? amountOf(field(p, 'price')) ?? 0 : 0), 0) || null;
-  }
-  const res = await rpc('service_yesh_payment', {
-    p: {
-      doc_number: field(doc, 'docNumber'),
-      doc_type: field(doc, 'docType'),
-      amount,
-      phone: field(doc, 'customerPhone'),
-      customer_name: field(doc, 'customerName'),
-      doc_date: field(doc, 'date'),
-    },
-  });
+  const p = paymentOf(doc);
+  console.log(`yesh-webhook: shape=${p?.doc_type === 'req' ? 'payment' : 'document'} phone=${p?.phone ? 'yes' : 'no'}`);
+  if (!p) return reply(200, { ok: true, result: 'ignored' });
+  const res = await rpc('service_yesh_payment', { p });
   if (!res.ok || !isObj(res.data)) {
     console.error('yesh-webhook: the database call failed');
     return reply(500, { error: 'failed' });
